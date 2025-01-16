@@ -1,0 +1,631 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="TallyDataset" targetNamespace="http://tempuri.org/TallyDataset.xsd" xmlns:mstns="http://tempuri.org/TallyDataset.xsd" xmlns="http://tempuri.org/TallyDataset.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections>
+          <Connection AppSettingsObjectName="Web.config" AppSettingsPropertyName="NW_DataConnectionString" ConnectionStringObject="" IsAppSettingsProperty="true" Modifier="Assembly" Name="NW_DataConnectionString (Web.config)" ParameterPrefix="@" PropertyReference="AppConfig.System.Configuration.ConfigurationManager.0.ConnectionStrings.NW_DataConnectionString.ConnectionString" Provider="System.Data.SqlClient" />
+        </Connections>
+        <Tables>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="CurrentIntakeTallyTableAdapter" GeneratorDataComponentClassName="CurrentIntakeTallyTableAdapter" Name="CurrentIntakeTally" UserDataComponentName="CurrentIntakeTallyTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Web.config)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>SELECT        Locations_1.District, Locations_1.Description AS Location, Locations_1.Id AS Location_Id, tbl.Commodity, tbl.Commodity_Id, tbl.Units, tbl.UOM, tbl.AvgSec, tbl.Net, tbl.Loads, CONVERT(varchar, 
+                         DATEADD(SECOND, tbl.AvgSec, 0), 108) AS AverageTime
+FROM            (SELECT        Locations.Description AS Location, Locations.Id AS Location_Id, Crops.Description AS Commodity, Lots.Crop_Id AS Commodity_Id, SUM(CONVERT(int, ABS(Loads.Weight_In - Loads.Weight_Out) 
+                                                    / (CASE WHEN Crops.Pound_Per_Bushel &lt;= 0 THEN 1 ELSE Crops.Pound_Per_Bushel END))) AS Units, 
+                                                    CASE WHEN Unit_Of_Measure = 'T' THEN 'Tons' WHEN Unit_Of_Measure = 'H' THEN 'CWT' ELSE 'Bushels' END AS UOM, Locations.District, AVG(DATEDIFF(second, Loads.Time_In, 
+                                                    Loads.Time_Out)) AS AvgSec, SUM(ABS(Loads.Weight_In - Loads.Weight_Out)) AS Net, COUNT(*) AS Loads
+                          FROM            Crops LEFT OUTER JOIN
+                                                    Loads INNER JOIN
+                                                    Inbound_Loads ON Loads.UID = Inbound_Loads.Load_UID INNER JOIN
+                                                    Weight_Sheets INNER JOIN
+                                                    Lots INNER JOIN
+                                                    Weight_Inbound_Loads ON Lots.UID = Weight_Inbound_Loads.Lot_UID ON Weight_Sheets.UID = Weight_Inbound_Loads.Weight_Sheet_UID INNER JOIN
+                                                    Locations ON Weight_Sheets.Location_Id = Locations.Id ON Inbound_Loads.WS_UID = Weight_Sheets.UID ON Crops.Id = Lots.Crop_Id
+                          WHERE        (Loads.Void = 0) AND (DATEDIFF(day, Loads.Time_Out, GETDATE()) = 0)
+                          GROUP BY Locations.Description, Locations.Id, Crops.Description, Lots.Crop_Id, Locations.District, 
+                                                    CASE WHEN Unit_Of_Measure = 'T' THEN 'Tons' WHEN Unit_Of_Measure = 'H' THEN 'CWT' ELSE 'Bushels' END) AS tbl INNER JOIN
+                         Locations AS Locations_1 ON tbl.Location_Id = Locations_1.Id
+WHERE        (Locations_1.In_Production = 1) AND (Locations_1.Active = 1)
+ORDER BY Locations_1.District, Location</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="District" DataSetColumn="District" />
+              <Mapping SourceColumn="Location" DataSetColumn="Location" />
+              <Mapping SourceColumn="Location_Id" DataSetColumn="Location_Id" />
+              <Mapping SourceColumn="Commodity" DataSetColumn="Commodity" />
+              <Mapping SourceColumn="Commodity_Id" DataSetColumn="Commodity_Id" />
+              <Mapping SourceColumn="Units" DataSetColumn="Units" />
+              <Mapping SourceColumn="UOM" DataSetColumn="UOM" />
+              <Mapping SourceColumn="AvgSec" DataSetColumn="AvgSec" />
+              <Mapping SourceColumn="Net" DataSetColumn="Net" />
+              <Mapping SourceColumn="Loads" DataSetColumn="Loads" />
+              <Mapping SourceColumn="AverageTime" DataSetColumn="AverageTime" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="CurrentTransferTalleyTableAdapter" GeneratorDataComponentClassName="CurrentTransferTalleyTableAdapter" Name="CurrentTransferTalley" UserDataComponentName="CurrentTransferTalleyTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Web.config)" DbObjectName="SELECT Crops.UID AS CropUID, Locations.Description AS Location, Locations.Id AS Location_Id, Crops.Description AS Commodity, Weight_Sheet_Transfer_Loads.Crop_Id AS Commodity_Id, SUM(ABS(Loads.Weight_In - Loads.Weight_Out)) AS Net, SUM(CONVERT(int, ABS(Loads.Weight_In - Loads.Weight_Out) / (CASE WHEN Crops.Pound_Per_Bushel &lt;= 0 THEN 1 ELSE Crops.Pound_Per_Bushel END))) AS Units, CASE WHEN Unit_Of_Measure = 'T' THEN 'Tons' WHEN Unit_Of_Measure = 'H' THEN 'CWT' ELSE 'Bushels' END AS UOM, Sources.Description AS Source, Weight_Sheet_Transfer_Loads.Source_Id, Weight_Sheet_Transfer_Loads.Variety_Id, Locations.District, Variety.Description AS Variety, COUNT(*) AS Loads, AVG(DATEDIFF(second, Loads.Time_In, Loads.Time_Out)) AS AvgSec FROM Variety INNER JOIN Variety_Crop_Groups ON Variety.UID = Variety_Crop_Groups.Variety_UID RIGHT OUTER JOIN Transfer_Loads INNER JOIN Loads ON Transfer_Loads.Load_UID = Loads.UID INNER JOIN Crops INNER JOIN Weight_Sheet_Transfer_Loads ON Crops.Id = Weight_Sheet_Transfer_Loads.Crop_Id ON Transfer_Loads.Transfer_Load_UID = Weight_Sheet_Transfer_Loads.UID INNER JOIN Locations AS Sources ON Weight_Sheet_Transfer_Loads.Source_Id = Sources.Id INNER JOIN Locations ON Loads.Location_Id = Locations.Id ON Variety_Crop_Groups.Crop_UID = Crops.UID AND Variety.Id = Weight_Sheet_Transfer_Loads.Variety_Id WHERE (Loads.Void = 0) AND (Loads.Time_Out IS NOT NULL) AND (DATEDIFF(day, Loads.Time_Out, GETDATE()) = 0) GROUP BY Crops.UID, Crops.Description, Weight_Sheet_Transfer_Loads.Crop_Id, Locations.Description, Sources.Description, Weight_Sheet_Transfer_Loads.Source_Id, Weight_Sheet_Transfer_Loads.Variety_Id, Locations.District, CASE WHEN Unit_Of_Measure = 'T' THEN 'Tons' WHEN Unit_Of_Measure = 'H' THEN 'CWT' ELSE 'Bushels' END, Variety.Description, Locations.Id" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>SELECT        CropUID, Location, Location_Id, Commodity, Commodity_Id, Net, Units, UOM, Source, Source_Id, Variety_Id, District, Variety, Loads, AvgSec, CONVERT(varchar, DATEADD(SECOND, AvgSec, 0), 108) 
+                         AS AverageTime
+FROM            (SELECT        Crops.UID AS CropUID, Locations.Description AS Location, Locations.Id AS Location_Id, Crops.Description AS Commodity, Weight_Sheet_Transfer_Loads.Crop_Id AS Commodity_Id, 
+                                                    SUM(ABS(Loads.Weight_In - Loads.Weight_Out)) AS Net, SUM(CONVERT(int, ABS(Loads.Weight_In - Loads.Weight_Out) 
+                                                    / (CASE WHEN Crops.Pound_Per_Bushel &lt;= 0 THEN 1 ELSE Crops.Pound_Per_Bushel END))) AS Units, 
+                                                    CASE WHEN Unit_Of_Measure = 'T' THEN 'Tons' WHEN Unit_Of_Measure = 'H' THEN 'CWT' ELSE 'Bushels' END AS UOM, Sources.Description AS Source, Weight_Sheet_Transfer_Loads.Source_Id, 
+                                                    Weight_Sheet_Transfer_Loads.Variety_Id, Locations.District, Variety.Description AS Variety, COUNT(*) AS Loads, AVG(DATEDIFF(second, Loads.Time_In, Loads.Time_Out)) AS AvgSec
+                          FROM            Variety INNER JOIN
+                                                    Variety_Crop_Groups ON Variety.UID = Variety_Crop_Groups.Variety_UID RIGHT OUTER JOIN
+                                                    Transfer_Loads INNER JOIN
+                                                    Loads ON Transfer_Loads.Load_UID = Loads.UID INNER JOIN
+                                                    Crops INNER JOIN
+                                                    Weight_Sheet_Transfer_Loads ON Crops.Id = Weight_Sheet_Transfer_Loads.Crop_Id ON Transfer_Loads.Transfer_Load_UID = Weight_Sheet_Transfer_Loads.UID INNER JOIN
+                                                    Locations AS Sources ON Weight_Sheet_Transfer_Loads.Source_Id = Sources.Id INNER JOIN
+                                                    Locations ON Loads.Location_Id = Locations.Id ON Variety_Crop_Groups.Crop_UID = Crops.UID AND Variety.Id = Weight_Sheet_Transfer_Loads.Variety_Id
+                          WHERE        (Loads.Void = 0) AND (Loads.Time_Out IS NOT NULL) AND (DATEDIFF(day, Loads.Time_Out, GETDATE()) = 0)
+                          GROUP BY Crops.UID, Crops.Description, Weight_Sheet_Transfer_Loads.Crop_Id, Locations.Description, Sources.Description, Weight_Sheet_Transfer_Loads.Source_Id, 
+                                                    Weight_Sheet_Transfer_Loads.Variety_Id, Locations.District, CASE WHEN Unit_Of_Measure = 'T' THEN 'Tons' WHEN Unit_Of_Measure = 'H' THEN 'CWT' ELSE 'Bushels' END, Variety.Description, 
+                                                    Locations.Id) AS tblTransfer</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="CropUID" DataSetColumn="CropUID" />
+              <Mapping SourceColumn="Location" DataSetColumn="Location" />
+              <Mapping SourceColumn="Location_Id" DataSetColumn="Location_Id" />
+              <Mapping SourceColumn="Commodity" DataSetColumn="Commodity" />
+              <Mapping SourceColumn="Commodity_Id" DataSetColumn="Commodity_Id" />
+              <Mapping SourceColumn="Net" DataSetColumn="Net" />
+              <Mapping SourceColumn="Units" DataSetColumn="Units" />
+              <Mapping SourceColumn="UOM" DataSetColumn="UOM" />
+              <Mapping SourceColumn="Source" DataSetColumn="Source" />
+              <Mapping SourceColumn="Source_Id" DataSetColumn="Source_Id" />
+              <Mapping SourceColumn="Variety_Id" DataSetColumn="Variety_Id" />
+              <Mapping SourceColumn="District" DataSetColumn="District" />
+              <Mapping SourceColumn="Variety" DataSetColumn="Variety" />
+              <Mapping SourceColumn="Loads" DataSetColumn="Loads" />
+              <Mapping SourceColumn="AvgSec" DataSetColumn="AvgSec" />
+              <Mapping SourceColumn="AverageTime" DataSetColumn="AverageTime" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="LastLoadReportedTableAdapter" GeneratorDataComponentClassName="LastLoadReportedTableAdapter" Name="LastLoadReported" UserDataComponentName="LastLoadReportedTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Web.config)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Locations.Description AS Location, Loads_1.Time_In, derivedtbl_1.Server_Name, derivedtbl_1.Location_Id, Loads_1.Sequence_Id, derivedtbl_1.LastLoadId
+FROM            (SELECT        TOP (100) PERCENT Server_Name, Location_Id, LastLoadId
+                          FROM            (SELECT        MAX(Load_Id) AS LastLoadId, Server_Name, Location_Id
+                                                    FROM            Loads
+                                                    GROUP BY Server_Name, Location_Id
+                                                    HAVING         (Server_Name &lt;&gt; N'LEO')) AS LastLoad) AS derivedtbl_1 INNER JOIN
+                         Loads AS Loads_1 ON derivedtbl_1.Location_Id = Loads_1.Location_Id AND derivedtbl_1.LastLoadId = Loads_1.Load_Id AND derivedtbl_1.Server_Name = Loads_1.Server_Name INNER JOIN
+                         Locations ON Loads_1.Location_Id = Locations.Id
+WHERE        (Loads_1.Sequence_Id = 1) AND (Loads_1.Time_In &gt; CONVERT(DATETIME, '2019-05-01 00:00:00', 102))
+ORDER BY Loads_1.Time_In DESC</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Location" DataSetColumn="Location" />
+              <Mapping SourceColumn="Time_In" DataSetColumn="Time_In" />
+              <Mapping SourceColumn="Server_Name" DataSetColumn="Server_Name" />
+              <Mapping SourceColumn="Location_Id" DataSetColumn="Location_Id" />
+              <Mapping SourceColumn="Sequence_Id" DataSetColumn="Sequence_Id" />
+              <Mapping SourceColumn="LastLoadId" DataSetColumn="LastLoadId" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="DailyLoadCountByCropTableAdapter" GeneratorDataComponentClassName="DailyLoadCountByCropTableAdapter" Name="DailyLoadCountByCrop" UserDataComponentName="DailyLoadCountByCropTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Web.config)" DbObjectName="SELECT Variety.Id AS Variety_Id, Variety.Description AS Variety, Crops.Id AS Crop_Id, Crops.Description AS Crop FROM Crops INNER JOIN Variety_Crop_Groups ON Crops.UID = Variety_Crop_Groups.Crop_UID INNER JOIN Variety ON Variety_Crop_Groups.Variety_UID = Variety.UID" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        COUNT(*) AS Loads, Crops_1.Description + N' - ' + LTRIM(STR(Crops_1.Id)) AS Crop, Crop_Varieties.Variety, Locations.Description + N' - ' + LTRIM(STR(Locations.Id)) AS Location, CONVERT(VARCHAR(10), 
+                         @SelectedDate, 111) AS SelectedDate
+FROM            (SELECT        Weight_Sheets.Location_Id, Loads.Time_In, Loads.Load_Id, Weight_Sheet_Transfer_Loads.Crop_Id, Weight_Sheet_Transfer_Loads.Variety_Id, 'Intake' AS LoadType
+                          FROM            Weight_Sheets INNER JOIN
+                                                    Weight_Sheet_Transfer_Loads ON Weight_Sheets.UID = Weight_Sheet_Transfer_Loads.Weight_Sheet_UID INNER JOIN
+                                                    Transfer_Loads ON Weight_Sheet_Transfer_Loads.UID = Transfer_Loads.Transfer_Load_UID INNER JOIN
+                                                    Loads ON Transfer_Loads.Load_UID = Loads.UID
+                          WHERE        (Weight_Sheets.Location_Id = ISNULL(@Location_Id, Weight_Sheets.Location_Id)) AND (DATEDIFF(day, Loads.Time_In, @SelectedDate) = 0)
+                          UNION
+                          SELECT        Weight_Sheets_1.Location_Id, Loads_1.Time_In, Loads_1.Load_Id, Lots.Crop_Id, Lots.Variety_Id, 'Transfer' AS LoadType
+                          FROM            Weight_Sheets AS Weight_Sheets_1 INNER JOIN
+                                                   Weight_Inbound_Loads ON Weight_Sheets_1.UID = Weight_Inbound_Loads.Weight_Sheet_UID INNER JOIN
+                                                   Lots ON Weight_Inbound_Loads.Lot_UID = Lots.UID INNER JOIN
+                                                   Inbound_Loads ON Weight_Sheets_1.UID = Inbound_Loads.WS_UID INNER JOIN
+                                                   Loads AS Loads_1 ON Inbound_Loads.Load_UID = Loads_1.UID
+                          WHERE        (Weight_Sheets_1.Location_Id = @Location_Id) AND (DATEDIFF(day, Loads_1.Time_In, @SelectedDate) = 0)) AS tblAllLoads INNER JOIN
+                         Crops AS Crops_1 ON tblAllLoads.Crop_Id = Crops_1.Id INNER JOIN
+                         Locations ON tblAllLoads.Location_Id = Locations.Id LEFT OUTER JOIN
+                             (SELECT        Variety.Id AS Variety_Id, Variety.Description AS Variety, Crops.Id AS Crop_Id, Crops.Description AS Crop
+                               FROM            Crops INNER JOIN
+                                                         Variety_Crop_Groups ON Crops.UID = Variety_Crop_Groups.Crop_UID INNER JOIN
+                                                         Variety ON Variety_Crop_Groups.Variety_UID = Variety.UID) AS Crop_Varieties ON tblAllLoads.Variety_Id = Crop_Varieties.Variety_Id AND tblAllLoads.Crop_Id = Crop_Varieties.Crop_Id
+GROUP BY Crops_1.Description + N' - ' + LTRIM(STR(Crops_1.Id)), Crop_Varieties.Variety, Locations.Description + N' - ' + LTRIM(STR(Locations.Id))
+ORDER BY Crop, Crop_Varieties.Variety</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="SelectedDate" ColumnName="" DataSourceName="" DataTypeServer="unknown" DbType="DateTime" Direction="Input" ParameterName="@SelectedDate" Precision="0" ProviderType="DateTime" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="true" AutogeneratedName="Location_Id" ColumnName="" DataSourceName="" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Location_Id" Precision="0" Scale="0" Size="4" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Loads" DataSetColumn="Loads" />
+              <Mapping SourceColumn="Crop" DataSetColumn="Crop" />
+              <Mapping SourceColumn="Variety" DataSetColumn="Variety" />
+              <Mapping SourceColumn="Location" DataSetColumn="Location" />
+              <Mapping SourceColumn="SelectedDate" DataSetColumn="SelectedDate" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="WeightSeriesByLocationDateTableAdapter" GeneratorDataComponentClassName="WeightSeriesByLocationDateTableAdapter" Name="WeightSeriesByLocationDate" UserDataComponentName="WeightSeriesByLocationDateTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Web.config)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT tblAllLoads.WS_Id, tblAllLoads.UID, tblAllLoads.Location_Id, CONVERT (VARCHAR(10), tblAllLoads.Time_In, 111) AS WeightSheetDate, COUNT(tblAllLoads.Load_Id) AS Loads, tblAllLoads.Crop_Id, tblAllLoads.Variety_Id, tblAllLoads.LoadType, Crops_1.Description + N' - ' + LTRIM(STR(Crops_1.Id)) AS Crop, Crop_Varieties.Variety, SUM(tblAllLoads.Net) AS Net, Locations.Description + N' - ' + LTRIM(STR(Locations.Id)) AS Location FROM (SELECT Weight_Sheets.WS_Id, Weight_Sheets.UID, Weight_Sheets.Location_Id, Loads.Time_In, CASE WHEN Loads.Weight_Out IS NULL THEN 0 ELSE abs(Loads.Weight_In - Loads.Weight_Out) END AS Net, Loads.Load_Id, Weight_Sheet_Transfer_Loads.Crop_Id, Weight_Sheet_Transfer_Loads.Variety_Id, 'transfer' AS LoadType FROM Weight_Sheets INNER JOIN Weight_Sheet_Transfer_Loads ON Weight_Sheets.UID = Weight_Sheet_Transfer_Loads.Weight_Sheet_UID INNER JOIN Transfer_Loads ON Weight_Sheet_Transfer_Loads.UID = Transfer_Loads.Transfer_Load_UID INNER JOIN Loads ON Transfer_Loads.Load_UID = Loads.UID WHERE (Weight_Sheets.Location_Id = @Location_Id) AND (DATEDIFF(day, Loads.Time_In, @SelectedDate) = 0) UNION SELECT Weight_Sheets_1.WS_Id, Weight_Sheets_1.UID, Weight_Sheets_1.Location_Id, Loads_1.Time_In, CASE WHEN Loads_1.Weight_Out IS NULL THEN 0 ELSE abs(Loads_1.Weight_In - Loads_1.Weight_Out) END AS Net, Loads_1.Load_Id, Lots.Crop_Id, Lots.Variety_Id, 'Intake' AS LoadType FROM Weight_Sheets AS Weight_Sheets_1 INNER JOIN Weight_Inbound_Loads ON Weight_Sheets_1.UID = Weight_Inbound_Loads.Weight_Sheet_UID INNER JOIN Lots ON Weight_Inbound_Loads.Lot_UID = Lots.UID INNER JOIN Inbound_Loads ON Weight_Sheets_1.UID = Inbound_Loads.WS_UID INNER JOIN Loads AS Loads_1 ON Inbound_Loads.Load_UID = Loads_1.UID WHERE (Weight_Sheets_1.Location_Id = @Location_Id) AND (DATEDIFF(day, Loads_1.Time_In, @SelectedDate) = 0)) AS tblAllLoads INNER JOIN Crops AS Crops_1 ON tblAllLoads.Crop_Id = Crops_1.Id INNER JOIN Locations ON tblAllLoads.Location_Id = Locations.Id LEFT OUTER JOIN (SELECT Variety.Id AS Variety_Id, Variety.Description AS Variety, Crops.Id AS Crop_Id, Crops.Description AS Crop FROM Crops INNER JOIN Variety_Crop_Groups ON Crops.UID = Variety_Crop_Groups.Crop_UID INNER JOIN Variety ON Variety_Crop_Groups.Variety_UID = Variety.UID) AS Crop_Varieties ON tblAllLoads.Variety_Id = Crop_Varieties.Variety_Id AND tblAllLoads.Crop_Id = Crop_Varieties.Crop_Id GROUP BY tblAllLoads.Location_Id, CONVERT (VARCHAR(10), tblAllLoads.Time_In, 111), tblAllLoads.Crop_Id, tblAllLoads.Variety_Id, tblAllLoads.LoadType, Crops_1.Description + N' - ' + LTRIM(STR(Crops_1.Id)), Crop_Varieties.Variety, tblAllLoads.WS_Id, tblAllLoads.UID, Locations.Description + N' - ' + LTRIM(STR(Locations.Id)) ORDER BY tblAllLoads.WS_Id</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Location_Id" ColumnName="" DataSourceName="" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Location_Id" Precision="0" Scale="0" Size="4" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="SelectedDate" ColumnName="" DataSourceName="" DataTypeServer="unknown" DbType="DateTime" Direction="Input" ParameterName="@SelectedDate" Precision="0" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="WS_Id" DataSetColumn="WS_Id" />
+              <Mapping SourceColumn="UID" DataSetColumn="UID" />
+              <Mapping SourceColumn="Location_Id" DataSetColumn="Location_Id" />
+              <Mapping SourceColumn="WeightSheetDate" DataSetColumn="WeightSheetDate" />
+              <Mapping SourceColumn="Loads" DataSetColumn="Loads" />
+              <Mapping SourceColumn="Crop_Id" DataSetColumn="Crop_Id" />
+              <Mapping SourceColumn="Variety_Id" DataSetColumn="Variety_Id" />
+              <Mapping SourceColumn="LoadType" DataSetColumn="LoadType" />
+              <Mapping SourceColumn="Crop" DataSetColumn="Crop" />
+              <Mapping SourceColumn="Variety" DataSetColumn="Variety" />
+              <Mapping SourceColumn="Net" DataSetColumn="Net" />
+              <Mapping SourceColumn="Location" DataSetColumn="Location" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="DailyIntakeTotalForAllSitesTableAdapter" GeneratorDataComponentClassName="DailyIntakeTotalForAllSitesTableAdapter" Name="DailyIntakeTotalForAllSites" UserDataComponentName="DailyIntakeTotalForAllSitesTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Web.config)" DbObjectName="SELECT SUM(ABS(Loads.Weight_In - Loads.Weight_Out)) AS Net, COUNT(*) AS Loads FROM Loads INNER JOIN Inbound_Loads ON Loads.UID = Inbound_Loads.Load_UID INNER JOIN Weight_Sheets INNER JOIN Weight_Inbound_Loads ON Weight_Sheets.UID = Weight_Inbound_Loads.Weight_Sheet_UID ON Inbound_Loads.WS_UID = Weight_Sheets.UID WHERE (Loads.Void = 0) AND (DATEDIFF(day, Loads.Time_Out, @SelectedDate) = 0)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Loads, Net, Net / 60 AS Bushels
+FROM            (SELECT        SUM(ABS(Loads.Weight_In - Loads.Weight_Out)) AS Net, COUNT(*) AS Loads
+                          FROM            Loads INNER JOIN
+                                                    Inbound_Loads ON Loads.UID = Inbound_Loads.Load_UID INNER JOIN
+                                                    Weight_Sheets INNER JOIN
+                                                    Weight_Inbound_Loads ON Weight_Sheets.UID = Weight_Inbound_Loads.Weight_Sheet_UID ON Inbound_Loads.WS_UID = Weight_Sheets.UID
+                          WHERE        (Loads.Void = 0) AND (DATEDIFF(day, Loads.Time_Out, @SelectedDate) = 0)) AS tbl</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="SelectedDate" ColumnName="" DataSourceName="" DataTypeServer="unknown" DbType="DateTime" Direction="Input" ParameterName="@SelectedDate" Precision="0" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Loads" DataSetColumn="Loads" />
+              <Mapping SourceColumn="Net" DataSetColumn="Net" />
+              <Mapping SourceColumn="Bushels" DataSetColumn="Bushels" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="DailyTransferTotalsForAllSitesTableAdapter" GeneratorDataComponentClassName="DailyTransferTotalsForAllSitesTableAdapter" Name="DailyTransferTotalsForAllSites" UserDataComponentName="DailyTransferTotalsForAllSitesTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Web.config)" DbObjectName="SELECT SUM(ABS(Loads.Weight_In - Loads.Weight_Out)) AS Net, COUNT(*) AS Loads FROM Variety RIGHT OUTER JOIN Transfer_Loads INNER JOIN Loads ON Transfer_Loads.Load_UID = Loads.UID INNER JOIN Weight_Sheet_Transfer_Loads ON Transfer_Loads.Transfer_Load_UID = Weight_Sheet_Transfer_Loads.UID ON Variety.Id = Weight_Sheet_Transfer_Loads.Variety_Id WHERE (Loads.Void = 0) AND (Loads.Time_Out IS NOT NULL) AND (DATEDIFF(day, Loads.Time_Out, @SelectedDate) = 0)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Loads, Net, Net / 60 AS Bushels
+FROM            (SELECT        SUM(ABS(Loads.Weight_In - Loads.Weight_Out)) AS Net, COUNT(*) AS Loads
+                          FROM            Variety RIGHT OUTER JOIN
+                                                    Transfer_Loads INNER JOIN
+                                                    Loads ON Transfer_Loads.Load_UID = Loads.UID INNER JOIN
+                                                    Weight_Sheet_Transfer_Loads ON Transfer_Loads.Transfer_Load_UID = Weight_Sheet_Transfer_Loads.UID ON Variety.Id = Weight_Sheet_Transfer_Loads.Variety_Id
+                          WHERE        (Loads.Void = 0) AND (Loads.Time_Out IS NOT NULL) AND (DATEDIFF(day, Loads.Time_Out, @SelectedDate) = 0)) AS tblTransfer</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="SelectedDate" ColumnName="" DataSourceName="" DataTypeServer="unknown" DbType="DateTime" Direction="Input" ParameterName="@SelectedDate" Precision="0" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Loads" DataSetColumn="Loads" />
+              <Mapping SourceColumn="Net" DataSetColumn="Net" />
+              <Mapping SourceColumn="Bushels" DataSetColumn="Bushels" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="IntakeTransferLoadsTableAdapter" GeneratorDataComponentClassName="IntakeTransferLoadsTableAdapter" Name="IntakeTransferLoads" UserDataComponentName="IntakeTransferLoadsTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Web.config)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT 
+    Locations.Description AS Location, 
+    tbl.Location_Id, 
+    Crops.Description AS Crop, 
+    tbl.Crop_Id, 
+    SUM(tbl.Net) / Unit_Of_Measure.Factor AS Net, 
+    SUM(tbl.Loads) AS Loads, 
+    SUM(tbl.Intake) / Unit_Of_Measure.Factor AS Intake, 
+    CASE WHEN Outbound_Location = 0 THEN '' ELSE Locations_1.Description END AS Outbound_Location, 
+    tbl.Outbound_Location AS Outbound_Location_Id, 
+    SUM(tbl.Transfered) / Unit_Of_Measure.Factor AS Transfered, 
+    Unit_Of_Measure.Description AS UOM, 
+    SUM(CASE WHEN Outbound_Location = 0 THEN Loads ELSE 0 END) AS IntakeLoads, 
+    SUM(CASE WHEN Outbound_Location = 0 THEN 0 ELSE Loads END) AS TransferLoads
+FROM 
+    (SELECT 
+        Location_Id, 
+        Net, 
+        Outbound_Location, 
+        Crop_Id, 
+        Creation_Date, 
+        Loads, 
+        CASE WHEN Net &lt; 0 THEN ABS(Net) ELSE 0 END AS Transfered, 
+        CASE WHEN Net &gt;= 0 THEN ABS(Net) ELSE 0 END AS Intake
+     FROM 
+        vwLoadsByCropAndDate
+     WHERE 
+        (DATEDIFF(day, @EndDate, Creation_Date) &gt;= 0) 
+        AND (DATEDIFF(day, Creation_Date, @StartDate) &gt;= 0)) AS tbl 
+INNER JOIN
+    Crops ON tbl.Crop_Id = Crops.Id 
+INNER JOIN
+    Locations ON tbl.Location_Id = Locations.Id 
+LEFT JOIN
+    Locations AS Locations_1 ON tbl.Outbound_Location = Locations_1.Id 
+INNER JOIN
+    Unit_Of_Measure ON Crops.Unit_Of_Measure = Unit_Of_Measure.Code
+GROUP BY 
+    Locations.Description, 
+    tbl.Location_Id, 
+    Crops.Description, 
+    tbl.Crop_Id, 
+    tbl.Outbound_Location, 
+    Unit_Of_Measure.Description, 
+    Locations_1.Description, 
+    Unit_Of_Measure.Factor
+HAVING 
+    (tbl.Location_Id = ISNULL(@Location_Id, tbl.Location_Id));
+</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="true" AutogeneratedName="Location_Id" ColumnName="Location_Id" DataSourceName="SELECT Location_Id, Net, Outbound_Location, Crop_Id, Creation_Date, Loads, CASE WHEN Net &lt; 0 THEN ABS(Net) ELSE 0 END AS Transfered, CASE WHEN Net &gt;= 0 THEN ABS(Net) ELSE 0 END AS Intake FROM vwLoadsByCropAndDate WHERE (DATEDIFF(day, @EndDate, Creation_Date) &gt;= 0) AND (DATEDIFF(day, Creation_Date, @StartDate) &gt;= 0)" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Location_Id" Precision="0" Scale="0" Size="4" SourceColumn="Location_Id" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="EndDate" ColumnName="" DataSourceName="" DataTypeServer="unknown" DbType="DateTime" Direction="Input" ParameterName="@EndDate" Precision="0" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="StartDate" ColumnName="" DataSourceName="" DataTypeServer="unknown" DbType="DateTime" Direction="Input" ParameterName="@StartDate" Precision="0" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Location" DataSetColumn="Location" />
+              <Mapping SourceColumn="Location_Id" DataSetColumn="Location_Id" />
+              <Mapping SourceColumn="Crop" DataSetColumn="Crop" />
+              <Mapping SourceColumn="Crop_Id" DataSetColumn="Crop_Id" />
+              <Mapping SourceColumn="Net" DataSetColumn="Net" />
+              <Mapping SourceColumn="Loads" DataSetColumn="Loads" />
+              <Mapping SourceColumn="Intake" DataSetColumn="Intake" />
+              <Mapping SourceColumn="Outbound_Location" DataSetColumn="Outbound_Location" />
+              <Mapping SourceColumn="Outbound_Location_Id" DataSetColumn="Outbound_Location_Id" />
+              <Mapping SourceColumn="Transfered" DataSetColumn="Transfered" />
+              <Mapping SourceColumn="UOM" DataSetColumn="UOM" />
+              <Mapping SourceColumn="IntakeLoads" DataSetColumn="IntakeLoads" />
+              <Mapping SourceColumn="TransferLoads" DataSetColumn="TransferLoads" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+        </Tables>
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="TallyDataset" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msdata:EnforceConstraints="False" msprop:Generator_UserDSName="TallyDataset" msprop:Generator_DataSetName="TallyDataset">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="CurrentIntakeTally" msprop:Generator_RowEvHandlerName="CurrentIntakeTallyRowChangeEventHandler" msprop:Generator_RowDeletedName="CurrentIntakeTallyRowDeleted" msprop:Generator_RowDeletingName="CurrentIntakeTallyRowDeleting" msprop:Generator_RowEvArgName="CurrentIntakeTallyRowChangeEvent" msprop:Generator_TablePropName="CurrentIntakeTally" msprop:Generator_RowChangedName="CurrentIntakeTallyRowChanged" msprop:Generator_UserTableName="CurrentIntakeTally" msprop:Generator_RowChangingName="CurrentIntakeTallyRowChanging" msprop:Generator_RowClassName="CurrentIntakeTallyRow" msprop:Generator_TableClassName="CurrentIntakeTallyDataTable" msprop:Generator_TableVarName="tableCurrentIntakeTally">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="District" msprop:Generator_ColumnPropNameInTable="DistrictColumn" msprop:Generator_ColumnPropNameInRow="District" msprop:Generator_UserColumnName="District" msprop:Generator_ColumnVarNameInTable="columnDistrict">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location" msprop:Generator_ColumnPropNameInTable="LocationColumn" msprop:Generator_ColumnPropNameInRow="Location" msprop:Generator_UserColumnName="Location" msprop:Generator_ColumnVarNameInTable="columnLocation">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location_Id" msprop:Generator_ColumnPropNameInTable="Location_IdColumn" msprop:Generator_ColumnPropNameInRow="Location_Id" msprop:Generator_UserColumnName="Location_Id" msprop:Generator_ColumnVarNameInTable="columnLocation_Id" type="xs:int" />
+              <xs:element name="Commodity" msprop:Generator_ColumnPropNameInTable="CommodityColumn" msprop:Generator_ColumnPropNameInRow="Commodity" msprop:Generator_UserColumnName="Commodity" msprop:Generator_ColumnVarNameInTable="columnCommodity">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Commodity_Id" msprop:Generator_ColumnPropNameInTable="Commodity_IdColumn" msprop:Generator_ColumnPropNameInRow="Commodity_Id" msprop:Generator_UserColumnName="Commodity_Id" msprop:Generator_ColumnVarNameInTable="columnCommodity_Id" type="xs:int" minOccurs="0" />
+              <xs:element name="Units" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="UnitsColumn" msprop:Generator_ColumnPropNameInRow="Units" msprop:Generator_UserColumnName="Units" msprop:Generator_ColumnVarNameInTable="columnUnits" type="xs:int" minOccurs="0" />
+              <xs:element name="UOM" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="UOMColumn" msprop:Generator_ColumnPropNameInRow="UOM" msprop:Generator_UserColumnName="UOM" msprop:Generator_ColumnVarNameInTable="columnUOM" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="7" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="AvgSec" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="AvgSecColumn" msprop:Generator_ColumnPropNameInRow="AvgSec" msprop:Generator_UserColumnName="AvgSec" msprop:Generator_ColumnVarNameInTable="columnAvgSec" type="xs:int" minOccurs="0" />
+              <xs:element name="Net" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="NetColumn" msprop:Generator_ColumnPropNameInRow="Net" msprop:Generator_UserColumnName="Net" msprop:Generator_ColumnVarNameInTable="columnNet" type="xs:int" minOccurs="0" />
+              <xs:element name="Loads" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="LoadsColumn" msprop:Generator_ColumnPropNameInRow="Loads" msprop:Generator_UserColumnName="Loads" msprop:Generator_ColumnVarNameInTable="columnLoads" type="xs:int" minOccurs="0" />
+              <xs:element name="AverageTime" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="AverageTimeColumn" msprop:Generator_ColumnPropNameInRow="AverageTime" msprop:Generator_UserColumnName="AverageTime" msprop:Generator_ColumnVarNameInTable="columnAverageTime" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="CurrentTransferTalley" msprop:Generator_RowEvHandlerName="CurrentTransferTalleyRowChangeEventHandler" msprop:Generator_RowDeletedName="CurrentTransferTalleyRowDeleted" msprop:Generator_RowDeletingName="CurrentTransferTalleyRowDeleting" msprop:Generator_RowEvArgName="CurrentTransferTalleyRowChangeEvent" msprop:Generator_TablePropName="CurrentTransferTalley" msprop:Generator_RowChangedName="CurrentTransferTalleyRowChanged" msprop:Generator_UserTableName="CurrentTransferTalley" msprop:Generator_RowChangingName="CurrentTransferTalleyRowChanging" msprop:Generator_RowClassName="CurrentTransferTalleyRow" msprop:Generator_TableClassName="CurrentTransferTalleyDataTable" msprop:Generator_TableVarName="tableCurrentTransferTalley">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="CropUID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnPropNameInTable="CropUIDColumn" msprop:Generator_ColumnPropNameInRow="CropUID" msprop:Generator_UserColumnName="CropUID" msprop:Generator_ColumnVarNameInTable="columnCropUID" type="xs:string" />
+              <xs:element name="Location" msprop:Generator_ColumnPropNameInTable="LocationColumn" msprop:Generator_ColumnPropNameInRow="Location" msprop:Generator_UserColumnName="Location" msprop:Generator_ColumnVarNameInTable="columnLocation">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location_Id" msprop:Generator_ColumnPropNameInTable="Location_IdColumn" msprop:Generator_ColumnPropNameInRow="Location_Id" msprop:Generator_UserColumnName="Location_Id" msprop:Generator_ColumnVarNameInTable="columnLocation_Id" type="xs:int" />
+              <xs:element name="Commodity" msprop:Generator_ColumnPropNameInTable="CommodityColumn" msprop:Generator_ColumnPropNameInRow="Commodity" msprop:Generator_UserColumnName="Commodity" msprop:Generator_ColumnVarNameInTable="columnCommodity">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Commodity_Id" msprop:Generator_ColumnPropNameInTable="Commodity_IdColumn" msprop:Generator_ColumnPropNameInRow="Commodity_Id" msprop:Generator_UserColumnName="Commodity_Id" msprop:Generator_ColumnVarNameInTable="columnCommodity_Id" type="xs:int" />
+              <xs:element name="Net" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="NetColumn" msprop:Generator_ColumnPropNameInRow="Net" msprop:Generator_UserColumnName="Net" msprop:Generator_ColumnVarNameInTable="columnNet" type="xs:int" minOccurs="0" />
+              <xs:element name="Units" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="UnitsColumn" msprop:Generator_ColumnPropNameInRow="Units" msprop:Generator_UserColumnName="Units" msprop:Generator_ColumnVarNameInTable="columnUnits" type="xs:int" minOccurs="0" />
+              <xs:element name="UOM" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="UOMColumn" msprop:Generator_ColumnPropNameInRow="UOM" msprop:Generator_UserColumnName="UOM" msprop:Generator_ColumnVarNameInTable="columnUOM" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="7" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Source" msprop:Generator_ColumnPropNameInTable="SourceColumn" msprop:Generator_ColumnPropNameInRow="Source" msprop:Generator_UserColumnName="Source" msprop:Generator_ColumnVarNameInTable="columnSource">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Source_Id" msprop:Generator_ColumnPropNameInTable="Source_IdColumn" msprop:Generator_ColumnPropNameInRow="Source_Id" msprop:Generator_UserColumnName="Source_Id" msprop:Generator_ColumnVarNameInTable="columnSource_Id" type="xs:int" />
+              <xs:element name="Variety_Id" msprop:Generator_ColumnPropNameInTable="Variety_IdColumn" msprop:Generator_ColumnPropNameInRow="Variety_Id" msprop:Generator_UserColumnName="Variety_Id" msprop:Generator_ColumnVarNameInTable="columnVariety_Id" type="xs:int" minOccurs="0" />
+              <xs:element name="District" msprop:Generator_ColumnPropNameInTable="DistrictColumn" msprop:Generator_ColumnPropNameInRow="District" msprop:Generator_UserColumnName="District" msprop:Generator_ColumnVarNameInTable="columnDistrict">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Variety" msprop:Generator_ColumnPropNameInTable="VarietyColumn" msprop:Generator_ColumnPropNameInRow="Variety" msprop:Generator_UserColumnName="Variety" msprop:Generator_ColumnVarNameInTable="columnVariety" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="100" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Loads" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="LoadsColumn" msprop:Generator_ColumnPropNameInRow="Loads" msprop:Generator_UserColumnName="Loads" msprop:Generator_ColumnVarNameInTable="columnLoads" type="xs:int" minOccurs="0" />
+              <xs:element name="AvgSec" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="AvgSecColumn" msprop:Generator_ColumnPropNameInRow="AvgSec" msprop:Generator_UserColumnName="AvgSec" msprop:Generator_ColumnVarNameInTable="columnAvgSec" type="xs:int" minOccurs="0" />
+              <xs:element name="AverageTime" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="AverageTimeColumn" msprop:Generator_ColumnPropNameInRow="AverageTime" msprop:Generator_UserColumnName="AverageTime" msprop:Generator_ColumnVarNameInTable="columnAverageTime" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="LastLoadReported" msprop:Generator_RowEvHandlerName="LastLoadReportedRowChangeEventHandler" msprop:Generator_RowDeletedName="LastLoadReportedRowDeleted" msprop:Generator_RowDeletingName="LastLoadReportedRowDeleting" msprop:Generator_RowEvArgName="LastLoadReportedRowChangeEvent" msprop:Generator_TablePropName="LastLoadReported" msprop:Generator_RowChangedName="LastLoadReportedRowChanged" msprop:Generator_UserTableName="LastLoadReported" msprop:Generator_RowChangingName="LastLoadReportedRowChanging" msprop:Generator_RowClassName="LastLoadReportedRow" msprop:Generator_TableClassName="LastLoadReportedDataTable" msprop:Generator_TableVarName="tableLastLoadReported">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Location" msprop:Generator_ColumnPropNameInTable="LocationColumn" msprop:Generator_ColumnPropNameInRow="Location" msprop:Generator_UserColumnName="Location" msprop:Generator_ColumnVarNameInTable="columnLocation">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Time_In" msprop:Generator_ColumnPropNameInTable="Time_InColumn" msprop:Generator_ColumnPropNameInRow="Time_In" msprop:Generator_UserColumnName="Time_In" msprop:Generator_ColumnVarNameInTable="columnTime_In" type="xs:dateTime" />
+              <xs:element name="Server_Name" msprop:Generator_ColumnPropNameInTable="Server_NameColumn" msprop:Generator_ColumnPropNameInRow="Server_Name" msprop:Generator_UserColumnName="Server_Name" msprop:Generator_ColumnVarNameInTable="columnServer_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location_Id" msprop:Generator_ColumnPropNameInTable="Location_IdColumn" msprop:Generator_ColumnPropNameInRow="Location_Id" msprop:Generator_UserColumnName="Location_Id" msprop:Generator_ColumnVarNameInTable="columnLocation_Id" type="xs:int" />
+              <xs:element name="Sequence_Id" msprop:Generator_ColumnPropNameInTable="Sequence_IdColumn" msprop:Generator_ColumnPropNameInRow="Sequence_Id" msprop:Generator_UserColumnName="Sequence_Id" msprop:Generator_ColumnVarNameInTable="columnSequence_Id" type="xs:int" />
+              <xs:element name="LastLoadId" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="LastLoadIdColumn" msprop:Generator_ColumnPropNameInRow="LastLoadId" msprop:Generator_UserColumnName="LastLoadId" msprop:Generator_ColumnVarNameInTable="columnLastLoadId" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="DailyLoadCountByCrop" msprop:Generator_RowEvHandlerName="DailyLoadCountByCropRowChangeEventHandler" msprop:Generator_RowDeletedName="DailyLoadCountByCropRowDeleted" msprop:Generator_RowDeletingName="DailyLoadCountByCropRowDeleting" msprop:Generator_RowEvArgName="DailyLoadCountByCropRowChangeEvent" msprop:Generator_TablePropName="DailyLoadCountByCrop" msprop:Generator_RowChangedName="DailyLoadCountByCropRowChanged" msprop:Generator_UserTableName="DailyLoadCountByCrop" msprop:Generator_RowChangingName="DailyLoadCountByCropRowChanging" msprop:Generator_RowClassName="DailyLoadCountByCropRow" msprop:Generator_TableClassName="DailyLoadCountByCropDataTable" msprop:Generator_TableVarName="tableDailyLoadCountByCrop">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Loads" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="LoadsColumn" msprop:Generator_ColumnPropNameInRow="Loads" msprop:Generator_UserColumnName="Loads" msprop:Generator_ColumnVarNameInTable="columnLoads" type="xs:int" minOccurs="0" />
+              <xs:element name="Crop" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="CropColumn" msprop:Generator_ColumnPropNameInRow="Crop" msprop:Generator_UserColumnName="Crop" msprop:Generator_ColumnVarNameInTable="columnCrop" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="268" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Variety" msprop:Generator_ColumnPropNameInTable="VarietyColumn" msprop:Generator_ColumnPropNameInRow="Variety" msprop:Generator_UserColumnName="Variety" msprop:Generator_ColumnVarNameInTable="columnVariety" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="100" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="LocationColumn" msprop:Generator_ColumnPropNameInRow="Location" msprop:Generator_UserColumnName="Location" msprop:Generator_ColumnVarNameInTable="columnLocation" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="63" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="SelectedDate" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="SelectedDateColumn" msprop:Generator_ColumnPropNameInRow="SelectedDate" msprop:Generator_UserColumnName="SelectedDate" msprop:Generator_ColumnVarNameInTable="columnSelectedDate" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="10" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="WeightSeriesByLocationDate" msprop:Generator_RowEvHandlerName="WeightSeriesByLocationDateRowChangeEventHandler" msprop:Generator_RowDeletedName="WeightSeriesByLocationDateRowDeleted" msprop:Generator_RowDeletingName="WeightSeriesByLocationDateRowDeleting" msprop:Generator_RowEvArgName="WeightSeriesByLocationDateRowChangeEvent" msprop:Generator_TablePropName="WeightSeriesByLocationDate" msprop:Generator_RowChangedName="WeightSeriesByLocationDateRowChanged" msprop:Generator_UserTableName="WeightSeriesByLocationDate" msprop:Generator_RowChangingName="WeightSeriesByLocationDateRowChanging" msprop:Generator_RowClassName="WeightSeriesByLocationDateRow" msprop:Generator_TableClassName="WeightSeriesByLocationDateDataTable" msprop:Generator_TableVarName="tableWeightSeriesByLocationDate">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="WS_Id" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="WS_IdColumn" msprop:Generator_ColumnPropNameInRow="WS_Id" msprop:Generator_UserColumnName="WS_Id" msprop:Generator_ColumnVarNameInTable="columnWS_Id" type="xs:long" minOccurs="0" />
+              <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_UserColumnName="UID" msprop:Generator_ColumnVarNameInTable="columnUID" type="xs:string" minOccurs="0" />
+              <xs:element name="Location_Id" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="Location_IdColumn" msprop:Generator_ColumnPropNameInRow="Location_Id" msprop:Generator_UserColumnName="Location_Id" msprop:Generator_ColumnVarNameInTable="columnLocation_Id" type="xs:int" minOccurs="0" />
+              <xs:element name="WeightSheetDate" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="WeightSheetDateColumn" msprop:Generator_ColumnPropNameInRow="WeightSheetDate" msprop:Generator_UserColumnName="WeightSheetDate" msprop:Generator_ColumnVarNameInTable="columnWeightSheetDate" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="10" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Loads" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="LoadsColumn" msprop:Generator_ColumnPropNameInRow="Loads" msprop:Generator_UserColumnName="Loads" msprop:Generator_ColumnVarNameInTable="columnLoads" type="xs:int" minOccurs="0" />
+              <xs:element name="Crop_Id" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="Crop_IdColumn" msprop:Generator_ColumnPropNameInRow="Crop_Id" msprop:Generator_UserColumnName="Crop_Id" msprop:Generator_ColumnVarNameInTable="columnCrop_Id" type="xs:int" minOccurs="0" />
+              <xs:element name="Variety_Id" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="Variety_IdColumn" msprop:Generator_ColumnPropNameInRow="Variety_Id" msprop:Generator_UserColumnName="Variety_Id" msprop:Generator_ColumnVarNameInTable="columnVariety_Id" type="xs:int" minOccurs="0" />
+              <xs:element name="LoadType" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="LoadTypeColumn" msprop:Generator_ColumnPropNameInRow="LoadType" msprop:Generator_UserColumnName="LoadType" msprop:Generator_ColumnVarNameInTable="columnLoadType" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="8" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Crop" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="CropColumn" msprop:Generator_ColumnPropNameInRow="Crop" msprop:Generator_UserColumnName="Crop" msprop:Generator_ColumnVarNameInTable="columnCrop" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="268" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Variety" msprop:Generator_ColumnPropNameInTable="VarietyColumn" msprop:Generator_ColumnPropNameInRow="Variety" msprop:Generator_UserColumnName="Variety" msprop:Generator_ColumnVarNameInTable="columnVariety" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="100" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Net" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="NetColumn" msprop:Generator_ColumnPropNameInRow="Net" msprop:Generator_UserColumnName="Net" msprop:Generator_ColumnVarNameInTable="columnNet" type="xs:int" minOccurs="0" />
+              <xs:element name="Location" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="LocationColumn" msprop:Generator_ColumnPropNameInRow="Location" msprop:Generator_UserColumnName="Location" msprop:Generator_ColumnVarNameInTable="columnLocation" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="63" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="DailyIntakeTotalForAllSites" msprop:Generator_RowEvHandlerName="DailyIntakeTotalForAllSitesRowChangeEventHandler" msprop:Generator_RowDeletedName="DailyIntakeTotalForAllSitesRowDeleted" msprop:Generator_RowDeletingName="DailyIntakeTotalForAllSitesRowDeleting" msprop:Generator_RowEvArgName="DailyIntakeTotalForAllSitesRowChangeEvent" msprop:Generator_TablePropName="DailyIntakeTotalForAllSites" msprop:Generator_RowChangedName="DailyIntakeTotalForAllSitesRowChanged" msprop:Generator_UserTableName="DailyIntakeTotalForAllSites" msprop:Generator_RowChangingName="DailyIntakeTotalForAllSitesRowChanging" msprop:Generator_RowClassName="DailyIntakeTotalForAllSitesRow" msprop:Generator_TableClassName="DailyIntakeTotalForAllSitesDataTable" msprop:Generator_TableVarName="tableDailyIntakeTotalForAllSites">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Loads" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="LoadsColumn" msprop:Generator_ColumnPropNameInRow="Loads" msprop:Generator_UserColumnName="Loads" msprop:Generator_ColumnVarNameInTable="columnLoads" type="xs:int" minOccurs="0" />
+              <xs:element name="Net" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="NetColumn" msprop:Generator_ColumnPropNameInRow="Net" msprop:Generator_UserColumnName="Net" msprop:Generator_ColumnVarNameInTable="columnNet" type="xs:int" minOccurs="0" />
+              <xs:element name="Bushels" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="BushelsColumn" msprop:Generator_ColumnPropNameInRow="Bushels" msprop:Generator_UserColumnName="Bushels" msprop:Generator_ColumnVarNameInTable="columnBushels" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="DailyTransferTotalsForAllSites" msprop:Generator_RowEvHandlerName="DailyTransferTotalsForAllSitesRowChangeEventHandler" msprop:Generator_RowDeletedName="DailyTransferTotalsForAllSitesRowDeleted" msprop:Generator_RowDeletingName="DailyTransferTotalsForAllSitesRowDeleting" msprop:Generator_RowEvArgName="DailyTransferTotalsForAllSitesRowChangeEvent" msprop:Generator_TablePropName="DailyTransferTotalsForAllSites" msprop:Generator_RowChangedName="DailyTransferTotalsForAllSitesRowChanged" msprop:Generator_UserTableName="DailyTransferTotalsForAllSites" msprop:Generator_RowChangingName="DailyTransferTotalsForAllSitesRowChanging" msprop:Generator_RowClassName="DailyTransferTotalsForAllSitesRow" msprop:Generator_TableClassName="DailyTransferTotalsForAllSitesDataTable" msprop:Generator_TableVarName="tableDailyTransferTotalsForAllSites">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Loads" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="LoadsColumn" msprop:Generator_ColumnPropNameInRow="Loads" msprop:Generator_UserColumnName="Loads" msprop:Generator_ColumnVarNameInTable="columnLoads" type="xs:int" minOccurs="0" />
+              <xs:element name="Net" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="NetColumn" msprop:Generator_ColumnPropNameInRow="Net" msprop:Generator_UserColumnName="Net" msprop:Generator_ColumnVarNameInTable="columnNet" type="xs:int" minOccurs="0" />
+              <xs:element name="Bushels" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="BushelsColumn" msprop:Generator_ColumnPropNameInRow="Bushels" msprop:Generator_UserColumnName="Bushels" msprop:Generator_ColumnVarNameInTable="columnBushels" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="IntakeTransferLoads" msprop:Generator_RowEvHandlerName="IntakeTransferLoadsRowChangeEventHandler" msprop:Generator_RowDeletedName="IntakeTransferLoadsRowDeleted" msprop:Generator_RowDeletingName="IntakeTransferLoadsRowDeleting" msprop:Generator_RowEvArgName="IntakeTransferLoadsRowChangeEvent" msprop:Generator_TablePropName="IntakeTransferLoads" msprop:Generator_RowChangedName="IntakeTransferLoadsRowChanged" msprop:Generator_UserTableName="IntakeTransferLoads" msprop:Generator_RowChangingName="IntakeTransferLoadsRowChanging" msprop:Generator_RowClassName="IntakeTransferLoadsRow" msprop:Generator_TableClassName="IntakeTransferLoadsDataTable" msprop:Generator_TableVarName="tableIntakeTransferLoads">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Location" msprop:Generator_ColumnPropNameInTable="LocationColumn" msprop:Generator_ColumnPropNameInRow="Location" msprop:Generator_UserColumnName="Location" msprop:Generator_ColumnVarNameInTable="columnLocation">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location_Id" msprop:Generator_ColumnPropNameInTable="Location_IdColumn" msprop:Generator_ColumnPropNameInRow="Location_Id" msprop:Generator_UserColumnName="Location_Id" msprop:Generator_ColumnVarNameInTable="columnLocation_Id" type="xs:int" />
+              <xs:element name="Crop" msprop:Generator_ColumnPropNameInTable="CropColumn" msprop:Generator_ColumnPropNameInRow="Crop" msprop:Generator_UserColumnName="Crop" msprop:Generator_ColumnVarNameInTable="columnCrop">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Crop_Id" msprop:Generator_ColumnPropNameInTable="Crop_IdColumn" msprop:Generator_ColumnPropNameInRow="Crop_Id" msprop:Generator_UserColumnName="Crop_Id" msprop:Generator_ColumnVarNameInTable="columnCrop_Id" type="xs:int" minOccurs="0" />
+              <xs:element name="Net" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="NetColumn" msprop:Generator_ColumnPropNameInRow="Net" msprop:Generator_UserColumnName="Net" msprop:Generator_ColumnVarNameInTable="columnNet" type="xs:float" minOccurs="0" />
+              <xs:element name="Loads" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="LoadsColumn" msprop:Generator_ColumnPropNameInRow="Loads" msprop:Generator_UserColumnName="Loads" msprop:Generator_ColumnVarNameInTable="columnLoads" type="xs:int" minOccurs="0" />
+              <xs:element name="Intake" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="IntakeColumn" msprop:Generator_ColumnPropNameInRow="Intake" msprop:Generator_UserColumnName="Intake" msprop:Generator_ColumnVarNameInTable="columnIntake" type="xs:float" minOccurs="0" />
+              <xs:element name="Outbound_Location" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="Outbound_LocationColumn" msprop:Generator_ColumnPropNameInRow="Outbound_Location" msprop:Generator_UserColumnName="Outbound_Location" msprop:Generator_ColumnVarNameInTable="columnOutbound_Location" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Outbound_Location_Id" msprop:Generator_ColumnPropNameInTable="Outbound_Location_IdColumn" msprop:Generator_ColumnPropNameInRow="Outbound_Location_Id" msprop:Generator_UserColumnName="Outbound_Location_Id" msprop:Generator_ColumnVarNameInTable="columnOutbound_Location_Id" type="xs:int" />
+              <xs:element name="Transfered" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="TransferedColumn" msprop:Generator_ColumnPropNameInRow="Transfered" msprop:Generator_UserColumnName="Transfered" msprop:Generator_ColumnVarNameInTable="columnTransfered" type="xs:float" minOccurs="0" />
+              <xs:element name="UOM" msprop:Generator_ColumnPropNameInTable="UOMColumn" msprop:Generator_ColumnPropNameInRow="UOM" msprop:Generator_UserColumnName="UOM" msprop:Generator_ColumnVarNameInTable="columnUOM">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="10" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="IntakeLoads" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="IntakeLoadsColumn" msprop:Generator_ColumnPropNameInRow="IntakeLoads" msprop:Generator_UserColumnName="IntakeLoads" msprop:Generator_ColumnVarNameInTable="columnIntakeLoads" type="xs:int" minOccurs="0" />
+              <xs:element name="TransferLoads" msdata:ReadOnly="true" msprop:Generator_ColumnPropNameInTable="TransferLoadsColumn" msprop:Generator_ColumnPropNameInRow="TransferLoads" msprop:Generator_UserColumnName="TransferLoads" msprop:Generator_ColumnVarNameInTable="columnTransferLoads" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

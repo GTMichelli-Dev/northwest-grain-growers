@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="ScaleDataSet" targetNamespace="http://tempuri.org/ScaleDataSet.xsd" xmlns:mstns="http://tempuri.org/ScaleDataSet.xsd" xmlns="http://tempuri.org/ScaleDataSet.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections />
+        <Tables />
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="ScaleDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:Generator_DataSetName="ScaleDataSet" msprop:Generator_UserDSName="ScaleDataSet">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="Scales" msprop:Generator_TableClassName="ScalesDataTable" msprop:Generator_TableVarName="tableScales" msprop:Generator_TablePropName="Scales" msprop:Generator_RowDeletingName="ScalesRowDeleting" msprop:Generator_RowChangingName="ScalesRowChanging" msprop:Generator_RowEvHandlerName="ScalesRowChangeEventHandler" msprop:Generator_RowDeletedName="ScalesRowDeleted" msprop:Generator_UserTableName="Scales" msprop:Generator_RowChangedName="ScalesRowChanged" msprop:Generator_RowEvArgName="ScalesRowChangeEvent" msprop:Generator_RowClassName="ScalesRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Description" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description" type="xs:string" minOccurs="0" />
+              <xs:element name="Weight" msprop:Generator_ColumnVarNameInTable="columnWeight" msprop:Generator_ColumnPropNameInRow="Weight" msprop:Generator_ColumnPropNameInTable="WeightColumn" msprop:Generator_UserColumnName="Weight" type="xs:int" minOccurs="0" />
+              <xs:element name="Motion" msprop:Generator_ColumnVarNameInTable="columnMotion" msprop:Generator_ColumnPropNameInRow="Motion" msprop:Generator_ColumnPropNameInTable="MotionColumn" msprop:Generator_UserColumnName="Motion" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Valid" msprop:Generator_ColumnVarNameInTable="columnValid" msprop:Generator_ColumnPropNameInRow="Valid" msprop:Generator_ColumnPropNameInTable="ValidColumn" msprop:Generator_UserColumnName="Valid" type="xs:boolean" minOccurs="0" />
+              <xs:element name="ReadOnly" msprop:Generator_ColumnVarNameInTable="columnReadOnly" msprop:Generator_ColumnPropNameInRow="ReadOnly" msprop:Generator_ColumnPropNameInTable="ReadOnlyColumn" msprop:Generator_UserColumnName="ReadOnly" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Status" msprop:Generator_ColumnVarNameInTable="columnStatus" msprop:Generator_ColumnPropNameInRow="Status" msprop:Generator_ColumnPropNameInTable="StatusColumn" msprop:Generator_UserColumnName="Status" type="xs:string" minOccurs="0" />
+              <xs:element name="Index" msprop:Generator_ColumnVarNameInTable="columnIndex" msprop:Generator_ColumnPropNameInRow="Index" msprop:Generator_ColumnPropNameInTable="IndexColumn" msprop:Generator_UserColumnName="Index" type="xs:int" minOccurs="0" />
+              <xs:element name="RowCssClass" msprop:Generator_ColumnVarNameInTable="columnRowCssClass" msprop:Generator_ColumnPropNameInRow="RowCssClass" msprop:Generator_ColumnPropNameInTable="RowCssClassColumn" msprop:Generator_UserColumnName="RowCssClass" type="xs:string" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

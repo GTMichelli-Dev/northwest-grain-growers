@@ -1,0 +1,21 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Scale_Service.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="Scale_1_Address" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">192.168.8.14</Value>
+    </Setting>
+    <Setting Name="Scale_2_Address" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">192.168.8.14</Value>
+    </Setting>
+    <Setting Name="Scale1_Port" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">10001</Value>
+    </Setting>
+    <Setting Name="Scale2_Port" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">10002</Value>
+    </Setting>
+    <Setting Name="Scale_Service_Truck_Scale_Connection_Scale_Connection" Type="(Web Service URL)" Scope="Application">
+      <Value Profile="(Default)">http://ctap-scale/Scale_Connection.asmx</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

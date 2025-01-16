@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="99418f32-7d4e-4abb-9af5-0fa0c7f0fb3c" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+  <ClientOptions>
+    <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
+    <EnableDataBinding>true</EnableDataBinding>
+    <ExcludedTypes />
+    <ImportXmlTypes>false</ImportXmlTypes>
+    <GenerateInternalTypes>false</GenerateInternalTypes>
+    <GenerateMessageContracts>false</GenerateMessageContracts>
+    <NamespaceMappings />
+    <CollectionMappings />
+    <GenerateSerializableTypes>true</GenerateSerializableTypes>
+    <Serializer>Auto</Serializer>
+    <UseSerializerForFaults>true</UseSerializerForFaults>
+    <ReferenceAllAssemblies>true</ReferenceAllAssemblies>
+    <ReferencedAssemblies />
+    <ReferencedDataContractTypes />
+    <ServiceContractMappings />
+  </ClientOptions>
+  <MetadataSources>
+    <MetadataSource Address="http://localhost/LocalWebService.asmx" Protocol="http" SourceId="1" />
+  </MetadataSources>
+  <Metadata>
+    <MetadataFile FileName="LocalWebService1.disco" MetadataType="Disco" ID="d53bf835-a6aa-4ca5-8566-6a231bf84440" SourceId="1" SourceUrl="http://localhost/LocalWebService.asmx?disco" />
+    <MetadataFile FileName="LocalDataSet1.xsd" MetadataType="Schema" ID="260bea4f-92fc-4f3e-ac9b-7f94c7ece35e" SourceId="1" SourceUrl="http://localhost/LocalWebService.asmx?schema=LocalDataSet" />
+    <MetadataFile FileName="LocalWebService1.wsdl" MetadataType="Wsdl" ID="8bfa5c17-0ea5-41ee-a7ba-7859e3f30e9b" SourceId="1" SourceUrl="http://localhost/LocalWebService.asmx?wsdl" />
+  </Metadata>
+  <Extensions>
+    <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
+    <ExtensionFile FileName="configuration.svcinfo" Name="configuration.svcinfo" />
+  </Extensions>
+</ReferenceGroup>

@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:s1="http://microsoft.com/wsdl/types/" xmlns:tns="http://nwgglocal/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" targetNamespace="http://nwgglocal/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://nwgglocal/">
+      <s:import namespace="http://microsoft.com/wsdl/types/" />
+      <s:import namespace="http://tempuri.org/LocalDataSet.xsd" />
+      <s:import schemaLocation="http://wsppc001/LocalWebService.asmx?schema=LocalDataSet" namespace="http://tempuri.org/LocalDataSet.xsd" />
+      <s:element name="InboundTicketScanned">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="ScaleUID" type="s1:guid" />
+            <s:element minOccurs="1" maxOccurs="1" name="LoadID" type="s:long" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="InboundTicketScannedResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="InboundTicketScannedResult" type="tns:KioskResponse" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="KioskResponse">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="Success" type="s:boolean" />
+          <s:element minOccurs="0" maxOccurs="1" name="Message1" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Message2" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Message3" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetTime">
+        <s:complexType />
+      </s:element>
+      <s:element name="GetTimeResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetTimeResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetScales">
+        <s:complexType />
+      </s:element>
+      <s:element name="GetScalesResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetScalesResult">
+              <s:complexType>
+                <s:sequence>
+                  <s:any minOccurs="0" maxOccurs="unbounded" namespace="http://www.w3.org/2001/XMLSchema" processContents="lax" />
+                  <s:any minOccurs="1" namespace="urn:schemas-microsoft-com:xml-diffgram-v1" processContents="lax" />
+                </s:sequence>
+                <s:attribute fixed="http://tempuri.org/LocalDataSet.xsd" name="namespace" />
+                <s:attribute fixed="Weigh_ScalesDataTable" name="tableTypeName" />
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="AllScales">
+        <s:complexType />
+      </s:element>
+      <s:element name="AllScalesResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="AllScalesResult">
+              <s:complexType>
+                <s:sequence>
+                  <s:any minOccurs="0" maxOccurs="unbounded" namespace="http://www.w3.org/2001/XMLSchema" processContents="lax" />
+                  <s:any minOccurs="1" namespace="urn:schemas-microsoft-com:xml-diffgram-v1" processContents="lax" />
+                </s:sequence>
+                <s:attribute fixed="http://tempuri.org/LocalDataSet.xsd" name="namespace" />
+                <s:attribute fixed="All_Weigh_ScalesDataTable" name="tableTypeName" />
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="UpdateScales">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="weigh_ScalesDataTable">
+              <s:complexType>
+                <s:sequence>
+                  <s:any minOccurs="0" maxOccurs="unbounded" namespace="http://www.w3.org/2001/XMLSchema" processContents="lax" />
+                  <s:any minOccurs="1" namespace="urn:schemas-microsoft-com:xml-diffgram-v1" processContents="lax" />
+                </s:sequence>
+                <s:attribute fixed="http://tempuri.org/LocalDataSet.xsd" name="namespace" />
+                <s:attribute fixed="Weigh_ScalesDataTable" name="tableTypeName" />
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="UpdateScalesResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="UpdateScalesResult" type="s:dateTime" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="RefreshScales">
+        <s:complexType />
+      </s:element>
+      <s:element name="RefreshScalesResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="RefreshScalesResult" type="s:dateTime" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="LastScaleModification">
+        <s:complexType />
+      </s:element>
+      <s:element name="LastScaleModificationResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="LastScaleModificationResult" type="s:dateTime" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://microsoft.com/wsdl/types/">
+      <s:simpleType name="guid">
+        <s:restriction base="s:string">
+          <s:pattern value="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" />
+        </s:restriction>
+      </s:simpleType>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="InboundTicketScannedSoapIn">
+    <wsdl:part name="parameters" element="tns:InboundTicketScanned" />
+  </wsdl:message>
+  <wsdl:message name="InboundTicketScannedSoapOut">
+    <wsdl:part name="parameters" element="tns:InboundTicketScannedResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetTimeSoapIn">
+    <wsdl:part name="parameters" element="tns:GetTime" />
+  </wsdl:message>
+  <wsdl:message name="GetTimeSoapOut">
+    <wsdl:part name="parameters" element="tns:GetTimeResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetScalesSoapIn">
+    <wsdl:part name="parameters" element="tns:GetScales" />
+  </wsdl:message>
+  <wsdl:message name="GetScalesSoapOut">
+    <wsdl:part name="parameters" element="tns:GetScalesResponse" />
+  </wsdl:message>
+  <wsdl:message name="AllScalesSoapIn">
+    <wsdl:part name="parameters" element="tns:AllScales" />
+  </wsdl:message>
+  <wsdl:message name="AllScalesSoapOut">
+    <wsdl:part name="parameters" element="tns:AllScalesResponse" />
+  </wsdl:message>
+  <wsdl:message name="UpdateScalesSoapIn">
+    <wsdl:part name="parameters" element="tns:UpdateScales" />
+  </wsdl:message>
+  <wsdl:message name="UpdateScalesSoapOut">
+    <wsdl:part name="parameters" element="tns:UpdateScalesResponse" />
+  </wsdl:message>
+  <wsdl:message name="RefreshScalesSoapIn">
+    <wsdl:part name="parameters" element="tns:RefreshScales" />
+  </wsdl:message>
+  <wsdl:message name="RefreshScalesSoapOut">
+    <wsdl:part name="parameters" element="tns:RefreshScalesResponse" />
+  </wsdl:message>
+  <wsdl:message name="LastScaleModificationSoapIn">
+    <wsdl:part name="parameters" element="tns:LastScaleModification" />
+  </wsdl:message>
+  <wsdl:message name="LastScaleModificationSoapOut">
+    <wsdl:part name="parameters" element="tns:LastScaleModificationResponse" />
+  </wsdl:message>
+  <wsdl:portType name="LocalWebServiceSoap">
+    <wsdl:operation name="InboundTicketScanned">
+      <wsdl:input message="tns:InboundTicketScannedSoapIn" />
+      <wsdl:output message="tns:InboundTicketScannedSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetTime">
+      <wsdl:input message="tns:GetTimeSoapIn" />
+      <wsdl:output message="tns:GetTimeSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetScales">
+      <wsdl:input message="tns:GetScalesSoapIn" />
+      <wsdl:output message="tns:GetScalesSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="AllScales">
+      <wsdl:input message="tns:AllScalesSoapIn" />
+      <wsdl:output message="tns:AllScalesSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="UpdateScales">
+      <wsdl:input message="tns:UpdateScalesSoapIn" />
+      <wsdl:output message="tns:UpdateScalesSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="RefreshScales">
+      <wsdl:input message="tns:RefreshScalesSoapIn" />
+      <wsdl:output message="tns:RefreshScalesSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="LastScaleModification">
+      <wsdl:input message="tns:LastScaleModificationSoapIn" />
+      <wsdl:output message="tns:LastScaleModificationSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="LocalWebServiceSoap" type="tns:LocalWebServiceSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="InboundTicketScanned">
+      <soap:operation soapAction="http://nwgglocal/InboundTicketScanned" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetTime">
+      <soap:operation soapAction="http://nwgglocal/GetTime" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetScales">
+      <soap:operation soapAction="http://nwgglocal/GetScales" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AllScales">
+      <soap:operation soapAction="http://nwgglocal/AllScales" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateScales">
+      <soap:operation soapAction="http://nwgglocal/UpdateScales" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RefreshScales">
+      <soap:operation soapAction="http://nwgglocal/RefreshScales" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="LastScaleModification">
+      <soap:operation soapAction="http://nwgglocal/LastScaleModification" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="LocalWebServiceSoap12" type="tns:LocalWebServiceSoap">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="InboundTicketScanned">
+      <soap12:operation soapAction="http://nwgglocal/InboundTicketScanned" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetTime">
+      <soap12:operation soapAction="http://nwgglocal/GetTime" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetScales">
+      <soap12:operation soapAction="http://nwgglocal/GetScales" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AllScales">
+      <soap12:operation soapAction="http://nwgglocal/AllScales" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateScales">
+      <soap12:operation soapAction="http://nwgglocal/UpdateScales" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RefreshScales">
+      <soap12:operation soapAction="http://nwgglocal/RefreshScales" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="LastScaleModification">
+      <soap12:operation soapAction="http://nwgglocal/LastScaleModification" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="LocalWebService">
+    <wsdl:port name="LocalWebServiceSoap" binding="tns:LocalWebServiceSoap">
+      <soap:address location="http://wsppc001/LocalWebService.asmx" />
+    </wsdl:port>
+    <wsdl:port name="LocalWebServiceSoap12" binding="tns:LocalWebServiceSoap12">
+      <soap12:address location="http://wsppc001/LocalWebService.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

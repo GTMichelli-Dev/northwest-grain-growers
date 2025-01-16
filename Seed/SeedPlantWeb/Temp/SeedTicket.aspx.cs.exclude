@@ -1,0 +1,795 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class SeedTicket : System.Web.UI.Page
+{
+
+
+
+
+
+
+
+
+    public enum enumConfirmType
+    {
+        WeighMaster,
+        growerUnknown,
+        growerNameInvalid
+
+    }
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+
+        if (!this.IsPostBack)
+        {
+            if (SeedTicketInfo.seedTicketDataSet == null)
+            {
+                Response.Redirect("Default.aspx");
+            }
+
+
+
+            ddWeightype.Items.Clear();
+            var Weightypes = Enum.GetValues(typeof(GlobalVars.enumSeedTicketWeighType));
+            foreach (GlobalVars.enumSeedTicketWeighType val in Weightypes)
+            {
+                ddWeightype.Items.Add(val.ToString());
+            }
+           
+            
+             ddWeightype.Items.FindByText(SeedTicketInfo.CurrentSeedTicketRow.Ticket_Type).Selected = true;
+            txtName.Text = GlobalVars.Weighmaster;
+            txtPO.Text = (SeedTicketInfo.CurrentSeedTicketRow.IsPONull()) ? "" : SeedTicketInfo.CurrentSeedTicketRow.PO;
+            txtBOL.Text = (SeedTicketInfo.CurrentSeedTicketRow.IsBOLNull()) ? "" : SeedTicketInfo.CurrentSeedTicketRow.BOL ;
+            txtComment.Text = (SeedTicketInfo.CurrentSeedTicketRow.IsCommentsNull ()) ? "" : SeedTicketInfo.CurrentSeedTicketRow.Comments ;
+            txtName.Text  = (SeedTicketInfo.CurrentSeedTicketRow.IsWeighmasterNull() ) ? GlobalVars.Weighmaster  : SeedTicketInfo.CurrentSeedTicketRow.Weighmaster ;
+            GetGrower();
+            GetWeighType();
+            SetVarieties();
+        }
+
+
+
+
+
+        using (SeedTicketDataSet.TestDataTable test = new SeedTicketDataSet.TestDataTable())
+        {
+            test.AddTestRow("Bill", 1);
+            test.AddTestRow("Bob", 2);
+            test.AddTestRow("Joh1n", 3);
+            test.AddTestRow("John2", 3);
+            test.AddTestRow("John3", 3);
+            test.AddTestRow("John4", 3);
+            test.AddTestRow("John5", 3);
+            test.AddTestRow("Johnsd", 3);
+            test.AddTestRow("Johnx", 3);
+            test.AddTestRow("Johnc", 3);
+            test.AddTestRow("Johnv", 3);
+            test.AddTestRow("Johnb", 3);
+            test.AddTestRow("Johnn", 3);
+            test.AddTestRow("Johnm", 3);
+            test.AddTestRow("Johned", 3);
+            test.AddTestRow("Johncd", 3);
+            test.AddTestRow("Johnxs", 3);
+            test.AddTestRow("Johnsxs", 3);
+            test.AddTestRow("Johnceddd", 3);
+
+            DataSet ds = new DataSet();
+            ds.Tables.Add(test);
+
+            grdTotes.DataSource = ds;
+            grdTotes.DataBind();
+        }
+
+    }
+
+
+
+    public void GetGrower()
+    {
+        if (!SeedTicketInfo.CurrentSeedTicketRow.IsGrower_IDNull())
+        {
+            using (ListDataSetTableAdapters.ProducersListTableAdapter producersListTableAdapter = new ListDataSetTableAdapters.ProducersListTableAdapter())
+            {
+                using (ListDataSet.ProducersListDataTable producersListDataTable = new ListDataSet.ProducersListDataTable())
+                {
+                    if (producersListTableAdapter.FillByID(producersListDataTable, SeedTicketInfo.CurrentSeedTicketRow.Grower_ID) > 0)
+                    {
+                        
+                         var row = producersListDataTable[0];
+                        if (row.Id==0)
+                        {
+                            txtGrower.Text = "UNKNOWN";
+
+                        }
+                        else
+                        {
+                            txtGrower.Text = row.FullName;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    public void SetVarieties()
+    {
+
+        using (SeedTicketDataSet.VarietyListDataTable VarietyList = new SeedTicketDataSet.VarietyListDataTable())
+        {
+            decimal Total = 0;
+            foreach (var row in SeedTicketInfo.seedTicketDataSet.Seed_Ticket_Varieties)
+            {
+                var vlRow = VarietyList.NewVarietyListRow();
+                vlRow.Item = row.Variety_ID;
+                vlRow.Description = row.Custom_Name;
+                vlRow.Percent = (decimal)row.Actual_Percent;
+                Total += vlRow.Percent;
+                vlRow.Bin = (row.IsBin_NameNull()) ? "" : row.Bin_Name;
+                vlRow.Total = 90000;
+                VarietyList.AddVarietyListRow(vlRow);
+                vlRow.UID = row.UID;
+            }
+            grdVarieties.DataSource = VarietyList;
+            grdVarieties.DataBind();
+            if (Total == 0)
+            {
+                lblVarieties.InnerText = "Varieties";
+                spanVariety.Visible = false;
+            }
+            else if (Total == 100)
+            {
+                spanVariety.Visible = true;
+                //              spanVariety.Attributes.Clear();
+                spanVariety.Attributes.Add("class", "font-weight-bold text-success");
+                spanVariety.InnerText = "Total 100%";
+
+
+            }
+            else
+            {
+                spanVariety.Visible = true;
+                //                spanVariety.Attributes.Clear();
+                spanVariety.Attributes.Add("class", "font-weight-bold text-danger");
+                spanVariety.InnerText = $"Total {Total}%";
+
+            }
+
+        }
+    }
+
+
+    protected void txtName_TextChanged(object sender, EventArgs e)
+    {
+        string Name = txtName.Text;
+        
+        if (this.IsPostBack)
+        {
+           
+
+            if (!string.IsNullOrEmpty(txtName.Text))
+            {
+                using (ListDataSet.WeighMastersDataTable weighMastersDataTable = new ListDataSet.WeighMastersDataTable())
+                {
+                    using (ListDataSetTableAdapters.WeighMastersTableAdapter weighMastersTableAdapter = new ListDataSetTableAdapters.WeighMastersTableAdapter())
+                    {
+                        if (weighMastersTableAdapter.FillByName(weighMastersDataTable, Name) == 0)
+                        {
+                            ShowConfirmBox(enumConfirmType.WeighMaster, "Yes", "No", "Name Not Found", $"The Weighmaster<br/>{Name}<br/>Does Not Exist.<br/> Add Name?", Name, false);
+                        }
+                        else
+                        {
+                            GlobalVars.Weighmaster = Name;
+                            SeedTicketInfo.CurrentSeedTicketRow.Weighmaster = Name;
+                            Response.Redirect(Request.RawUrl);
+                        }
+                    }
+                }
+
+            }
+        }
+    }
+
+
+
+
+    public void ShowMessage(string Message)
+    {
+        lblMessage.Text = Message;
+        UPMessage.Update();
+        ScriptManager.RegisterStartupScript(this, this.GetType(), "MessagePopup", "$('#MessagePopup').modal('show')", true);
+
+    }
+
+
+
+    public void ShowConfirmBox(enumConfirmType confirmType, string OKbtnText, string CancelbtnText, string HeaderText, string PromptText, string ConfirmValue1, bool ShowConfirmTextBox)
+    {
+        lblConfirmError.Visible = false;
+        lblPopupHeader.Text = HeaderText;
+        hfConfirmVal1.Value = ConfirmValue1;
+        lblConfirmDescription.Text = PromptText;
+        hfenumConfirmType.Value = confirmType.ToString();
+        txtConfirmText.Text = "";
+        txtConfirmText.Visible = ShowConfirmTextBox;
+        btnCancelConfirm.Visible = (!string.IsNullOrWhiteSpace(CancelbtnText));
+        btnConfirm.Visible = (!string.IsNullOrWhiteSpace(OKbtnText));
+        btnCancelConfirm.Text = CancelbtnText;
+        btnConfirm.Text = OKbtnText;
+        UpConfirm.Update();
+        ScriptManager.RegisterStartupScript(this, this.GetType(), "showConfirmPopup", "$('#ConfirmPopup').modal('show')", true);
+       
+
+    }
+
+
+   
+
+
+    protected void btnUnknown_Click(object sender, EventArgs e)
+    {
+        ShowConfirmBox(enumConfirmType.growerUnknown, "OK", "Cancel", "Unknown Grower", $"Enter A Description Of the Grower", "", true);
+
+
+    }
+
+
+
+    protected void btnSave_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    protected void btnCancel_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    protected void btnReset_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    protected void ddWeightype_TextChanged(object sender, EventArgs e)
+    {
+        if (this.IsPostBack)
+        {
+
+            GlobalVars.SeedTicketWeighType = (GlobalVars.enumSeedTicketWeighType)Enum.Parse(typeof(GlobalVars.enumSeedTicketWeighType), ddWeightype.Text);
+            SeedTicketInfo.CurrentSeedTicketRow.Ticket_Type = GlobalVars.SeedTicketWeighType.ToString();
+        }
+        GetWeighType();
+    }
+
+
+    public void GetWeighType()
+    {
+        pnlBags.Visible = false;
+        pnlToteWeights.Visible = false;
+        pnlTruckWeights.Visible = false;
+
+        switch (GlobalVars.SeedTicketWeighType)
+        {
+            case GlobalVars.enumSeedTicketWeighType.Truck:
+                lblTruckWeightHeader.Text = "Truck Weights";
+                pnlTruckWeights.Visible = true;
+                break;
+            case GlobalVars.enumSeedTicketWeighType.Tote:
+                pnlToteWeights.Visible = true;
+                break;
+            case GlobalVars.enumSeedTicketWeighType.Bag:
+                lblBagWeightHeader.Text = "Bags Weights";
+                pnlBags.Visible = true;
+                break;
+            case GlobalVars.enumSeedTicketWeighType.Return:
+                lblTruckWeightHeader.Text = "Return";
+                pnlTruckWeights.Visible = true;
+                break;
+            case GlobalVars.enumSeedTicketWeighType.ReturnBag:
+                lblBagWeightHeader.Text = "Returned Bags";
+                pnlBags.Visible = true;
+                break;
+            default:
+                pnlTruckWeights.Visible = true;
+                lblTruckWeightHeader.Text = "Truck Weights";
+                break;
+        }
+    }
+
+    protected void btnConfirm_Click(object sender, EventArgs e)
+    {
+        enumConfirmType ConfirmType = (enumConfirmType)Enum.Parse(typeof(enumConfirmType), hfenumConfirmType.Value);
+        if (ConfirmType == enumConfirmType.WeighMaster)
+        {
+            string Name = txtName.Text;
+            using (ListDataSet.WeighMastersDataTable weighMastersDataTable = new ListDataSet.WeighMastersDataTable())
+            {
+                using (ListDataSetTableAdapters.WeighMastersTableAdapter weighMastersTableAdapter = new ListDataSetTableAdapters.WeighMastersTableAdapter())
+                {
+                    if (weighMastersTableAdapter.FillByName(weighMastersDataTable, Name) == 0)
+                    {
+                        weighMastersDataTable.AddWeighMastersRow(Guid.NewGuid(), Name);
+                        weighMastersTableAdapter.Update(weighMastersDataTable);
+                        GlobalVars.Weighmaster = Name;
+                        SeedTicketInfo.CurrentSeedTicketRow.Weighmaster = Name;
+                    }
+                }
+            }
+            ScriptManager.RegisterStartupScript(this, this.GetType(), "showConfirmPopup", "$('#ConfirmPopup').modal('hide')", true);
+            Response.Redirect(Request.RawUrl);
+        }
+        else if (ConfirmType == enumConfirmType.growerUnknown)
+        {
+            string Description = txtConfirmText.Text;
+
+            if (string.IsNullOrEmpty(Description))
+            {
+                lblConfirmError.Visible = true;
+                lblConfirmError.Text = "You Must Enter A Grower Description";
+                UpConfirm.Update();
+                ScriptManager.RegisterStartupScript(this, this.GetType(), "showConfirmPopup", "$('#ConfirmPopup').modal('show')", true);
+            }
+            else if (Description.Length < 6)
+            {
+                lblConfirmError.Visible = true;
+                lblConfirmError.Text = "Enter A Little More Information About The Grower";
+                UpConfirm.Update();
+                ScriptManager.RegisterStartupScript(this, this.GetType(), "showConfirmPopup", "$('#ConfirmPopup').modal('show')", true);
+            }
+            else
+            {
+                RemoveUnknownFromComment();
+                txtComment.Text = $"[UNKNOWN GROWER: {Description}]" + System.Environment.NewLine + txtComment.Text;
+                txtGrower.Text = GlobalVars.UnknownItem;
+                ScriptManager.RegisterStartupScript(this, this.GetType(), "showConfirmPopup", "$('#ConfirmPopup').modal('hide')", true);
+                Response.Redirect(Request.RawUrl);
+                SeedTicketInfo.CurrentSeedTicketRow.Grower_ID = 0;
+                
+            }
+        }
+
+    }
+
+
+
+    protected void btnCancelConfirm_Click(object sender, EventArgs e)
+    {
+        enumConfirmType ConfirmType = (enumConfirmType)Enum.Parse(typeof(enumConfirmType), hfenumConfirmType.Value);
+        if (ConfirmType == enumConfirmType.WeighMaster)
+        {
+
+            txtName.Text = "";
+            SeedTicketInfo.CurrentSeedTicketRow.SetWeighmasterNull();
+
+        }
+        else if (ConfirmType == enumConfirmType.growerNameInvalid || ConfirmType == enumConfirmType.growerUnknown)
+        {
+            txtGrower.Text = "";
+            RemoveUnknownFromComment();
+        }
+        ScriptManager.RegisterStartupScript(this, this.GetType(), "showConfirmPopup", "$('#ConfirmPopup').modal('hide')", true);
+        Response.Redirect(Request.RawUrl);
+    }
+
+
+    public void RemoveUnknownFromComment()
+    {
+        string Comment = txtComment.Text;
+        int StartPos = Comment.IndexOf('[');
+        int EndPos = Comment.IndexOf(']');
+        bool RemoveNewLine = Comment.Contains("]" + System.Environment.NewLine);
+        int EndPrefix = (RemoveNewLine) ? 3 : 1;
+        // EndPos += EndPrefix; 
+        if (StartPos > -1 && EndPos > StartPos)
+        {
+            Comment = Comment.Remove(StartPos, (EndPos - StartPos) + EndPrefix);
+            txtComment.Text = Comment;
+        }
+
+    }
+
+
+    protected void txtGrower_TextChanged(object sender, EventArgs e)
+    {
+        CheckGrower();
+        
+
+    }
+
+
+    public void CheckGrower()
+    {
+        SeedTicketInfo.CurrentSeedTicketRow.SetGrower_IDNull();
+        string Grower = txtGrower.Text;
+        if (!string.IsNullOrEmpty(Grower))
+        {
+            if (Grower == GlobalVars.UnknownItem)
+            {
+                if (string.IsNullOrWhiteSpace(txtComment.Text))
+                {
+                    ShowConfirmBox(enumConfirmType.growerUnknown, "OK", "Cancel", "Unknown Grower", $"Enter A Description Of the Grower", "", true);
+                }
+            }
+            else
+            {
+                RemoveUnknownFromComment();
+                using (ListDataSetTableAdapters.ProducersListTableAdapter producersListTableAdapter = new ListDataSetTableAdapters.ProducersListTableAdapter())
+                {
+                    using (ListDataSet.ProducersListDataTable producersListDataTable = new ListDataSet.ProducersListDataTable())
+                    {
+                        if (producersListTableAdapter.FillByFullName(producersListDataTable, Grower) == 0)
+                        {
+                            
+                            ShowConfirmBox(enumConfirmType.growerNameInvalid, "", "OK", "Invalid Grower", $"The Grower<br/>{Grower}<br/>Does Not Exist.", "", false);
+                        }
+                        else
+                        {
+                            SeedTicketInfo.CurrentSeedTicketRow.Grower_ID = producersListDataTable[0].Id; 
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            RemoveUnknownFromComment();
+        }
+    }
+
+    
+    protected void btnVarieties_Click(object sender, EventArgs e)
+    {
+        
+        Response.Redirect("SelectVariety.aspx");
+    }
+
+    protected void lnkDeleteVariety_Click(object sender, EventArgs e)
+    {
+        LinkButton btn = (LinkButton)sender;
+        GridViewRow row = (GridViewRow)btn.NamingContainer;
+        int index = row.RowIndex;
+        Guid UID = Guid.Parse(grdVarieties.DataKeys[index].Values[0].ToString());
+        var VarietyRow = SeedTicketInfo.seedTicketDataSet.Seed_Ticket_Varieties.FirstOrDefault(x => x.UID == UID);
+        if (VarietyRow != null)
+        {
+            VarietyRow.Delete();
+        }
+        SetVarieties();
+
+
+    }
+
+
+    [System.Web.Services.WebMethod]
+    public static string Name()
+    {
+        string Name = DateTime.Now.ToString();//  "Hello Rohatash Kumar";
+        //UpdateScaleWeights();
+        return Name;
+    }
+
+
+
+    [System.Web.Services.WebMethod]
+    public static ScaleData.CurrentScale GetScaleWeight(int Scale)
+    {
+
+        var CurrentData = ScaleData.GetCurrentScale(Scale);
+        System.Diagnostics.Debug.Print(CurrentData.Status);
+        return (CurrentData);
+
+    }
+
+
+
+    [System.Web.Services.WebMethod]
+    public static int UpdateScaleWeights(int scaleId)
+    {
+        try
+        {
+            Page page = (Page)HttpContext.Current.Handler;
+            GridView grdScales = (GridView)page.FindControl("grdScales");
+
+            using (ScaleWebService.LocalWebService Proxy = new ScaleWebService.LocalWebService())
+            {
+                ScaleWebService.LocalDataSet.Weigh_ScalesDataTable ScalesDataTable = Proxy.GetScales();
+                foreach (ScaleWebService.LocalDataSet.Weigh_ScalesRow row in ScalesDataTable)
+                {
+                    string Status = "";
+                    if (!row.OK)
+                    {
+                        Status = row.Status;
+                    }
+                    else if (row.Motion)
+                    {
+                        Status = "Motion";
+                    }
+
+
+                    foreach (GridViewRow srow in grdScales.Rows)
+                    {
+                        Label lblScaleDescription = (Label)srow.FindControl("lblScaleDescription");
+                        TextBox txtWeight = (TextBox)srow.FindControl("txtWeight");
+                        Label lblStatus = (Label)srow.FindControl("lblStatus");
+                        if (lblScaleDescription.Text == row.Description)
+                        {
+                            Random rand = new Random();
+                            lblStatus.Text = Status;
+                            txtWeight.Text = rand.Next(0, 120000).ToString();
+                        }
+
+
+                    }
+
+
+
+                }
+
+
+
+
+
+            }
+
+        }
+        catch
+        {
+
+        }
+        return 1;
+    }
+
+
+
+
+
+   
+
+  
+
+    #region Scales
+    
+
+    private void CloseScalePopup()
+    {
+        this.tmrScaleUpdate.Enabled = false;
+        tmrScaleUpdate.Interval = 100;
+        ScriptManager.RegisterStartupScript(this, this.GetType(), "popScales", "$('#popScales').modal('hide')", true);
+    }
+
+
+
+
+    protected void tmrScaleUpdate_Tick(object sender, EventArgs e)
+    {
+        tmrScaleUpdate.Interval = 1000;
+        UpdateScales();
+        ScriptManager.RegisterStartupScript(this, this.GetType(), "popScales", "$('#popScales').modal('show')", true);
+    }
+
+
+    public void UpdateScales()
+    {
+        using (ScaleWebService.LocalWebService proxy = new ScaleWebService.LocalWebService())
+        {
+            ScaleWebService.LocalDataSet.Weigh_ScalesDataTable ScalesDataTable = proxy.GetScales();
+            var CurrentScales = new ScaleDataSet.ScalesDataTable();
+            ScalesDataTable.DefaultView.Sort = "Description Asc ";
+
+
+            int index = 1;
+            foreach (DataRowView sRow in ScalesDataTable.DefaultView) // ScaleWebService.LocalDataSet.Weigh_ScalesRow  scaleRow in ScalesDataTable )
+            {
+                var newScale = CurrentScales.NewScalesRow();
+
+                if ((bool)sRow["OK"])
+                {
+                    if ((bool)sRow["Motion"])
+                    {
+                        newScale.Status = "Motion";
+                        newScale.ReadOnly = true;
+                        newScale.RowCssClass = "form-control text-right alert-warning";
+                    }
+                    else
+                    {
+                        if ((int)sRow["Weight"] > 500)
+                        {
+                            newScale.RowCssClass = "form-control text-right alert-success";
+                        }
+                        else
+                        {
+                            newScale.RowCssClass = "form-control text-right ";
+                        }
+                        newScale.Status = "";
+                        newScale.ReadOnly = false;
+
+                    }
+                }
+                else
+                {
+                    newScale.ReadOnly = true;
+                    newScale.Status = (string)sRow["Error_Message"];
+                    newScale.RowCssClass = "form-control text-right alert-danger";
+                }
+                newScale.Description = (string)sRow["Description"];
+                newScale.Index = index;
+                newScale.Motion = (bool)sRow["Motion"];
+
+
+                newScale.Valid = (bool)sRow["OK"];
+                newScale.Weight = (int)sRow["Weight"];
+                CurrentScales.AddScalesRow(newScale);
+                index++;
+            }
+            grdScales.DataSource = CurrentScales;
+            grdScales.DataBind();
+            UPScaleWeights.Update();
+        }
+    }
+
+   
+
+
+
+    protected void btnSelect_Click(object sender, EventArgs e)
+    {
+        LinkButton  btn = (LinkButton)sender;
+        GridViewRow row = (GridViewRow)btn.NamingContainer;
+        int index = row.RowIndex;
+        Label  txtWeight = (Label)row.FindControl("txtWeight");
+        int Weight;
+        int.TryParse(txtWeight.Text, out Weight);
+        SetWeight(Weight,false);
+       
+    }
+
+    public void SetWeight(int Weight,bool Manual)
+    {
+
+        GlobalVars.enumGetWeighType WeighType = (GlobalVars.enumGetWeighType)Enum.Parse(typeof(GlobalVars.enumGetWeighType), HFWeighType.Value);
+
+
+
+        switch (WeighType )
+        {
+            case GlobalVars.enumGetWeighType.WeighIn:
+                SeedTicketInfo.CurrentSeedTicketWeightRow.Starting_Time = DateTime.Now;
+                SeedTicketInfo.CurrentSeedTicketWeightRow.Starting_Weight = Weight;
+                SeedTicketInfo.CurrentSeedTicketWeightRow.Manual_In = Manual;
+                SeedTicketInfo.CurrentSeedTicketWeightRow.PC_Weight_In_Address= Request.UserHostAddress;
+
+
+                lblInWeight.Text = SeedTicketInfo.CurrentSeedTicketWeightRow.Starting_Weight.ToString();
+                break;
+            case GlobalVars.enumGetWeighType.WeighOut:
+                SeedTicketInfo.CurrentSeedTicketWeightRow.Ending_Time  = DateTime.Now;
+                SeedTicketInfo.CurrentSeedTicketWeightRow.Ending_Weight  = Weight;
+                SeedTicketInfo.CurrentSeedTicketWeightRow.Manual_Out = Manual;
+                SeedTicketInfo.CurrentSeedTicketWeightRow.PC_Weight_Out_Address = Request.UserHostAddress;
+                lblOutWeight.Text = SeedTicketInfo.CurrentSeedTicketWeightRow.Ending_Weight.ToString();
+                
+                break; 
+            default:
+                break;
+        }
+
+
+   
+        CloseScalePopup();
+        SetTruckGTN();
+    }
+
+
+
+    protected void btnManualSelect_Click(object sender, EventArgs e)
+    {
+        int Weight;
+        int.TryParse(txtManualWeight.Text.Trim(), out Weight);
+        SetWeight(Weight,true );
+    }
+
+
+    public void SetTruckGTN()
+    {
+        if (pnlTruckWeights.Visible)
+        {
+            if (SeedTicketInfo.CurrentSeedTicketWeightRow.IsEnding_WeightNull())
+            {
+                lblGross.Text = "------";
+                lblTare.Text = "------";
+                lblNet.Text = "------";
+            }
+            else
+            {
+                int G = (int)SeedTicketInfo.CurrentSeedTicketWeightRow.Ending_Weight;
+                int T = (int)SeedTicketInfo.CurrentSeedTicketWeightRow.Starting_Weight;
+                if (G < T)
+                {
+                    T = (int)SeedTicketInfo.CurrentSeedTicketWeightRow.Ending_Weight;
+                    G = (int)SeedTicketInfo.CurrentSeedTicketWeightRow.Starting_Weight;
+
+                }
+                int N = G - T;
+                lblGross.Text = G.ToString();
+                lblTare.Text = T.ToString();
+                lblNet.Text = N.ToString();
+            }
+        }
+
+    }
+
+
+    protected void btnCancelScaleWeight_Click(object sender, EventArgs e)
+    {
+        CloseScalePopup();
+    }
+
+
+    protected void btnWeighIn_Click(object sender, EventArgs e)
+    {
+        HFWeighType.Value = GlobalVars.enumGetWeighType.WeighIn.ToString();
+        txtManualWeight.Text = "0";
+        UPManualScale.Update();
+        this.tmrScaleUpdate.Enabled = true;
+    }
+
+    protected void btnWeighOut_Click(object sender, EventArgs e)
+    {
+        HFWeighType.Value = GlobalVars.enumGetWeighType.WeighOut.ToString();
+        txtManualWeight.Text = "0";
+        UPManualScale.Update();
+        this.tmrScaleUpdate.Enabled = true;
+    }
+
+
+
+
+    #endregion
+
+
+
+    protected void tmrUPConfirmPop_Tick(object sender, EventArgs e)
+    {
+        this.tmrUPConfirmPop.Enabled = false;
+        ScriptManager.RegisterStartupScript(this, this.GetType(), "showConfirmPopup", "$('#ConfirmPopup').modal('show')", true);
+    }
+
+    protected void txtPO_TextChanged(object sender, EventArgs e)
+    {
+        if (string.IsNullOrEmpty(txtPO.Text ))
+        {
+            SeedTicketInfo.CurrentSeedTicketRow.SetPONull();
+        }
+        else
+        {
+            SeedTicketInfo.CurrentSeedTicketRow.PO = txtPO.Text;
+        }
+        
+    }
+
+    protected void txtComment_TextChanged(object sender, EventArgs e)
+    {
+        SeedTicketInfo.CurrentSeedTicketRow.Comments = txtComment.Text;
+    }
+
+    protected void txtBOL_TextChanged(object sender, EventArgs e)
+    {
+        if (string.IsNullOrEmpty(txtBOL.Text))
+        {
+            SeedTicketInfo.CurrentSeedTicketRow.SetBOLNull();
+        }
+        else
+        {
+            SeedTicketInfo.CurrentSeedTicketRow.BOL = txtBOL.Text;
+        }
+    }
+}

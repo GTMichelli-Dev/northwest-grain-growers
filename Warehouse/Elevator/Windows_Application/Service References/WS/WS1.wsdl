@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://Test.Totalscale.com/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" targetNamespace="http://Test.Totalscale.com/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://Test.Totalscale.com/">
+      <s:import namespace="http://tempuri.org/NWDataset.xsd" />
+      <s:import schemaLocation="http://localhost/WS.asmx?schema=NWDataset" namespace="http://tempuri.org/NWDataset.xsd" />
+      <s:element name="SendPrompt">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="Line2" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="Line3" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="Duration" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="SendPromptResponse">
+        <s:complexType />
+      </s:element>
+      <s:element name="Print_Inbound_Inyard_Ticket">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Load_Id" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="Scale" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="Printer" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="Print_Inbound_Inyard_TicketResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Print_Inbound_Inyard_TicketResult" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="Print_Inbound_Final_Ticket">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Load_Id" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="Scale" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="Printer" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="Print_Inbound_Final_TicketResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Print_Inbound_Final_TicketResult" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="Print_Outbound_Inyard_Ticket">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Load_Id" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="Scale" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="OnlyOne" type="s:boolean" />
+            <s:element minOccurs="0" maxOccurs="1" name="Printer" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="Print_Outbound_Inyard_TicketResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Print_Outbound_Inyard_TicketResult" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="Print_Outbound_Final_Ticket">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Load_Id" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="Scale" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="OnlyOne" type="s:boolean" />
+            <s:element minOccurs="0" maxOccurs="1" name="Printer" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="Print_Outbound_Final_TicketResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Print_Outbound_Final_TicketResult" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="Print_Transfer_Inyard_Ticket">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Load_Id" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="Scale" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="Printer" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="Print_Transfer_Inyard_TicketResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Print_Transfer_Inyard_TicketResult" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="Print_Transfer_Final_Ticket">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Load_Id" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="Scale" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="Printer" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="Print_Transfer_Final_TicketResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="Print_Transfer_Final_TicketResult" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetPrinterList">
+        <s:complexType />
+      </s:element>
+      <s:element name="GetPrinterListResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetPrinterListResult">
+              <s:complexType>
+                <s:sequence>
+                  <s:any minOccurs="0" maxOccurs="unbounded" namespace="http://www.w3.org/2001/XMLSchema" processContents="lax" />
+                  <s:any minOccurs="1" namespace="urn:schemas-microsoft-com:xml-diffgram-v1" processContents="lax" />
+                </s:sequence>
+                <s:attribute fixed="http://tempuri.org/NWDataset.xsd" name="namespace" />
+                <s:attribute fixed="PrinterListDataTable" name="tableTypeName" />
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="SendPromptSoapIn">
+    <wsdl:part name="parameters" element="tns:SendPrompt" />
+  </wsdl:message>
+  <wsdl:message name="SendPromptSoapOut">
+    <wsdl:part name="parameters" element="tns:SendPromptResponse" />
+  </wsdl:message>
+  <wsdl:message name="Print_Inbound_Inyard_TicketSoapIn">
+    <wsdl:part name="parameters" element="tns:Print_Inbound_Inyard_Ticket" />
+  </wsdl:message>
+  <wsdl:message name="Print_Inbound_Inyard_TicketSoapOut">
+    <wsdl:part name="parameters" element="tns:Print_Inbound_Inyard_TicketResponse" />
+  </wsdl:message>
+  <wsdl:message name="Print_Inbound_Final_TicketSoapIn">
+    <wsdl:part name="parameters" element="tns:Print_Inbound_Final_Ticket" />
+  </wsdl:message>
+  <wsdl:message name="Print_Inbound_Final_TicketSoapOut">
+    <wsdl:part name="parameters" element="tns:Print_Inbound_Final_TicketResponse" />
+  </wsdl:message>
+  <wsdl:message name="Print_Outbound_Inyard_TicketSoapIn">
+    <wsdl:part name="parameters" element="tns:Print_Outbound_Inyard_Ticket" />
+  </wsdl:message>
+  <wsdl:message name="Print_Outbound_Inyard_TicketSoapOut">
+    <wsdl:part name="parameters" element="tns:Print_Outbound_Inyard_TicketResponse" />
+  </wsdl:message>
+  <wsdl:message name="Print_Outbound_Final_TicketSoapIn">
+    <wsdl:part name="parameters" element="tns:Print_Outbound_Final_Ticket" />
+  </wsdl:message>
+  <wsdl:message name="Print_Outbound_Final_TicketSoapOut">
+    <wsdl:part name="parameters" element="tns:Print_Outbound_Final_TicketResponse" />
+  </wsdl:message>
+  <wsdl:message name="Print_Transfer_Inyard_TicketSoapIn">
+    <wsdl:part name="parameters" element="tns:Print_Transfer_Inyard_Ticket" />
+  </wsdl:message>
+  <wsdl:message name="Print_Transfer_Inyard_TicketSoapOut">
+    <wsdl:part name="parameters" element="tns:Print_Transfer_Inyard_TicketResponse" />
+  </wsdl:message>
+  <wsdl:message name="Print_Transfer_Final_TicketSoapIn">
+    <wsdl:part name="parameters" element="tns:Print_Transfer_Final_Ticket" />
+  </wsdl:message>
+  <wsdl:message name="Print_Transfer_Final_TicketSoapOut">
+    <wsdl:part name="parameters" element="tns:Print_Transfer_Final_TicketResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetPrinterListSoapIn">
+    <wsdl:part name="parameters" element="tns:GetPrinterList" />
+  </wsdl:message>
+  <wsdl:message name="GetPrinterListSoapOut">
+    <wsdl:part name="parameters" element="tns:GetPrinterListResponse" />
+  </wsdl:message>
+  <wsdl:portType name="WSSoap">
+    <wsdl:operation name="SendPrompt">
+      <wsdl:input message="tns:SendPromptSoapIn" />
+      <wsdl:output message="tns:SendPromptSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="Print_Inbound_Inyard_Ticket">
+      <wsdl:input message="tns:Print_Inbound_Inyard_TicketSoapIn" />
+      <wsdl:output message="tns:Print_Inbound_Inyard_TicketSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="Print_Inbound_Final_Ticket">
+      <wsdl:input message="tns:Print_Inbound_Final_TicketSoapIn" />
+      <wsdl:output message="tns:Print_Inbound_Final_TicketSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="Print_Outbound_Inyard_Ticket">
+      <wsdl:input message="tns:Print_Outbound_Inyard_TicketSoapIn" />
+      <wsdl:output message="tns:Print_Outbound_Inyard_TicketSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="Print_Outbound_Final_Ticket">
+      <wsdl:input message="tns:Print_Outbound_Final_TicketSoapIn" />
+      <wsdl:output message="tns:Print_Outbound_Final_TicketSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="Print_Transfer_Inyard_Ticket">
+      <wsdl:input message="tns:Print_Transfer_Inyard_TicketSoapIn" />
+      <wsdl:output message="tns:Print_Transfer_Inyard_TicketSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="Print_Transfer_Final_Ticket">
+      <wsdl:input message="tns:Print_Transfer_Final_TicketSoapIn" />
+      <wsdl:output message="tns:Print_Transfer_Final_TicketSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetPrinterList">
+      <wsdl:input message="tns:GetPrinterListSoapIn" />
+      <wsdl:output message="tns:GetPrinterListSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="WSSoap" type="tns:WSSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="SendPrompt">
+      <soap:operation soapAction="http://Test.Totalscale.com/SendPrompt" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Inbound_Inyard_Ticket">
+      <soap:operation soapAction="http://Test.Totalscale.com/Print_Inbound_Inyard_Ticket" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Inbound_Final_Ticket">
+      <soap:operation soapAction="http://Test.Totalscale.com/Print_Inbound_Final_Ticket" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Outbound_Inyard_Ticket">
+      <soap:operation soapAction="http://Test.Totalscale.com/Print_Outbound_Inyard_Ticket" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Outbound_Final_Ticket">
+      <soap:operation soapAction="http://Test.Totalscale.com/Print_Outbound_Final_Ticket" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Transfer_Inyard_Ticket">
+      <soap:operation soapAction="http://Test.Totalscale.com/Print_Transfer_Inyard_Ticket" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Transfer_Final_Ticket">
+      <soap:operation soapAction="http://Test.Totalscale.com/Print_Transfer_Final_Ticket" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetPrinterList">
+      <soap:operation soapAction="http://Test.Totalscale.com/GetPrinterList" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="WSSoap12" type="tns:WSSoap">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="SendPrompt">
+      <soap12:operation soapAction="http://Test.Totalscale.com/SendPrompt" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Inbound_Inyard_Ticket">
+      <soap12:operation soapAction="http://Test.Totalscale.com/Print_Inbound_Inyard_Ticket" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Inbound_Final_Ticket">
+      <soap12:operation soapAction="http://Test.Totalscale.com/Print_Inbound_Final_Ticket" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Outbound_Inyard_Ticket">
+      <soap12:operation soapAction="http://Test.Totalscale.com/Print_Outbound_Inyard_Ticket" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Outbound_Final_Ticket">
+      <soap12:operation soapAction="http://Test.Totalscale.com/Print_Outbound_Final_Ticket" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Transfer_Inyard_Ticket">
+      <soap12:operation soapAction="http://Test.Totalscale.com/Print_Transfer_Inyard_Ticket" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="Print_Transfer_Final_Ticket">
+      <soap12:operation soapAction="http://Test.Totalscale.com/Print_Transfer_Final_Ticket" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetPrinterList">
+      <soap12:operation soapAction="http://Test.Totalscale.com/GetPrinterList" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="WS">
+    <wsdl:port name="WSSoap" binding="tns:WSSoap">
+      <soap:address location="http://localhost/WS.asmx" />
+    </wsdl:port>
+    <wsdl:port name="WSSoap12" binding="tns:WSSoap12">
+      <soap12:address location="http://localhost/WS.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

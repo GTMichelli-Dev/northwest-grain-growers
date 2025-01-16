@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="NWDataset" targetNamespace="http://tempuri.org/NWDataset.xsd" xmlns:mstns="http://tempuri.org/NWDataset.xsd" xmlns="http://tempuri.org/NWDataset.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" GeneratorFunctionsComponentClassName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" UserFunctionsComponentName="QueriesTableAdapter" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections>
+          <Connection AppSettingsObjectName="Settings" AppSettingsPropertyName="NW_DataConnectionString" ConnectionStringObject="" IsAppSettingsProperty="true" Modifier="Assembly" Name="NW_DataConnectionString (Settings)" ParameterPrefix="@" PropertyReference="ApplicationSettings.LotLabeler.Properties.Settings.GlobalReference.Default.NW_DataConnectionString" Provider="System.Data.SqlClient" />
+        </Connections>
+        <Tables>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="Crop_VarietiesTableAdapter" GeneratorDataComponentClassName="Crop_VarietiesTableAdapter" Name="Crop_Varieties" UserDataComponentName="Crop_VarietiesTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_Data.dbo.Crop_Varieties" DbObjectType="Table" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Crop, Description
+FROM            Crop_Varieties
+UNION
+SELECT        Description AS Crop, Description
+FROM            Crops
+ORDER BY Crop, Description DESC</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Description" DataSetColumn="Description" />
+              <Mapping SourceColumn="Crop" DataSetColumn="Crop" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="ProducersTableAdapter" GeneratorDataComponentClassName="ProducersTableAdapter" Name="Producers" UserDataComponentName="ProducersTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_Data.dbo.Producers" DbObjectType="Table" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Description
+FROM            Producers
+ORDER BY Description</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Description" DataSetColumn="Description" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+        </Tables>
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="NWDataset" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:EnableTableAdapterManager="true" msprop:Generator_DataSetName="NWDataset" msprop:Generator_UserDSName="NWDataset">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="SampleLabel" msprop:Generator_TableClassName="SampleLabelDataTable" msprop:Generator_TableVarName="tableSampleLabel" msprop:Generator_TablePropName="SampleLabel" msprop:Generator_RowDeletingName="SampleLabelRowDeleting" msprop:Generator_RowChangingName="SampleLabelRowChanging" msprop:Generator_RowEvHandlerName="SampleLabelRowChangeEventHandler" msprop:Generator_RowDeletedName="SampleLabelRowDeleted" msprop:Generator_UserTableName="SampleLabel" msprop:Generator_RowChangedName="SampleLabelRowChanged" msprop:Generator_RowEvArgName="SampleLabelRowChangeEvent" msprop:Generator_RowClassName="SampleLabelRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Check_Protien" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnCheck_Protien" msprop:Generator_ColumnPropNameInRow="Check_Protien" msprop:Generator_ColumnPropNameInTable="Check_ProtienColumn" msprop:Generator_UserColumnName="Check_Protien" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Lot_Number" msprop:Generator_ColumnVarNameInTable="columnLot_Number" msprop:Generator_ColumnPropNameInRow="Lot_Number" msprop:Generator_ColumnPropNameInTable="Lot_NumberColumn" msprop:Generator_UserColumnName="Lot_Number" type="xs:string" />
+              <xs:element name="Crop_Description" msprop:Generator_ColumnVarNameInTable="columnCrop_Description" msprop:Generator_ColumnPropNameInRow="Crop_Description" msprop:Generator_ColumnPropNameInTable="Crop_DescriptionColumn" msprop:Generator_UserColumnName="Crop_Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="321" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Close_Date" msprop:Generator_ColumnVarNameInTable="columnClose_Date" msprop:Generator_ColumnPropNameInRow="Close_Date" msprop:Generator_ColumnPropNameInTable="Close_DateColumn" msprop:Generator_UserColumnName="Close_Date" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="Producer_LandLord" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnProducer_LandLord" msprop:Generator_ColumnPropNameInRow="Producer_LandLord" msprop:Generator_ColumnPropNameInTable="Producer_LandLordColumn" msprop:Generator_UserColumnName="Producer_LandLord" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="513" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Variety" msprop:Generator_ColumnVarNameInTable="columnVariety" msprop:Generator_ColumnPropNameInRow="Variety" msprop:Generator_ColumnPropNameInTable="VarietyColumn" msprop:Generator_UserColumnName="Variety" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="100" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Crop_Varieties" msprop:Generator_TableClassName="Crop_VarietiesDataTable" msprop:Generator_TableVarName="tableCrop_Varieties" msprop:Generator_TablePropName="Crop_Varieties" msprop:Generator_RowDeletingName="Crop_VarietiesRowDeleting" msprop:Generator_RowChangingName="Crop_VarietiesRowChanging" msprop:Generator_RowEvHandlerName="Crop_VarietiesRowChangeEventHandler" msprop:Generator_RowDeletedName="Crop_VarietiesRowDeleted" msprop:Generator_UserTableName="Crop_Varieties" msprop:Generator_RowChangedName="Crop_VarietiesRowChanged" msprop:Generator_RowEvArgName="Crop_VarietiesRowChangeEvent" msprop:Generator_RowClassName="Crop_VarietiesRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Description" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Crop" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnCrop" msprop:Generator_ColumnPropNameInRow="Crop" msprop:Generator_ColumnPropNameInTable="CropColumn" msprop:Generator_UserColumnName="Crop" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Producers" msprop:Generator_TableClassName="ProducersDataTable" msprop:Generator_TableVarName="tableProducers" msprop:Generator_TablePropName="Producers" msprop:Generator_RowDeletingName="ProducersRowDeleting" msprop:Generator_RowChangingName="ProducersRowChanging" msprop:Generator_RowEvHandlerName="ProducersRowChangeEventHandler" msprop:Generator_RowDeletedName="ProducersRowDeleted" msprop:Generator_UserTableName="Producers" msprop:Generator_RowChangedName="ProducersRowChanged" msprop:Generator_RowEvArgName="ProducersRowChangeEvent" msprop:Generator_RowClassName="ProducersRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Description" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

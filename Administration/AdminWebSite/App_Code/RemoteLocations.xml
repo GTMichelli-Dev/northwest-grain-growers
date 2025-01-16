@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<SiteDetails>
+
+  <Site Name="Waitsburg">
+  
+    <VNC>http://10.9.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Mckay">
+
+    <VNC>http://10.10.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Bolles">
+
+    <VNC>http://10.11.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Coppei">
+
+    <VNC>http://10.12.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Dixie">
+
+    <VNC>http://10.13.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Spring Valley">
+
+    <VNC>http://10.14.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Valley Grove">
+
+    <VNC>http://10.15.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Sapolol">
+
+    <VNC>http://10.16.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Tracy">
+
+    <VNC>http://10.17.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Reser">
+
+    <VNC>http://10.18.0.10:5800</VNC>
+    
+  </Site>
+
+  <Site Name="Mission">
+
+    <VNC>http://10.19.0.10:5800</VNC>
+    
+  </Site>
+  
+  <Site Name="Huntsville">
+
+    <VNC>http://10.20.0.10:5800</VNC>
+    
+  </Site>
+  
+  
+  <Site Name="Long">
+
+    <VNC>http://10.21.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Turner">
+
+    <VNC>http://10.22.0.10:5800</VNC>
+    
+  </Site>
+  
+  <Site Name="St John">
+
+    <VNC>http://10.23.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Endicott">
+
+    <VNC>http://10.24.0.10:5800</VNC>
+    
+  </Site>
+
+  <Site Name="Landcaster">
+
+    <VNC>http://10.25.0.10:5800</VNC>
+    
+  </Site>
+  
+  <Site Name="Ewan">
+
+    <VNC>http://10.26.0.10:5800</VNC>
+    
+  </Site>
+  
+  <Site Name="Sunset">
+
+    <VNC>http://10.27.0.10:5800</VNC>
+    
+  </Site>
+  <Site Name="Pleasant Valley">
+
+    <VNC>http://10.28.0.10:5800</VNC>
+    
+  </Site>
+  
+  <Site Name="Dayton">
+
+    <VNC>http://10.8.0.10:5800</VNC>
+    
+  </Site>
+  
+  <Site Name="Lyons Ferry">
+
+    <VNC>http://10.7.0.10:5800</VNC>
+
+  </Site>
+
+</SiteDetails>

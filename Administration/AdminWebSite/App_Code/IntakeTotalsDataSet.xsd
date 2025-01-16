@@ -1,0 +1,145 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="IntakeTotalsDataSet" targetNamespace="http://tempuri.org/IntakeTotalsDataSet.xsd" xmlns:mstns="http://tempuri.org/IntakeTotalsDataSet.xsd" xmlns="http://tempuri.org/IntakeTotalsDataSet.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections>
+          <Connection AppSettingsObjectName="Web.config" AppSettingsPropertyName="NW_DataConnectionString" ConnectionStringObject="" IsAppSettingsProperty="true" Modifier="Assembly" Name="NW_DataConnectionString (Web.config)" ParameterPrefix="@" PropertyReference="AppConfig.System.Configuration.ConfigurationManager.0.ConnectionStrings.NW_DataConnectionString.ConnectionString" Provider="System.Data.SqlClient" />
+        </Connections>
+        <Tables>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="LocationsTableAdapter" GeneratorDataComponentClassName="LocationsTableAdapter" Name="Locations" UserDataComponentName="LocationsTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Web.config)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Locations.Id, Locations.Description, Location_Districts.District, LTRIM(STR(Locations.Id)) + ' - ' + Locations.Description AS Location
+FROM            Locations INNER JOIN
+                         Location_Districts ON Locations.District = Location_Districts.District
+WHERE        (Locations.Id &gt; 0) AND (Locations.In_Production = 1)
+ORDER BY Locations.Id</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Id" DataSetColumn="Id" />
+              <Mapping SourceColumn="Description" DataSetColumn="Description" />
+              <Mapping SourceColumn="District" DataSetColumn="District" />
+              <Mapping SourceColumn="Location" DataSetColumn="Location" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="IntakeTotalsDetailTableAdapter" GeneratorDataComponentClassName="IntakeTotalsDetailTableAdapter" Name="IntakeTotalsDetail" UserDataComponentName="IntakeTotalsDetailTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Web.config)" DbObjectName="NW_Data.dbo.Locations" DbObjectType="Table" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        LTRIM(STR(Locations.Id)) + ' - ' + Locations.Description AS [Location Description], Locations.Id AS [Location Id], Locations.District, ISNULL(SUM(tblData.Net), 0) AS Net, ISNULL(tblData.Crop_Id, '') AS [Crop Id], 
+                         ISNULL(tblData.Crop_Description, '') AS [Crop Description], ISNULL(tblData.UOM_Description, '') AS UOM, ISNULL(SUM(tblData.Net) / tblData.UOM_Factor, 0) AS [Total Units]
+FROM            (SELECT        Location_Id, Net, Close_Date, Crop_Id, Crop_Description, UOM_Code, UOM_Description, UOM_Factor
+                          FROM            vwWeigh_Sheet
+                          WHERE        (Close_Date IS NOT NULL) AND (DATEDIFF(day, Close_Date, @SelectedStartDate) &lt;= 0) AND (DATEDIFF(day, Close_Date, @SelectedEndDate) &gt;= 0)) AS tblData RIGHT OUTER JOIN
+                         Locations ON tblData.Location_Id = Locations.Id
+WHERE        (Locations.In_Production = 1)
+GROUP BY tblData.Crop_Id, tblData.Crop_Description, tblData.UOM_Code, tblData.UOM_Description, tblData.UOM_Factor, LTRIM(STR(Locations.Id)) + ' - ' + Locations.Description, Locations.Id, Locations.District
+HAVING        (Locations.Id &gt; 0)
+ORDER BY Locations.District, [Location Id]</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="SelectedStartDate" ColumnName="" DataSourceName="" DataTypeServer="unknown" DbType="DateTime" Direction="Input" ParameterName="@SelectedStartDate" Precision="0" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="SelectedEndDate" ColumnName="" DataSourceName="" DataTypeServer="unknown" DbType="DateTime" Direction="Input" ParameterName="@SelectedEndDate" Precision="0" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Location Description" DataSetColumn="Location Description" />
+              <Mapping SourceColumn="Location Id" DataSetColumn="Location Id" />
+              <Mapping SourceColumn="District" DataSetColumn="District" />
+              <Mapping SourceColumn="Net" DataSetColumn="Net" />
+              <Mapping SourceColumn="Crop Id" DataSetColumn="Crop Id" />
+              <Mapping SourceColumn="Crop Description" DataSetColumn="Crop Description" />
+              <Mapping SourceColumn="UOM" DataSetColumn="UOM" />
+              <Mapping SourceColumn="Total Units" DataSetColumn="Total Units" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+        </Tables>
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="IntakeTotalsDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:Generator_DataSetName="IntakeTotalsDataSet" msprop:Generator_UserDSName="IntakeTotalsDataSet">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="Locations" msprop:Generator_TableClassName="LocationsDataTable" msprop:Generator_TableVarName="tableLocations" msprop:Generator_TablePropName="Locations" msprop:Generator_RowDeletingName="LocationsRowDeleting" msprop:Generator_RowChangingName="LocationsRowChanging" msprop:Generator_RowEvHandlerName="LocationsRowChangeEventHandler" msprop:Generator_RowDeletedName="LocationsRowDeleted" msprop:Generator_UserTableName="Locations" msprop:Generator_RowChangedName="LocationsRowChanged" msprop:Generator_RowEvArgName="LocationsRowChangeEvent" msprop:Generator_RowClassName="LocationsRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Id" msprop:Generator_ColumnVarNameInTable="columnId" msprop:Generator_ColumnPropNameInRow="Id" msprop:Generator_ColumnPropNameInTable="IdColumn" msprop:Generator_UserColumnName="Id" type="xs:int" />
+              <xs:element name="Description" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="District" msprop:Generator_ColumnVarNameInTable="columnDistrict" msprop:Generator_ColumnPropNameInRow="District" msprop:Generator_ColumnPropNameInTable="DistrictColumn" msprop:Generator_UserColumnName="District">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnLocation" msprop:Generator_ColumnPropNameInRow="Location" msprop:Generator_ColumnPropNameInTable="LocationColumn" msprop:Generator_UserColumnName="Location" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="63" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="IntakeTotalsDetail" msprop:Generator_TableClassName="IntakeTotalsDetailDataTable" msprop:Generator_TableVarName="tableIntakeTotalsDetail" msprop:Generator_TablePropName="IntakeTotalsDetail" msprop:Generator_RowDeletingName="IntakeTotalsDetailRowDeleting" msprop:Generator_RowChangingName="IntakeTotalsDetailRowChanging" msprop:Generator_RowEvHandlerName="IntakeTotalsDetailRowChangeEventHandler" msprop:Generator_RowDeletedName="IntakeTotalsDetailRowDeleted" msprop:Generator_UserTableName="IntakeTotalsDetail" msprop:Generator_RowChangedName="IntakeTotalsDetailRowChanged" msprop:Generator_RowEvArgName="IntakeTotalsDetailRowChangeEvent" msprop:Generator_RowClassName="IntakeTotalsDetailRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Location_x0020_Description" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnLocation_Description" msprop:Generator_ColumnPropNameInRow="Location_Description" msprop:Generator_ColumnPropNameInTable="Location_DescriptionColumn" msprop:Generator_UserColumnName="Location Description" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="63" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location_x0020_Id" msprop:Generator_ColumnVarNameInTable="columnLocation_Id" msprop:Generator_ColumnPropNameInRow="Location_Id" msprop:Generator_ColumnPropNameInTable="Location_IdColumn" msprop:Generator_UserColumnName="Location Id" type="xs:int" />
+              <xs:element name="District" msprop:Generator_ColumnVarNameInTable="columnDistrict" msprop:Generator_ColumnPropNameInRow="District" msprop:Generator_ColumnPropNameInTable="DistrictColumn" msprop:Generator_UserColumnName="District">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Net" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnNet" msprop:Generator_ColumnPropNameInRow="Net" msprop:Generator_ColumnPropNameInTable="NetColumn" msprop:Generator_UserColumnName="Net" type="xs:int" minOccurs="0" />
+              <xs:element name="Crop_x0020_Id" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnCrop_Id" msprop:Generator_ColumnPropNameInRow="Crop_Id" msprop:Generator_ColumnPropNameInTable="Crop_IdColumn" msprop:Generator_UserColumnName="Crop Id" type="xs:int" minOccurs="0" />
+              <xs:element name="Crop_x0020_Description" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnCrop_Description" msprop:Generator_ColumnPropNameInRow="Crop_Description" msprop:Generator_ColumnPropNameInTable="Crop_DescriptionColumn" msprop:Generator_UserColumnName="Crop Description" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="UOM" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnUOM" msprop:Generator_ColumnPropNameInRow="UOM" msprop:Generator_ColumnPropNameInTable="UOMColumn" msprop:Generator_UserColumnName="UOM" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="10" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Total_x0020_Units" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnTotal_Units" msprop:Generator_ColumnPropNameInRow="Total_Units" msprop:Generator_ColumnPropNameInTable="Total_UnitsColumn" msprop:Generator_UserColumnName="Total Units" type="xs:float" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

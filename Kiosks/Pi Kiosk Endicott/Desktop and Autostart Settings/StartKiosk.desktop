@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=startKiosk autostart
+Comment=Starts the Kiosk Service server
+NoDisplay=true
+ 
+Exec= sudo mono /home/pi/Documents/KioskIFace.exe

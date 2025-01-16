@@ -1,0 +1,69 @@
+﻿using System.Linq;
+using System.Web.Mvc;
+using System.Data.Entity;
+using System.Threading.Tasks;
+using BinData;
+
+[RoutePrefix("api/bins")]
+public class BinsController : Controller
+{
+    private readonly BinDBContext _context;
+
+    public BinsController()
+    {
+        _context = new BinDBContext();
+    }
+
+    [HttpGet]
+    [Route("", Name = "GetBins")]
+    public async Task<ActionResult> GetBins()
+    {
+        var bins = await _context.Bins
+            .Include(b => b.Crop)
+            .Include(b => b.Location)
+            .OrderBy(x => x.Location.Description)
+            .ThenBy(x => x.Bin1)
+            .Select(x => new BinDTO
+            {
+                Uid = x.Uid,
+                LocationId = x.LocationId,
+                Description = x.Location.Description,
+                CropId = x.CropId,
+                BushelsFt = x.BushelsFt,
+                Capacity = x.Capacity,
+                Bushels = x.Bushels,
+                TestTimeDate = x.TestTimeDate,
+                Crop = new CropDTO
+                {
+                    Uid = x.Crop.Uid,
+                    Id = x.Crop.Id,
+                    Description = x.Crop.Description,
+                    UseAtElevator = x.Crop.UseAtElevator,
+                    UseAtSeedMill = x.Crop.UseAtSeedMill,
+                    UnitOfMeasure = x.Crop.UnitOfMeasure,
+                    Active = x.Crop.Active,
+                    PoundPerBushel = x.Crop.PoundPerBushel,
+                    ColorIndex = x.Crop.ColorIndex,
+                    SecondaryColorIndex = x.Crop.SecondaryColorIndex
+                },
+                Location = new LocationDTO
+                {
+                    Uid = x.Location.Uid,
+                    Id = x.Location.Id,
+                    Description = x.Location.Description,
+                    Active = x.Location.Active
+                }
+            }).ToListAsync();
+
+        return Json(bins, JsonRequestBehavior.AllowGet);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _context.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+}

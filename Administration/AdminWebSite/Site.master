@@ -1,0 +1,251 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeFile="Site.master.cs" Inherits="SiteMaster" %>
+
+<%@ Register Assembly="CrystalDecisions.Web, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304" Namespace="CrystalDecisions.Web" TagPrefix="CR" %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head runat="server">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%: Page.Title %> - NWGG</title>
+
+    <asp:PlaceHolder runat="server">
+        <%: Scripts.Render("~/bundles/modernizr") %>
+    </asp:PlaceHolder>
+    <webopt:BundleReference runat="server" Path="~/Content/css" />
+
+    <link href="/Content/bootstrap-grid.css" rel="stylesheet" />
+    <link href="/Content/bootstrap-reboot.css" rel="stylesheet" />
+    <link href="/Content/bootstrap.css" rel="stylesheet" />
+    <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.18.3/dist/bootstrap-table.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.0/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.18.3/bootstrap-table.min.css">
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.18.3/bootstrap-table.min.js"></script>
+  
+</head>
+<body>
+    <form runat="server">
+        <script src="/Scripts/umd/popper.min.js"></script>
+        <script src="/Scripts/bootstrap.min.js"></script>
+        <script src="https://unpkg.com/bootstrap-table@1.18.3/dist/bootstrap-table.min.js"></script>
+        <script src="https://kit.fontawesome.com/a6c24834b3.js" crossorigin="anonymous"></script>
+        <script src="/Scripts/siteJS/modalMessage.js"></script>
+
+
+        <asp:ScriptManager runat="server">
+            <Scripts>
+                <asp:ScriptReference Name="MsAjaxBundle" />
+                <asp:ScriptReference Name="respond" />
+                <asp:ScriptReference Name="WebForms.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebForms.js" />
+                <asp:ScriptReference Name="WebUIValidation.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebUIValidation.js" />
+                <asp:ScriptReference Name="MenuStandards.js" Assembly="System.Web" Path="~/Scripts/WebForms/MenuStandards.js" />
+                <asp:ScriptReference Name="GridView.js" Assembly="System.Web" Path="~/Scripts/WebForms/GridView.js" />
+                <asp:ScriptReference Name="DetailsView.js" Assembly="System.Web" Path="~/Scripts/WebForms/DetailsView.js" />
+                <asp:ScriptReference Name="TreeView.js" Assembly="System.Web" Path="~/Scripts/WebForms/TreeView.js" />
+                <asp:ScriptReference Name="WebParts.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebParts.js" />
+                <asp:ScriptReference Name="Focus.js" Assembly="System.Web" Path="~/Scripts/WebForms/Focus.js" />
+                <asp:ScriptReference Name="WebFormsBundle" />
+            </Scripts>
+        </asp:ScriptManager>
+
+        <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+            <asp:ImageButton runat="server" ID="img" PostBackUrl="~/Default.aspx" ImageUrl="nwgg-logo.png" Style="top: 0px; max-width: 21rem; padding-right: 1rem;" alt="Northwest Grain Growers" />
+            <asp:PlaceHolder runat="server" ID="mainNav">
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div id="navbar" class="navbar-collapse collapse">
+                    <ul class="navbar-nav mr-auto">
+                        <asp:PlaceHolder ID="SitesPlaceholder" runat="server">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown04T">Sites<span class="caret"></span></a>
+                                <div class="dropdown-menu" aria-labelledby="dropdown04T">
+                                    <a class="dropdown-item" href="/Locations/Locations">Locations</a>
+                                    <a class="dropdown-item" href="/Setup/CurrentFuelPrice">Current Fuel Price</a>
+                                    <a class="dropdown-item" href="/Bins/Bins">Bins</a>
+                                </div>
+                            </li>
+                        </asp:PlaceHolder>
+
+                        <asp:PlaceHolder ID="CropsPlaceholder" runat="server">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown05T">Crops<span class="caret"></span></a>
+                                <div class="dropdown-menu" aria-labelledby="dropdown05T">
+                                    <a class="dropdown-item" href="/Crops/Crops">Crops</a>
+                                    <a class="dropdown-item" href="/Crops/Varieties">Varieties</a>
+                                    <a class="dropdown-item" href="/Crops/ProducerCropFilter.aspx">Crop Producer Filter</a>
+                                </div>
+                            </li>
+                        </asp:PlaceHolder>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown06T">Weightsheets<span class="caret"></span></a>
+                            <div class="dropdown-menu" aria-labelledby="dropdown06T">
+                                <a class="dropdown-item" href="/Weightsheets/IntakeWeightSheets">Intake Weightsheets</a>
+                                <a class="dropdown-item" href="/Weightsheets/TransferWeightsheets">Transfer Weightsheets</a>
+                                <a class="dropdown-item" href="/Weightsheets/IntakeLoadTotals">Intake Load Totals</a>
+                            </div>
+                        </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown07T">Reports<span class="caret"></span></a>
+                            <div class="dropdown-menu" aria-labelledby="dropdown07T">
+                                <a class="dropdown-item" href="/WeightSheets/DailyReportSelection">Daily Intake/Transfer WeightSheet Report</a>
+                                <a class="dropdown-item" href="/WeightSheets/SelectWeightSheetSeriesReport">Daily WeightSheet Series</a>
+                                <a class="dropdown-item" href="/WeightSheets/SelectCommodityReport">Intake/Transfer Totals By Location By </a>
+                                <a class="dropdown-item" href="/Reports/DailyBinReport">Daily Bin Report</a>
+                                <a class="dropdown-item" href="/Reports/AverageProtein">Average Protein By Bin</a>
+                                
+                                <a class="dropdown-item" href="/dailyLoadTimes">Daily Load Times</a>
+                                <a class="dropdown-item" href="/Weightsheets/TransferWeightsheets">Transfer Weightsheets</a>
+                                <a class="dropdown-item" href="/Reports/ProducersCommodityDeliveredReport">Producers Commodity Report</a>
+                                <a class="dropdown-item" href="/Reports/ProducersDeliveredReport">Producers Delivery Report</a>
+                                <a class="dropdown-item" href="/Reports/IntakeLocationReport">Intake By Location Crop</a>
+                            </div>
+                        </li>
+
+                        <asp:PlaceHolder ID="ProducerCarrierPlaceholder" runat="server">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown09T">Producer/Carrier<span class="caret"></span></a>
+                                <div class="dropdown-menu" aria-labelledby="dropdown09T">
+                                    <a class="dropdown-item" href="/Producers/Producers">Producers</a>
+                                    <a class="dropdown-item" href="/Carriers/Carriers">Carriers</a>
+                                </div>
+                            </li>
+                        </asp:PlaceHolder>
+
+                        <asp:PlaceHolder ID="MiscPlaceholder" runat="server">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown10T">Misc<span class="caret"></span></a>
+                                <div class="dropdown-menu" aria-labelledby="dropdown10T">
+                                    <a class="dropdown-item" href="/AgvantageUpdate/Results?home=1">Agvantage Update Log</a>
+                                    <asp:PlaceHolder ID="RatesPlaceholder" runat="server">
+                                        <a class="dropdown-item" href="/Rates/Rates">Rates</a>
+                                    </asp:PlaceHolder>
+                                    <asp:PlaceHolder ID="LandlordsPlaceHolder" runat="server">
+                                        <a class="dropdown-item" href="/Landlords/Landlords">Landlords</a>
+                                    </asp:PlaceHolder>
+                                    <asp:PlaceHolder ID="AuditPlaceHolder" runat="server">
+                                        <a class="dropdown-item" href="/IntakeAudit.aspx">Audit Record</a>
+                                    </asp:PlaceHolder>
+                                    <a class="dropdown-item" href="/Misc/LastLoadReported">Last Load Update</a>
+                                    <a class="dropdown-item" href="/Server/Servers">Servers</a>
+                                </div>
+                            </li>
+                        </asp:PlaceHolder>
+
+                        <li class="nav-item active"><a class="nav-link" href="/Lots/WarehouseLots.aspx">Lots</a></li>
+                        <li class="nav-item active"><a class="nav-link" href="/SeedDefault.aspx">Seed</a></li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <asp:LinkButton CssClass="nav-link" ID="lnkLocked" OnClick="lnkLocked_Click" runat="server"></asp:LinkButton>
+                        </li>
+                    </ul>
+                </div>
+            </asp:PlaceHolder>
+        </nav>
+
+        <!-- Modal for messages -->
+        <div class="modal fade" id="modalMessage" data-backdrop="static" tabindex="-1" role="dialog">
+            <div class="modal-dialog" style="min-width: 650px">
+                <div class="modal-content">
+                    <div class="modal-header modal-message-header flash-bw header-danger">
+                        <h4 class="modal-title messageHeader">Message from server</h4>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p class="h4 messageToDisplay font-weight-bold text-center">Some text in the modal.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" id="mmBtnAck" style="width: 120px" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for confirmation -->
+        <div class="modal fade" id="modalConfirm" data-backdrop="static" tabindex="-1" role="dialog">
+            <div class="modal-dialog" style="max-width: 550px">
+                <div class="modal-content">
+                    <div class="modal-header" style="background-color: red; color: white">
+                        <h4 class="modal-title messageHeader" id="confirmHeader">Message from server</h4>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p class="h5 font-weight-bold text-center" id="confirmMessage">Some text in the modal.</p>
+                        <div class="confirm-div form-row">
+                            <div class="col-12 text-center">
+                                <label>Type <i class="text-info">CONFIRM</i> To Continue</label>
+                            </div>
+                            <div class="col-4 offset-4">
+                                <input type="text" autocomplete="off" onkeyup="checkConfirm(this);" id="confirmInput" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" style="width: 120px" class="btn btn-success" id="btnConfirmOK" data-dismiss="modal">Yes</button>
+                        <button type="button" style="width: 120px" class="btn btn-danger" id="btnCancelConfirm" data-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for Yes/No messages -->
+        <div class="modal fade" id="modalYesNoMessage" data-backdrop="static" tabindex="-1" role="dialog">
+            <div class="modal-dialog" style="min-width: 650px">
+                <div class="modal-content">
+                    <div class="modal-header modal-message-header flash-bw yesno-header header-info">
+                        <h4 class="modal-title messageHeader" id="modalYesNoMessageHeader">Message from server</h4>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p class="h6 messageToDisplay font-weight-bold text-center" id="modalYesNoText">Some text in the modal.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" id="mmYes" style="width: 120px" class="btn btn-success" data-dismiss="modal">Yes</button>
+                        <button type="button" id="mmNo" style="width: 120px" class="btn btn-danger" data-dismiss="modal">No</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for printing -->
+        <div class="modal fade" id="printingModel" data-keyboard="false" data-backdrop="static" role="dialog">
+            <div class="modal-dialog" style="height: 150px; width: 250px">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title text-center">Printing</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <i class="fa fa-spin fa-5x fa-cog"></i>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Hide</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <br />
+            <div class="body-content text-center">
+                <asp:ContentPlaceHolder ID="MainContent" runat="server"></asp:ContentPlaceHolder>
+            </div>
+            <div class="container-fluid text-center d-flex justify-content-center">
+                <asp:ContentPlaceHolder ID="MainContentFull" runat="server"></asp:ContentPlaceHolder>
+            </div>
+        </div>
+        <hr />
+        <footer>
+            <p>&copy; <%: DateTime.Now.Year %> - NWGG</p>
+        </footer>
+    </form>
+     <%--<script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.24.0/dist/bootstrap-table-locale-all.min.js"></script>--%>
+
+</body>
+</html>

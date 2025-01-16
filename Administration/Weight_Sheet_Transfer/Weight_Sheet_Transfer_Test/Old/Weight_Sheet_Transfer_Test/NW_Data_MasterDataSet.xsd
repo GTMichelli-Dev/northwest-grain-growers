@@ -1,0 +1,218 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="NW_Data_MasterDataSet" targetNamespace="http://tempuri.org/NW_Data_MasterDataSet.xsd" xmlns:mstns="http://tempuri.org/NW_Data_MasterDataSet.xsd" xmlns="http://tempuri.org/NW_Data_MasterDataSet.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections>
+          <Connection AppSettingsObjectName="Settings" AppSettingsPropertyName="NW_Data_MasterConnectionString" ConnectionStringObject="" IsAppSettingsProperty="true" Modifier="Assembly" Name="NW_Data_MasterConnectionString (Settings)" ParameterPrefix="@" PropertyReference="ApplicationSettings.Weight_Sheet_Transfer_Test.Properties.Settings.GlobalReference.Default.NW_Data_MasterConnectionString" Provider="System.Data.SqlClient" />
+        </Connections>
+        <Tables>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="vwWeight_Sheet_InformationTableAdapter" GeneratorDataComponentClassName="vwWeight_Sheet_InformationTableAdapter" Name="vwWeight_Sheet_Information" UserDataComponentName="vwWeight_Sheet_InformationTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_Data_MasterConnectionString (Settings)" DbObjectName="NW_Data_Master.dbo.vwWeight_Sheet_Information" DbObjectType="View" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        TOP (200) UID, WS_Id, Carrier_Description, Carrier_Id, Weighmaster, Comment, Miles, BOL_Type, Rate, Location_Id, Creation_Date, Lot_Number, Producer_Id, Producer_Description, State, Crop_Id, 
+                         Crop_Description, FSA_Number, Landlord, Year, Producer_ID_Description, Split_Number, Location_Description, Date_Created, Lot_UID, Total_Loads, Not_Completed, Completed, Is_New_Lot, Total_Billed, 
+                         Close_Date, Start_Date, Is_End_Lot, Commodity_Code, Variety, Crop_Variety, Original_Printed, Weight_Sheet_Closed, Lot_Sampled, Lot_Closed, Is_Loadout
+FROM            vwWeight_Sheet_Information
+ORDER BY Creation_Date DESC</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="UID" DataSetColumn="UID" />
+              <Mapping SourceColumn="WS_Id" DataSetColumn="WS_Id" />
+              <Mapping SourceColumn="Carrier_Description" DataSetColumn="Carrier_Description" />
+              <Mapping SourceColumn="Carrier_Id" DataSetColumn="Carrier_Id" />
+              <Mapping SourceColumn="Weighmaster" DataSetColumn="Weighmaster" />
+              <Mapping SourceColumn="Comment" DataSetColumn="Comment" />
+              <Mapping SourceColumn="Miles" DataSetColumn="Miles" />
+              <Mapping SourceColumn="BOL_Type" DataSetColumn="BOL_Type" />
+              <Mapping SourceColumn="Rate" DataSetColumn="Rate" />
+              <Mapping SourceColumn="Location_Id" DataSetColumn="Location_Id" />
+              <Mapping SourceColumn="Creation_Date" DataSetColumn="Creation_Date" />
+              <Mapping SourceColumn="Lot_Number" DataSetColumn="Lot_Number" />
+              <Mapping SourceColumn="Producer_Id" DataSetColumn="Producer_Id" />
+              <Mapping SourceColumn="Producer_Description" DataSetColumn="Producer_Description" />
+              <Mapping SourceColumn="State" DataSetColumn="State" />
+              <Mapping SourceColumn="Crop_Id" DataSetColumn="Crop_Id" />
+              <Mapping SourceColumn="Crop_Description" DataSetColumn="Crop_Description" />
+              <Mapping SourceColumn="FSA_Number" DataSetColumn="FSA_Number" />
+              <Mapping SourceColumn="Landlord" DataSetColumn="Landlord" />
+              <Mapping SourceColumn="Year" DataSetColumn="Year" />
+              <Mapping SourceColumn="Producer_ID_Description" DataSetColumn="Producer_ID_Description" />
+              <Mapping SourceColumn="Split_Number" DataSetColumn="Split_Number" />
+              <Mapping SourceColumn="Location_Description" DataSetColumn="Location_Description" />
+              <Mapping SourceColumn="Date_Created" DataSetColumn="Date_Created" />
+              <Mapping SourceColumn="Lot_UID" DataSetColumn="Lot_UID" />
+              <Mapping SourceColumn="Total_Loads" DataSetColumn="Total_Loads" />
+              <Mapping SourceColumn="Not_Completed" DataSetColumn="Not_Completed" />
+              <Mapping SourceColumn="Completed" DataSetColumn="Completed" />
+              <Mapping SourceColumn="Is_New_Lot" DataSetColumn="Is_New_Lot" />
+              <Mapping SourceColumn="Total_Billed" DataSetColumn="Total_Billed" />
+              <Mapping SourceColumn="Close_Date" DataSetColumn="Close_Date" />
+              <Mapping SourceColumn="Start_Date" DataSetColumn="Start_Date" />
+              <Mapping SourceColumn="Is_End_Lot" DataSetColumn="Is_End_Lot" />
+              <Mapping SourceColumn="Commodity_Code" DataSetColumn="Commodity_Code" />
+              <Mapping SourceColumn="Variety" DataSetColumn="Variety" />
+              <Mapping SourceColumn="Crop_Variety" DataSetColumn="Crop_Variety" />
+              <Mapping SourceColumn="Original_Printed" DataSetColumn="Original_Printed" />
+              <Mapping SourceColumn="Weight_Sheet_Closed" DataSetColumn="Weight_Sheet_Closed" />
+              <Mapping SourceColumn="Lot_Sampled" DataSetColumn="Lot_Sampled" />
+              <Mapping SourceColumn="Lot_Closed" DataSetColumn="Lot_Closed" />
+              <Mapping SourceColumn="Is_Loadout" DataSetColumn="Is_Loadout" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+        </Tables>
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="NW_Data_MasterDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:EnableTableAdapterManager="True" msprop:Generator_DataSetName="NW_Data_MasterDataSet" msprop:Generator_UserDSName="NW_Data_MasterDataSet">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="vwWeight_Sheet_Information" msprop:Generator_TableClassName="vwWeight_Sheet_InformationDataTable" msprop:Generator_TableVarName="tablevwWeight_Sheet_Information" msprop:Generator_TablePropName="vwWeight_Sheet_Information" msprop:Generator_RowDeletingName="vwWeight_Sheet_InformationRowDeleting" msprop:Generator_RowChangingName="vwWeight_Sheet_InformationRowChanging" msprop:Generator_RowEvHandlerName="vwWeight_Sheet_InformationRowChangeEventHandler" msprop:Generator_RowDeletedName="vwWeight_Sheet_InformationRowDeleted" msprop:Generator_UserTableName="vwWeight_Sheet_Information" msprop:Generator_RowChangedName="vwWeight_Sheet_InformationRowChanged" msprop:Generator_RowEvArgName="vwWeight_Sheet_InformationRowChangeEvent" msprop:Generator_RowClassName="vwWeight_Sheet_InformationRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
+              <xs:element name="WS_Id" msprop:Generator_ColumnVarNameInTable="columnWS_Id" msprop:Generator_ColumnPropNameInRow="WS_Id" msprop:Generator_ColumnPropNameInTable="WS_IdColumn" msprop:Generator_UserColumnName="WS_Id" type="xs:int" />
+              <xs:element name="Carrier_Description" msprop:Generator_ColumnVarNameInTable="columnCarrier_Description" msprop:Generator_ColumnPropNameInRow="Carrier_Description" msprop:Generator_ColumnPropNameInTable="Carrier_DescriptionColumn" msprop:Generator_UserColumnName="Carrier_Description" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Carrier_Id" msprop:Generator_ColumnVarNameInTable="columnCarrier_Id" msprop:Generator_ColumnPropNameInRow="Carrier_Id" msprop:Generator_ColumnPropNameInTable="Carrier_IdColumn" msprop:Generator_UserColumnName="Carrier_Id" type="xs:int" minOccurs="0" />
+              <xs:element name="Weighmaster" msprop:Generator_ColumnVarNameInTable="columnWeighmaster" msprop:Generator_ColumnPropNameInRow="Weighmaster" msprop:Generator_ColumnPropNameInTable="WeighmasterColumn" msprop:Generator_UserColumnName="Weighmaster">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="200" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Comment" msprop:Generator_ColumnVarNameInTable="columnComment" msprop:Generator_ColumnPropNameInRow="Comment" msprop:Generator_ColumnPropNameInTable="CommentColumn" msprop:Generator_UserColumnName="Comment" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2147483647" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Miles" msprop:Generator_ColumnVarNameInTable="columnMiles" msprop:Generator_ColumnPropNameInRow="Miles" msprop:Generator_ColumnPropNameInTable="MilesColumn" msprop:Generator_UserColumnName="Miles" type="xs:int" minOccurs="0" />
+              <xs:element name="BOL_Type" msprop:Generator_ColumnVarNameInTable="columnBOL_Type" msprop:Generator_ColumnPropNameInRow="BOL_Type" msprop:Generator_ColumnPropNameInTable="BOL_TypeColumn" msprop:Generator_UserColumnName="BOL_Type" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Rate" msprop:Generator_ColumnVarNameInTable="columnRate" msprop:Generator_ColumnPropNameInRow="Rate" msprop:Generator_ColumnPropNameInTable="RateColumn" msprop:Generator_UserColumnName="Rate" type="xs:decimal" minOccurs="0" />
+              <xs:element name="Location_Id" msprop:Generator_ColumnVarNameInTable="columnLocation_Id" msprop:Generator_ColumnPropNameInRow="Location_Id" msprop:Generator_ColumnPropNameInTable="Location_IdColumn" msprop:Generator_UserColumnName="Location_Id" type="xs:int" />
+              <xs:element name="Creation_Date" msprop:Generator_ColumnVarNameInTable="columnCreation_Date" msprop:Generator_ColumnPropNameInRow="Creation_Date" msprop:Generator_ColumnPropNameInTable="Creation_DateColumn" msprop:Generator_UserColumnName="Creation_Date" type="xs:dateTime" />
+              <xs:element name="Lot_Number" msprop:Generator_ColumnVarNameInTable="columnLot_Number" msprop:Generator_ColumnPropNameInRow="Lot_Number" msprop:Generator_ColumnPropNameInTable="Lot_NumberColumn" msprop:Generator_UserColumnName="Lot_Number" type="xs:int" />
+              <xs:element name="Producer_Id" msprop:Generator_ColumnVarNameInTable="columnProducer_Id" msprop:Generator_ColumnPropNameInRow="Producer_Id" msprop:Generator_ColumnPropNameInTable="Producer_IdColumn" msprop:Generator_UserColumnName="Producer_Id" type="xs:int" />
+              <xs:element name="Producer_Description" msprop:Generator_ColumnVarNameInTable="columnProducer_Description" msprop:Generator_ColumnPropNameInRow="Producer_Description" msprop:Generator_ColumnPropNameInTable="Producer_DescriptionColumn" msprop:Generator_UserColumnName="Producer_Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="State" msprop:Generator_ColumnVarNameInTable="columnState" msprop:Generator_ColumnPropNameInRow="State" msprop:Generator_ColumnPropNameInTable="StateColumn" msprop:Generator_UserColumnName="State">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Crop_Id" msprop:Generator_ColumnVarNameInTable="columnCrop_Id" msprop:Generator_ColumnPropNameInRow="Crop_Id" msprop:Generator_ColumnPropNameInTable="Crop_IdColumn" msprop:Generator_UserColumnName="Crop_Id" type="xs:int" />
+              <xs:element name="Crop_Description" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnCrop_Description" msprop:Generator_ColumnPropNameInRow="Crop_Description" msprop:Generator_ColumnPropNameInTable="Crop_DescriptionColumn" msprop:Generator_UserColumnName="Crop_Description" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="371" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="FSA_Number" msprop:Generator_ColumnVarNameInTable="columnFSA_Number" msprop:Generator_ColumnPropNameInRow="FSA_Number" msprop:Generator_ColumnPropNameInTable="FSA_NumberColumn" msprop:Generator_UserColumnName="FSA_Number" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Landlord" msprop:Generator_ColumnVarNameInTable="columnLandlord" msprop:Generator_ColumnPropNameInRow="Landlord" msprop:Generator_ColumnPropNameInTable="LandlordColumn" msprop:Generator_UserColumnName="Landlord" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Year" msprop:Generator_ColumnVarNameInTable="columnYear" msprop:Generator_ColumnPropNameInRow="Year" msprop:Generator_ColumnPropNameInTable="YearColumn" msprop:Generator_UserColumnName="Year" type="xs:int" />
+              <xs:element name="Producer_ID_Description" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnProducer_ID_Description" msprop:Generator_ColumnPropNameInRow="Producer_ID_Description" msprop:Generator_ColumnPropNameInTable="Producer_ID_DescriptionColumn" msprop:Generator_UserColumnName="Producer_ID_Description" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="268" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Split_Number" msprop:Generator_ColumnVarNameInTable="columnSplit_Number" msprop:Generator_ColumnPropNameInRow="Split_Number" msprop:Generator_ColumnPropNameInTable="Split_NumberColumn" msprop:Generator_UserColumnName="Split_Number" type="xs:int" minOccurs="0" />
+              <xs:element name="Location_Description" msprop:Generator_ColumnVarNameInTable="columnLocation_Description" msprop:Generator_ColumnPropNameInRow="Location_Description" msprop:Generator_ColumnPropNameInTable="Location_DescriptionColumn" msprop:Generator_UserColumnName="Location_Description" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Date_Created" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnDate_Created" msprop:Generator_ColumnPropNameInRow="Date_Created" msprop:Generator_ColumnPropNameInTable="Date_CreatedColumn" msprop:Generator_UserColumnName="Date_Created" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Lot_UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnLot_UID" msprop:Generator_ColumnPropNameInRow="Lot_UID" msprop:Generator_ColumnPropNameInTable="Lot_UIDColumn" msprop:Generator_UserColumnName="Lot_UID" type="xs:string" />
+              <xs:element name="Total_Loads" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnTotal_Loads" msprop:Generator_ColumnPropNameInRow="Total_Loads" msprop:Generator_ColumnPropNameInTable="Total_LoadsColumn" msprop:Generator_UserColumnName="Total_Loads" type="xs:int" minOccurs="0" />
+              <xs:element name="Not_Completed" msprop:Generator_ColumnVarNameInTable="columnNot_Completed" msprop:Generator_ColumnPropNameInRow="Not_Completed" msprop:Generator_ColumnPropNameInTable="Not_CompletedColumn" msprop:Generator_UserColumnName="Not_Completed" type="xs:int" minOccurs="0" />
+              <xs:element name="Completed" msprop:Generator_ColumnVarNameInTable="columnCompleted" msprop:Generator_ColumnPropNameInRow="Completed" msprop:Generator_ColumnPropNameInTable="CompletedColumn" msprop:Generator_UserColumnName="Completed" type="xs:int" minOccurs="0" />
+              <xs:element name="Is_New_Lot" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnIs_New_Lot" msprop:Generator_ColumnPropNameInRow="Is_New_Lot" msprop:Generator_ColumnPropNameInTable="Is_New_LotColumn" msprop:Generator_UserColumnName="Is_New_Lot" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Total_Billed" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnTotal_Billed" msprop:Generator_ColumnPropNameInRow="Total_Billed" msprop:Generator_ColumnPropNameInTable="Total_BilledColumn" msprop:Generator_UserColumnName="Total_Billed" type="xs:decimal" minOccurs="0" />
+              <xs:element name="Close_Date" msprop:Generator_ColumnVarNameInTable="columnClose_Date" msprop:Generator_ColumnPropNameInRow="Close_Date" msprop:Generator_ColumnPropNameInTable="Close_DateColumn" msprop:Generator_UserColumnName="Close_Date" type="xs:dateTime" minOccurs="0" />
+              <xs:element name="Start_Date" msprop:Generator_ColumnVarNameInTable="columnStart_Date" msprop:Generator_ColumnPropNameInRow="Start_Date" msprop:Generator_ColumnPropNameInTable="Start_DateColumn" msprop:Generator_UserColumnName="Start_Date" type="xs:dateTime" />
+              <xs:element name="Is_End_Lot" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnIs_End_Lot" msprop:Generator_ColumnPropNameInRow="Is_End_Lot" msprop:Generator_ColumnPropNameInTable="Is_End_LotColumn" msprop:Generator_UserColumnName="Is_End_Lot" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Commodity_Code" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnCommodity_Code" msprop:Generator_ColumnPropNameInRow="Commodity_Code" msprop:Generator_ColumnPropNameInTable="Commodity_CodeColumn" msprop:Generator_UserColumnName="Commodity_Code" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="384" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Variety" msprop:Generator_ColumnVarNameInTable="columnVariety" msprop:Generator_ColumnPropNameInRow="Variety" msprop:Generator_ColumnPropNameInTable="VarietyColumn" msprop:Generator_UserColumnName="Variety" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="100" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Crop_Variety" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnCrop_Variety" msprop:Generator_ColumnPropNameInRow="Crop_Variety" msprop:Generator_ColumnPropNameInTable="Crop_VarietyColumn" msprop:Generator_UserColumnName="Crop_Variety" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="374" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Original_Printed" msprop:Generator_ColumnVarNameInTable="columnOriginal_Printed" msprop:Generator_ColumnPropNameInRow="Original_Printed" msprop:Generator_ColumnPropNameInTable="Original_PrintedColumn" msprop:Generator_UserColumnName="Original_Printed" type="xs:boolean" />
+              <xs:element name="Weight_Sheet_Closed" msprop:Generator_ColumnVarNameInTable="columnWeight_Sheet_Closed" msprop:Generator_ColumnPropNameInRow="Weight_Sheet_Closed" msprop:Generator_ColumnPropNameInTable="Weight_Sheet_ClosedColumn" msprop:Generator_UserColumnName="Weight_Sheet_Closed" type="xs:boolean" />
+              <xs:element name="Lot_Sampled" msprop:Generator_ColumnVarNameInTable="columnLot_Sampled" msprop:Generator_ColumnPropNameInRow="Lot_Sampled" msprop:Generator_ColumnPropNameInTable="Lot_SampledColumn" msprop:Generator_UserColumnName="Lot_Sampled" type="xs:boolean" />
+              <xs:element name="Lot_Closed" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnLot_Closed" msprop:Generator_ColumnPropNameInRow="Lot_Closed" msprop:Generator_ColumnPropNameInTable="Lot_ClosedColumn" msprop:Generator_UserColumnName="Lot_Closed" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Is_Loadout" msprop:Generator_ColumnVarNameInTable="columnIs_Loadout" msprop:Generator_ColumnPropNameInRow="Is_Loadout" msprop:Generator_ColumnPropNameInTable="Is_LoadoutColumn" msprop:Generator_UserColumnName="Is_Loadout" type="xs:boolean" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

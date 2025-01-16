@@ -1,0 +1,1341 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\EntityFramework.6.5.1\build\EntityFramework.props" Condition="Exists('packages\EntityFramework.6.5.1\build\EntityFramework.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{56380A30-8736-42EE-846D-FB0C3CF5A63D}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>NWGrain</RootNamespace>
+    <AssemblyName>NWGrain</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>NWIcon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="CrystalDecisions.CrystalReports.Engine, Version=13.0.2000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL">
+      <HintPath>packages\CrystalDecisions.CrystalReports.Engine.1.0.0\lib\CrystalDecisions.CrystalReports.Engine.dll</HintPath>
+    </Reference>
+    <Reference Include="CrystalDecisions.ReportAppServer.ClientDoc, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="CrystalDecisions.ReportAppServer.Controllers, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="CrystalDecisions.ReportSource, Version=13.0.2000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL">
+      <HintPath>packages\CrystalDecisions.ReportSource.1.0.0\lib\CrystalDecisions.ReportSource.dll</HintPath>
+    </Reference>
+    <Reference Include="CrystalDecisions.Shared, Version=13.0.2000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL">
+      <HintPath>packages\CrystalDecisions.Shared.1.0.0\lib\CrystalDecisions.Shared.dll</HintPath>
+    </Reference>
+    <Reference Include="CrystalDecisions.Windows.Forms, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL" />
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>packages\EntityFramework.6.5.1\lib\net40\EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>packages\EntityFramework.6.5.1\lib\net40\EntityFramework.SqlServer.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNet.SignalR.Client, Version=2.4.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.AspNet.SignalR.Client.2.4.3\lib\net40\Microsoft.AspNet.SignalR.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.6.0.4\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System">
+      <HintPath>..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.EnterpriseServices" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Web.Services" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="BinsDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>BinsDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="ClosedLotsReport.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ClosedLotsReport.Designer.cs">
+      <DependentUpon>ClosedLotsReport.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Code\NWDataModel.cs" />
+    <Compile Include="Code\Alert.cs" />
+    <Compile Include="Code\ChangeWSType.cs" />
+    <Compile Include="Code\Display.cs" />
+    <Compile Include="Code\Email.cs" />
+    <Compile Include="Code\Loading.cs" />
+    <Compile Include="Code\Load_Out_Scale.cs" />
+    <Compile Include="Code\Logging.cs" />
+    <Compile Include="Code\Misc.cs" />
+    <Compile Include="Code\Options.cs" />
+    <Compile Include="Code\Printing.cs" />
+    <Compile Include="Code\Scales.cs" />
+    <Compile Include="Code\Settings.cs" />
+    <Compile Include="Code\Globals.cs" />
+    <Compile Include="Code\Lot.cs" />
+    <Compile Include="Code\System_Log.cs" />
+    <Compile Include="Code\Toledo_Loadout_Connection.cs" />
+    <Compile Include="Code\User_Input.cs" />
+    <Compile Include="Code\WeightSheetHaulerRate.cs" />
+    <Compile Include="Code\Weight_Sheet.cs" />
+    <Compile Include="Code\Weigh_Scale.cs" />
+    <Compile Include="CropProducerFilterDataSet.cs">
+      <DependentUpon>CropProducerFilterDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="CropProducerFilterDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CropProducerFilterDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="EmailDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>EmailDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Fix\frmSelectWeightSheet.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Fix\frmSelectWeightSheet.Designer.cs">
+      <DependentUpon>frmSelectWeightSheet.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmAudit_Trail.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmAudit_Trail.Designer.cs">
+      <DependentUpon>frmAudit_Trail.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmAlert.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmAlert.Designer.cs">
+      <DependentUpon>frmAlert.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmEdit_Screen.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmEdit_Screen.Designer.cs">
+      <DependentUpon>frmEdit_Screen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmLoads.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmLoads.Designer.cs">
+      <DependentUpon>frmLoads.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmNumber_Of_Copies.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmNumber_Of_Copies.Designer.cs">
+      <DependentUpon>frmNumber_Of_Copies.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmProducers.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmProducers.Designer.cs">
+      <DependentUpon>frmProducers.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmConfirmCloseLot.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmConfirmCloseLot.Designer.cs">
+      <DependentUpon>frmConfirmCloseLot.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmSplit_Weigh.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmSplit_Weigh.Designer.cs">
+      <DependentUpon>frmSplit_Weigh.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Loading.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Loading.Designer.cs">
+      <DependentUpon>Loading.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\SelectBin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\SelectBin.Designer.cs">
+      <DependentUpon>SelectBin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\TareLookup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TareLookup.Designer.cs">
+      <DependentUpon>TareLookup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmEdit_Transfer_Carrier.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmEdit_Transfer_Carrier.Designer.cs">
+      <DependentUpon>frmEdit_Transfer_Carrier.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmEdit_WS_Carrier.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmEdit_WS_Carrier.Designer.cs">
+      <DependentUpon>frmEdit_WS_Carrier.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmLot_Details.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmLot_Details.Designer.cs">
+      <DependentUpon>frmLot_Details.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmMotion.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmMotion.Designer.cs">
+      <DependentUpon>frmMotion.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmMain.Designer.cs">
+      <DependentUpon>frmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Outbound\frmOutbound_Load.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Outbound\frmOutbound_Load.Designer.cs">
+      <DependentUpon>frmOutbound_Load.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmPast_Due_Open_Weight_Sheets.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmPast_Due_Open_Weight_Sheets.Designer.cs">
+      <DependentUpon>frmPast_Due_Open_Weight_Sheets.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Outbound\frmSelect_Outbound_Load.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Outbound\frmSelect_Outbound_Load.Designer.cs">
+      <DependentUpon>frmSelect_Outbound_Load.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmSelect_Printer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmSelect_Printer.Designer.cs">
+      <DependentUpon>frmSelect_Printer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmLot_Weight_Sheets.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmLot_Weight_Sheets.Designer.cs">
+      <DependentUpon>frmLot_Weight_Sheets.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmSiteLog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmSiteLog.Designer.cs">
+      <DependentUpon>frmSiteLog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmPast_Due_Loads.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmPast_Due_Loads.Designer.cs">
+      <DependentUpon>frmPast_Due_Loads.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmSelect_Transfer_Weight_Sheet.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmSelect_Transfer_Weight_Sheet.Designer.cs">
+      <DependentUpon>frmSelect_Transfer_Weight_Sheet.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmWait.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmWait.Designer.cs">
+      <DependentUpon>frmWait.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmHarvest_WS.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmHarvest_WS.Designer.cs">
+      <DependentUpon>frmHarvest_WS.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmOpen_Harvest_Loads.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmOpen_Harvest_Loads.Designer.cs">
+      <DependentUpon>frmOpen_Harvest_Loads.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmEdit_Harvest_Load.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmEdit_Harvest_Load.Designer.cs">
+      <DependentUpon>frmEdit_Harvest_Load.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmLots.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmLots.Designer.cs">
+      <DependentUpon>frmLots.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmSelect_Weight_Sheet_Lot.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmSelect_Weight_Sheet_Lot.Designer.cs">
+      <DependentUpon>frmSelect_Weight_Sheet_Lot.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Manual_Weight.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Manual_Weight.Designer.cs">
+      <DependentUpon>Manual_Weight.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\PrintingTicket.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\PrintingTicket.designer.cs">
+      <DependentUpon>PrintingTicket.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Harvest\Select_Weight_Sheet.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Harvest\Select_Weight_Sheet.Designer.cs">
+      <DependentUpon>Select_Weight_Sheet.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmSelect_Weight_Sheet_Type.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmSelect_Weight_Sheet_Type.Designer.cs">
+      <DependentUpon>frmSelect_Weight_Sheet_Type.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmOpen_Transfer_Loads.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmOpen_Transfer_Loads.Designer.cs">
+      <DependentUpon>frmOpen_Transfer_Loads.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmTransfer_Load.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmTransfer_Load.Designer.cs">
+      <DependentUpon>frmTransfer_Load.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmTransfer_Weight_Sheet_Details.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmTransfer_Weight_Sheet_Details.designer.cs">
+      <DependentUpon>frmTransfer_Weight_Sheet_Details.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmTransfer_WS.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Transfers\frmTransfer_WS.Designer.cs">
+      <DependentUpon>frmTransfer_WS.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Weighmaster.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Weighmaster.Designer.cs">
+      <DependentUpon>Weighmaster.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmHarvest_Load.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Harvest\frmHarvest_Load.Designer.cs">
+      <DependentUpon>frmHarvest_Load.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmBasicTicket.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmBasicTicket.Designer.cs">
+      <DependentUpon>frmBasicTicket.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmGetLocation.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmGetLocation.Designer.cs">
+      <DependentUpon>frmGetLocation.cs</DependentUpon>
+    </Compile>
+    <Compile Include="frmLoading.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="frmLoading.Designer.cs">
+      <DependentUpon>frmLoading.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmLoad_Out_Scale.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmLoad_Out_Scale.Designer.cs">
+      <DependentUpon>frmLoad_Out_Scale.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Code\NetworkShareAccesser.cs" />
+    <Compile Include="HaulerRatesDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>HaulerRatesDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="ListsDataSet.cs">
+      <DependentUpon>ListsDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="ListsDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ListsDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\mdiMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\mdiMain.Designer.cs">
+      <DependentUpon>mdiMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="LoadFieldDataSet1.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>LoadFieldDataSet1.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="LotsDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>LotsDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="NWDataset.cs">
+      <DependentUpon>NWDataset.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="NWDataset.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>NWDataset.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmPassword.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmPassword.Designer.cs">
+      <DependentUpon>frmPassword.cs</DependentUpon>
+    </Compile>
+    <Compile Include="OptionsDataset.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>OptionsDataset.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReportDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ReportDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Reports\BasicTicket.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>BasicTicket.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\BinTotals.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>BinTotals.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\ClosedLotsByDateRange.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ClosedLotsByDateRange.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\DailyCommodityReport.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>DailyCommodityReport.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\DailyIntakeReport.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>DailyIntakeReport.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\DailyTransferReport.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>DailyTransferReport.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\TestGradeTicket.cs">
+      <DependentUpon>TestGradeTicket.rpt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <SubType>Component</SubType>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Reports\SeedTickets\Inbound_Seed_Ticket.cs">
+      <DependentUpon>Inbound_Seed_Ticket.rpt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <SubType>Component</SubType>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Reports\SeedTickets\OutboundSeedTicket.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>OutboundSeedTicket.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\SeedTickets\Outbound_Seed_Ticket_Details.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Outbound_Seed_Ticket_Details.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\SeedTickets\Outbound_Seed_Ticket_Treatments.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Outbound_Seed_Ticket_Treatments.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\SeedTickets\Outbound_Seed_Ticket_Varieties.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Outbound_Seed_Ticket_Varieties.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\SeedTickets\Outbound_Seed_Ticket_Weights.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Outbound_Seed_Ticket_Weights.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\TestTicket.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>TestTicket.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\WeightSheetsAsc.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>WeightSheetsAsc.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Weigh_Sheet.cs">
+      <DependentUpon>Weigh_Sheet.rpt</DependentUpon>
+      <SubType>Component</SubType>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Include="Reports\ws_Transfer_Loads.cs">
+      <DependentUpon>ws_Transfer_Loads.rpt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <SubType>Component</SubType>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Reports\Transfer_Weigh_Sheet.cs">
+      <DependentUpon>Transfer_Weigh_Sheet.rpt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Junk\Transfer_InYard_Ticket.cs">
+      <DependentUpon>Transfer_InYard_Ticket.rpt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <SubType>Component</SubType>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Reports\Junk\Transfer_Final_Ticket.cs">
+      <DependentUpon>Transfer_Final_Ticket.rpt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <SubType>Component</SubType>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Reports\Outbound_Final_Ticket_2_Part.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Outbound_Final_Ticket_2_Part.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Junk\Outbound_Final_Ticket_Office.cs">
+      <DependentUpon>Outbound_Final_Ticket_Office.rpt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <SubType>Component</SubType>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Reports\Junk\Outbound_Final_Ticket.cs">
+      <DependentUpon>Outbound_Final_Ticket.rpt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <SubType>Component</SubType>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Reports\Junk\Outbound_InYard_Ticket.cs">
+      <DependentUpon>Outbound_InYard_Ticket.rpt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <SubType>Component</SubType>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Reports\Junk\Inbound_Final_Ticket.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Inbound_Final_Ticket.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Sample_Label.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Sample_Label.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Junk\Inbound_InYard_Ticket.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Inbound_InYard_Ticket.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Forms\frmSetup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmSetup.Designer.cs">
+      <DependentUpon>frmSetup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmShadow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmShadow.Designer.cs">
+      <DependentUpon>frmShadow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmSplashScreen.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmSplashScreen.designer.cs">
+      <DependentUpon>frmSplashScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmSupervisor_Selection.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmSupervisor_Selection.Designer.cs">
+      <DependentUpon>frmSupervisor_Selection.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Reports\ws_Loads.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ws_Loads.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="SeedTicketDataSet.cs">
+      <DependentUpon>SeedTicketDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="SeedTicketDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>SeedTicketDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="Service References\KioskWebService\Reference.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </Compile>
+    <Compile Include="Service References\LocalWebService\Reference.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </Compile>
+    <Compile Include="Service References\WS\Reference.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </Compile>
+    <Compile Include="SettingsDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>SettingsDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="TestDS.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>TestDS.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="TodaysLoads.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TodaysLoads.Designer.cs">
+      <DependentUpon>TodaysLoads.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UpdateInfo.cs" />
+    <Compile Include="VarietiesDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>VarietiesDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="VirtualDataset.cs">
+      <DependentUpon>VirtualDataset.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="VirtualDataset.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>VirtualDataset.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="WeightSheetDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>WeightSheetDataSet.xsd</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="ClosedLotsReport.resx">
+      <DependentUpon>ClosedLotsReport.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Fix\frmSelectWeightSheet.resx">
+      <DependentUpon>frmSelectWeightSheet.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmAudit_Trail.resx">
+      <DependentUpon>frmAudit_Trail.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmAlert.resx">
+      <DependentUpon>frmAlert.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmEdit_Screen.resx">
+      <DependentUpon>frmEdit_Screen.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmLoads.resx">
+      <DependentUpon>frmLoads.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmNumber_Of_Copies.resx">
+      <DependentUpon>frmNumber_Of_Copies.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmProducers.resx">
+      <DependentUpon>frmProducers.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Harvest\frmConfirmCloseLot.resx">
+      <DependentUpon>frmConfirmCloseLot.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmSplit_Weigh.resx">
+      <DependentUpon>frmSplit_Weigh.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Loading.resx">
+      <DependentUpon>Loading.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\SelectBin.resx">
+      <DependentUpon>SelectBin.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\TareLookup.resx">
+      <DependentUpon>TareLookup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Transfers\frmEdit_Transfer_Carrier.resx">
+      <DependentUpon>frmEdit_Transfer_Carrier.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmEdit_WS_Carrier.resx">
+      <DependentUpon>frmEdit_WS_Carrier.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Harvest\frmLot_Details.resx">
+      <DependentUpon>frmLot_Details.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmMotion.resx">
+      <DependentUpon>frmMotion.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmMain.resx">
+      <DependentUpon>frmMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Outbound\frmOutbound_Load.resx">
+      <DependentUpon>frmOutbound_Load.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmPast_Due_Open_Weight_Sheets.resx">
+      <DependentUpon>frmPast_Due_Open_Weight_Sheets.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Outbound\frmSelect_Outbound_Load.resx">
+      <DependentUpon>frmSelect_Outbound_Load.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmSelect_Printer.resx">
+      <DependentUpon>frmSelect_Printer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Harvest\frmLot_Weight_Sheets.resx">
+      <DependentUpon>frmLot_Weight_Sheets.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmSiteLog.resx">
+      <DependentUpon>frmSiteLog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmPast_Due_Loads.resx">
+      <DependentUpon>frmPast_Due_Loads.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Transfers\frmSelect_Transfer_Weight_Sheet.resx">
+      <DependentUpon>frmSelect_Transfer_Weight_Sheet.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmWait.resx">
+      <DependentUpon>frmWait.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Harvest\frmHarvest_WS.resx">
+      <DependentUpon>frmHarvest_WS.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Harvest\frmOpen_Harvest_Loads.resx">
+      <DependentUpon>frmOpen_Harvest_Loads.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Harvest\frmEdit_Harvest_Load.resx">
+      <DependentUpon>frmEdit_Harvest_Load.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Harvest\frmLots.resx">
+      <DependentUpon>frmLots.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Harvest\frmSelect_Weight_Sheet_Lot.resx">
+      <DependentUpon>frmSelect_Weight_Sheet_Lot.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Manual_Weight.resx">
+      <DependentUpon>Manual_Weight.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\PrintingTicket.resx">
+      <DependentUpon>PrintingTicket.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Harvest\Select_Weight_Sheet.resx">
+      <DependentUpon>Select_Weight_Sheet.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmPassword.resx">
+      <DependentUpon>frmPassword.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmSelect_Weight_Sheet_Type.resx">
+      <DependentUpon>frmSelect_Weight_Sheet_Type.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Transfers\frmOpen_Transfer_Loads.resx">
+      <DependentUpon>frmOpen_Transfer_Loads.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Transfers\frmTransfer_Load.resx">
+      <DependentUpon>frmTransfer_Load.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Transfers\frmTransfer_Weight_Sheet_Details.resx">
+      <DependentUpon>frmTransfer_Weight_Sheet_Details.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Transfers\frmTransfer_WS.resx">
+      <DependentUpon>frmTransfer_WS.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Weighmaster.resx">
+      <DependentUpon>Weighmaster.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Harvest\frmHarvest_Load.resx">
+      <DependentUpon>frmHarvest_Load.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmBasicTicket.resx">
+      <DependentUpon>frmBasicTicket.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmGetLocation.resx">
+      <DependentUpon>frmGetLocation.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmLoading.resx">
+      <DependentUpon>frmLoading.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmLoad_Out_Scale.resx">
+      <DependentUpon>frmLoad_Out_Scale.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\mdiMain.resx">
+      <DependentUpon>mdiMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <EmbeddedResource Include="Reports\BasicTicket.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>BasicTicket.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\BinTotals.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>BinTotals.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\ClosedLotsByDateRange.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>ClosedLotsByDateRange.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\DailyCommodityReport.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>DailyCommodityReport.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\DailyIntakeReport.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>DailyIntakeReport.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\DailyTransferReport.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>DailyTransferReport.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\TestGradeTicket.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>TestGradeTicket.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\SeedTickets\Inbound_Seed_Ticket.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Inbound_Seed_Ticket.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\SeedTickets\OutboundSeedTicket.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>OutboundSeedTicket.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\SeedTickets\Outbound_Seed_Ticket_Details.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Outbound_Seed_Ticket_Details.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\SeedTickets\Outbound_Seed_Ticket_Treatments.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Outbound_Seed_Ticket_Treatments.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\SeedTickets\Outbound_Seed_Ticket_Varieties.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Outbound_Seed_Ticket_Varieties.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\SeedTickets\Outbound_Seed_Ticket_Weights.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Outbound_Seed_Ticket_Weights.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\TestTicket.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>TestTicket.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\WeightSheetsAsc.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>WeightSheetsAsc.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Weigh_Sheet.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Weigh_Sheet.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\ws_Transfer_Loads.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>ws_Transfer_Loads.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Transfer_Weigh_Sheet.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Transfer_Weigh_Sheet.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Junk\Transfer_InYard_Ticket.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Transfer_InYard_Ticket.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Junk\Transfer_Final_Ticket.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Transfer_Final_Ticket.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Outbound_Final_Ticket_2_Part.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Outbound_Final_Ticket_2_Part.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Junk\Outbound_Final_Ticket_Office.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Outbound_Final_Ticket_Office.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Junk\Outbound_Final_Ticket.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Outbound_Final_Ticket.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Junk\Outbound_InYard_Ticket.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Outbound_InYard_Ticket.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Junk\Inbound_Final_Ticket.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Inbound_Final_Ticket.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Sample_Label.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Sample_Label.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Junk\Inbound_InYard_Ticket.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Inbound_InYard_Ticket.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmSetup.resx">
+      <DependentUpon>frmSetup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmShadow.resx">
+      <DependentUpon>frmShadow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmSplashScreen.resx">
+      <DependentUpon>frmSplashScreen.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmSupervisor_Selection.resx">
+      <DependentUpon>frmSupervisor_Selection.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\ws_Loads.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>ws_Loads.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TodaysLoads.resx">
+      <DependentUpon>TodaysLoads.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <None Include="app.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="BinsDataSet.xsc">
+      <DependentUpon>BinsDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="BinsDataSet.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>BinsDataSet.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="BinsDataSet.xss">
+      <DependentUpon>BinsDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="CropProducerFilterDataSet.xsc">
+      <DependentUpon>CropProducerFilterDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="CropProducerFilterDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>CropProducerFilterDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="CropProducerFilterDataSet.xss">
+      <DependentUpon>CropProducerFilterDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="EmailDataSet.xsc">
+      <DependentUpon>EmailDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="EmailDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>EmailDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="EmailDataSet.xss">
+      <DependentUpon>EmailDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="HaulerRatesDataSet.xsc">
+      <DependentUpon>HaulerRatesDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="HaulerRatesDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>HaulerRatesDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="HaulerRatesDataSet.xss">
+      <DependentUpon>HaulerRatesDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="ListsDataSet.xsc">
+      <DependentUpon>ListsDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="ListsDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>ListsDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="ListsDataSet.xss">
+      <DependentUpon>ListsDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="LoadFieldDataSet1.xsc">
+      <DependentUpon>LoadFieldDataSet1.xsd</DependentUpon>
+    </None>
+    <None Include="LoadFieldDataSet1.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>LoadFieldDataSet1.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="LoadFieldDataSet1.xss">
+      <DependentUpon>LoadFieldDataSet1.xsd</DependentUpon>
+    </None>
+    <None Include="LotsDataSet.xsc">
+      <DependentUpon>LotsDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="LotsDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>LotsDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="LotsDataSet.xss">
+      <DependentUpon>LotsDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="NWDataset.xsc">
+      <DependentUpon>NWDataset.xsd</DependentUpon>
+    </None>
+    <None Include="NWDataset.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>NWDataset.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="NWDataset.xss">
+      <DependentUpon>NWDataset.xsd</DependentUpon>
+    </None>
+    <None Include="OptionsDataset.xsc">
+      <DependentUpon>OptionsDataset.xsd</DependentUpon>
+    </None>
+    <None Include="OptionsDataset.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>OptionsDataset.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="OptionsDataset.xss">
+      <DependentUpon>OptionsDataset.xsd</DependentUpon>
+    </None>
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <None Include="ReportDataSet.xsc">
+      <DependentUpon>ReportDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="ReportDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>ReportDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="ReportDataSet.xss">
+      <DependentUpon>ReportDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="SeedTicketDataSet.xsc">
+      <DependentUpon>SeedTicketDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="SeedTicketDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>SeedTicketDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="SeedTicketDataSet.xss">
+      <DependentUpon>SeedTicketDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="Service References\KioskWebService\kiosk.wsdl" />
+    <None Include="Service References\KioskWebService\LocalDataSet.xsc">
+      <DependentUpon>LocalDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="Service References\KioskWebService\LocalDataSet.xsd" />
+    <None Include="Service References\KioskWebService\LocalDataSet.xss">
+      <DependentUpon>LocalDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="Service References\KioskWebService\NWGrain.KioskWebService.InboundScan.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Service References\KioskWebService\NWGrain.KioskWebService.LocalDataSet.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Service References\KioskWebService\NWGrain.KioskWebService.TicketStatus.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Service References\LocalWebService\LocalDataSet1.xsd" />
+    <None Include="Service References\LocalWebService\LocalWebService1.wsdl" />
+    <None Include="Service References\LocalWebService\NWGrain.LocalWebService.KioskResponse.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Service References\LocalWebService\NWGrain.LocalWebService.LocalDataSet.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Service References\WS\LocalDataSet.xsc">
+      <DependentUpon>LocalDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="Service References\WS\LocalDataSet.xsd" />
+    <None Include="Service References\WS\LocalDataSet.xss">
+      <DependentUpon>LocalDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="Service References\WS\NWGrain.WS.LocalDataSet.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Service References\WS\WS.wsdl" />
+    <None Include="SettingsDataSet.xsc">
+      <DependentUpon>SettingsDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="SettingsDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>SettingsDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="SettingsDataSet.xss">
+      <DependentUpon>SettingsDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="TestDS.xsc">
+      <DependentUpon>TestDS.xsd</DependentUpon>
+    </None>
+    <None Include="TestDS.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>TestDS.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="TestDS.xss">
+      <DependentUpon>TestDS.xsd</DependentUpon>
+    </None>
+    <None Include="VarietiesDataSet.xsc">
+      <DependentUpon>VarietiesDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="VarietiesDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>VarietiesDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="VarietiesDataSet.xss">
+      <DependentUpon>VarietiesDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="VirtualDataset.xsc">
+      <DependentUpon>VirtualDataset.xsd</DependentUpon>
+    </None>
+    <None Include="VirtualDataset.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>VirtualDataset.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="VirtualDataset.xss">
+      <DependentUpon>VirtualDataset.xsd</DependentUpon>
+    </None>
+    <None Include="WeightSheetDataSet.xsc">
+      <DependentUpon>WeightSheetDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="WeightSheetDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>WeightSheetDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="WeightSheetDataSet.xss">
+      <DependentUpon>WeightSheetDataSet.xsd</DependentUpon>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DialogScreen2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DialogScreen.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DialogScreen3.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DialogScreen31.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{C0C07587-41A7-46C8-8FBD-3F9C8EBE2DDC}" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\CheckMark_128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\checked_checkbox.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\unchecked_checkbox.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Service References\WS\configuration91.svcinfo" />
+    <None Include="Service References\WS\configuration.svcinfo" />
+    <None Include="Service References\WS\Reference.svcmap">
+      <Generator>WCF Proxy Generator</Generator>
+      <LastGenOutput>Reference.cs</LastGenOutput>
+    </None>
+    <None Include="Service References\KioskWebService\configuration91.svcinfo" />
+    <None Include="Service References\KioskWebService\configuration.svcinfo" />
+    <None Include="Service References\KioskWebService\Reference.svcmap">
+      <Generator>WCF Proxy Generator</Generator>
+      <LastGenOutput>Reference.cs</LastGenOutput>
+    </None>
+    <Content Include="nwggIcon.ico" />
+    <None Include="Service References\LocalWebService\configuration91.svcinfo" />
+    <None Include="Service References\LocalWebService\configuration.svcinfo" />
+    <None Include="Service References\LocalWebService\Reference.svcmap">
+      <Generator>WCF Proxy Generator</Generator>
+      <LastGenOutput>Reference.cs</LastGenOutput>
+    </None>
+    <None Include="Service References\KioskWebService\kiosk.disco" />
+    <None Include="Service References\LocalWebService\LocalWebService1.disco" />
+    <None Include="Service References\WS\WS.disco" />
+    <Content Include="NWIcon.ico" />
+    <Content Include="wheat.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Service References\" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadataStorage Include="Service References\KioskWebService\" />
+    <WCFMetadataStorage Include="Service References\LocalWebService\" />
+    <WCFMetadataStorage Include="Service References\WS\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Reports\NewFolder1\" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.0">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.4.5">
+      <Visible>False</Visible>
+      <ProductName>Windows Installer 4.5</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <WebReferences Include="Web References\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\EntityFramework.6.5.1\build\EntityFramework.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\EntityFramework.6.5.1\build\EntityFramework.props'))" />
+    <Error Condition="!Exists('packages\EntityFramework.6.5.1\build\EntityFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\EntityFramework.6.5.1\build\EntityFramework.targets'))" />
+  </Target>
+  <Import Project="packages\EntityFramework.6.5.1\build\EntityFramework.targets" Condition="Exists('packages\EntityFramework.6.5.1\build\EntityFramework.targets')" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

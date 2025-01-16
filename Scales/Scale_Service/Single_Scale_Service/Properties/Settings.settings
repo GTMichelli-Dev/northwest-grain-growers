@@ -1,0 +1,12 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Single_Scale_Service.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="ScaleDescription" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Ag NW</Value>
+    </Setting>
+    <Setting Name="Single_Scale_Service_LocalWebService_LocalWebService" Type="(Web Service URL)" Scope="Application">
+      <Value Profile="(Default)">http://wsppc001/LocalWebService.asmx</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

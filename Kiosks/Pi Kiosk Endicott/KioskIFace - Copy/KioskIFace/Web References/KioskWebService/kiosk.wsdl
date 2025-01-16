@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://NWGGSCALE.NWG/" xmlns:s1="http://microsoft.com/wsdl/types/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" targetNamespace="http://NWGGSCALE.NWG/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://NWGGSCALE.NWG/">
+      <s:import namespace="http://tempuri.org/LocalDataSet.xsd" />
+      <s:import namespace="http://microsoft.com/wsdl/types/" />
+      <s:import schemaLocation="http://enddb001/kiosk.asmx?schema=LocalDataSet" namespace="http://tempuri.org/LocalDataSet.xsd" />
+      <s:element name="GetSites">
+        <s:complexType />
+      </s:element>
+      <s:element name="GetSitesResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetSitesResult">
+              <s:complexType>
+                <s:sequence>
+                  <s:any minOccurs="0" maxOccurs="unbounded" namespace="http://www.w3.org/2001/XMLSchema" processContents="lax" />
+                  <s:any minOccurs="1" namespace="urn:schemas-microsoft-com:xml-diffgram-v1" processContents="lax" />
+                </s:sequence>
+                <s:attribute fixed="http://tempuri.org/LocalDataSet.xsd" name="namespace" />
+                <s:attribute fixed="Site_SetupDataTable" name="tableTypeName" />
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetScales">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="CurrentDate" type="s:dateTime" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetScalesResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetScalesResult">
+              <s:complexType>
+                <s:sequence>
+                  <s:any minOccurs="0" maxOccurs="unbounded" namespace="http://www.w3.org/2001/XMLSchema" processContents="lax" />
+                  <s:any minOccurs="1" namespace="urn:schemas-microsoft-com:xml-diffgram-v1" processContents="lax" />
+                </s:sequence>
+                <s:attribute fixed="http://tempuri.org/LocalDataSet.xsd" name="namespace" />
+                <s:attribute fixed="Weigh_ScalesDataTable" name="tableTypeName" />
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ProcessTicket">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="Ticket" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="Weight" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="Scale" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="Printer" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ProcessTicketResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="ProcessTicketResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CheckInboundTicket">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="Ticket" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="ScaleUID" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CheckInboundTicketResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="CheckInboundTicketResult" type="tns:TicketStatus" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:simpleType name="TicketStatus">
+        <s:restriction base="s:string">
+          <s:enumeration value="Invalid" />
+          <s:enumeration value="InvalidScaleUID" />
+          <s:enumeration value="CheckInboundTicket" />
+          <s:enumeration value="Complete" />
+          <s:enumeration value="OldTicket" />
+          <s:enumeration value="InvalidLocation" />
+          <s:enumeration value="WeightToLow" />
+          <s:enumeration value="TruckNotUnloaded" />
+          <s:enumeration value="ReadyToComplete" />
+        </s:restriction>
+      </s:simpleType>
+      <s:element name="GetLastScannedInboundQR">
+        <s:complexType />
+      </s:element>
+      <s:element name="GetLastScannedInboundQRResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetLastScannedInboundQRResult" type="tns:InboundScan" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="InboundScan">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="ScaleUID" type="s1:guid" />
+          <s:element minOccurs="1" maxOccurs="1" name="LoadUID" type="s1:guid" />
+          <s:element minOccurs="1" maxOccurs="1" name="ScanTime" type="s:dateTime" />
+          <s:element minOccurs="1" maxOccurs="1" name="PrintingTicket" type="s:boolean" />
+          <s:element minOccurs="1" maxOccurs="1" name="Acknowledged" type="s:boolean" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="CheckTicket">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="Ticket" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="Weight" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CheckTicketResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="CheckTicketResult" type="tns:TicketStatus" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetPrinterList">
+        <s:complexType />
+      </s:element>
+      <s:element name="GetPrinterListResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetPrinterListResult">
+              <s:complexType>
+                <s:sequence>
+                  <s:any minOccurs="0" maxOccurs="unbounded" namespace="http://www.w3.org/2001/XMLSchema" processContents="lax" />
+                  <s:any minOccurs="1" namespace="urn:schemas-microsoft-com:xml-diffgram-v1" processContents="lax" />
+                </s:sequence>
+                <s:attribute fixed="http://tempuri.org/LocalDataSet.xsd" name="namespace" />
+                <s:attribute fixed="Site_PrintersDataTable" name="tableTypeName" />
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://microsoft.com/wsdl/types/">
+      <s:simpleType name="guid">
+        <s:restriction base="s:string">
+          <s:pattern value="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" />
+        </s:restriction>
+      </s:simpleType>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="GetSitesSoapIn">
+    <wsdl:part name="parameters" element="tns:GetSites" />
+  </wsdl:message>
+  <wsdl:message name="GetSitesSoapOut">
+    <wsdl:part name="parameters" element="tns:GetSitesResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetScalesSoapIn">
+    <wsdl:part name="parameters" element="tns:GetScales" />
+  </wsdl:message>
+  <wsdl:message name="GetScalesSoapOut">
+    <wsdl:part name="parameters" element="tns:GetScalesResponse" />
+  </wsdl:message>
+  <wsdl:message name="ProcessTicketSoapIn">
+    <wsdl:part name="parameters" element="tns:ProcessTicket" />
+  </wsdl:message>
+  <wsdl:message name="ProcessTicketSoapOut">
+    <wsdl:part name="parameters" element="tns:ProcessTicketResponse" />
+  </wsdl:message>
+  <wsdl:message name="CheckInboundTicketSoapIn">
+    <wsdl:part name="parameters" element="tns:CheckInboundTicket" />
+  </wsdl:message>
+  <wsdl:message name="CheckInboundTicketSoapOut">
+    <wsdl:part name="parameters" element="tns:CheckInboundTicketResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetLastScannedInboundQRSoapIn">
+    <wsdl:part name="parameters" element="tns:GetLastScannedInboundQR" />
+  </wsdl:message>
+  <wsdl:message name="GetLastScannedInboundQRSoapOut">
+    <wsdl:part name="parameters" element="tns:GetLastScannedInboundQRResponse" />
+  </wsdl:message>
+  <wsdl:message name="CheckTicketSoapIn">
+    <wsdl:part name="parameters" element="tns:CheckTicket" />
+  </wsdl:message>
+  <wsdl:message name="CheckTicketSoapOut">
+    <wsdl:part name="parameters" element="tns:CheckTicketResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetPrinterListSoapIn">
+    <wsdl:part name="parameters" element="tns:GetPrinterList" />
+  </wsdl:message>
+  <wsdl:message name="GetPrinterListSoapOut">
+    <wsdl:part name="parameters" element="tns:GetPrinterListResponse" />
+  </wsdl:message>
+  <wsdl:portType name="KioskSoap">
+    <wsdl:operation name="GetSites">
+      <wsdl:input message="tns:GetSitesSoapIn" />
+      <wsdl:output message="tns:GetSitesSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetScales">
+      <wsdl:input message="tns:GetScalesSoapIn" />
+      <wsdl:output message="tns:GetScalesSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="ProcessTicket">
+      <wsdl:input message="tns:ProcessTicketSoapIn" />
+      <wsdl:output message="tns:ProcessTicketSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="CheckInboundTicket">
+      <wsdl:input message="tns:CheckInboundTicketSoapIn" />
+      <wsdl:output message="tns:CheckInboundTicketSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLastScannedInboundQR">
+      <wsdl:input message="tns:GetLastScannedInboundQRSoapIn" />
+      <wsdl:output message="tns:GetLastScannedInboundQRSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="CheckTicket">
+      <wsdl:input message="tns:CheckTicketSoapIn" />
+      <wsdl:output message="tns:CheckTicketSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetPrinterList">
+      <wsdl:input message="tns:GetPrinterListSoapIn" />
+      <wsdl:output message="tns:GetPrinterListSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="KioskSoap" type="tns:KioskSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="GetSites">
+      <soap:operation soapAction="http://NWGGSCALE.NWG/GetSites" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetScales">
+      <soap:operation soapAction="http://NWGGSCALE.NWG/GetScales" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ProcessTicket">
+      <soap:operation soapAction="http://NWGGSCALE.NWG/ProcessTicket" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CheckInboundTicket">
+      <soap:operation soapAction="http://NWGGSCALE.NWG/CheckInboundTicket" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLastScannedInboundQR">
+      <soap:operation soapAction="http://NWGGSCALE.NWG/GetLastScannedInboundQR" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CheckTicket">
+      <soap:operation soapAction="http://NWGGSCALE.NWG/CheckTicket" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetPrinterList">
+      <soap:operation soapAction="http://NWGGSCALE.NWG/GetPrinterList" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="KioskSoap12" type="tns:KioskSoap">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="GetSites">
+      <soap12:operation soapAction="http://NWGGSCALE.NWG/GetSites" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetScales">
+      <soap12:operation soapAction="http://NWGGSCALE.NWG/GetScales" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ProcessTicket">
+      <soap12:operation soapAction="http://NWGGSCALE.NWG/ProcessTicket" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CheckInboundTicket">
+      <soap12:operation soapAction="http://NWGGSCALE.NWG/CheckInboundTicket" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLastScannedInboundQR">
+      <soap12:operation soapAction="http://NWGGSCALE.NWG/GetLastScannedInboundQR" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CheckTicket">
+      <soap12:operation soapAction="http://NWGGSCALE.NWG/CheckTicket" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetPrinterList">
+      <soap12:operation soapAction="http://NWGGSCALE.NWG/GetPrinterList" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="Kiosk">
+    <wsdl:port name="KioskSoap" binding="tns:KioskSoap">
+      <soap:address location="http://enddb001/kiosk.asmx" />
+    </wsdl:port>
+    <wsdl:port name="KioskSoap12" binding="tns:KioskSoap12">
+      <soap12:address location="http://enddb001/kiosk.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

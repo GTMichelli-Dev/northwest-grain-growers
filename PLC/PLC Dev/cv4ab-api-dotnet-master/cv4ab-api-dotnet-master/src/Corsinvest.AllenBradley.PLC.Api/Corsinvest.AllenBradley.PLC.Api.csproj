@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Version>0.1.7</Version>
+    <Company>Corsinvest Srl</Company>
+    <Authors>Daniele Corsini</Authors>
+    <Copyright>Corsinvest Srl</Copyright>
+    <Product>Communication for Rockwell Allen-Bradley PLC</Product>
+    <AssemblyTitle>Communication for Rockwell Allen-Bradley PLC in .NET Core</AssemblyTitle>
+    <Description>Communication for Rockwell Allen-Bradley PLC in .NET Core</Description>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Corsinvest/cv4ab-api-dotnet</PackageProjectUrl>
+    <PackageTags>Rockwell;Allen-Bradley;Api,PLC;Corsinvest;LibTagPlc</PackageTags>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>New support 32/64 bit</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+  <None Include="icon.png">
+    <Pack>True</Pack>
+    <PackagePath></PackagePath>
+  </None>
+</ItemGroup>
+
+  <ItemGroup>
+		<Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/win-x64/native/plctag.dll" Link="plctag.dll" Pack="true" PackagePath="runtimes/win-x64/native/plctag.dll" />
+		<Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/win-x86/native/plctag.dll" Link="plctag.dll" Pack="true" PackagePath="runtimes/win-x86/native/plctag.dll" />
+		<Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/linux-x64/native/plctag.so" Link="plctag.so" Pack="true" PackagePath="runtimes/linux-x64/native/plctag.so" />
+		<Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/linux-x86/native/plctag.so" Link="plctag.so" Pack="true" PackagePath="runtimes/linux-x86/native/plctag.so" />
+  </ItemGroup>
+</Project>
+

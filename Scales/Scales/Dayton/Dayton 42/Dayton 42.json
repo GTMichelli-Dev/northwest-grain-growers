@@ -1,0 +1,39 @@
+{
+  "windows": [
+    {
+      "type": "ScaleZM401",
+      "location": "1141, 267",
+      "size": "700, 514",
+      "open": true
+    },
+    {
+      "type": "SerialPortWindow",
+      "index": 1,
+      "location": "516, 284",
+      "size": "591, 616",
+      "open": true
+    }
+  ],
+  "general": {
+    "auto_start": true,
+    "sealed": false,
+    "use_vfi": false,
+    "enable_buzzer": false,
+    "enable_led": false,
+    "enable_keyboard": false,
+    "use_last_firmware_choice": false,
+    "last_firmware_choice": ""
+  },
+  "network": {
+    "enabled": false,
+    "adapter": "",
+    "mac": "",
+    "cable_connected": false
+  },
+  "scale": {
+    "low_voltage": 0.2,
+    "high_voltage": 4.9,
+    "random_noise": 0.001,
+    "disconnected": false
+  }
+}

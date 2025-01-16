@@ -1,0 +1,29 @@
+﻿
+using System;
+using System.Collections.Generic;
+namespace BinData
+{
+    public partial class CropDTO
+    {
+        public Guid Uid { get; set; }
+
+        public int Id { get; set; }
+
+        public string Description { get; set; }
+
+        public bool UseAtElevator { get; set; }
+
+        public bool UseAtSeedMill { get; set; }
+
+        public string UnitOfMeasure { get; set; }
+
+        public bool Active { get; set; }
+
+        public float PoundPerBushel { get; set; }
+
+        public int? ColorIndex { get; set; }
+
+        public int? SecondaryColorIndex { get; set; }
+
+    }
+}

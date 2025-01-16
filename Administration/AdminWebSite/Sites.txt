@@ -1,0 +1,58 @@
+﻿Alto - 41
+Athena - 50
+Baker Langdon - 7
+Bolles - 31
+Clyde - 2
+Coppei - 32
+Dayton - 42
+Dayton Seed Plant - 25
+Delaney - 43
+Dixie - 3
+Dry Creek - 4
+Edwards  - 59
+Endicott - 86
+Ennis - 5
+Eureka - 6
+Ewan - 81
+Frontier Seed - 39
+Garfield - 27
+Harsha - 33
+Huntsville - 44
+Jensen Corner - 34
+Juno - 83
+Lancaster Seed Plant - 26
+Longs Station - 45
+Lower Athena - 51
+Lower Whetstone - 46
+Lyons Ferry - 47
+Mckay - 35
+Menoken - 36
+Midway - 52
+Miller - 8
+Mission - 53
+Not Set - 0
+Paddock - 9
+Port Kelley - 11
+Prescott - 37
+Relief - 48
+Reser - 12
+Rulo - 13
+Sapolil - 14
+Seed Plant - 24
+Sheffler - 15
+Smith Springs - 16
+Spofford - 17
+Spring Valley - 18
+ST John - 80
+Sunset - 84
+Thera - 87
+Tracy - 19
+Tri State Seed - 40
+TURNER - 49
+Valley - 85
+Valley Grove - 20
+Waitsburg - 38
+Walla Walla - 21
+Wallula - 22
+Willada - 82
+Winona - 88

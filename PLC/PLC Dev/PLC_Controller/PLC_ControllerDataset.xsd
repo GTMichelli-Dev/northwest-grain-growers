@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="PLC_ControllerDataset" targetNamespace="http://tempuri.org/PLC_ControllerDataset.xsd" xmlns:mstns="http://tempuri.org/PLC_ControllerDataset.xsd" xmlns="http://tempuri.org/PLC_ControllerDataset.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections />
+        <Tables />
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="PLC_ControllerDataset" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:EnableTableAdapterManager="true" msprop:Generator_DataSetName="PLC_ControllerDataset" msprop:Generator_UserDSName="PLC_ControllerDataset">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="Bins" msprop:Generator_TableClassName="BinsDataTable" msprop:Generator_TableVarName="tableBins" msprop:Generator_TablePropName="Bins" msprop:Generator_RowDeletingName="BinsRowDeleting" msprop:Generator_RowChangingName="BinsRowChanging" msprop:Generator_RowEvHandlerName="BinsRowChangeEventHandler" msprop:Generator_RowDeletedName="BinsRowDeleted" msprop:Generator_UserTableName="Bins" msprop:Generator_RowChangedName="BinsRowChanged" msprop:Generator_RowEvArgName="BinsRowChangeEvent" msprop:Generator_RowClassName="BinsRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Bin_Index" msprop:Generator_ColumnVarNameInTable="columnBin_Index" msprop:Generator_ColumnPropNameInRow="Bin_Index" msprop:Generator_ColumnPropNameInTable="Bin_IndexColumn" msprop:Generator_UserColumnName="Bin_Index" type="xs:int" />
+              <xs:element name="Bin_Description" msprop:Generator_ColumnVarNameInTable="columnBin_Description" msprop:Generator_ColumnPropNameInRow="Bin_Description" msprop:Generator_ColumnPropNameInTable="Bin_DescriptionColumn" msprop:Generator_UserColumnName="Bin_Description" type="xs:string" minOccurs="0" />
+              <xs:element name="Item_Number" msprop:Generator_ColumnVarNameInTable="columnItem_Number" msprop:Generator_ColumnPropNameInRow="Item_Number" msprop:Generator_ColumnPropNameInTable="Item_NumberColumn" msprop:Generator_UserColumnName="Item_Number" type="xs:string" minOccurs="0" />
+              <xs:element name="Variety_Name" msprop:Generator_ColumnVarNameInTable="columnVariety_Name" msprop:Generator_ColumnPropNameInRow="Variety_Name" msprop:Generator_ColumnPropNameInTable="Variety_NameColumn" msprop:Generator_UserColumnName="Variety_Name" type="xs:string" minOccurs="0" />
+              <xs:element name="Variety_Class" msprop:Generator_ColumnVarNameInTable="columnVariety_Class" msprop:Generator_ColumnPropNameInRow="Variety_Class" msprop:Generator_ColumnPropNameInTable="Variety_ClassColumn" msprop:Generator_UserColumnName="Variety_Class" type="xs:string" minOccurs="0" />
+              <xs:element name="Available_For_Clean_Load" msprop:Generator_ColumnVarNameInTable="columnAvailable_For_Clean_Load" msprop:Generator_ColumnPropNameInRow="Available_For_Clean_Load" msprop:Generator_ColumnPropNameInTable="Available_For_Clean_LoadColumn" msprop:Generator_UserColumnName="Available_For_Clean_Load" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Available_For_Treat_Load" msprop:Generator_ColumnVarNameInTable="columnAvailable_For_Treat_Load" msprop:Generator_ColumnPropNameInRow="Available_For_Treat_Load" msprop:Generator_ColumnPropNameInTable="Available_For_Treat_LoadColumn" msprop:Generator_UserColumnName="Available_For_Treat_Load" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Set_New_Rate" msprop:Generator_ColumnVarNameInTable="columnSet_New_Rate" msprop:Generator_ColumnPropNameInRow="Set_New_Rate" msprop:Generator_ColumnPropNameInTable="Set_New_RateColumn" msprop:Generator_UserColumnName="Set_New_Rate" type="xs:boolean" minOccurs="0" />
+              <xs:element name="New_Rate" msprop:Generator_ColumnVarNameInTable="columnNew_Rate" msprop:Generator_ColumnPropNameInRow="New_Rate" msprop:Generator_ColumnPropNameInTable="New_RateColumn" msprop:Generator_UserColumnName="New_Rate" type="xs:double" minOccurs="0" />
+              <xs:element name="Use_For_Clean_Loadout" msprop:Generator_ColumnVarNameInTable="columnUse_For_Clean_Loadout" msprop:Generator_ColumnPropNameInRow="Use_For_Clean_Loadout" msprop:Generator_ColumnPropNameInTable="Use_For_Clean_LoadoutColumn" msprop:Generator_UserColumnName="Use_For_Clean_Loadout" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Use_For_Treat_Loadout" msprop:Generator_ColumnVarNameInTable="columnUse_For_Treat_Loadout" msprop:Generator_ColumnPropNameInRow="Use_For_Treat_Loadout" msprop:Generator_ColumnPropNameInTable="Use_For_Treat_LoadoutColumn" msprop:Generator_UserColumnName="Use_For_Treat_Loadout" type="xs:boolean" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="LoadingStatus" msprop:Generator_TableClassName="LoadingStatusDataTable" msprop:Generator_TableVarName="tableLoadingStatus" msprop:Generator_RowChangedName="LoadingStatusRowChanged" msprop:Generator_TablePropName="LoadingStatus" msprop:Generator_RowDeletingName="LoadingStatusRowDeleting" msprop:Generator_RowChangingName="LoadingStatusRowChanging" msprop:Generator_RowEvHandlerName="LoadingStatusRowChangeEventHandler" msprop:Generator_RowDeletedName="LoadingStatusRowDeleted" msprop:Generator_RowClassName="LoadingStatusRow" msprop:Generator_UserTableName="LoadingStatus" msprop:Generator_RowEvArgName="LoadingStatusRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Clean_Batch_Status" msprop:Generator_ColumnVarNameInTable="columnClean_Batch_Status" msprop:Generator_ColumnPropNameInRow="Clean_Batch_Status" msprop:Generator_ColumnPropNameInTable="Clean_Batch_StatusColumn" msprop:Generator_UserColumnName="Clean_Batch_Status" type="xs:int" minOccurs="0" />
+              <xs:element name="Treat_Batch_Status" msprop:Generator_ColumnVarNameInTable="columnTreat_Batch_Status" msprop:Generator_ColumnPropNameInRow="Treat_Batch_Status" msprop:Generator_ColumnPropNameInTable="Treat_Batch_StatusColumn" msprop:Generator_UserColumnName="Treat_Batch_Status" type="xs:int" minOccurs="0" />
+              <xs:element name="Clean_Unavailable" msprop:Generator_ColumnVarNameInTable="columnClean_Unavailable" msprop:Generator_ColumnPropNameInRow="Clean_Unavailable" msprop:Generator_ColumnPropNameInTable="Clean_UnavailableColumn" msprop:Generator_UserColumnName="Clean_Unavailable" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Treat_Unavailable" msprop:Generator_ColumnVarNameInTable="columnTreat_Unavailable" msprop:Generator_ColumnPropNameInRow="Treat_Unavailable" msprop:Generator_ColumnPropNameInTable="Treat_UnavailableColumn" msprop:Generator_UserColumnName="Treat_Unavailable" type="xs:boolean" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Treat_Pumps" msprop:Generator_TableClassName="Treat_PumpsDataTable" msprop:Generator_TableVarName="tableTreat_Pumps" msprop:Generator_TablePropName="Treat_Pumps" msprop:Generator_RowDeletingName="Treat_PumpsRowDeleting" msprop:Generator_RowChangingName="Treat_PumpsRowChanging" msprop:Generator_RowEvHandlerName="Treat_PumpsRowChangeEventHandler" msprop:Generator_RowDeletedName="Treat_PumpsRowDeleted" msprop:Generator_UserTableName="Treat_Pumps" msprop:Generator_RowChangedName="Treat_PumpsRowChanged" msprop:Generator_RowEvArgName="Treat_PumpsRowChangeEvent" msprop:Generator_RowClassName="Treat_PumpsRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Pump_Index" msprop:Generator_ColumnVarNameInTable="columnPump_Index" msprop:Generator_ColumnPropNameInRow="Pump_Index" msprop:Generator_ColumnPropNameInTable="Pump_IndexColumn" msprop:Generator_UserColumnName="Pump_Index" type="xs:int" />
+              <xs:element name="Pump_Description" msprop:Generator_ColumnVarNameInTable="columnPump_Description" msprop:Generator_ColumnPropNameInRow="Pump_Description" msprop:Generator_ColumnPropNameInTable="Pump_DescriptionColumn" msprop:Generator_UserColumnName="Pump_Description" type="xs:string" minOccurs="0" />
+              <xs:element name="Product" msprop:Generator_ColumnVarNameInTable="columnProduct" msprop:Generator_ColumnPropNameInRow="Product" msprop:Generator_ColumnPropNameInTable="ProductColumn" msprop:Generator_UserColumnName="Product" type="xs:string" minOccurs="0" />
+              <xs:element name="Rate" msprop:Generator_ColumnVarNameInTable="columnRate" msprop:Generator_ColumnPropNameInRow="Rate" msprop:Generator_ColumnPropNameInTable="RateColumn" msprop:Generator_UserColumnName="Rate" type="xs:double" minOccurs="0" />
+              <xs:element name="Active_Treatment" msprop:Generator_ColumnVarNameInTable="columnActive_Treatment" msprop:Generator_ColumnPropNameInRow="Active_Treatment" msprop:Generator_ColumnPropNameInTable="Active_TreatmentColumn" msprop:Generator_UserColumnName="Active_Treatment" type="xs:boolean" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Colors" msprop:Generator_TableClassName="ColorsDataTable" msprop:Generator_TableVarName="tableColors" msprop:Generator_RowChangedName="ColorsRowChanged" msprop:Generator_TablePropName="Colors" msprop:Generator_RowDeletingName="ColorsRowDeleting" msprop:Generator_RowChangingName="ColorsRowChanging" msprop:Generator_RowEvHandlerName="ColorsRowChangeEventHandler" msprop:Generator_RowDeletedName="ColorsRowDeleted" msprop:Generator_RowClassName="ColorsRow" msprop:Generator_UserTableName="Colors" msprop:Generator_RowEvArgName="ColorsRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="ID" msprop:Generator_ColumnVarNameInTable="columnID" msprop:Generator_ColumnPropNameInRow="ID" msprop:Generator_ColumnPropNameInTable="IDColumn" msprop:Generator_UserColumnName="ID" type="xs:int" minOccurs="0" />
+              <xs:element name="Description" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description" type="xs:string" minOccurs="0" />
+              <xs:element name="Blue" msprop:Generator_ColumnVarNameInTable="columnBlue" msprop:Generator_ColumnPropNameInRow="Blue" msprop:Generator_ColumnPropNameInTable="BlueColumn" msprop:Generator_UserColumnName="Blue" type="xs:double" minOccurs="0" />
+              <xs:element name="Yellow" msprop:Generator_ColumnVarNameInTable="columnYellow" msprop:Generator_ColumnPropNameInRow="Yellow" msprop:Generator_ColumnPropNameInTable="YellowColumn" msprop:Generator_UserColumnName="Yellow" type="xs:double" minOccurs="0" />
+              <xs:element name="Red" msprop:Generator_ColumnVarNameInTable="columnRed" msprop:Generator_ColumnPropNameInRow="Red" msprop:Generator_ColumnPropNameInTable="RedColumn" msprop:Generator_UserColumnName="Red" type="xs:double" minOccurs="0" />
+              <xs:element name="White" msprop:Generator_ColumnVarNameInTable="columnWhite" msprop:Generator_ColumnPropNameInRow="White" msprop:Generator_ColumnPropNameInTable="WhiteColumn" msprop:Generator_UserColumnName="White" type="xs:double" minOccurs="0" />
+              <xs:element name="Polymer" msprop:Generator_ColumnVarNameInTable="columnPolymer" msprop:Generator_ColumnPropNameInRow="Polymer" msprop:Generator_ColumnPropNameInTable="PolymerColumn" msprop:Generator_UserColumnName="Polymer" type="xs:double" minOccurs="0" />
+              <xs:element name="Duration" msprop:Generator_ColumnVarNameInTable="columnDuration" msprop:Generator_ColumnPropNameInRow="Duration" msprop:Generator_ColumnPropNameInTable="DurationColumn" msprop:Generator_UserColumnName="Duration" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:Bins" />
+      <xs:field xpath="mstns:Bin_Index" />
+    </xs:unique>
+    <xs:unique name="Treat_Pumps_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:Treat_Pumps" />
+      <xs:field xpath="mstns:Pump_Index" />
+    </xs:unique>
+  </xs:element>
+</xs:schema>

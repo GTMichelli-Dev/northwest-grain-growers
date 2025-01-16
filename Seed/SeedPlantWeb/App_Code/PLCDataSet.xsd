@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="PLCDataSet" targetNamespace="http://tempuri.org/PLCDataSet.xsd" xmlns:mstns="http://tempuri.org/PLCDataSet.xsd" xmlns="http://tempuri.org/PLCDataSet.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections />
+        <Tables />
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="PLCDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:Generator_DataSetName="PLCDataSet" msprop:Generator_UserDSName="PLCDataSet">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="Bins" msprop:Generator_TableClassName="BinsDataTable" msprop:Generator_TableVarName="tableBins" msprop:Generator_RowChangedName="BinsRowChanged" msprop:Generator_TablePropName="Bins" msprop:Generator_RowDeletingName="BinsRowDeleting" msprop:Generator_RowChangingName="BinsRowChanging" msprop:Generator_RowEvHandlerName="BinsRowChangeEventHandler" msprop:Generator_RowDeletedName="BinsRowDeleted" msprop:Generator_RowClassName="BinsRow" msprop:Generator_UserTableName="Bins" msprop:Generator_RowEvArgName="BinsRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Bin_Id" msprop:Generator_ColumnVarNameInTable="columnBin_Id" msprop:Generator_ColumnPropNameInRow="Bin_Id" msprop:Generator_ColumnPropNameInTable="Bin_IdColumn" msprop:Generator_UserColumnName="Bin_Id" type="xs:int" minOccurs="0" />
+              <xs:element name="Variety_Id" msprop:Generator_ColumnVarNameInTable="columnVariety_Id" msprop:Generator_ColumnPropNameInRow="Variety_Id" msprop:Generator_ColumnPropNameInTable="Variety_IdColumn" msprop:Generator_UserColumnName="Variety_Id" type="xs:string" minOccurs="0" />
+              <xs:element name="Available_For_Clean_Load" msprop:Generator_ColumnVarNameInTable="columnAvailable_For_Clean_Load" msprop:Generator_ColumnPropNameInRow="Available_For_Clean_Load" msprop:Generator_ColumnPropNameInTable="Available_For_Clean_LoadColumn" msprop:Generator_UserColumnName="Available_For_Clean_Load" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Available_For_Treat_Load" msprop:Generator_ColumnVarNameInTable="columnAvailable_For_Treat_Load" msprop:Generator_ColumnPropNameInRow="Available_For_Treat_Load" msprop:Generator_ColumnPropNameInTable="Available_For_Treat_LoadColumn" msprop:Generator_UserColumnName="Available_For_Treat_Load" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Bin_Name" msprop:Generator_ColumnVarNameInTable="columnBin_Name" msprop:Generator_ColumnPropNameInRow="Bin_Name" msprop:Generator_ColumnPropNameInTable="Bin_NameColumn" msprop:Generator_UserColumnName="Bin_Name" type="xs:string" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Treatments" msprop:Generator_TableClassName="TreatmentsDataTable" msprop:Generator_TableVarName="tableTreatments" msprop:Generator_RowChangedName="TreatmentsRowChanged" msprop:Generator_TablePropName="Treatments" msprop:Generator_RowDeletingName="TreatmentsRowDeleting" msprop:Generator_RowChangingName="TreatmentsRowChanging" msprop:Generator_RowEvHandlerName="TreatmentsRowChangeEventHandler" msprop:Generator_RowDeletedName="TreatmentsRowDeleted" msprop:Generator_RowClassName="TreatmentsRow" msprop:Generator_UserTableName="Treatments" msprop:Generator_RowEvArgName="TreatmentsRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Description" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description" type="xs:string" minOccurs="0" />
+              <xs:element name="Pump_Index" msprop:Generator_ColumnVarNameInTable="columnPump_Index" msprop:Generator_ColumnPropNameInRow="Pump_Index" msprop:Generator_ColumnPropNameInTable="Pump_IndexColumn" msprop:Generator_UserColumnName="Pump_Index" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="BatchTypeAvailability" msprop:Generator_TableClassName="BatchTypeAvailabilityDataTable" msprop:Generator_TableVarName="tableBatchTypeAvailability" msprop:Generator_RowChangedName="BatchTypeAvailabilityRowChanged" msprop:Generator_TablePropName="BatchTypeAvailability" msprop:Generator_RowDeletingName="BatchTypeAvailabilityRowDeleting" msprop:Generator_RowChangingName="BatchTypeAvailabilityRowChanging" msprop:Generator_RowEvHandlerName="BatchTypeAvailabilityRowChangeEventHandler" msprop:Generator_RowDeletedName="BatchTypeAvailabilityRowDeleted" msprop:Generator_RowClassName="BatchTypeAvailabilityRow" msprop:Generator_UserTableName="BatchTypeAvailability" msprop:Generator_RowEvArgName="BatchTypeAvailabilityRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Treat_Available" msprop:Generator_ColumnVarNameInTable="columnTreat_Available" msprop:Generator_ColumnPropNameInRow="Treat_Available" msprop:Generator_ColumnPropNameInTable="Treat_AvailableColumn" msprop:Generator_UserColumnName="Treat_Available" type="xs:boolean" minOccurs="0" />
+              <xs:element name="Clean_Available" msprop:Generator_ColumnVarNameInTable="columnClean_Available" msprop:Generator_ColumnPropNameInRow="Clean_Available" msprop:Generator_ColumnPropNameInTable="Clean_AvailableColumn" msprop:Generator_UserColumnName="Clean_Available" type="xs:boolean" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

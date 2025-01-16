@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="TransferDataset" targetNamespace="http://tempuri.org/TransferDataset.xsd" xmlns:mstns="http://tempuri.org/TransferDataset.xsd" xmlns="http://tempuri.org/TransferDataset.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections />
+        <Tables />
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="TransferDataset" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:EnableTableAdapterManager="true" msprop:Generator_DataSetName="TransferDataset" msprop:Generator_UserDSName="TransferDataset">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="TransferVals" msprop:Generator_TableClassName="TransferValsDataTable" msprop:Generator_TableVarName="tableTransferVals" msprop:Generator_RowChangedName="TransferValsRowChanged" msprop:Generator_TablePropName="TransferVals" msprop:Generator_RowDeletingName="TransferValsRowDeleting" msprop:Generator_RowChangingName="TransferValsRowChanging" msprop:Generator_RowEvHandlerName="TransferValsRowChangeEventHandler" msprop:Generator_RowDeletedName="TransferValsRowDeleted" msprop:Generator_RowClassName="TransferValsRow" msprop:Generator_UserTableName="TransferVals" msprop:Generator_RowEvArgName="TransferValsRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Location_ID" msprop:Generator_ColumnVarNameInTable="columnLocation_ID" msprop:Generator_ColumnPropNameInRow="Location_ID" msprop:Generator_ColumnPropNameInTable="Location_IDColumn" msprop:Generator_UserColumnName="Location_ID" type="xs:int" />
+              <xs:element name="WeightSheet" msprop:Generator_ColumnVarNameInTable="columnWeightSheet" msprop:Generator_ColumnPropNameInRow="WeightSheet" msprop:Generator_ColumnPropNameInTable="WeightSheetColumn" msprop:Generator_UserColumnName="WeightSheet" type="xs:long" />
+              <xs:element name="Customer_ID" msdata:AutoIncrementSeed="-1" msdata:AutoIncrementStep="-1" msprop:Generator_ColumnVarNameInTable="columnCustomer_ID" msprop:Generator_ColumnPropNameInRow="Customer_ID" msprop:Generator_ColumnPropNameInTable="Customer_IDColumn" msprop:Generator_UserColumnName="Customer_ID" type="xs:int" minOccurs="0" />
+              <xs:element name="Crop_ID" msprop:Generator_ColumnVarNameInTable="columnCrop_ID" msprop:Generator_ColumnPropNameInRow="Crop_ID" msprop:Generator_ColumnPropNameInTable="Crop_IDColumn" msprop:Generator_UserColumnName="Crop_ID" type="xs:int" />
+              <xs:element name="Time_Date" msprop:Generator_ColumnVarNameInTable="columnTime_Date" msprop:Generator_ColumnPropNameInRow="Time_Date" msprop:Generator_ColumnPropNameInTable="Time_DateColumn" msprop:Generator_UserColumnName="Time_Date" type="xs:dateTime" />
+              <xs:element name="Gross" msprop:Generator_ColumnVarNameInTable="columnGross" msprop:Generator_ColumnPropNameInRow="Gross" msprop:Generator_ColumnPropNameInTable="GrossColumn" msprop:Generator_UserColumnName="Gross" type="xs:int" />
+              <xs:element name="Hauler_ID" msprop:Generator_ColumnVarNameInTable="columnHauler_ID" msprop:Generator_ColumnPropNameInRow="Hauler_ID" msprop:Generator_ColumnPropNameInTable="Hauler_IDColumn" msprop:Generator_UserColumnName="Hauler_ID" type="xs:int" minOccurs="0" />
+              <xs:element name="Inbound" msprop:Generator_ColumnVarNameInTable="columnInbound" msprop:Generator_ColumnPropNameInRow="Inbound" msprop:Generator_ColumnPropNameInTable="InboundColumn" msprop:Generator_UserColumnName="Inbound" type="xs:boolean" />
+              <xs:element name="Lot_ID" msprop:Generator_ColumnVarNameInTable="columnLot_ID" msprop:Generator_ColumnPropNameInRow="Lot_ID" msprop:Generator_ColumnPropNameInTable="Lot_IDColumn" msprop:Generator_UserColumnName="Lot_ID" type="xs:string" minOccurs="0" />
+              <xs:element name="Rate" msprop:Generator_ColumnVarNameInTable="columnRate" msprop:Generator_ColumnPropNameInRow="Rate" msprop:Generator_ColumnPropNameInTable="RateColumn" msprop:Generator_UserColumnName="Rate" type="xs:string" minOccurs="0" />
+              <xs:element name="Outbound_Location" msdata:AutoIncrementSeed="-1" msdata:AutoIncrementStep="-1" msprop:Generator_ColumnVarNameInTable="columnOutbound_Location" msprop:Generator_ColumnPropNameInRow="Outbound_Location" msprop:Generator_ColumnPropNameInTable="Outbound_LocationColumn" msprop:Generator_UserColumnName="Outbound_Location" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://tempuri.org/" xmlns:s1="http://microsoft.com/wsdl/types/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" targetNamespace="http://tempuri.org/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://tempuri.org/">
+      <s:import namespace="http://tempuri.org/PLCDataSet.xsd" />
+      <s:import namespace="http://microsoft.com/wsdl/types/" />
+      <s:import schemaLocation="http://localhost/WebService.asmx?schema=PLCDataSet" namespace="http://tempuri.org/PLCDataSet.xsd" />
+      <s:element name="SetPLCValues">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="CurrentDataset">
+              <s:complexType>
+                <s:sequence>
+                  <s:any namespace="http://tempuri.org/PLCDataSet.xsd" />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="SetPLCValuesResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="SetPLCValuesResult" type="tns:PCResponse" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="PCResponse">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="UID" type="s1:guid" />
+          <s:element minOccurs="1" maxOccurs="1" name="BatchType" type="tns:enumBatchType" />
+          <s:element minOccurs="0" maxOccurs="1" name="BinStatus" type="tns:ArrayOfItemStatus" />
+          <s:element minOccurs="0" maxOccurs="1" name="TreatmentStatus" type="tns:ArrayOfItemStatus" />
+          <s:element minOccurs="0" maxOccurs="1" name="ColorStatus" type="tns:ArrayOfItemStatus" />
+        </s:sequence>
+      </s:complexType>
+      <s:simpleType name="enumBatchType">
+        <s:restriction base="s:string">
+          <s:enumeration value="NotSet" />
+          <s:enumeration value="Clean" />
+          <s:enumeration value="Bulk" />
+        </s:restriction>
+      </s:simpleType>
+      <s:complexType name="ArrayOfItemStatus">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="ItemStatus" nillable="true" type="tns:ItemStatus" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ItemStatus">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="ItemId" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="Active" type="s:boolean" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetGrowers">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="prefix" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetGrowersResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetGrowersResult" type="tns:ArrayOfString" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfString">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="SetPLCVarieties">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="Varieties" type="tns:ArrayOfBinItems" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfBinItems">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="BinItems" nillable="true" type="tns:BinItems" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="BinItems">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="BinNumber" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="ItemNumber" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="Bin" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="SetPLCVarietiesResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="SetPLCVarietiesResult" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="SetPLCTreatments">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="Treatments" type="tns:ArrayOfInt" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfInt">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="int" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="SetPLCTreatmentsResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="1" maxOccurs="1" name="SetPLCTreatmentsResult" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetVariety">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="prefix" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="usePlc" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetVarietyResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetVarietyResult" type="tns:ArrayOfString" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetTreatments">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="prefix" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="usePlc" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetTreatmentsResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetTreatmentsResult" type="tns:ArrayOfString" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetWeighmasters">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="prefix" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetWeighmastersResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetWeighmastersResult" type="tns:ArrayOfString" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://microsoft.com/wsdl/types/">
+      <s:simpleType name="guid">
+        <s:restriction base="s:string">
+          <s:pattern value="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" />
+        </s:restriction>
+      </s:simpleType>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="SetPLCValuesSoapIn">
+    <wsdl:part name="parameters" element="tns:SetPLCValues" />
+  </wsdl:message>
+  <wsdl:message name="SetPLCValuesSoapOut">
+    <wsdl:part name="parameters" element="tns:SetPLCValuesResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetGrowersSoapIn">
+    <wsdl:part name="parameters" element="tns:GetGrowers" />
+  </wsdl:message>
+  <wsdl:message name="GetGrowersSoapOut">
+    <wsdl:part name="parameters" element="tns:GetGrowersResponse" />
+  </wsdl:message>
+  <wsdl:message name="SetPLCVarietiesSoapIn">
+    <wsdl:part name="parameters" element="tns:SetPLCVarieties" />
+  </wsdl:message>
+  <wsdl:message name="SetPLCVarietiesSoapOut">
+    <wsdl:part name="parameters" element="tns:SetPLCVarietiesResponse" />
+  </wsdl:message>
+  <wsdl:message name="SetPLCTreatmentsSoapIn">
+    <wsdl:part name="parameters" element="tns:SetPLCTreatments" />
+  </wsdl:message>
+  <wsdl:message name="SetPLCTreatmentsSoapOut">
+    <wsdl:part name="parameters" element="tns:SetPLCTreatmentsResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetVarietySoapIn">
+    <wsdl:part name="parameters" element="tns:GetVariety" />
+  </wsdl:message>
+  <wsdl:message name="GetVarietySoapOut">
+    <wsdl:part name="parameters" element="tns:GetVarietyResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetTreatmentsSoapIn">
+    <wsdl:part name="parameters" element="tns:GetTreatments" />
+  </wsdl:message>
+  <wsdl:message name="GetTreatmentsSoapOut">
+    <wsdl:part name="parameters" element="tns:GetTreatmentsResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetWeighmastersSoapIn">
+    <wsdl:part name="parameters" element="tns:GetWeighmasters" />
+  </wsdl:message>
+  <wsdl:message name="GetWeighmastersSoapOut">
+    <wsdl:part name="parameters" element="tns:GetWeighmastersResponse" />
+  </wsdl:message>
+  <wsdl:portType name="WebServiceSoap">
+    <wsdl:operation name="SetPLCValues">
+      <wsdl:input message="tns:SetPLCValuesSoapIn" />
+      <wsdl:output message="tns:SetPLCValuesSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetGrowers">
+      <wsdl:input message="tns:GetGrowersSoapIn" />
+      <wsdl:output message="tns:GetGrowersSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="SetPLCVarieties">
+      <wsdl:input message="tns:SetPLCVarietiesSoapIn" />
+      <wsdl:output message="tns:SetPLCVarietiesSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="SetPLCTreatments">
+      <wsdl:input message="tns:SetPLCTreatmentsSoapIn" />
+      <wsdl:output message="tns:SetPLCTreatmentsSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetVariety">
+      <wsdl:input message="tns:GetVarietySoapIn" />
+      <wsdl:output message="tns:GetVarietySoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetTreatments">
+      <wsdl:input message="tns:GetTreatmentsSoapIn" />
+      <wsdl:output message="tns:GetTreatmentsSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetWeighmasters">
+      <wsdl:input message="tns:GetWeighmastersSoapIn" />
+      <wsdl:output message="tns:GetWeighmastersSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="WebServiceSoap" type="tns:WebServiceSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="SetPLCValues">
+      <soap:operation soapAction="http://tempuri.org/SetPLCValues" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetGrowers">
+      <soap:operation soapAction="http://tempuri.org/GetGrowers" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetPLCVarieties">
+      <soap:operation soapAction="http://tempuri.org/SetPLCVarieties" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetPLCTreatments">
+      <soap:operation soapAction="http://tempuri.org/SetPLCTreatments" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetVariety">
+      <soap:operation soapAction="http://tempuri.org/GetVariety" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetTreatments">
+      <soap:operation soapAction="http://tempuri.org/GetTreatments" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetWeighmasters">
+      <soap:operation soapAction="http://tempuri.org/GetWeighmasters" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="WebServiceSoap12" type="tns:WebServiceSoap">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="SetPLCValues">
+      <soap12:operation soapAction="http://tempuri.org/SetPLCValues" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetGrowers">
+      <soap12:operation soapAction="http://tempuri.org/GetGrowers" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetPLCVarieties">
+      <soap12:operation soapAction="http://tempuri.org/SetPLCVarieties" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SetPLCTreatments">
+      <soap12:operation soapAction="http://tempuri.org/SetPLCTreatments" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetVariety">
+      <soap12:operation soapAction="http://tempuri.org/GetVariety" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetTreatments">
+      <soap12:operation soapAction="http://tempuri.org/GetTreatments" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetWeighmasters">
+      <soap12:operation soapAction="http://tempuri.org/GetWeighmasters" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="WebService">
+    <wsdl:port name="WebServiceSoap" binding="tns:WebServiceSoap">
+      <soap:address location="http://localhost/WebService.asmx" />
+    </wsdl:port>
+    <wsdl:port name="WebServiceSoap12" binding="tns:WebServiceSoap12">
+      <soap12:address location="http://localhost/WebService.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

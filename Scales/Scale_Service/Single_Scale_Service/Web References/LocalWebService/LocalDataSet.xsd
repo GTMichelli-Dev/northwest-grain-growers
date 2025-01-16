@@ -1,0 +1,777 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:mstns="http://tempuri.org/LocalDataSet.xsd" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns="http://tempuri.org/LocalDataSet.xsd" attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://tempuri.org/LocalDataSet.xsd" id="LocalDataSet" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element msdata:IsDataSet="true" msdata:UseCurrentLocale="true" name="LocalDataSet">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="WeighMasters">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element msdata:ReadOnly="true" msdata:AutoIncrement="true" msdata:AutoIncrementSeed="-1" msdata:AutoIncrementStep="-1" name="ID" type="xs:int" />
+              <xs:element name="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Weigh_Scales">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="UID" type="xs:string" />
+              <xs:element name="Location_Id" type="xs:int" />
+              <xs:element name="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Scale_Type">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="IP_Address">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Port" type="xs:int" />
+              <xs:element name="Inbound_Ticket_Printer">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Outbound_Ticket_Printer">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Print_Inbound_Ticket" type="xs:boolean" />
+              <xs:element name="Print_Outbound_Ticket" type="xs:boolean" />
+              <xs:element default="0" name="Weight" type="xs:int" />
+              <xs:element default="false" name="Motion" type="xs:boolean" />
+              <xs:element default="false" name="OK" type="xs:boolean" />
+              <xs:element default="" name="Status" type="xs:string" />
+              <xs:element default="Connecting" name="Error_Message" type="xs:string" />
+              <xs:element minOccurs="0" name="Last_Update" type="xs:dateTime" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="All_Weigh_Scales">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="UID" type="xs:string" />
+              <xs:element name="Location_Id" type="xs:int" />
+              <xs:element name="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Scale_Type">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="IP_Address">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Port" type="xs:int" />
+              <xs:element name="Inbound_Ticket_Printer">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Outbound_Ticket_Printer">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Print_Inbound_Ticket" type="xs:boolean" />
+              <xs:element name="Print_Outbound_Ticket" type="xs:boolean" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Site_Printers">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="UID" type="xs:string" />
+              <xs:element name="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Printer_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="System_Log">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="UID" type="xs:string" />
+              <xs:element name="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Time_Date" type="xs:dateTime" />
+              <xs:element name="Location">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2147483647" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Message">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2147483647" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location_Id" type="xs:int" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="vwWeigh_Sheet">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Load_Id" type="xs:long" />
+              <xs:element name="Location_Id" type="xs:int" />
+              <xs:element name="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Sequence_Id" type="xs:int" />
+              <xs:element name="Time_In" type="xs:dateTime" />
+              <xs:element name="Weight_In" type="xs:int" />
+              <xs:element name="Manual_Weight_In" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Time_Out" type="xs:dateTime" />
+              <xs:element minOccurs="0" name="Weight_Out" type="xs:int" />
+              <xs:element minOccurs="0" name="Manual_Weight_Out" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Bol">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Bin">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Truck_Id">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Comment">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2147483647" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location_Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Lot_Number" type="xs:long" />
+              <xs:element name="Crop_Id" type="xs:int" />
+              <xs:element name="Crop_Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Producer_Id" type="xs:int" />
+              <xs:element name="Producer_Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Show_Protien_On_WS" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Split_Number" type="xs:int" />
+              <xs:element minOccurs="0" name="FSA_Number">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Landlord">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Lot_Comment">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2147483647" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Start_Date" type="xs:dateTime" />
+              <xs:element minOccurs="0" name="Close_Date" type="xs:dateTime" />
+              <xs:element name="Lot_Sampled" type="xs:boolean" />
+              <xs:element name="Weighmaster">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="200" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Closed" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Weight_Sheet_Comment">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2147483647" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Original_Printed" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Carrier_Id" type="xs:int" />
+              <xs:element minOccurs="0" name="Carrier_Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="WS_Id" type="xs:long" />
+              <xs:element name="Creation_Date" type="xs:dateTime" />
+              <xs:element minOccurs="0" name="Variety_Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="100" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="UOM_Code">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="1" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="UOM_Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="10" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="UOM_Factor" type="xs:float" />
+              <xs:element minOccurs="0" name="Protien" type="xs:float" />
+              <xs:element minOccurs="0" name="Miles" type="xs:int" />
+              <xs:element minOccurs="0" name="Rate" type="xs:decimal" />
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="Weight_Sheet_UID" type="xs:string" />
+              <xs:element minOccurs="0" name="BOL_Type">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="Load_UID" type="xs:string" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Gross" type="xs:int" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Tare" type="xs:int" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Net" type="xs:int" />
+              <xs:element minOccurs="0" name="Load_Comment">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Is_Loadout" type="xs:boolean" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="vw_Outbound_Load">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="UID" type="xs:string" />
+              <xs:element name="Out_Load_Id" type="xs:long" />
+              <xs:element name="Sequence_Id" type="xs:int" />
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="Load_UID" type="xs:string" />
+              <xs:element name="Destination">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="250" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Crop_Id" type="xs:int" />
+              <xs:element minOccurs="0" name="Carrier">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="250" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Carrier_Address">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="250" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Weighmaster">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="250" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location_Id" type="xs:int" />
+              <xs:element name="Time_In" type="xs:dateTime" />
+              <xs:element name="Weight_In" type="xs:int" />
+              <xs:element name="Manual_Weight_In" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Time_Out" type="xs:dateTime" />
+              <xs:element minOccurs="0" name="Weight_Out" type="xs:int" />
+              <xs:element minOccurs="0" name="Manual_Weight_Out" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Bol">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Bin">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Truck_Id">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Comment">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Void" type="xs:boolean" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Gross" type="xs:int" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Tare" type="xs:int" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Net" type="xs:int" />
+              <xs:element name="Crop">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Load_Id" type="xs:long" />
+              <xs:element minOccurs="0" name="For_Account_Of">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Closed" type="xs:boolean" />
+              <xs:element name="Original_Printed" type="xs:boolean" />
+              <xs:element name="Barge" type="xs:boolean" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Load_Type">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="5" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Loads">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="UID" type="xs:string" />
+              <xs:element name="Load_Id" type="xs:long" />
+              <xs:element name="Location_Id" type="xs:int" />
+              <xs:element name="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Sequence_Id" type="xs:int" />
+              <xs:element name="Time_In" type="xs:dateTime" />
+              <xs:element name="Weight_In" type="xs:int" />
+              <xs:element name="Manual_Weight_In" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Time_Out" type="xs:dateTime" />
+              <xs:element minOccurs="0" name="Weight_Out" type="xs:int" />
+              <xs:element minOccurs="0" name="Manual_Weight_Out" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Bol">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Bin">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Truck_Id">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Comment">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Void" type="xs:boolean" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="vwLoad_Type">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" minOccurs="0" name="Transfer_Load_UID" type="xs:string" />
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" minOccurs="0" name="Inbound_Load_UID" type="xs:string" />
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" minOccurs="0" name="Outbound_Load_UID" type="xs:string" />
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="Load_UID" type="xs:string" />
+              <xs:element name="Load_Id" type="xs:long" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Type_Of_Load">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="1" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location_Id" type="xs:int" />
+              <xs:element name="Sequence_Id" type="xs:int" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Locations">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="UID" type="xs:string" />
+              <xs:element name="Id" type="xs:int" />
+              <xs:element name="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Active" type="xs:boolean" />
+              <xs:element name="District">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="DoNotXfer" type="xs:boolean" />
+              <xs:element name="In_Production" type="xs:boolean" />
+              <xs:element minOccurs="0" name="DefaultState">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Site_Setup">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="UID" type="xs:string" />
+              <xs:element name="Location_Id" type="xs:int" />
+              <xs:element name="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Sequence_ID" type="xs:int" />
+              <xs:element name="Lot_Id_Seed" type="xs:long" />
+              <xs:element name="WS_Id_Seed" type="xs:long" />
+              <xs:element name="Load_Seed" type="xs:long" />
+              <xs:element name="Max_WS_Ticket_Count" type="xs:int" />
+              <xs:element name="Current_Fuel_Price" type="xs:decimal" />
+              <xs:element name="Outbound_Seed" type="xs:long" />
+              <xs:element name="Outbound_Final_Kiosk_Ticket_Count" type="xs:int" />
+              <xs:element name="Has_Loadout" type="xs:boolean" />
+              <xs:element name="Load_Out_Ip">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Load_Out_Port" type="xs:int" />
+              <xs:element name="Seed_Ticket_Seed" type="xs:int" />
+              <xs:element name="Is_Seed_Mill" type="xs:boolean" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="vwTransfer_Load">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Location_Id" type="xs:int" />
+              <xs:element name="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Sequence_Id" type="xs:int" />
+              <xs:element name="Time_In" type="xs:dateTime" />
+              <xs:element name="Weight_In" type="xs:int" />
+              <xs:element name="Manual_Weight_In" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Time_Out" type="xs:dateTime" />
+              <xs:element minOccurs="0" name="Weight_Out" type="xs:int" />
+              <xs:element minOccurs="0" name="Manual_Weight_Out" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Truck_Id">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Comment">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="2147483647" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Void" type="xs:boolean" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Gross" type="xs:int" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Tare" type="xs:int" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Net" type="xs:int" />
+              <xs:element name="Crop">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Load_Id" type="xs:long" />
+              <xs:element msdata:ReadOnly="true" minOccurs="0" name="Closed" type="xs:boolean" />
+              <xs:element name="Weighmaster">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="200" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Carrier">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="Load_UID" type="xs:string" />
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="Weight_Sheet_UID" type="xs:string" />
+              <xs:element msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" name="Weight_Sheet_Transfer_UID" type="xs:string" />
+              <xs:element name="Source_Id" type="xs:int" />
+              <xs:element name="Source">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Protein" type="xs:float" />
+              <xs:element name="Crop_Id" type="xs:int" />
+              <xs:element minOccurs="0" name="Carrier_Id" type="xs:int" />
+              <xs:element name="Original_Printed" type="xs:boolean" />
+              <xs:element minOccurs="0" name="Rate" type="xs:decimal" />
+              <xs:element minOccurs="0" name="Bol">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Bin">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="WS_Id" type="xs:long" />
+              <xs:element name="UOM_Code">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="1" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="UOM_Factor" type="xs:float" />
+              <xs:element name="Location_Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Variety">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="InDirt" type="xs:boolean" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="QRCode">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" name="QR" type="xs:base64Binary" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name="Constraint1">
+      <xs:selector xpath=".//mstns:WeighMasters" />
+      <xs:field xpath="mstns:ID" />
+    </xs:unique>
+    <xs:unique msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true" name="Weigh_Scales_Constraint1">
+      <xs:selector xpath=".//mstns:Weigh_Scales" />
+      <xs:field xpath="mstns:UID" />
+    </xs:unique>
+    <xs:unique msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true" name="All_Weigh_Scales_Constraint1">
+      <xs:selector xpath=".//mstns:All_Weigh_Scales" />
+      <xs:field xpath="mstns:UID" />
+    </xs:unique>
+    <xs:unique msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true" name="Site_Printers_Constraint1">
+      <xs:selector xpath=".//mstns:Site_Printers" />
+      <xs:field xpath="mstns:UID" />
+    </xs:unique>
+    <xs:unique msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true" name="System_Log_Constraint1">
+      <xs:selector xpath=".//mstns:System_Log" />
+      <xs:field xpath="mstns:UID" />
+    </xs:unique>
+    <xs:unique msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true" name="vw_Outbound_Load_Constraint1">
+      <xs:selector xpath=".//mstns:vw_Outbound_Load" />
+      <xs:field xpath="mstns:UID" />
+    </xs:unique>
+    <xs:unique msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true" name="Loads_Constraint1">
+      <xs:selector xpath=".//mstns:Loads" />
+      <xs:field xpath="mstns:UID" />
+    </xs:unique>
+    <xs:unique msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true" name="Locations_Constraint1">
+      <xs:selector xpath=".//mstns:Locations" />
+      <xs:field xpath="mstns:UID" />
+    </xs:unique>
+    <xs:unique msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true" name="Site_Setup_Constraint1">
+      <xs:selector xpath=".//mstns:Site_Setup" />
+      <xs:field xpath="mstns:UID" />
+    </xs:unique>
+    <xs:unique msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true" name="vwTransfer_Load_Constraint1">
+      <xs:selector xpath=".//mstns:vwTransfer_Load" />
+      <xs:field xpath="mstns:Load_UID" />
+      <xs:field xpath="mstns:Weight_Sheet_UID" />
+      <xs:field xpath="mstns:Weight_Sheet_Transfer_UID" />
+    </xs:unique>
+  </xs:element>
+</xs:schema>

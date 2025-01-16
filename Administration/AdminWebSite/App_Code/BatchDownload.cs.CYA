@@ -1,0 +1,69 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Web;
+
+/// <summary>
+/// Summary description for BatchDownload
+/// </summary>
+public class BatchDownload
+{
+    public BatchDownload()
+    {
+        //
+        // TODO: Add constructor logic here
+        //
+    }
+
+    public static void DownloadVNC(string BatchName,string IPAddress, HttpResponse Response)
+    {
+        var memStream = new MemoryStream();
+        var streamWriter = new StreamWriter(memStream);
+        BatchName = BatchName.Replace(" ", "_");
+        string Filename = string.Format("{0}_VNC",BatchName);
+        string BatchText = string.Format( @"start C:\Progra~1\TightVNC\tvnviewer.exe -scale=75 {0}",IPAddress) ;
+        streamWriter.WriteLine(BatchText);
+        streamWriter.WriteLine(string.Format("*{0}*", Filename));
+        streamWriter.Flush();
+        memStream.Seek(0, SeekOrigin.Begin);
+        Response.Clear();
+        Response.ContentType = "Application/msword";
+        Response.AddHeader("Content-Disposition",string.Format( "attachment; filename={0}.bat",Filename));
+        //Response.BinaryWrite(memStream.ToArray());
+        memStream.WriteTo(Response.OutputStream); //works too
+        Response.Flush();
+        Response.Close();
+        Response.End();
+
+    }
+
+
+    public static void DownloadNWGG(string BatchName,string Folder, string IPAddress, HttpResponse Response)
+    {
+        //( del /q /f "%~f0" >nul 2>&1 & exit /b 0  )
+
+        string Delete = "( del /q /f \"%~f0\" >nul 2>&1 & exit " + @"/b 0  )";
+
+        
+        var memStream = new MemoryStream();
+        var streamWriter = new StreamWriter(memStream);
+        BatchName = BatchName.Replace(" ", "_");
+        string Filename = string.Format("{0}", BatchName);
+        //if (Folder.Substring(Folder.Length-1)==@"\") Folder=Folder.Substring(Folder.Length-1);
+        string BatchText = string.Format(@"start \\walws001\wwwroot\Locations\{0}\NWGrain.exe",  Folder);
+        streamWriter.WriteLine(BatchText);
+        streamWriter.WriteLine(Delete);
+        streamWriter.Flush();
+        memStream.Seek(0, SeekOrigin.Begin);
+        Response.Clear();
+        Response.ContentType = "Application/msword";
+        Response.AddHeader("Content-Disposition", string.Format("attachment; filename={0}.bat", Filename));
+        //Response.BinaryWrite(memStream.ToArray());
+        memStream.WriteTo(Response.OutputStream); //works too
+        Response.Flush();
+        Response.Close();
+        Response.End();
+
+    }
+}

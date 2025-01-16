@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DiscoveryClientResultsFile xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Results>
+    <DiscoveryClientResult referenceType="System.Web.Services.Discovery.ContractReference" url="http://wsppc001/LocalWebService.asmx?wsdl" filename="LocalWebService.wsdl" />
+    <DiscoveryClientResult referenceType="System.Web.Services.Discovery.DiscoveryDocumentReference" url="http://wsppc001/LocalWebService.asmx?disco" filename="LocalWebService.disco" />
+    <DiscoveryClientResult referenceType="System.Web.Services.Discovery.SchemaReference" url="http://wsppc001/LocalWebService.asmx?schema=LocalDataSet" filename="LocalDataSet.xsd" />
+  </Results>
+</DiscoveryClientResultsFile>

@@ -1,0 +1,253 @@
+﻿
+
+
+<%@ Master Language="C#" AutoEventWireup="true" CodeFile="Seed.master.cs" Inherits="SeedMaster" %>
+<%@ Register assembly="CrystalDecisions.Web, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304" namespace="CrystalDecisions.Web" tagprefix="CR" %>
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head runat="server">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%: Page.Title %> - Seed Plant</title>
+
+    <script src="/Scripts/jquery-3.4.1.js"></script>
+    <script src="/Scripts/jquery-ui-1.12.1.js"></script>
+    <script src="/Scripts/jquery.timepicker.js"></script>
+
+    <script src="/Scripts/bootstrap-datepicker.js"></script>
+
+    <script src="/Scripts/jquery.datepair.js"></script>
+
+    
+    <script src="/Scripts/jquery-ui-1.12.1.js"></script>
+
+    
+
+    <link href="/Content/bootstrap.css" rel="stylesheet" />
+    <link href="/Content/Site.css" rel="stylesheet" />
+
+
+    <%--       <script src="~/Scripts/jquery-3.4.1.js"></script>
+        <script src="~/Scripts/jquery-ui-1.12.1.js"></script>--%>
+    <link href="/Content/font-awesome.min.css" rel="stylesheet" />
+
+    <link href="/Content/jquery.timepicker.css" rel="stylesheet" />
+
+    <link href="/Content/bootstrap-datepicker.css" rel="stylesheet" />
+    
+
+    <link href="/Content/themes/base/jquery-ui.css" rel="stylesheet" />
+
+    <asp:PlaceHolder runat="server">
+        <%: Scripts.Render("~/bundles/modernizr") %>
+
+    </asp:PlaceHolder>
+    <webopt:BundleReference runat="server" Path="~/Content/css" />
+    <link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+   
+</head>
+<body>
+    <form runat="server">
+                  <script src="/Scripts/popper.js"></script>
+       
+           <asp:ScriptManager runat="server" EnablePageMethods="true"   >
+            <Services>
+                <asp:ServiceReference Path="~/WebService.asmx" />
+
+            </Services>
+            <Scripts>
+                <%--To learn more about bundling scripts in ScriptManager see http://go.microsoft.com/fwlink/?LinkID=301884 --%>
+                <%--Framework Scripts--%>
+                
+                <asp:ScriptReference Name="MsAjaxBundle" />
+                <%--<asp:ScriptReference Name="jquery" />--%>
+                <asp:ScriptReference Name="bootstrap" />
+                <asp:ScriptReference Name="respond" />
+                <asp:ScriptReference Name="WebForms.js" Assembly="System.Web" Path="/Scripts/WebForms/WebForms.js" />
+                <asp:ScriptReference Name="WebUIValidation.js" Assembly="System.Web" Path="/Scripts/WebForms/WebUIValidation.js" />
+                <asp:ScriptReference Name="MenuStandards.js" Assembly="System.Web" Path="/Scripts/WebForms/MenuStandards.js" />
+                <asp:ScriptReference Name="GridView.js" Assembly="System.Web" Path="/Scripts/WebForms/GridView.js" />
+                <asp:ScriptReference Name="DetailsView.js" Assembly="System.Web" Path="/Scripts/WebForms/DetailsView.js" />
+                <asp:ScriptReference Name="TreeView.js" Assembly="System.Web" Path="/Scripts/WebForms/TreeView.js" />
+                
+                <asp:ScriptReference Name="WebParts.js" Assembly="System.Web" Path="/Scripts/WebForms/WebParts.js" />
+                <asp:ScriptReference Name="Focus.js" Assembly="System.Web" Path="/Scripts/WebForms/Focus.js" />
+                <asp:ScriptReference Name="WebFormsBundle" />
+                <%--Site Scripts--%>
+               
+            </Scripts>
+        </asp:ScriptManager>
+
+
+
+
+     <%--<a class="navbar-brand " href="https://www.nwgrgr.com/">--%>
+        
+      <%--</a>--%>
+        
+  
+
+        <nav class="navbar navbar-expand-md  navbar-dark bg-dark fixed-top  " >
+               <asp:ImageButton runat="server" ID="img" PostBackUrl="~/Default.aspx" ImageUrl="nwgg-logo.png" style="top: 0px; max-width: 21rem; padding-right: 1rem;" alt="Northwest Grain Growers" />
+         
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active"><a class="nav-link" href="/Default">Main</a></li>
+                    <li class="nav-item active"><a class="nav-link" href="/SeedDefault">Seed</a></li>
+                    <li class="nav-item active"><a class="nav-link" href="/SeedPlant/SeedTicketTotals.aspx">Totals</a></li>
+                                   <li class="nav-item active"><a class="nav-link" href="/SeedPlant/UsedSeedLots.aspx">Lots</a></li>
+                    <li class="nav-item active"><a class="nav-link" href="/SeedPlant/Commodities.aspx">Commodity</a></li>
+                    <li class="nav-item active"><a class="nav-link" href="/SeedPlant/Seed.aspx">Varieties</a></li>
+                    <li class="nav-item active"><a class="nav-link" href="/SeedPlant/Traits.aspx">Traits</a></li>
+                    <li class="nav-item active"><a class="nav-link" href="/SeedPlant/Chemicals.aspx">Chemicals</a></li>
+                    <asp:PlaceHolder ID="SitesPlaceholder" runat="server">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown04T″">Sites<span class="caret"></span></a>
+                            <div class="dropdown-menu" aria-labelledby="dropdown04T″">
+                                <a class="dropdown-item" target="_blank" href="http://wsppc001:81">Walla Walla</a>
+                                <a class="dropdown-item" target="_blank" href="http://LSPDB45001DD:8080">Lancaster</a>
+                                <a class="dropdown-item" target="_blank" href="http://gsppc003:81">Garfield</a>
+                                <a class="dropdown-item" target="_blank" href="http://DAYDB41001RP:81">Dayton</a>
+
+                            </div>
+                        </li>
+                    </asp:PlaceHolder>
+
+
+                    <%--  <asp:PlaceHolder ID="CropsPlaceholder" runat="server">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown05T″">Crops<span class="caret"></span></a>
+                            <div class="dropdown-menu" aria-labelledby="dropdown05T″">
+                                <a class="dropdown-item" href="/Crops/Crops">Crops</a>
+                                <a class="dropdown-item" href="/Crops/Varieties">Varieties</a>
+
+                            </div>
+                        </li>
+
+                    </asp:PlaceHolder>--%>
+
+
+
+
+                    <%--     <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown06T″">Weightsheets<span class="caret"></span></a>
+                        <div class="dropdown-menu" aria-labelledby="dropdown06T″">
+                            <a class="dropdown-item" href="/Weightsheets/IntakeWeightSheets">Intake Weightsheets</a>
+                            <a class="dropdown-item" href="/Weightsheets/TransferWeightsheets">Transfer Weightsheets</a>
+
+                        </div>
+                    </li>--%>
+
+
+
+
+                    <%--     <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown07T″">Reports<span class="caret"></span></a>
+                        <div class="dropdown-menu" aria-labelledby="dropdown07T″">
+                            <a class="dropdown-item" href="/WeightSheets/DailyReportSelection">Daily Intake/Transfer WeightSheet Report</a>
+                            <a class="dropdown-item" href="/WeightSheets/SelectWeightSheetSeriesReport">Daily WeightSheet Series</a>
+
+                            <a class="dropdown-item" href="/WeightSheets/SelectCommodityReport">Daily Commodity</a>
+                            <a class="dropdown-item" href="/Reports/DailyBinReport">Daily Bin Report</a>
+                            <a class="dropdown-item" href="/dailyLoadTimes">Daily Load Times</a>
+
+
+                            <a class="dropdown-item" href="~/Weightsheets/TransferWeightsheets">Transfer Weightsheets</a>
+
+                            <a class="dropdown-item" href="~/Reports/ProducersCommodityDeliveredReport">Producers Commodity Report</a>
+                            <a class="dropdown-item" href="~/Reports/ProducersDeliveredReport">Producers Delivery Report</a>
+
+
+
+                        </div>
+                    </li>--%>
+
+
+
+
+
+
+                    <%--
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown08T″">Lots<span class="caret"></span></a>
+                        <div class="dropdown-menu" aria-labelledby="dropdown08T″">
+                            <a class="dropdown-item" href="/Lots/WarehouseLots">Lots</a>
+                            <a class="dropdown-item" href="/SeedPlant/Seedlots">Seed Lots</a>
+
+                        </div>
+                    </li>--%>
+
+
+
+
+
+
+                    <%--
+                    <asp:PlaceHolder ID="ProducerCarrierPlaceholder" runat="server">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown09T″">Producer/Carrier<span class="caret"></span></a>
+                            <div class="dropdown-menu" aria-labelledby="dropdown09T″">
+                                <a class="dropdown-item" href="/Producers/Producers">Producers</a>
+                                <a class="dropdown-item" href="/Carriers/Carriers">Carriers</a>
+
+                            </div>
+                        </li>
+                    </asp:PlaceHolder>
+
+                    <asp:PlaceHolder ID="MiscPlaceholder" runat="server">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown10T″">Misc<span class="caret"></span></a>
+                            <div class="dropdown-menu" aria-labelledby="dropdown10T″">
+                                <a class="dropdown-item" href="/AgvantageUpdate/Results?home=1">Agvantage Update Log</a>
+
+                                <asp:PlaceHolder ID="RatesPlaceholder" runat="server">
+                                    <a class="dropdown-item" href="/Rates/Rates">Rates</a>
+                                </asp:PlaceHolder>
+                                <a class="dropdown-item" href="/Misc/LastLoadReported">Last Load Update</a>
+                                <a class="dropdown-item" href="/Server/Servers">Servers</a>
+
+
+                            </div>
+                        </li>
+                    </asp:PlaceHolder>--%>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <%--<asp:Label ID="lblLoginStatus" runat="server" Text=""></asp:Label>--%>
+
+                        <asp:LinkButton CssClass="nav-link" ID="lnkLocked" OnClick="lnkLocked_Click" runat="server"></asp:LinkButton>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+ 
+
+   
+
+
+
+
+
+        <div class="container body-content text-center ">
+           
+            <br />
+            <asp:ContentPlaceHolder ID="MainContent" runat="server">
+            </asp:ContentPlaceHolder>
+
+            <hr />
+            <footer>
+                <p>&copy; <%: DateTime.Now.Year %> - NWGG</p>
+            </footer>
+        </div>
+    </form>
+     <script>
+     
+ </script>
+</body>
+</html>
