@@ -1,0 +1,101 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Pump_Cal" TargetType="DataType" ContainsContext="true" ExportDate="Thu Jan 30 08:46:04 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Context" Name="NWGG_Treater_Dayton">
+<DataTypes Use="Context">
+<DataType Name="Cal_Point" Family="NoFamily" Class="User">
+<Members>
+<Member Name="Speed" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+</DataType>
+<DataType Name="Cal_Points" Family="NoFamily" Class="User">
+<Description>
+<![CDATA[An array of Cal Points used for establishing a linear calibration]]>
+</Description>
+<Members>
+<Member Name="Cal_Point" DataType="Cal_Point" Dimension="10" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+<Dependencies>
+<Dependency Type="DataType" Name="Cal_Point"/>
+</Dependencies>
+</DataType>
+<DataType Use="Target" Name="Pump_Cal" Family="NoFamily" Class="User">
+<Members>
+<Member Name="ZZZZZZZZZZPump_Cal0" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Calibrating" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal0" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[In Calibration Mode]]>
+</Description>
+</Member>
+<Member Name="Cal_Started" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal0" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Calibration Started]]>
+</Description>
+</Member>
+<Member Name="Cal_Finished" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal0" BitNumber="2" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Cal Finished]]>
+</Description>
+</Member>
+<Member Name="Cal_Rqd" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal0" BitNumber="3" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Cal Points add up to 0 so cal is needed]]>
+</Description>
+</Member>
+<Member Name="Cal_Pt_Index" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Current Calibration Point Index that is being Calibrated]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZPump_Cal6" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Accept_Cal_Points" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal6" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Set to move temp cal points to Runtime cal points]]>
+</Description>
+</Member>
+<Member Name="Reset_Cal_Speeds" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal6" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Set the cal speeds to default]]>
+</Description>
+</Member>
+<Member Name="Reset_Cal" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal6" BitNumber="2" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Reset the cal points to zero]]>
+</Description>
+</Member>
+<Member Name="Cal_Speeds" DataType="Cal_Points" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Speed Pump Is Calibrated to]]>
+</Description>
+</Member>
+<Member Name="Cal_Points" DataType="Cal_Points" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Calibration Points Used to Calculate Rate]]>
+</Description>
+</Member>
+<Member Name="Temp_Cal_Points" DataType="Cal_Points" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Temporary Holding spot for the calibration points]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZPump_Cal13" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Copy_Cal_To_Temp" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal13" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Copy the Calibration Poiints to temp Cal For Viewing]]>
+</Description>
+</Member>
+<Member Name="Cancel_Cal" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal13" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Give Up Calibrating]]>
+</Description>
+</Member>
+</Members>
+<Dependencies>
+<Dependency Type="DataType" Name="Cal_Points"/>
+<Dependency Type="DataType" Name="Cal_Points"/>
+<Dependency Type="DataType" Name="Cal_Points"/>
+</Dependencies>
+</DataType>
+</DataTypes>
+</Controller>
+</RSLogix5000Content>

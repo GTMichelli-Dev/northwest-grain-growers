@@ -1,0 +1,152 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Set_Test_Cal_Points" TargetType="AddOnInstructionDefinition" TargetRevision="1.0 " TargetLastEdited="2017-04-26T15:40:42.324Z" ContainsContext="true" ExportDate="Thu Jan 30 09:00:32 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Context" Name="NWGG_Treater_Dayton">
+<DataTypes Use="Context">
+<DataType Name="Cal_Point" Family="NoFamily" Class="User">
+<Members>
+<Member Name="Speed" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+</DataType>
+<DataType Name="Cal_Points" Family="NoFamily" Class="User">
+<Description>
+<![CDATA[An array of Cal Points used for establishing a linear calibration]]>
+</Description>
+<Members>
+<Member Name="Cal_Point" DataType="Cal_Point" Dimension="10" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+<Dependencies>
+<Dependency Type="DataType" Name="Cal_Point"/>
+</Dependencies>
+</DataType>
+</DataTypes>
+<AddOnInstructionDefinitions Use="Context">
+<AddOnInstructionDefinition Use="Target" Name="Set_Test_Cal_Points" Revision="1.0" ExecutePrescan="false" ExecutePostscan="false" ExecuteEnableInFalse="false" CreatedDate="2017-04-26T15:25:01.323Z" CreatedBy="MIDWAY-NUC\Administrator" EditedDate="2017-04-26T15:40:42.324Z" EditedBy="MIDWAY-NUC\Administrator" SoftwareRevision="v28.02"
+>
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Input - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Output - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="Cal_Points" TagType="Base" DataType="Cal_Points" Usage="InOut" Required="true" Visible="true" Constant="false"/>
+</Parameters>
+<LocalTags/>
+<Routines>
+<Routine Name="Logic" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text>
+<![CDATA[MOV(0,Cal_Points.Cal_Point[0].Speed);]]>
+</Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Text>
+<![CDATA[MOV(0,Cal_Points.Cal_Point[0].Rate);]]>
+</Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Text>
+<![CDATA[MOV(1000,Cal_Points.Cal_Point[1].Speed);]]>
+</Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Text>
+<![CDATA[MOV(0.022,Cal_Points.Cal_Point[1].Rate);]]>
+</Text>
+</Rung>
+<Rung Number="4" Type="N">
+<Text>
+<![CDATA[MOV(2000,Cal_Points.Cal_Point[2].Speed);]]>
+</Text>
+</Rung>
+<Rung Number="5" Type="N">
+<Text>
+<![CDATA[MOV(0.044,Cal_Points.Cal_Point[2].Rate);]]>
+</Text>
+</Rung>
+<Rung Number="6" Type="N">
+<Text>
+<![CDATA[MOV(3000,Cal_Points.Cal_Point[3].Speed);]]>
+</Text>
+</Rung>
+<Rung Number="7" Type="N">
+<Text>
+<![CDATA[MOV(0.066,Cal_Points.Cal_Point[3].Rate);]]>
+</Text>
+</Rung>
+<Rung Number="8" Type="N">
+<Text>
+<![CDATA[MOV(4000,Cal_Points.Cal_Point[4].Speed);]]>
+</Text>
+</Rung>
+<Rung Number="9" Type="N">
+<Text>
+<![CDATA[MOV(0.088,Cal_Points.Cal_Point[4].Rate);]]>
+</Text>
+</Rung>
+<Rung Number="10" Type="N">
+<Text>
+<![CDATA[MOV(5000,Cal_Points.Cal_Point[5].Speed);]]>
+</Text>
+</Rung>
+<Rung Number="11" Type="N">
+<Text>
+<![CDATA[MOV(0.110,Cal_Points.Cal_Point[5].Rate);]]>
+</Text>
+</Rung>
+<Rung Number="12" Type="N">
+<Text>
+<![CDATA[MOV(6000,Cal_Points.Cal_Point[6].Speed);]]>
+</Text>
+</Rung>
+<Rung Number="13" Type="N">
+<Text>
+<![CDATA[MOV(0.133,Cal_Points.Cal_Point[6].Rate);]]>
+</Text>
+</Rung>
+<Rung Number="14" Type="N">
+<Text>
+<![CDATA[MOV(7000,Cal_Points.Cal_Point[7].Speed);]]>
+</Text>
+</Rung>
+<Rung Number="15" Type="N">
+<Text>
+<![CDATA[MOV(0.155,Cal_Points.Cal_Point[7].Rate);]]>
+</Text>
+</Rung>
+<Rung Number="16" Type="N">
+<Text>
+<![CDATA[MOV(8000,Cal_Points.Cal_Point[8].Speed);]]>
+</Text>
+</Rung>
+<Rung Number="17" Type="N">
+<Text>
+<![CDATA[MOV(0.177,Cal_Points.Cal_Point[8].Rate);]]>
+</Text>
+</Rung>
+<Rung Number="18" Type="N">
+<Text>
+<![CDATA[MOV(9000,Cal_Points.Cal_Point[9].Speed);]]>
+</Text>
+</Rung>
+<Rung Number="19" Type="N">
+<Text>
+<![CDATA[MOV(0.199,Cal_Points.Cal_Point[9].Rate);]]>
+</Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+<Dependencies>
+<Dependency Type="DataType" Name="Cal_Points"/>
+</Dependencies>
+</AddOnInstructionDefinition>
+</AddOnInstructionDefinitions>
+</Controller>
+</RSLogix5000Content>

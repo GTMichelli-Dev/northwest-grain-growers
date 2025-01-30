@@ -1,0 +1,214 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--Used to find the rate of the pump based on the speed -->
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Pump_Rate_Calc" TargetType="AddOnInstructionDefinition" TargetRevision="1.0 " TargetLastEdited="2017-09-16T16:53:13.828Z" ContainsContext="true" ExportDate="Thu Jan 30 08:59:34 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Context" Name="NWGG_Treater_Dayton">
+<DataTypes Use="Context">
+<DataType Name="Cal_Point" Family="NoFamily" Class="User">
+<Members>
+<Member Name="Speed" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+</DataType>
+<DataType Name="Cal_Points" Family="NoFamily" Class="User">
+<Description>
+<![CDATA[An array of Cal Points used for establishing a linear calibration]]>
+</Description>
+<Members>
+<Member Name="Cal_Point" DataType="Cal_Point" Dimension="10" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+<Dependencies>
+<Dependency Type="DataType" Name="Cal_Point"/>
+</Dependencies>
+</DataType>
+</DataTypes>
+<AddOnInstructionDefinitions Use="Context">
+<AddOnInstructionDefinition Use="Target" Name="Pump_Rate_Calc" Revision="1.0" ExecutePrescan="false" ExecutePostscan="false" ExecuteEnableInFalse="false" CreatedDate="2017-04-23T20:08:12.240Z" CreatedBy="MIDWAY-NUC\Tech" EditedDate="2017-09-16T16:53:13.828Z" EditedBy="MIDWAY-NUC\Tech" SoftwareRevision="v28.02"
+>
+<Description>
+<![CDATA[Used to find the rate of the pump based on the speed ]]>
+</Description>
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Input - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Output - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="Speed" TagType="Base" DataType="DINT" Usage="InOut" Radix="Decimal" Required="true" Visible="true" Constant="false"/>
+<Parameter Name="Cal_Points" TagType="Base" DataType="Cal_Points" Usage="InOut" Required="true" Visible="true" Constant="false"/>
+<Parameter Name="Rate" TagType="Base" DataType="REAL" Usage="InOut" Radix="Float" Required="true" Visible="true" Constant="false"/>
+<Parameter Name="Cal_Factor" TagType="Base" DataType="REAL" Usage="InOut" Radix="Float" Required="true" Visible="true" Constant="false"/>
+</Parameters>
+<LocalTags>
+<LocalTag Name="CP_Index_1" DataType="DINT" Radix="Decimal" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[8]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="8"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="CP_Index_2" DataType="DINT" Radix="Decimal" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[9]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="9"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="Index" DataType="DINT" Radix="Decimal" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[8]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="8"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="Index_Set" DataType="BOOL" Radix="Decimal" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="Next_Index" DataType="DINT" Radix="Decimal" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="Speed_Delta" DataType="DINT" Radix="Decimal" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[-5000]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="-5000"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="Rate_Delta" DataType="REAL" Radix="Float" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[-1.00000000e+003]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="-1000.0"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="Zero_Offset" DataType="REAL" Radix="Float" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[7.40000000e+003]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="7400.0"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="Slope" DataType="REAL" Radix="Float" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0.00000000e+000]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
+</DefaultData>
+</LocalTag>
+</LocalTags>
+<Routines>
+<Routine Name="Logic" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Comment>
+<![CDATA[Figure Out Whate Data Points Need To Be Used Based On The Rate Desired
+]]>
+</Comment>
+<Text>
+<![CDATA[CMP(Speed<0)MOV(0,Speed);]]>
+</Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Text>
+<![CDATA[NEQ(Cal_Factor,0)CPT(Speed,Speed/Cal_Factor);]]>
+</Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Text>
+<![CDATA[SUB(Next_Index,1,Next_Index);]]>
+</Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Text>
+<![CDATA[CMP(Next_Index<0)MOV(4,Next_Index);]]>
+</Text>
+</Rung>
+<Rung Number="4" Type="N">
+<Text>
+<![CDATA[CMP(Speed >= Cal_Points.Cal_Point[Next_Index].Speed)[CMP(Next_Index=4) ,CMP(Next_Index<4) CMP(Speed < Cal_Points.Cal_Point[Next_Index+1].Speed) ]MOV(Next_Index,Index);]]>
+</Text>
+</Rung>
+<Rung Number="5" Type="N">
+<Comment>
+<![CDATA[Get the Two Points for the Calculations
+if at the top of the graph use the last 2 (index 9 and 8)]]>
+</Comment>
+<Text>
+<![CDATA[CMP(Index=4)[MOV(4,CP_Index_1) ,MOV(3,CP_Index_2) ];]]>
+</Text>
+</Rung>
+<Rung Number="6" Type="N">
+<Text>
+<![CDATA[CMP(Index<4)[MOV(Index,CP_Index_1) ,ADD(Index,1,CP_Index_2) ];]]>
+</Text>
+</Rung>
+<Rung Number="7" Type="N">
+<Comment>
+<![CDATA[Do the Math
+]]>
+</Comment>
+<Text>
+<![CDATA[CPT(Speed_Delta,(Cal_Points.Cal_Point[CP_Index_1].Speed-Cal_Points.Cal_Point[CP_Index_2].Speed));]]>
+</Text>
+</Rung>
+<Rung Number="8" Type="N">
+<Text>
+<![CDATA[CPT(Rate_Delta,(Cal_Points.Cal_Point[CP_Index_1].Rate-Cal_Points.Cal_Point[CP_Index_2].Rate));]]>
+</Text>
+</Rung>
+<Rung Number="9" Type="N">
+<Text>
+<![CDATA[CMP(Rate_Delta<>0)CPT(Slope,(Rate_Delta)/(Speed_Delta));]]>
+</Text>
+</Rung>
+<Rung Number="10" Type="N">
+<Text>
+<![CDATA[CMP(Rate_Delta=0)MOV(0,Slope);]]>
+</Text>
+</Rung>
+<Rung Number="11" Type="N">
+<Text>
+<![CDATA[CPT(Zero_Offset,(-(Slope)*Cal_Points.Cal_Point[CP_Index_1].Speed)+Cal_Points.Cal_Point[CP_Index_1].Rate);]]>
+</Text>
+</Rung>
+<Rung Number="12" Type="N">
+<Text>
+<![CDATA[CPT(Rate,(Slope*Speed)+Zero_Offset);]]>
+</Text>
+</Rung>
+<Rung Number="13" Type="N">
+<Text>
+<![CDATA[EQU(Speed,0)MOV(0,Rate);]]>
+</Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+<Dependencies>
+<Dependency Type="DataType" Name="Cal_Points"/>
+</Dependencies>
+</AddOnInstructionDefinition>
+</AddOnInstructionDefinitions>
+</Controller>
+</RSLogix5000Content>

@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="SAI_Zero_Scale" TargetType="AddOnInstructionDefinition" TargetRevision="1.0 " TargetLastEdited="2024-09-27T20:14:18.440Z" ContainsContext="true" ExportDate="Thu Jan 30 09:00:27 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Context" Name="NWGG_Treater_Dayton">
+<DataTypes Use="Context">
+</DataTypes>
+<AddOnInstructionDefinitions Use="Context">
+<AddOnInstructionDefinition Use="Target" Name="SAI_Zero_Scale" Revision="1.0" Vendor="NWGG" ExecutePrescan="false" ExecutePostscan="false" ExecuteEnableInFalse="false" CreatedDate="2024-09-27T20:02:42.386Z" CreatedBy="DESKTOP-02F8BPT\tech" EditedDate="2024-09-27T20:14:18.440Z" EditedBy="DESKTOP-02F8BPT\tech"
+ SoftwareRevision="v35.00">
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Input - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Output - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="MT_ScaleWO" TagType="Base" DataType="ME:IND360_2BlockW:O:0" Usage="InOut" Required="true" Visible="true" Constant="false"/>
+<Parameter Name="MT_ScaleWI" TagType="Base" DataType="ME:IND360_2BlockR:I:0" Usage="InOut" Required="true" Visible="true" Constant="false"/>
+<Parameter Name="Zero_Scale" TagType="Base" DataType="BOOL" Usage="InOut" Radix="Decimal" Required="true" Visible="true" Constant="false"/>
+</Parameters>
+<LocalTags>
+<LocalTag Name="ZeroCommand" DataType="INT" Radix="Decimal" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[404]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="INT" Radix="Decimal" Value="404"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="CommandFail" DataType="INT" Radix="Decimal" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[-32768]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="INT" Radix="Decimal" Value="-32768"/>
+</DefaultData>
+</LocalTag>
+</LocalTags>
+<Routines>
+<Routine Name="Logic" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text>
+<![CDATA[ONS(Zero_Scale)MOV(ZeroCommand,MT_ScaleWO.MB1.Command);]]>
+</Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Text>
+<![CDATA[[EQU(ZeroCommand,MT_ScaleWI.MB1.Response) ,EQU(CommandFail,MT_ScaleWI.MB1.Response) ]MOV(0,MT_ScaleWO.MB1.Command);]]>
+</Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</AddOnInstructionDefinition>
+</AddOnInstructionDefinitions>
+</Controller>
+</RSLogix5000Content>

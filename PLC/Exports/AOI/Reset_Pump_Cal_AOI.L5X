@@ -1,0 +1,489 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Reset_Pump_Cal" TargetType="AddOnInstructionDefinition" TargetRevision="1.0 " TargetLastEdited="2017-05-03T15:49:47.912Z" ContainsContext="true" ExportDate="Thu Jan 30 08:59:49 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Context" Name="NWGG_Treater_Dayton">
+<DataTypes Use="Context">
+<DataType Name="Cal_Point" Family="NoFamily" Class="User">
+<Members>
+<Member Name="Speed" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+</DataType>
+<DataType Name="Cal_Points" Family="NoFamily" Class="User">
+<Description>
+<![CDATA[An array of Cal Points used for establishing a linear calibration]]>
+</Description>
+<Members>
+<Member Name="Cal_Point" DataType="Cal_Point" Dimension="10" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+<Dependencies>
+<Dependency Type="DataType" Name="Cal_Point"/>
+</Dependencies>
+</DataType>
+<DataType Name="Pump_Cal" Family="NoFamily" Class="User">
+<Members>
+<Member Name="ZZZZZZZZZZPump_Cal0" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Calibrating" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal0" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[In Calibration Mode]]>
+</Description>
+</Member>
+<Member Name="Cal_Started" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal0" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Calibration Started]]>
+</Description>
+</Member>
+<Member Name="Cal_Finished" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal0" BitNumber="2" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Cal Finished]]>
+</Description>
+</Member>
+<Member Name="Cal_Rqd" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal0" BitNumber="3" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Cal Points add up to 0 so cal is needed]]>
+</Description>
+</Member>
+<Member Name="Cal_Pt_Index" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Current Calibration Point Index that is being Calibrated]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZPump_Cal6" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Accept_Cal_Points" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal6" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Set to move temp cal points to Runtime cal points]]>
+</Description>
+</Member>
+<Member Name="Reset_Cal_Speeds" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal6" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Set the cal speeds to default]]>
+</Description>
+</Member>
+<Member Name="Reset_Cal" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal6" BitNumber="2" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Reset the cal points to zero]]>
+</Description>
+</Member>
+<Member Name="Cal_Speeds" DataType="Cal_Points" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Speed Pump Is Calibrated to]]>
+</Description>
+</Member>
+<Member Name="Cal_Points" DataType="Cal_Points" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Calibration Points Used to Calculate Rate]]>
+</Description>
+</Member>
+<Member Name="Temp_Cal_Points" DataType="Cal_Points" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Temporary Holding spot for the calibration points]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZPump_Cal13" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Copy_Cal_To_Temp" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal13" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Copy the Calibration Poiints to temp Cal For Viewing]]>
+</Description>
+</Member>
+<Member Name="Cancel_Cal" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZPump_Cal13" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Give Up Calibrating]]>
+</Description>
+</Member>
+</Members>
+<Dependencies>
+<Dependency Type="DataType" Name="Cal_Points"/>
+<Dependency Type="DataType" Name="Cal_Points"/>
+<Dependency Type="DataType" Name="Cal_Points"/>
+</Dependencies>
+</DataType>
+<DataType Name="Scale_Data" Family="NoFamily" Class="User">
+<Description>
+<![CDATA[Information from The Mettler Toledo Indicators]]>
+</Description>
+<Members>
+<Member Name="RawWeight" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Raw Weight Of The Scale]]>
+</Description>
+</Member>
+<Member Name="TareLbs" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The weight at the start of a load or when calibrating]]>
+</Description>
+</Member>
+<Member Name="Lbs_Gal" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The amount of pounds per Gallon]]>
+</Description>
+</Member>
+<Member Name="Lbs_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Lbs" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="NetLbs" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Lbs Used for Load]]>
+</Description>
+</Member>
+<Member Name="Net_Gals" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Gallons Used For Load]]>
+</Description>
+</Member>
+<Member Name="Target_Oz_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Tank_Capacity" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZScale_Data9" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Use_Scale" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZScale_Data9" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Zero_Requested" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZScale_Data9" BitNumber="1" ExternalAccess="Read/Write"/>
+<Member Name="Adding_Weight" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZScale_Data9" BitNumber="2" ExternalAccess="Read/Write"/>
+<Member Name="Current_Oz_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Current_Gals" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Current Gallons In Tank]]>
+</Description>
+</Member>
+<Member Name="Warning_Gal" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Warn When Below This Amount]]>
+</Description>
+</Member>
+<Member Name="Min_Gals" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Stop When Below This Amount]]>
+</Description>
+</Member>
+<Member Name="Min_Start_Gals" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Minimum Amount To Start]]>
+</Description>
+</Member>
+<Member Name="Percent_Tank_Full" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="PID" DataType="PID" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="DisplayIdx" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZScale_Data21" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Min_Start_Accept" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZScale_Data21" BitNumber="0" ExternalAccess="Read/Write"/>
+</Members>
+</DataType>
+<DataType Name="Treater_Product" Family="NoFamily" Class="User">
+<Description>
+<![CDATA[The Product Used by the Treater Pumps]]>
+</Description>
+<Members>
+<Member Name="Description" DataType="STRING" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Name Of Product]]>
+</Description>
+</Member>
+<Member Name="Cal_Factor" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="New_Product" DataType="STRING" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Name Of New Product]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pr3" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Edit_Product" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr3" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="New_Cal_Factor" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pr6" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Accept_New" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr6" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[accept the new product values]]>
+</Description>
+</Member>
+<Member Name="Cancel_New" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr6" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Cancel changing the product]]>
+</Description>
+</Member>
+<Member Name="Cal_Actual" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Actual Value Use For Fine Tuning Cal]]>
+</Description>
+</Member>
+<Member Name="Cal_Indicated" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Indicated Value Use For Fine Tuning]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pr11" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Apply_Adjustment" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr11" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Apply The Fine Tuning Adjustments]]>
+</Description>
+</Member>
+<Member Name="Fine_Tune" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr11" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Display The Fine Tune Screen]]>
+</Description>
+</Member>
+<Member Name="Product_List_IDX" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Product List Index]]>
+</Description>
+</Member>
+</Members>
+</DataType>
+<DataType Name="Treater_Pump" Family="NoFamily" Class="User">
+<Members>
+<Member Name="Description" DataType="STRING" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Pump Description]]>
+</Description>
+</Member>
+<Member Name="Product" DataType="Treater_Product" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Product being dispensed]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pu2" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Start_Pump" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu2" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Bit To Start The Pump]]>
+</Description>
+</Member>
+<Member Name="Manual_Start_Pump" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu2" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Manual Start Pump]]>
+</Description>
+</Member>
+<Member Name="Faulted" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu2" BitNumber="2" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[True if Pump Is Faulted]]>
+</Description>
+</Member>
+<Member Name="Clear_Faults" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu2" BitNumber="3" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Bit To Reset Pump]]>
+</Description>
+</Member>
+<Member Name="Active_Treatment" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu2" BitNumber="4" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Currently Used In Batch]]>
+</Description>
+</Member>
+<Member Name="Speed" DataType="DINT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Current Pump Frequency]]>
+</Description>
+</Member>
+<Member Name="Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The pounds/ min called For]]>
+</Description>
+</Member>
+<Member Name="Speed_Factor" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Cofecient to multlply the Pump Speed by to get the RPM]]>
+</Description>
+</Member>
+<Member Name="Current_Speed" DataType="DINT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Current Pump Speed]]>
+</Description>
+</Member>
+<Member Name="Current_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Current Rate Pump Is Running]]>
+</Description>
+</Member>
+<Member Name="Current_RPM" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Current RPM]]>
+</Description>
+</Member>
+<Member Name="Cal" DataType="Pump_Cal" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Cal Data]]>
+</Description>
+</Member>
+<Member Name="Rotor_Animate_IDX" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Index to show pump movement on display]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pu16" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Start_Pump_Reverse" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu16" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Start The Pump In Reverse]]>
+</Description>
+</Member>
+<Member Name="Calculate_Delay" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Delay in Milliseconds Before Checking Rate]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pu19" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Require_Water_Flush" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu19" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[A Water Flush Is Required after Turning Off]]>
+</Description>
+</Member>
+<Member Name="TreaterScale" DataType="Scale_Data" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Rate_Error_Code" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pu23" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Pump_Error" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu23" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Purge_Forward" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu23" BitNumber="1" ExternalAccess="Read/Write"/>
+<Member Name="Purge_Reverse" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu23" BitNumber="2" ExternalAccess="Read/Write"/>
+<Member Name="Request_Auto" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu23" BitNumber="3" ExternalAccess="Read/Write"/>
+<Member Name="Speed_Percent" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="SpeedLimitPercent" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="SpeedLimitResetPercent" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pu31" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Over_Speed_Limit" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu31" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Purge_Percent" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="OverSpeedTimeOut" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="PID_Activate_Delay" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pu36" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Below_Min_Start_Gals" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu36" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Below_Min_Gals" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu36" BitNumber="1" ExternalAccess="Read/Write"/>
+<Member Name="Below_Warning_Gals" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu36" BitNumber="2" ExternalAccess="Read/Write"/>
+<Member Name="Status_Msg" DataType="STRING" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pu41" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="ShowStatus" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu41" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="NotReady" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu41" BitNumber="1" ExternalAccess="Read/Write"/>
+<Member Name="NotInUse" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu41" BitNumber="2" ExternalAccess="Read/Write"/>
+</Members>
+<Dependencies>
+<Dependency Type="DataType" Name="Treater_Product"/>
+<Dependency Type="DataType" Name="Pump_Cal"/>
+<Dependency Type="DataType" Name="Scale_Data"/>
+</Dependencies>
+</DataType>
+</DataTypes>
+<AddOnInstructionDefinitions Use="Context">
+<AddOnInstructionDefinition Use="Target" Name="Reset_Pump_Cal" Revision="1.0" ExecutePrescan="false" ExecutePostscan="false" ExecuteEnableInFalse="false" CreatedDate="2017-04-26T15:41:40.256Z" CreatedBy="MIDWAY-NUC\Administrator" EditedDate="2017-05-03T15:49:47.912Z" EditedBy="MIDWAY-NUC\Tech" SoftwareRevision="v28.02"
+>
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Input - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Output - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="Treater_Pump" TagType="Base" DataType="Treater_Pump" Usage="InOut" Required="true" Visible="true" Constant="false"/>
+</Parameters>
+<LocalTags>
+<LocalTag Name="Default_Cal_Points" DataType="Cal_Points" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[[[[0.00000000e+000,0.00000000e+000],[0.00000000e+000,0.00000000e+000],[0.00000000e+000,0.00000000e+000],[0.00000000e+000,0.00000000e+000],[0.00000000e+000,0.00000000e+000],[0.00000000e+000,0.00000000e+000],[0.00000000e+000,0.00000000e+000],[0.00000000e+000,0.00000000e+000],[0.00000000e+000,0.00000000e+000],[0.00000000e+000,0.00000000e+000]]]]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<Structure DataType="Cal_Points">
+<ArrayMember Name="Cal_Point" DataType="Cal_Point" Dimensions="10">
+<Element Index="[0]">
+<Structure DataType="Cal_Point">
+<DataValueMember Name="Speed" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Rate" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
+</Element>
+<Element Index="[1]">
+<Structure DataType="Cal_Point">
+<DataValueMember Name="Speed" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Rate" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
+</Element>
+<Element Index="[2]">
+<Structure DataType="Cal_Point">
+<DataValueMember Name="Speed" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Rate" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
+</Element>
+<Element Index="[3]">
+<Structure DataType="Cal_Point">
+<DataValueMember Name="Speed" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Rate" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
+</Element>
+<Element Index="[4]">
+<Structure DataType="Cal_Point">
+<DataValueMember Name="Speed" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Rate" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
+</Element>
+<Element Index="[5]">
+<Structure DataType="Cal_Point">
+<DataValueMember Name="Speed" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Rate" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
+</Element>
+<Element Index="[6]">
+<Structure DataType="Cal_Point">
+<DataValueMember Name="Speed" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Rate" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
+</Element>
+<Element Index="[7]">
+<Structure DataType="Cal_Point">
+<DataValueMember Name="Speed" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Rate" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
+</Element>
+<Element Index="[8]">
+<Structure DataType="Cal_Point">
+<DataValueMember Name="Speed" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Rate" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
+</Element>
+<Element Index="[9]">
+<Structure DataType="Cal_Point">
+<DataValueMember Name="Speed" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Rate" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
+</Element>
+</ArrayMember>
+</Structure>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="Default_Product" DataType="Treater_Product" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[[[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'],0.00000000e+000,[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00'],0,0.00000000e+000,0,0.00000000e+000,0.00000000e+000,0,0]]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<Structure DataType="Treater_Product">
+<StructureMember Name="Description" DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA[]]>
+</DataValueMember>
+</StructureMember>
+<DataValueMember Name="Cal_Factor" DataType="REAL" Radix="Float" Value="0.0"/>
+<StructureMember Name="New_Product" DataType="STRING">
+<DataValueMember Name="LEN" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="DATA" DataType="STRING" Radix="ASCII">
+<![CDATA[]]>
+</DataValueMember>
+</StructureMember>
+<DataValueMember Name="Edit_Product" DataType="BOOL" Value="0"/>
+<DataValueMember Name="New_Cal_Factor" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Accept_New" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Cancel_New" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Cal_Actual" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Cal_Indicated" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Apply_Adjustment" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Fine_Tune" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Product_List_IDX" DataType="INT" Radix="Decimal" Value="0"/>
+</Structure>
+</DefaultData>
+</LocalTag>
+</LocalTags>
+<Routines>
+<Routine Name="Logic" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text>
+<![CDATA[COP(Default_Cal_Points,Treater_Pump.Cal.Cal_Points,10);]]>
+</Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+<Dependencies>
+<Dependency Type="DataType" Name="Cal_Points"/>
+<Dependency Type="DataType" Name="Treater_Product"/>
+<Dependency Type="DataType" Name="Treater_Pump"/>
+</Dependencies>
+</AddOnInstructionDefinition>
+</AddOnInstructionDefinitions>
+</Controller>
+</RSLogix5000Content>

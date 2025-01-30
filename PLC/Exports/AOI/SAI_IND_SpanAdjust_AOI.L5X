@@ -1,0 +1,301 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="SAI_IND_SpanAdjust" TargetType="AddOnInstructionDefinition" TargetRevision="1.0 " TargetLastEdited="2020-11-18T20:13:11.563Z" ContainsContext="true" ExportDate="Thu Jan 30 09:00:03 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Context" Name="NWGG_Treater_Dayton">
+<DataTypes Use="Context">
+</DataTypes>
+<AddOnInstructionDefinitions Use="Context">
+<AddOnInstructionDefinition Use="Target" Name="SAI_IND_SpanAdjust" Revision="1.0" Vendor="Griffin Hodnett" ExecutePrescan="false" ExecutePostscan="false" ExecuteEnableInFalse="false" CreatedDate="2016-10-31T09:59:55.085Z" CreatedBy="WIN-42GSOQFPV5N\Wang" EditedDate="2020-11-18T20:13:11.563Z" EditedBy="AM\hodnett-1"
+ SoftwareRevision="v32.00">
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only"/>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only"/>
+<Parameter Name="LinearityRange" TagType="Base" DataType="INT" Usage="Input" Radix="Decimal" Required="true" Visible="true" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="INT" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Hi_Weight" TagType="Base" DataType="REAL" Usage="Input" Radix="Float" Required="false" Visible="true" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[0.00000000e+000]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Mid_Weight" TagType="Base" DataType="REAL" Usage="Input" Radix="Float" Required="false" Visible="true" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[0.00000000e+000]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Low_Weight" TagType="Base" DataType="REAL" Usage="Input" Radix="Float" Required="false" Visible="true" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[0.00000000e+000]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="xLow_Weight" TagType="Base" DataType="REAL" Usage="Input" Radix="Float" Required="false" Visible="true" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[0.00000000e+000]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Start" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="true" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="CurrentWeight" TagType="Base" DataType="REAL" Usage="Output" Radix="Float" Required="false" Visible="true" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[0.00000000e+000]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="ConfirmWeight" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="true" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Cancel" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="true" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Done" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="true" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Error" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="true" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Cancelled" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="true" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="LoadWeight" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="true" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="DataOK" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="true" Visible="true" ExternalAccess="Read/Write">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Status" TagType="Base" DataType="INT" Usage="Output" Radix="Decimal" Required="false" Visible="true" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="INT" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="CurrentPoint" TagType="Base" DataType="DINT" Usage="Output" Radix="Decimal" Required="false" Visible="true" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[2]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="2"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="MSG_CancelAdj" TagType="Base" DataType="MESSAGE" Usage="InOut" Required="true" Visible="true"/>
+<Parameter Name="MSG_StartSpanAdj" TagType="Base" DataType="MESSAGE" Usage="InOut" Required="true" Visible="true"/>
+<Parameter Name="MSG_LinearityRange" TagType="Base" DataType="MESSAGE" Usage="InOut" Required="true" Visible="true"/>
+<Parameter Name="MSG_ReadAdjStatus" TagType="Base" DataType="MESSAGE" Usage="InOut" Required="true" Visible="true"/>
+<Parameter Name="MSG_ValidateAdj" TagType="Base" DataType="MESSAGE" Usage="InOut" Required="true" Visible="true"/>
+<Parameter Name="TmpTrigger" TagType="Base" DataType="SINT" Usage="InOut" Radix="Decimal" Required="true" Visible="true" Constant="false"/>
+<Parameter Name="TmpAdjStatus" TagType="Base" DataType="INT" Usage="InOut" Radix="Decimal" Required="true" Visible="true" Constant="false"/>
+<Parameter Name="TmpSpanAdjWeight" TagType="Base" DataType="REAL" Usage="InOut" Radix="Float" Required="true" Visible="true" Constant="false"/>
+</Parameters>
+<LocalTags>
+<LocalTag Name="Step" DataType="INT" Radix="Decimal" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="INT" Radix="Decimal" Value="0"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="TON" DataType="TIMER" Dimensions="3" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[[[0,0,0],[0,0,0],[0,0,0]]]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<Array DataType="TIMER" Dimensions="3">
+<Element Index="[0]">
+<Structure DataType="TIMER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="EN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="TT" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+</Structure>
+</Element>
+<Element Index="[1]">
+<Structure DataType="TIMER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="EN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="TT" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+</Structure>
+</Element>
+<Element Index="[2]">
+<Structure DataType="TIMER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="EN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="TT" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+</Structure>
+</Element>
+</Array>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="ons" DataType="DINT" Radix="Decimal" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="EnterCancel" DataType="BOOL" Radix="Decimal" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="EnterAdj" DataType="BOOL" Radix="Decimal" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="WeightCheck" DataType="BOOL" Radix="Decimal" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</LocalTag>
+</LocalTags>
+<Routines>
+<Routine Name="Logic" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text>
+<![CDATA[XIC(Start)ONS(ons.0)XIO(EnterAdj)XIO(EnterCancel)OTL(EnterAdj)OTU(Done)OTU(Error)OTU(Cancelled)OTU(LoadWeight)MOV(0,CurrentWeight)MOV(2,CurrentPoint)MOV(0,Step)MOV(0,Status);]]>
+</Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Text>
+<![CDATA[XIC(ConfirmWeight)ONS(ons.1)XIC(EnterAdj)XIC(LoadWeight)XIO(EnterCancel)OTU(Done)OTU(Error)OTU(Cancelled)OTU(LoadWeight)MOV(CurrentWeight,TmpSpanAdjWeight)MOV(12,Step)MOV(0,Status);]]>
+</Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Text>
+<![CDATA[XIC(Cancel)ONS(ons.3)XIC(EnterAdj)OTL(EnterCancel)MOV(100,Step);]]>
+</Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Text>
+<![CDATA[XIC(EnterCancel)EQU(100,Step)[ONS(ons.4) MOV(1,TmpTrigger) MSG(MSG_CancelAdj) ,XIO(MSG_CancelAdj.ST) XIC(MSG_CancelAdj.DN) MOV(110,Step) ];]]>
+</Text>
+</Rung>
+<Rung Number="4" Type="N">
+<Text>
+<![CDATA[XIC(EnterCancel)EQU(110,Step)[[ONS(ons.5) MOV(100,TON[2].PRE) MSG(MSG_ReadAdjStatus) ,TON(TON[2],?,?) ] ,XIC(TON[2].DN) XIO(MSG_ReadAdjStatus.ST) XIC(MSG_ReadAdjStatus.DN) MOV(TmpAdjStatus,Status) MOV(0,Step) OTU(EnterCancel) OTU(EnterAdj) RES(TON[2]) OTU(Done) OTU(Error) OTU(LoadWeight) OTL(Cancelled) OTU(Start) OTU(Cancel) ];]]>
+</Text>
+</Rung>
+<Rung Number="5" Type="N">
+<Text>
+<![CDATA[XIC(EnterAdj)EQU(0,Step)[ONS(ons.6) MSG(MSG_LinearityRange) ,XIO(MSG_LinearityRange.ST) [XIC(MSG_LinearityRange.DN) MOV(10,Step) ,XIC(MSG_LinearityRange.ER) MOV(900,Step) ] ];]]>
+</Text>
+</Rung>
+<Rung Number="6" Type="N">
+<Text>
+<![CDATA[XIC(EnterAdj)EQU(10,Step)[[EQU(LinearityRange,0) GRT(Hi_Weight,0) ,[EQU(LinearityRange,1) GRT(Hi_Weight,Mid_Weight) GRT(Mid_Weight,0) ,[EQU(LinearityRange,2) GRT(Hi_Weight,Mid_Weight) GRT(Mid_Weight,Low_Weight) GRT(Low_Weight,0) ,EQU(LinearityRange,3) GRT(Hi_Weight,Mid_Weight) GRT(Mid_Weight,Low_Weight) GRT(Low_Weight,xLow_Weight) GRT(xLow_Weight,0) ] ] ] OTE(WeightCheck) ,[XIC(WeightCheck) MOV(11,Step) ,XIO(WeightCheck) MOV(900,Step) ] ];]]>
+</Text>
+</Rung>
+<Rung Number="7" Type="N">
+<Text>
+<![CDATA[XIC(EnterAdj)EQU(11,Step)[EQU(LinearityRange,3) EQU(CurrentPoint,2) MOV(xLow_Weight,CurrentWeight) ,[[[EQU(LinearityRange,3) EQU(CurrentPoint,3) ,EQU(LinearityRange,2) EQU(CurrentPoint,2) ] MOV(Low_Weight,CurrentWeight) ,[EQU(LinearityRange,3) EQU(CurrentPoint,4) ,[EQU(LinearityRange,2) EQU(CurrentPoint,3) ,EQU(LinearityRange,1) EQU(CurrentPoint,2) ] ] MOV(Mid_Weight,CurrentWeight) ] ,[EQU(LinearityRange,3) EQU(CurrentPoint,5) ,[EQU(LinearityRange,2) EQU(CurrentPoint,4) ,[EQU(LinearityRange,1) EQU(CurrentPoint,3) ,EQU(LinearityRange,0) EQU(CurrentPoint,2) ] ] ] MOV(Hi_Weight,CurrentWeight) ] ]OTL(LoadWeight);]]>
+</Text>
+</Rung>
+<Rung Number="8" Type="N">
+<Text>
+<![CDATA[XIC(EnterAdj)EQU(12,Step)[ONS(ons.7) MOV(1,TmpTrigger) MSG(MSG_StartSpanAdj) ,XIO(MSG_StartSpanAdj.ST) [XIC(MSG_StartSpanAdj.DN) MOV(20,Step) ,XIC(MSG_StartSpanAdj.ER) MOV(900,Step) ] ];]]>
+</Text>
+</Rung>
+<Rung Number="9" Type="N">
+<Text>
+<![CDATA[XIC(EnterAdj)EQU(20,Step)[[ONS(ons.8) MOV(100,TON[0].PRE) MSG(MSG_ReadAdjStatus) ,TON(TON[0],?,?) ] ,XIC(TON[0].DN) XIO(MSG_ReadAdjStatus.ST) XIC(MSG_ReadAdjStatus.DN) RES(TON[0]) MOV(TmpAdjStatus,Status) [EQU(2047,Status) OTU(LoadWeight) MOV(21,Step) ,[[EQU(2046,Status) OTU(LoadWeight) MOV(30,Step) ,EQU(2045,Status) ONS(ons.11) ADD(CurrentPoint,1,CurrentPoint) OTU(Start) MOV(11,Step) OTU(ConfirmWeight) ] ,[CMP(Status < 0) OTU(LoadWeight) OTL(Error) ,EQU(0,Status) OTU(LoadWeight) OTL(Done) ] OTU(ConfirmWeight) MOV(0,CurrentPoint) MOV(0,CurrentWeight) OTU(EnterAdj) OTU(Start) OTU(Cancel) ] ] ];]]>
+</Text>
+</Rung>
+<Rung Number="10" Type="N">
+<Text>
+<![CDATA[XIC(EnterAdj)EQU(21,Step)[[ONS(ons.9) MOV(100,TON[1].PRE) MSG(MSG_ReadAdjStatus) ,TON(TON[1],?,?) ] ,XIC(TON[1].DN) XIO(MSG_ReadAdjStatus.ST) XIC(MSG_ReadAdjStatus.DN) RES(TON[1]) MOV(TmpAdjStatus,Status) MOV(20,Step) ];]]>
+</Text>
+</Rung>
+<Rung Number="11" Type="N">
+<Text>
+<![CDATA[XIC(EnterAdj)EQU(30,Step)[ONS(ons.10) MOV(1,TmpTrigger) MSG(MSG_ValidateAdj) ,XIO(MSG_ValidateAdj.ST) [XIC(MSG_ValidateAdj.DN) MOV(20,Step) ,XIC(MSG_ValidateAdj.ER) MOV(900,Step) ] ];]]>
+</Text>
+</Rung>
+<Rung Number="12" Type="N">
+<Text>
+<![CDATA[XIC(EnterAdj)EQU(900,Step)OTL(Error)OTU(EnterAdj)OTU(Start)OTU(Cancel)OTU(ConfirmWeight)MOV(0,CurrentWeight)MOV(0,CurrentPoint)OTU(LoadWeight);]]>
+</Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</AddOnInstructionDefinition>
+</AddOnInstructionDefinitions>
+</Controller>
+</RSLogix5000Content>
