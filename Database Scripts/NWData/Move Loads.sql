@@ -33,6 +33,7 @@ BEGIN
 		@Transfer_Load_UID UNIQUEIDENTIFIER,
 		@Weight_Sheet_Transfer_Load_UID UNIQUEIDENTIFIER,
 		@Transfer_Load_Load_Id BIGINT,
+		
 		@Source_Bin nvarchar(50);
 
 	
@@ -50,7 +51,7 @@ BEGIN
 		INNER JOIN Inbound_Loads ON Weight_Sheets.UID = Inbound_Loads.WS_UID
 		INNER JOIN Loads ON Inbound_Loads.Load_UID = Loads.UID
 		WHERE Inbound_Loads.Load_UID = @Load_UID;
-		--Cannot Find INbound Load SO Find the Transfer Load
+		--Cannot Find Inbound Load So Find the Transfer Load
 		
 		IF Not Exists (SELECT * FROM Inbound_Loads WHERE (Load_UID = @Load_UID))
 		BEGIN
@@ -71,11 +72,32 @@ BEGIN
 			delete from Inbound_Loads where Load_UID = @Load_UID;
 		END
 		else
+		BEGIN
+		 -- it is an inbound load
+		 
+		--See if the new Weight Sheet is a transfer
+		if exists(SELECT *  FROM Weight_Sheet_Transfer_Loads WHERE (Weight_Sheet_UID = @Weight_Sheet_UID))
+		begin
+		 SELECT  @Protein = Protien FROM Inbound_Loads WHERE (Load_UID = @Load_UID)
+		 SELECT @Weight_Sheet_Transfer_Load_UID=UID
+		        FROM Weight_Sheet_Transfer_Loads
+				WHERE (Weight_Sheet_UID = @Weight_Sheet_UID);
+				if not exists (select * from Transfer_Loads where (Load_UID =@Load_UID))
+				begin
+
+				 INSERT INTO Transfer_Loads
+                         (Load_UID, Protein, Transfer_Load_UID)
+				VALUES        (@Load_UID,@Protein,@Weight_Sheet_Transfer_Load_UID);
+				
+				end
+		 DELETE FROM Inbound_Loads WHERE (Load_UID = @Load_Uid)
+		end
+		else
 		begin
 		print 'Updated'
 			UPDATE Inbound_Loads SET WS_UID = @Weight_Sheet_UID WHERE Load_UID = @Load_UID;
 		end
-
+		end
 
 		SET @Comment = 'Moved Ticket:' + CONVERT(NVARCHAR(15), @Load_Id) + 
 					   ' From Weight Sheet:' + CONVERT(NVARCHAR(15), @Original_Weight_Sheet_Id) + 
