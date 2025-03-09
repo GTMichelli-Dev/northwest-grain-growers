@@ -1,5 +1,6 @@
 ﻿using System.Net.Http;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -27,12 +28,19 @@ namespace KSIApi.Controllers
         {
             var credentials = new AccessCredentials
             {
-                AccessKey = _ksiOptions.AccessKey,
-                AccessSecret = _ksiOptions.AccessSecret
+                access_key = _ksiOptions.AccessKey,
+                access_secret = _ksiOptions.AccessSecret
             };
-            var requestContent = new StringContent(JsonConvert.SerializeObject(credentials), Encoding.UTF8, "application/json");
+            var jsonCredentials = JsonConvert.SerializeObject(credentials);
+           
+        
+           
+            var requestContent = new StringContent(jsonCredentials, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PostAsync("https://api.agconnex.com/api/v2/access_tokens", requestContent);
+
+
+
 
             if (response.IsSuccessStatusCode)
             {
@@ -48,7 +56,10 @@ namespace KSIApi.Controllers
 
     public class AccessCredentials
     {
-        public string AccessKey { get; set; } = string.Empty;
-        public string AccessSecret { get; set; } = string.Empty;
+        [JsonPropertyName("access_key")]
+        public string access_key { get; set; } = string.Empty;
+
+        [JsonPropertyName("access_secret")]
+        public string access_secret { get; set; } = string.Empty;
     }
 }

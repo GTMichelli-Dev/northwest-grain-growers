@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Active_Pump_Values" TargetType="DataType" ContainsContext="true" ExportDate="Thu Jan 30 08:46:21 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Context" Name="NWGG_Treater_Dayton">
+<DataTypes Use="Context">
+<DataType Use="Target" Name="Active_Pump_Values" Family="NoFamily" Class="User">
+<Members>
+<Member Name="Pump_Description" DataType="STRING" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Product" DataType="Treater_Product" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZActive_Pum2" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="In_Use" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZActive_Pum2" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Faulted" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZActive_Pum2" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[True if Pump Is Faulted]]>
+</Description>
+</Member>
+<Member Name="Clear_Fault" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZActive_Pum2" BitNumber="2" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Use To Clear Fault]]>
+</Description>
+</Member>
+<Member Name="Current_Speed" DataType="DINT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Current Pump Speed]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZActive_Pum7" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Manual_Mode" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZActive_Pum7" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Is the pump in manual]]>
+</Description>
+</Member>
+<Member Name="Current_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Current Rate Pump Is Running]]>
+</Description>
+</Member>
+<Member Name="Current_RPM" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Current RPM of the Pump]]>
+</Description>
+</Member>
+<Member Name="Rotor_Animate_IDX" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[the Index of the rotor animation]]>
+</Description>
+</Member>
+<Member Name="Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The ounces/ min called For]]>
+</Description>
+</Member>
+</Members>
+<Dependencies>
+<Dependency Type="DataType" Name="Treater_Product"/>
+</Dependencies>
+</DataType>
+<DataType Name="Treater_Product" Family="NoFamily" Class="User">
+<Description>
+<![CDATA[The Product Used by the Treater Pumps]]>
+</Description>
+<Members>
+<Member Name="Description" DataType="STRING" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Name Of Product]]>
+</Description>
+</Member>
+<Member Name="Cal_Factor" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="New_Product" DataType="STRING" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Name Of New Product]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pr3" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Edit_Product" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr3" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="New_Cal_Factor" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pr6" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Accept_New" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr6" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[accept the new product values]]>
+</Description>
+</Member>
+<Member Name="Cancel_New" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr6" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Cancel changing the product]]>
+</Description>
+</Member>
+<Member Name="Cal_Actual" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Actual Value Use For Fine Tuning Cal]]>
+</Description>
+</Member>
+<Member Name="Cal_Indicated" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Indicated Value Use For Fine Tuning]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pr11" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Apply_Adjustment" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr11" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Apply The Fine Tuning Adjustments]]>
+</Description>
+</Member>
+<Member Name="Fine_Tune" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr11" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Display The Fine Tune Screen]]>
+</Description>
+</Member>
+<Member Name="Product_List_IDX" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Product List Index]]>
+</Description>
+</Member>
+</Members>
+</DataType>
+</DataTypes>
+</Controller>
+</RSLogix5000Content>

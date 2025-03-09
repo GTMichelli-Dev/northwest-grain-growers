@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--Information from The Mettler Toledo Indicators-->
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Scale_Data" TargetType="DataType" ContainsContext="true" ExportDate="Thu Jan 30 08:45:25 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Context" Name="NWGG_Treater_Dayton">
+<DataTypes Use="Context">
+<DataType Use="Target" Name="Scale_Data" Family="NoFamily" Class="User">
+<Description>
+<![CDATA[Information from The Mettler Toledo Indicators]]>
+</Description>
+<Members>
+<Member Name="RawWeight" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Raw Weight Of The Scale]]>
+</Description>
+</Member>
+<Member Name="TareLbs" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The weight at the start of a load or when calibrating]]>
+</Description>
+</Member>
+<Member Name="Lbs_Gal" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The amount of pounds per Gallon]]>
+</Description>
+</Member>
+<Member Name="Lbs_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Lbs" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="NetLbs" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Lbs Used for Load]]>
+</Description>
+</Member>
+<Member Name="Net_Gals" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Gallons Used For Load]]>
+</Description>
+</Member>
+<Member Name="Target_Oz_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Tank_Capacity" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZScale_Data9" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Use_Scale" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZScale_Data9" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Zero_Requested" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZScale_Data9" BitNumber="1" ExternalAccess="Read/Write"/>
+<Member Name="Adding_Weight" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZScale_Data9" BitNumber="2" ExternalAccess="Read/Write"/>
+<Member Name="Current_Oz_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Current_Gals" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Current Gallons In Tank]]>
+</Description>
+</Member>
+<Member Name="Warning_Gal" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Warn When Below This Amount]]>
+</Description>
+</Member>
+<Member Name="Min_Gals" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Stop When Below This Amount]]>
+</Description>
+</Member>
+<Member Name="Min_Start_Gals" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Minimum Amount To Start]]>
+</Description>
+</Member>
+<Member Name="Percent_Tank_Full" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="PID" DataType="PID" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="DisplayIdx" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZScale_Data21" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Min_Start_Accept" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZScale_Data21" BitNumber="0" ExternalAccess="Read/Write"/>
+</Members>
+</DataType>
+</DataTypes>
+</Controller>
+</RSLogix5000Content>
