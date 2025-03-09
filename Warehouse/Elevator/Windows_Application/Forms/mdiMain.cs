@@ -35,7 +35,7 @@ namespace NWGrain
 
             Program.FrmMain.Show();
             Program.FrmMain.WindowState = FormWindowState.Maximized;
-            
+
         }
 
         private void mdiMain_Activated(object sender, EventArgs e)
@@ -47,6 +47,11 @@ namespace NWGrain
                 if (Settings.CheckUpdateAtStartup && (AppUpdater.UpdateInfo.CheckUpdates)) CheckForUpdate();
                 UpdateChecked = true;
             }
+            
+            this.WindowState = FormWindowState.Normal;
+            this.Show();
+            this.BringToFront();
+            this.TopMost=false;
         }
 
         private void CheckForUpdate()
