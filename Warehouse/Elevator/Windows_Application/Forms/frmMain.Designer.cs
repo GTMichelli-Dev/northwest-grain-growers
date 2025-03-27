@@ -45,6 +45,19 @@
             this.label1 = new System.Windows.Forms.Label();
             this.tmrSetup = new System.Windows.Forms.Timer(this.components);
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
+            this.btnEDIT = new System.Windows.Forms.DataGridViewLinkColumn();
+            this.btnNew = new System.Windows.Forms.DataGridViewLinkColumn();
+            this.totalLoadsDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.notCompletedDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Source = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Crop = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.lotNumberDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Carrier = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Comment = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Landlord = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Farm = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Train = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Variety = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.weightSheetsForSelectionBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.nWDataset = new NWGrain.NWDataset();
             this.tmrUpdate = new System.Windows.Forms.Timer(this.components);
@@ -74,19 +87,6 @@
             this.weightSheetsForSelectionTableAdapter = new NWGrain.NWDatasetTableAdapters.WeightSheetsForSelectionTableAdapter();
             this.vw_Open_Weight_SheetsTableAdapter = new NWGrain.NWDatasetTableAdapters.vw_Open_Weight_SheetsTableAdapter();
             this.button2 = new System.Windows.Forms.Button();
-            this.btnEDIT = new System.Windows.Forms.DataGridViewLinkColumn();
-            this.btnNew = new System.Windows.Forms.DataGridViewLinkColumn();
-            this.totalLoadsDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.notCompletedDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Source = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Crop = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.lotNumberDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Carrier = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Comment = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Landlord = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Farm = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Train = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Variety = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.weightSheetsForSelectionBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nWDataset)).BeginInit();
@@ -230,6 +230,143 @@
             this.dataGridView1.Scroll += new System.Windows.Forms.ScrollEventHandler(this.dataGridView1_Scroll);
             this.dataGridView1.SelectionChanged += new System.EventHandler(this.dataGridView1_SelectionChanged);
             this.dataGridView1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.dataGridView1_MouseMove);
+            // 
+            // btnEDIT
+            // 
+            this.btnEDIT.ActiveLinkColor = System.Drawing.Color.Blue;
+            this.btnEDIT.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
+            this.btnEDIT.DataPropertyName = "WS_Id";
+            this.btnEDIT.Frozen = true;
+            this.btnEDIT.HeaderText = "Weight Sheet";
+            this.btnEDIT.MinimumWidth = 100;
+            this.btnEDIT.Name = "btnEDIT";
+            this.btnEDIT.ReadOnly = true;
+            this.btnEDIT.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.btnEDIT.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
+            this.btnEDIT.VisitedLinkColor = System.Drawing.Color.Blue;
+            // 
+            // btnNew
+            // 
+            this.btnNew.ActiveLinkColor = System.Drawing.Color.Blue;
+            this.btnNew.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.btnNew.DataPropertyName = "Weight_Sheet_Type";
+            this.btnNew.HeaderText = "Type";
+            this.btnNew.Name = "btnNew";
+            this.btnNew.ReadOnly = true;
+            this.btnNew.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.btnNew.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
+            this.btnNew.VisitedLinkColor = System.Drawing.Color.Blue;
+            this.btnNew.Width = 92;
+            // 
+            // totalLoadsDataGridViewTextBoxColumn
+            // 
+            this.totalLoadsDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.totalLoadsDataGridViewTextBoxColumn.DataPropertyName = "Total_Loads";
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle3.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Bold);
+            this.totalLoadsDataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle3;
+            this.totalLoadsDataGridViewTextBoxColumn.HeaderText = "Total";
+            this.totalLoadsDataGridViewTextBoxColumn.Name = "totalLoadsDataGridViewTextBoxColumn";
+            this.totalLoadsDataGridViewTextBoxColumn.ReadOnly = true;
+            this.totalLoadsDataGridViewTextBoxColumn.Width = 94;
+            // 
+            // notCompletedDataGridViewTextBoxColumn
+            // 
+            this.notCompletedDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.notCompletedDataGridViewTextBoxColumn.DataPropertyName = "Not_Completed";
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle4.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.notCompletedDataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle4;
+            this.notCompletedDataGridViewTextBoxColumn.HeaderText = "In Yard";
+            this.notCompletedDataGridViewTextBoxColumn.Name = "notCompletedDataGridViewTextBoxColumn";
+            this.notCompletedDataGridViewTextBoxColumn.ReadOnly = true;
+            this.notCompletedDataGridViewTextBoxColumn.Width = 118;
+            // 
+            // Source
+            // 
+            this.Source.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.Source.DataPropertyName = "Source";
+            this.Source.HeaderText = "Source";
+            this.Source.Name = "Source";
+            this.Source.ReadOnly = true;
+            this.Source.Width = 119;
+            // 
+            // Crop
+            // 
+            this.Crop.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.Crop.DataPropertyName = "Crop";
+            this.Crop.HeaderText = "Crop";
+            this.Crop.Name = "Crop";
+            this.Crop.ReadOnly = true;
+            this.Crop.Width = 94;
+            // 
+            // lotNumberDataGridViewTextBoxColumn
+            // 
+            this.lotNumberDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.lotNumberDataGridViewTextBoxColumn.DataPropertyName = "Lot_Number";
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle5.NullValue = null;
+            this.lotNumberDataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle5;
+            this.lotNumberDataGridViewTextBoxColumn.HeaderText = "Lot";
+            this.lotNumberDataGridViewTextBoxColumn.Name = "lotNumberDataGridViewTextBoxColumn";
+            this.lotNumberDataGridViewTextBoxColumn.ReadOnly = true;
+            this.lotNumberDataGridViewTextBoxColumn.Width = 76;
+            // 
+            // Carrier
+            // 
+            this.Carrier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.Carrier.DataPropertyName = "Carrier";
+            this.Carrier.HeaderText = "Hauler";
+            this.Carrier.Name = "Carrier";
+            this.Carrier.ReadOnly = true;
+            this.Carrier.Width = 112;
+            // 
+            // Comment
+            // 
+            this.Comment.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.Comment.DataPropertyName = "Comment";
+            this.Comment.HeaderText = "Comment";
+            this.Comment.Name = "Comment";
+            this.Comment.ReadOnly = true;
+            this.Comment.Width = 148;
+            // 
+            // Landlord
+            // 
+            this.Landlord.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.Landlord.DataPropertyName = "Landlord";
+            this.Landlord.HeaderText = "Landlord";
+            this.Landlord.Name = "Landlord";
+            this.Landlord.ReadOnly = true;
+            this.Landlord.Width = 142;
+            // 
+            // Farm
+            // 
+            this.Farm.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.Farm.DataPropertyName = "FSA_Number";
+            this.Farm.HeaderText = "Farm";
+            this.Farm.Name = "Farm";
+            this.Farm.ReadOnly = true;
+            this.Farm.Width = 96;
+            // 
+            // Train
+            // 
+            this.Train.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.Train.DataPropertyName = "Train";
+            dataGridViewCellStyle6.ForeColor = System.Drawing.Color.Red;
+            this.Train.DefaultCellStyle = dataGridViewCellStyle6;
+            this.Train.HeaderText = "";
+            this.Train.Name = "Train";
+            this.Train.ReadOnly = true;
+            this.Train.Width = 19;
+            // 
+            // Variety
+            // 
+            this.Variety.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.Variety.DataPropertyName = "Variety";
+            this.Variety.HeaderText = "Variety";
+            this.Variety.Name = "Variety";
+            this.Variety.ReadOnly = true;
+            this.Variety.Width = 116;
             // 
             // weightSheetsForSelectionBindingSource
             // 
@@ -448,143 +585,6 @@
             this.button2.UseVisualStyleBackColor = false;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
-            // btnEDIT
-            // 
-            this.btnEDIT.ActiveLinkColor = System.Drawing.Color.Blue;
-            this.btnEDIT.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
-            this.btnEDIT.DataPropertyName = "WS_Id";
-            this.btnEDIT.Frozen = true;
-            this.btnEDIT.HeaderText = "Weight Sheet";
-            this.btnEDIT.MinimumWidth = 100;
-            this.btnEDIT.Name = "btnEDIT";
-            this.btnEDIT.ReadOnly = true;
-            this.btnEDIT.Resizable = System.Windows.Forms.DataGridViewTriState.True;
-            this.btnEDIT.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
-            this.btnEDIT.VisitedLinkColor = System.Drawing.Color.Blue;
-            // 
-            // btnNew
-            // 
-            this.btnNew.ActiveLinkColor = System.Drawing.Color.Blue;
-            this.btnNew.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.btnNew.DataPropertyName = "Weight_Sheet_Type";
-            this.btnNew.HeaderText = "Type";
-            this.btnNew.Name = "btnNew";
-            this.btnNew.ReadOnly = true;
-            this.btnNew.Resizable = System.Windows.Forms.DataGridViewTriState.True;
-            this.btnNew.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
-            this.btnNew.VisitedLinkColor = System.Drawing.Color.Blue;
-            this.btnNew.Width = 92;
-            // 
-            // totalLoadsDataGridViewTextBoxColumn
-            // 
-            this.totalLoadsDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.totalLoadsDataGridViewTextBoxColumn.DataPropertyName = "Total_Loads";
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Bold);
-            this.totalLoadsDataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle3;
-            this.totalLoadsDataGridViewTextBoxColumn.HeaderText = "Total";
-            this.totalLoadsDataGridViewTextBoxColumn.Name = "totalLoadsDataGridViewTextBoxColumn";
-            this.totalLoadsDataGridViewTextBoxColumn.ReadOnly = true;
-            this.totalLoadsDataGridViewTextBoxColumn.Width = 94;
-            // 
-            // notCompletedDataGridViewTextBoxColumn
-            // 
-            this.notCompletedDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.notCompletedDataGridViewTextBoxColumn.DataPropertyName = "Not_Completed";
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.notCompletedDataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle4;
-            this.notCompletedDataGridViewTextBoxColumn.HeaderText = "In Yard";
-            this.notCompletedDataGridViewTextBoxColumn.Name = "notCompletedDataGridViewTextBoxColumn";
-            this.notCompletedDataGridViewTextBoxColumn.ReadOnly = true;
-            this.notCompletedDataGridViewTextBoxColumn.Width = 108;
-            // 
-            // Source
-            // 
-            this.Source.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.Source.DataPropertyName = "Source";
-            this.Source.HeaderText = "Source";
-            this.Source.Name = "Source";
-            this.Source.ReadOnly = true;
-            this.Source.Width = 119;
-            // 
-            // Crop
-            // 
-            this.Crop.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.Crop.DataPropertyName = "Crop";
-            this.Crop.HeaderText = "Crop";
-            this.Crop.Name = "Crop";
-            this.Crop.ReadOnly = true;
-            this.Crop.Width = 94;
-            // 
-            // lotNumberDataGridViewTextBoxColumn
-            // 
-            this.lotNumberDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.lotNumberDataGridViewTextBoxColumn.DataPropertyName = "Lot_Number";
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
-            dataGridViewCellStyle5.NullValue = null;
-            this.lotNumberDataGridViewTextBoxColumn.DefaultCellStyle = dataGridViewCellStyle5;
-            this.lotNumberDataGridViewTextBoxColumn.HeaderText = "Lot";
-            this.lotNumberDataGridViewTextBoxColumn.Name = "lotNumberDataGridViewTextBoxColumn";
-            this.lotNumberDataGridViewTextBoxColumn.ReadOnly = true;
-            this.lotNumberDataGridViewTextBoxColumn.Width = 76;
-            // 
-            // Carrier
-            // 
-            this.Carrier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.Carrier.DataPropertyName = "Carrier";
-            this.Carrier.HeaderText = "Hauler";
-            this.Carrier.Name = "Carrier";
-            this.Carrier.ReadOnly = true;
-            this.Carrier.Width = 112;
-            // 
-            // Comment
-            // 
-            this.Comment.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.Comment.DataPropertyName = "Comment";
-            this.Comment.HeaderText = "Comment";
-            this.Comment.Name = "Comment";
-            this.Comment.ReadOnly = true;
-            this.Comment.Width = 148;
-            // 
-            // Landlord
-            // 
-            this.Landlord.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.Landlord.DataPropertyName = "Landlord";
-            this.Landlord.HeaderText = "Landlord";
-            this.Landlord.Name = "Landlord";
-            this.Landlord.ReadOnly = true;
-            this.Landlord.Width = 142;
-            // 
-            // Farm
-            // 
-            this.Farm.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.Farm.DataPropertyName = "FSA_Number";
-            this.Farm.HeaderText = "Farm";
-            this.Farm.Name = "Farm";
-            this.Farm.ReadOnly = true;
-            this.Farm.Width = 96;
-            // 
-            // Train
-            // 
-            this.Train.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.Train.DataPropertyName = "Train";
-            dataGridViewCellStyle6.ForeColor = System.Drawing.Color.Red;
-            this.Train.DefaultCellStyle = dataGridViewCellStyle6;
-            this.Train.HeaderText = "";
-            this.Train.Name = "Train";
-            this.Train.ReadOnly = true;
-            this.Train.Width = 19;
-            // 
-            // Variety
-            // 
-            this.Variety.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
-            this.Variety.DataPropertyName = "Variety";
-            this.Variety.HeaderText = "Variety";
-            this.Variety.Name = "Variety";
-            this.Variety.ReadOnly = true;
-            this.Variety.Width = 116;
-            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(15F, 29F);
@@ -611,6 +611,7 @@
             this.Name = "frmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Main Screen";
+            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Activated += new System.EventHandler(this.frmMain_Activated);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.frmMain_FormClosed);
             this.Load += new System.EventHandler(this.frmMain_Load);

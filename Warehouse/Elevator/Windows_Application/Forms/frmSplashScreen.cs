@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using System.Xml;
 using Microsoft.Win32;
 using System.Runtime.InteropServices;
+using NWGrain;
 
 namespace SplashScreen
 {
@@ -210,7 +211,12 @@ namespace SplashScreen
         {
 
         }
-	}
+
+        private void SplashScreen_FormClosed(object sender, FormClosedEventArgs e)
+        {
+			
+        }
+    }
 
    
 }

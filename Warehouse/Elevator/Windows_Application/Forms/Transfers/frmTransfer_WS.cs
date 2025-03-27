@@ -385,6 +385,7 @@ namespace NWGrain
 
         private void frmTransfer_WS_FormClosed(object sender, FormClosedEventArgs e)
         {
+            Program.FrmMain.UpdateData();
             Program.FrmMain.Show();
         }
 

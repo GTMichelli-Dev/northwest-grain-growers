@@ -44,6 +44,10 @@ namespace NWGrain
                  this.DialogResult = System.Windows.Forms.DialogResult.OK;
                  this.Close();
               }
+                else
+                {
+                    this.Enabled = true;
+                }
           }
 
         }

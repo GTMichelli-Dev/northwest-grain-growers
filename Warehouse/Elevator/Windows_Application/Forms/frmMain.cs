@@ -6,8 +6,11 @@ using System.Drawing;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using AppUpdater;
+
+
 
 namespace NWGrain
 {
@@ -148,7 +151,7 @@ namespace NWGrain
 
         private void frmMain_Load(object sender, EventArgs e)
         {
-   
+            
         }
 
 
@@ -208,9 +211,11 @@ namespace NWGrain
        
         }
 
-        private void BringFormToFront(Form form)
+        private  void BringFormToFront(Form form)
         {
             form.BringToFront();
+       
+
             form.Activate();
         }
 
@@ -471,6 +476,7 @@ namespace NWGrain
             Loading.Close();
             StartGridUpdate();
             this.dataGridView1.Enabled = true;
+          
 
         }
 
@@ -655,6 +661,7 @@ namespace NWGrain
 
         private void refreshToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            UpdateData();
             this.Refresh();
         }
 

@@ -503,7 +503,9 @@ namespace NWGrain
 
         private void frmHarvest_WS_FormClosed(object sender, FormClosedEventArgs e)
         {
+            Program.FrmMain.UpdateData();
             Program.FrmMain.Show();
+            
         }
 
         private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)

@@ -38,6 +38,7 @@ namespace SplashScreen
             this.lblApp = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.label1 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
@@ -88,6 +89,7 @@ namespace SplashScreen
             // panel1
             // 
             this.panel1.BackColor = System.Drawing.Color.White;
+            this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.lblApp);
             this.panel1.Controls.Add(this.lblTimeRemaining);
             this.panel1.Controls.Add(this.pnlStatus);
@@ -96,6 +98,18 @@ namespace SplashScreen
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(627, 256);
             this.panel1.TabIndex = 7;
+            // 
+            // label1
+            // 
+            this.label1.BackColor = System.Drawing.Color.White;
+            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(102)))), ((int)(((byte)(102)))));
+            this.label1.Location = new System.Drawing.Point(79, 136);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(467, 32);
+            this.label1.TabIndex = 7;
+            this.label1.Text = "Harvest 2025";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // SplashScreen
             // 
@@ -111,6 +125,7 @@ namespace SplashScreen
             this.Text = "SplashScreen";
             this.TopMost = true;
             this.TransparencyKey = System.Drawing.Color.DarkGray;
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.SplashScreen_FormClosed);
             this.Load += new System.EventHandler(this.SplashScreen_Load);
             this.DoubleClick += new System.EventHandler(this.SplashScreen_DoubleClick);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
@@ -126,5 +141,6 @@ namespace SplashScreen
         private Label lblApp;
         private PictureBox pictureBox1;
         private Panel panel1;
+        private Label label1;
     }
 }
