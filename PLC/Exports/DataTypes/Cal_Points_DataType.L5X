@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!--An array of Cal Points used for establishing a linear calibration-->
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Cal_Points" TargetType="DataType" ContainsContext="true" ExportDate="Thu Jan 30 08:46:28 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Cal_Points" TargetType="DataType" ContainsContext="true" ExportDate="Fri Mar 14 07:59:23 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
 <Controller Use="Context" Name="NWGG_Treater_Dayton">
 <DataTypes Use="Context">
 <DataType Name="Cal_Point" Family="NoFamily" Class="User">

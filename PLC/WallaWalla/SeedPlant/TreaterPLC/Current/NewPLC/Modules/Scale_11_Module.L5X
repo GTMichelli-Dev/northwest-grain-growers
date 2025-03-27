@@ -1,0 +1,157 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Scale_11" TargetType="Module" ContainsContext="true" ExportDate="Thu Mar 13 10:30:10 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Context" Name="NWGG_Treater_WW">
+<Modules Use="Context">
+<Module Use="Target" Name="Scale_11" CatalogNumber="IND360" Vendor="666" ProductType="12" ProductCode="16898" Major="1" Minor="1" ParentModule="Local" ParentModPortId="2" Inhibited="false"
+ MajorFault="false" SafetyEnabled="false">
+<EKey State="CompatibleModule"/>
+<Ports>
+<Port Id="1" Address="192.10.21.220" Type="Ethernet" Upstream="true"/>
+</Ports>
+<Communications>
+<Connections>
+<Connection Name="IO2BlockFormat" RPI="2000" Type="StandardDataDriven" OutputSize="16" InputSize="16" EventID="0" ProgrammaticallySendEventTrigger="false" Priority="Scheduled" InputConnectionType="Unicast" InputProductionTrigger="Cyclic" ConnectionPath="20 04 24 01 2c 64 2c 65"
+ InputTagSuffix="I" OutputTagSuffix="O">
+<InputTag ExternalAccess="Read/Write">
+<Data Format="Decorated">
+<Structure DataType="ME:IND360_2BlockR:I:0">
+<StructureMember Name="MB1" DataType="ME:IND360_MBlockIn:I:0">
+<DataValueMember Name="Measuring_Value" DataType="REAL" Radix="Float" Value="-0.63"/>
+<DataValueMember Name="Device_Status" DataType="INT" Radix="Binary" Value="2#0000_0000_0000_1000"/>
+<DataValueMember Name="Sequence_Bit_0" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Sequence_Bit_1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Heart_Beat" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Data_Okay" DataType="BOOL" Value="1"/>
+<DataValueMember Name="Alarm_Condition" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Center_of_Zero" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Motion" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Net_Mode" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Alternate_Weight_Unit" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Device_Specific_Bit_1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Device_Specific_Bit_2" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Device_Specific_Bit_3" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Device_Specific_Bit_4" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Device_Specific_Bit_5" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Device_Specific_Bit_6" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Device_Specific_Bit_7" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Response" DataType="INT" Radix="Binary" Value="2#0000_0000_0000_0000"/>
+<DataValueMember Name="CmdStatus0" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus2" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus3" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus4" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus5" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus6" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus7" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus8" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus9" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus10" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber0" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber2" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber3" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdFail" DataType="BOOL" Value="0"/>
+</StructureMember>
+<StructureMember Name="SB1" DataType="ME:IND360_StatusIn:I:0">
+<DataValueMember Name="Status_Group_1" DataType="INT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="Status_Group_2" DataType="INT" Radix="Decimal" Value="2"/>
+<DataValueMember Name="Status_Group_3" DataType="INT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="Response" DataType="INT" Radix="Binary" Value="2#0000_0000_0000_0000"/>
+<DataValueMember Name="CmdStatus0" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus2" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus3" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus4" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus5" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus6" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus7" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus8" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus9" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdStatus10" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber0" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber2" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber3" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdFail" DataType="BOOL" Value="0"/>
+</StructureMember>
+</Structure>
+</Data>
+</InputTag>
+<OutputTag ExternalAccess="Read/Write">
+<Data Format="L5K">
+<![CDATA[[[0.00000000e+000,0,0],[0,0,0,0]]]]>
+</Data>
+<Data Format="Decorated">
+<Structure DataType="ME:IND360_2BlockW:O:0">
+<StructureMember Name="MB1" DataType="ME:IND360_MBlockOut:O:0">
+<DataValueMember Name="Command_Value" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Channel_Mask" DataType="INT" Radix="Binary" Value="2#0000_0000_0000_0000"/>
+<DataValueMember Name="Apply_command_to_Channel_1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_2" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_3" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_4" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_5" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_6" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_7" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_8" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_9" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_10" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_11" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_12" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_13" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_14" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_15" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Apply_command_to_Channel_16" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Command" DataType="INT" Radix="Binary" Value="2#0000_0000_0000_0000"/>
+<DataValueMember Name="CmdNumber0" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber2" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber3" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber4" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber5" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber6" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber7" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber8" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber9" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber10" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber0" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber2" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber3" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Reserved" DataType="BOOL" Value="0"/>
+</StructureMember>
+<StructureMember Name="SB1" DataType="ME:IND360_StatusOut:O:0">
+<DataValueMember Name="Reserved_1" DataType="INT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="Reserved_2" DataType="INT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="Reserved_3" DataType="INT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="Command" DataType="INT" Radix="Binary" Value="2#0000_0000_0000_0000"/>
+<DataValueMember Name="CmdNumber0" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber2" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber3" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber4" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber5" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber6" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber7" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber8" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber9" DataType="BOOL" Value="0"/>
+<DataValueMember Name="CmdNumber10" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber0" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber1" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber2" DataType="BOOL" Value="0"/>
+<DataValueMember Name="ChNumber3" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Reserved" DataType="BOOL" Value="0"/>
+</StructureMember>
+</Structure>
+</Data>
+</OutputTag>
+</Connection>
+</Connections>
+</Communications>
+<ExtendedProperties>
+<public><ConfigID>101</ConfigID><Vendor>Mettler-Toledo</Vendor><CatNum>IND360</CatNum></public>
+</ExtendedProperties>
+</Module>
+</Modules>
+</Controller>
+</RSLogix5000Content>
