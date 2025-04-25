@@ -12,6 +12,7 @@ public partial class TicketCreator : System.Web.UI.Page
     {
         try
         {
+            if (this.ddNumberOfCopies.SelectedIndex < 0) this.ddNumberOfCopies.SelectedIndex = 0;
             if (!this.IsPostBack)
             {
                 if (Session["Weighmaster"] == null) Session["Weighmaster"] = "";
@@ -761,6 +762,7 @@ public partial class TicketCreator : System.Web.UI.Page
 
     protected void btnSave_Click(object sender, EventArgs e)
     {
+       
         SeedTicketInfo.CurrentSeedTicketRow.Weighmaster = txtWeighmaster.Text;
         Session["Weighmaster"] = SeedTicketInfo.CurrentSeedTicketRow.Weighmaster;
         SeedTicketInfo.SaveTicket();
@@ -775,8 +777,8 @@ public partial class TicketCreator : System.Web.UI.Page
         Guid UID = SeedTicketInfo.CurrentSeedTicketRow.UID;
         SeedTicketInfo.CurrentSeedTicketRow = null;
         SeedTicketInfo.seedTicketDataSet = null;
-        PrintTicket(UID, 2);
-        
+        PrintTicket(UID);
+        Response.Redirect("~/Default.aspx");
 
 
 
@@ -784,11 +786,13 @@ public partial class TicketCreator : System.Web.UI.Page
 
 
 
-    public void PrintTicket(Guid UID,int Copies=1)
+    public void PrintTicket(Guid UID)
     {
         if (GlobalVars.UsePrinter)
         {
-            Response.Redirect($"~/PrintTicket?Copies={Copies}&UID={UID}");
+            int numberOfCopies =int.Parse( ddNumberOfCopies.SelectedValue);
+
+            //   Response.Redirect($"~/PrintTicket?Copies={Copies}&UID={UID}");
             Printing.Print_Ticket(UID, "", 2);
         }
         else
@@ -800,6 +804,7 @@ public partial class TicketCreator : System.Web.UI.Page
 
     protected void btnPrint_Click(object sender, EventArgs e)
     {
+     
         PrintTicket(SeedTicketInfo.CurrentSeedTicketRow.UID);
 
 
@@ -809,6 +814,7 @@ public partial class TicketCreator : System.Web.UI.Page
     protected void ddPrintDestination_TextChanged(object sender, EventArgs e)
     {
         GlobalVars.UsePrinter = (ddPrintDestination.SelectedIndex == 0) ? true : false;
+        
     }
 
     protected void btnImage_Click(object sender, EventArgs e)
