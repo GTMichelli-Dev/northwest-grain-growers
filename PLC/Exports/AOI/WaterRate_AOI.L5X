@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="WaterRate" TargetType="AddOnInstructionDefinition" TargetRevision="1.0 " TargetLastEdited="2024-09-19T16:19:00.421Z" ContainsContext="true" ExportDate="Thu Jan 30 09:00:35 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="WaterRate" TargetType="AddOnInstructionDefinition" TargetRevision="1.0 " TargetLastEdited="2024-09-19T16:19:00.421Z" ContainsContext="true" ExportDate="Fri Mar 14 07:36:32 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
 <Controller Use="Context" Name="NWGG_Treater_Dayton">
 <DataTypes Use="Context">
 </DataTypes>

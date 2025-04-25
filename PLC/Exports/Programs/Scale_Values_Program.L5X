@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Scale_Values" TargetType="Program" ContainsContext="true" ExportDate="Thu Jan 30 09:01:27 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Scale_Values" TargetType="Program" ContainsContext="true" ExportDate="Fri Mar 14 07:48:41 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
 <Controller Use="Context" Name="NWGG_Treater_Dayton">
 <DataTypes Use="Context">
 <DataType Name="Scale_Data" Family="NoFamily" Class="User">
@@ -76,7 +76,7 @@
 </Module>
 </Modules>
 <AddOnInstructionDefinitions Use="Context">
-<AddOnInstructionDefinition Name="SAI_Zero_Scale" Revision="1.0" Vendor="NWGG" ExecutePrescan="false" ExecutePostscan="false" ExecuteEnableInFalse="false" CreatedDate="2024-09-27T20:02:42.386Z" CreatedBy="DESKTOP-02F8BPT\tech" EditedDate="2024-09-27T20:14:18.440Z" EditedBy="DESKTOP-02F8BPT\tech" SoftwareRevision="v35.00"
+<AddOnInstructionDefinition Name="SAI_Zero_Scale" Revision="1.0" Vendor="NWGG" ExecutePrescan="false" ExecutePostscan="false" ExecuteEnableInFalse="false" CreatedDate="2024-09-27T20:02:42.386Z" CreatedBy="DESKTOP-02F8BPT\tech" EditedDate="2025-03-12T16:25:10.609Z" EditedBy="DESKTOP-02F8BPT\tech" SoftwareRevision="v35.00"
 >
 <Parameters>
 <Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
@@ -96,10 +96,10 @@
 <LocalTags>
 <LocalTag Name="ZeroCommand" DataType="INT" Radix="Decimal" ExternalAccess="Read Only">
 <DefaultData Format="L5K">
-<![CDATA[404]]>
+<![CDATA[0]]>
 </DefaultData>
 <DefaultData Format="Decorated">
-<DataValue DataType="INT" Radix="Decimal" Value="404"/>
+<DataValue DataType="INT" Radix="Decimal" Value="0"/>
 </DefaultData>
 </LocalTag>
 <LocalTag Name="CommandFail" DataType="INT" Radix="Decimal" ExternalAccess="Read Only">
@@ -110,18 +110,50 @@
 <DataValue DataType="INT" Radix="Decimal" Value="-32768"/>
 </DefaultData>
 </LocalTag>
+<LocalTag Name="tmrReset" DataType="TIMER" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[[0,10000,0]]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<Structure DataType="TIMER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="10000"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="EN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="TT" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+</Structure>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="ZeroScaleLatch" DataType="BOOL" Radix="Decimal" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</LocalTag>
 </LocalTags>
 <Routines>
 <Routine Name="Logic" Type="RLL">
 <RLLContent>
 <Rung Number="0" Type="N">
 <Text>
-<![CDATA[ONS(Zero_Scale)MOV(ZeroCommand,MT_ScaleWO.MB1.Command);]]>
+<![CDATA[MOV(1000,tmrReset.PRE);]]>
 </Text>
 </Rung>
 <Rung Number="1" Type="N">
 <Text>
-<![CDATA[[EQU(ZeroCommand,MT_ScaleWI.MB1.Response) ,EQU(CommandFail,MT_ScaleWI.MB1.Response) ]MOV(0,MT_ScaleWO.MB1.Command);]]>
+<![CDATA[XIC(Zero_Scale)OTL(ZeroScaleLatch);]]>
+</Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Text>
+<![CDATA[XIC(ZeroScaleLatch)OTL(ZeroScaleLatch)MOV(404,MT_ScaleWO.MB1.Command)TON(tmrReset,?,?);]]>
+</Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Text>
+<![CDATA[XIC(tmrReset.DN)MOV(0,MT_ScaleWO.MB1.Command)OTU(Zero_Scale)OTU(ZeroScaleLatch);]]>
 </Text>
 </Rung>
 </RLLContent>
@@ -136,10 +168,10 @@
 <Tags>
 <Tag Name="cnt3" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[82318]]>
+<![CDATA[105804]]>
 </Data>
 <Data Format="Decorated">
-<DataValue DataType="DINT" Radix="Decimal" Value="82318"/>
+<DataValue DataType="DINT" Radix="Decimal" Value="105804"/>
 </Data>
 </Tag>
 <Tag Name="CommandFail" TagType="Base" DataType="INT" Radix="Decimal" Constant="true" ExternalAccess="Read Only">
@@ -160,26 +192,26 @@
 </Tag>
 <Tag Name="CurrentScaleValue" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[-2.34999990e+000]]>
+<![CDATA[4.64750000e+002]]>
 </Data>
 <Data Format="Decorated">
-<DataValue DataType="REAL" Radix="Float" Value="-2.35"/>
+<DataValue DataType="REAL" Radix="Float" Value="464.75"/>
 </Data>
 </Tag>
 <Tag Name="GrossLbs" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[-2.34999990e+000]]>
+<![CDATA[4.64750000e+002]]>
 </Data>
 <Data Format="Decorated">
-<DataValue DataType="REAL" Radix="Float" Value="-2.35"/>
+<DataValue DataType="REAL" Radix="Float" Value="464.75"/>
 </Data>
 </Tag>
 <Tag Name="LastScaleValue" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[-2.34999990e+000]]>
+<![CDATA[4.64730011e+002]]>
 </Data>
 <Data Format="Decorated">
-<DataValue DataType="REAL" Radix="Float" Value="-2.35"/>
+<DataValue DataType="REAL" Radix="Float" Value="464.73"/>
 </Data>
 </Tag>
 <Tag Name="lbs_Per_Gal" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read/Write">
@@ -228,10 +260,10 @@
 </Tag>
 <Tag Name="Rate_LBS" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[9.99999046e-003]]>
+<![CDATA[9.97924800e-003]]>
 </Data>
 <Data Format="Decorated">
-<DataValue DataType="REAL" Radix="Float" Value="0.00999999"/>
+<DataValue DataType="REAL" Radix="Float" Value="0.009979248"/>
 </Data>
 </Tag>
 <Tag Name="Rate_Min" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read Only">
@@ -244,10 +276,10 @@
 </Tag>
 <Tag Name="Rate_Oz" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[1.15199888e-003]]>
+<![CDATA[1.14960934e-003]]>
 </Data>
 <Data Format="Decorated">
-<DataValue DataType="REAL" Radix="Float" Value="1.15199888e-003"/>
+<DataValue DataType="REAL" Radix="Float" Value="1.14960934e-003"/>
 </Data>
 </Tag>
 <Tag Name="Rate_Per_Min" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read Only">
@@ -268,21 +300,21 @@
 </Tag>
 <Tag Name="ScaleAverageLastWeights" TagType="Base" DataType="REAL" Dimensions="10" Radix="Float" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[[-2.34999990e+000,-2.34999990e+000,-2.34999990e+000,-2.34999990e+000,-2.34999990e+000,-2.34999990e+000
-		,-2.34999990e+000,-2.34999990e+000,-2.34999990e+000,-2.34999990e+000]]]>
+<![CDATA[[4.64750000e+002,4.64750000e+002,4.64750000e+002,4.64750000e+002,4.64750000e+002,4.64750000e+002
+		,4.64750000e+002,4.64750000e+002,4.64750000e+002,4.64750000e+002]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="REAL" Dimensions="10" Radix="Float">
-<Element Index="[0]" Value="-2.35"/>
-<Element Index="[1]" Value="-2.35"/>
-<Element Index="[2]" Value="-2.35"/>
-<Element Index="[3]" Value="-2.35"/>
-<Element Index="[4]" Value="-2.35"/>
-<Element Index="[5]" Value="-2.35"/>
-<Element Index="[6]" Value="-2.35"/>
-<Element Index="[7]" Value="-2.35"/>
-<Element Index="[8]" Value="-2.35"/>
-<Element Index="[9]" Value="-2.35"/>
+<Element Index="[0]" Value="464.75"/>
+<Element Index="[1]" Value="464.75"/>
+<Element Index="[2]" Value="464.75"/>
+<Element Index="[3]" Value="464.75"/>
+<Element Index="[4]" Value="464.75"/>
+<Element Index="[5]" Value="464.75"/>
+<Element Index="[6]" Value="464.75"/>
+<Element Index="[7]" Value="464.75"/>
+<Element Index="[8]" Value="464.75"/>
+<Element Index="[9]" Value="464.75"/>
 </Array>
 </Data>
 </Tag>
@@ -402,18 +434,18 @@
 </Tag>
 <Tag Name="TestCount" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[8226956]]>
+<![CDATA[10573302]]>
 </Data>
 <Data Format="Decorated">
-<DataValue DataType="DINT" Radix="Decimal" Value="8226956"/>
+<DataValue DataType="DINT" Radix="Decimal" Value="10573302"/>
 </Data>
 </Tag>
 <Tag Name="TestCt2" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[82320]]>
+<![CDATA[105806]]>
 </Data>
 <Data Format="Decorated">
-<DataValue DataType="DINT" Radix="Decimal" Value="82320"/>
+<DataValue DataType="DINT" Radix="Decimal" Value="105806"/>
 </Data>
 </Tag>
 <Tag Name="TimerDone" TagType="Base" DataType="BOOL" Dimensions="32" Radix="Decimal" Constant="false" ExternalAccess="Read Only">
@@ -474,16 +506,16 @@
 </Tag>
 <Tag Name="tmrAverage" TagType="Base" DataType="TIMER" Dimensions="10" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[[[-1070610715,100000,79186],[-1070610715,1000,41],[-1070610715,1000,932],[-1070610715,1000,822],[-1070610715
-		,1000,712],[-1070610715,1000,602],[-1070610715,1000,492],[-1070610715,1000,382],[-1070610715,1000,272],[-1070610715
-		,1000,162]]]]>
+<![CDATA[[[-1072412338,100000,10421],[-1072412338,1000,972],[-1072412338,1000,862],[-1072412338,1000,752],[-1072412338
+		,1000,644],[-1072412338,1000,532],[-1072412338,1000,423],[-1072412338,1000,312],[-1072412338,1000,202],[-1072412338
+		,1000,93]]]]>
 </Data>
 <Data Format="Decorated">
 <Array DataType="TIMER" Dimensions="10">
 <Element Index="[0]">
 <Structure DataType="TIMER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="100000"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="79186"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="10421"/>
 <DataValueMember Name="EN" DataType="BOOL" Value="1"/>
 <DataValueMember Name="TT" DataType="BOOL" Value="1"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -492,7 +524,7 @@
 <Element Index="[1]">
 <Structure DataType="TIMER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="1000"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="41"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="972"/>
 <DataValueMember Name="EN" DataType="BOOL" Value="1"/>
 <DataValueMember Name="TT" DataType="BOOL" Value="1"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -501,7 +533,7 @@
 <Element Index="[2]">
 <Structure DataType="TIMER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="1000"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="932"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="862"/>
 <DataValueMember Name="EN" DataType="BOOL" Value="1"/>
 <DataValueMember Name="TT" DataType="BOOL" Value="1"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -510,7 +542,7 @@
 <Element Index="[3]">
 <Structure DataType="TIMER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="1000"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="822"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="752"/>
 <DataValueMember Name="EN" DataType="BOOL" Value="1"/>
 <DataValueMember Name="TT" DataType="BOOL" Value="1"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -519,7 +551,7 @@
 <Element Index="[4]">
 <Structure DataType="TIMER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="1000"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="712"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="644"/>
 <DataValueMember Name="EN" DataType="BOOL" Value="1"/>
 <DataValueMember Name="TT" DataType="BOOL" Value="1"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -528,7 +560,7 @@
 <Element Index="[5]">
 <Structure DataType="TIMER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="1000"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="602"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="532"/>
 <DataValueMember Name="EN" DataType="BOOL" Value="1"/>
 <DataValueMember Name="TT" DataType="BOOL" Value="1"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -537,7 +569,7 @@
 <Element Index="[6]">
 <Structure DataType="TIMER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="1000"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="492"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="423"/>
 <DataValueMember Name="EN" DataType="BOOL" Value="1"/>
 <DataValueMember Name="TT" DataType="BOOL" Value="1"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -546,7 +578,7 @@
 <Element Index="[7]">
 <Structure DataType="TIMER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="1000"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="382"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="312"/>
 <DataValueMember Name="EN" DataType="BOOL" Value="1"/>
 <DataValueMember Name="TT" DataType="BOOL" Value="1"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -555,7 +587,7 @@
 <Element Index="[8]">
 <Structure DataType="TIMER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="1000"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="272"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="202"/>
 <DataValueMember Name="EN" DataType="BOOL" Value="1"/>
 <DataValueMember Name="TT" DataType="BOOL" Value="1"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -564,7 +596,7 @@
 <Element Index="[9]">
 <Structure DataType="TIMER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="1000"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="162"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="93"/>
 <DataValueMember Name="EN" DataType="BOOL" Value="1"/>
 <DataValueMember Name="TT" DataType="BOOL" Value="1"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -589,12 +621,12 @@
 </Tag>
 <Tag Name="tmrSecond2" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[[-1070610662,1000,204]]]>
+<![CDATA[[-1072412478,1000,943]]]>
 </Data>
 <Data Format="Decorated">
 <Structure DataType="TIMER">
 <DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="1000"/>
-<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="204"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="943"/>
 <DataValueMember Name="EN" DataType="BOOL" Value="1"/>
 <DataValueMember Name="TT" DataType="BOOL" Value="1"/>
 <DataValueMember Name="DN" DataType="BOOL" Value="0"/>
@@ -603,7 +635,7 @@
 </Tag>
 <Tag Name="tmrStartAveraging" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[[-1607481594,10000,10000]]]>
+<![CDATA[[-1609283390,10000,10000]]]>
 </Data>
 <Data Format="Decorated">
 <Structure DataType="TIMER">
@@ -779,10 +811,10 @@
 </Tag>
 <Tag Name="ZeroCommandScale20" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[1]]>
+<![CDATA[0]]>
 </Data>
 <Data Format="Decorated">
-<DataValue DataType="BOOL" Radix="Decimal" Value="1"/>
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
 </Data>
 </Tag>
 <Tag Name="ZeroFail" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read Only">
@@ -803,7 +835,7 @@
 </Tag>
 <Tag Name="ZeroScale20" TagType="Base" DataType="SAI_Zero_Scale" Constant="false" ExternalAccess="Read Only">
 <Data Format="L5K">
-<![CDATA[[3,404,-32768]]]>
+<![CDATA[[3,404,-32768,[3272018,1000,0]]]]>
 </Data>
 <Data Format="Decorated">
 <Structure DataType="SAI_Zero_Scale">
