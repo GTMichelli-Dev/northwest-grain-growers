@@ -867,7 +867,9 @@ namespace NWGrain
                         }
                         bool Manual_Weight = Scales.CurrentInboundScaleData.ConnectionStatus == Scales.ScaleData.enumConnectionStatus.Manual;
                         ///Store In
-                      
+                        try
+                        {
+
                         
                         
                         Load_UID=(Guid)Q.Create_New_Inbound_Transfer_Load(location
@@ -884,6 +886,13 @@ namespace NWGrain
                                                                 ,Protein );
                          Q.Update_Transfer_WS_Carrier(this.vwTransfer_Weight_Sheet_InformationRow.Weight_Sheet_UID, Carrier_ID, this.vwTransfer_Weight_Sheet_InformationRow.Location_Id, this.vwTransfer_Weight_Sheet_InformationRow.Source_Id);
 
+                        }
+
+                        catch (Exception ex)
+                        {
+                            Alert.Show(ex.Message, "Error");
+                            DR = System.Windows.Forms.DialogResult.Cancel;
+                        }
                         Misc.SplitWeight.SaveSplitWeights(splitWeights, Load_UID, true);
                         if (!string.IsNullOrEmpty(SourceBinName))
                         {

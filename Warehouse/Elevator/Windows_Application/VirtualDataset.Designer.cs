@@ -1050,21 +1050,7 @@ namespace NWGrain {
                 }
             }
             
-            [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
-            public string Delete {
-                get {
-                    try {
-                        return ((string)(this[this.tableSplitWeight.DeleteColumn]));
-                    }
-                    catch (global::System.InvalidCastException e) {
-                        throw new global::System.Data.StrongTypingException("The value for column \'Delete\' in table \'SplitWeight\' is DBNull.", e);
-                    }
-                }
-                set {
-                    this[this.tableSplitWeight.DeleteColumn] = value;
-                }
-            }
+           
             
             [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
             [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Data.Design.TypedDataSetGenerator", "17.0.0.0")]
