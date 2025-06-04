@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=startKiosk autostart
+NoDisplay=true
+#Exec= sleep 10
+Exec= sudo mono /home/pi/Documents/KioskIFace.exe
