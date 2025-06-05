@@ -64,7 +64,9 @@ bobj.crv.params.Parameter = function(paramInfo) {
         isEditable: true,
         isHidden: false,
         isDataFetching: false,
-        attributes: null
+        attributes: null,
+        isInUse : false,
+        isShowOnPanel : false
     }, paramInfo);
     
 };
@@ -75,6 +77,10 @@ bobj.crv.params.Parameter = function(paramInfo) {
 bobj.crv.params.Parameter.prototype = {
     getTitle: function() {
         return (this.description || this.paramName); 
+    },
+    
+    isInteractive : function () {
+    	return this.isInUse && (this.isShowOnPanel || this.isEditable);
     },
     
     getName: function () {

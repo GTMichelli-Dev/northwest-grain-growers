@@ -47,8 +47,8 @@ namespace NWGrain.Properties {
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.SpecialSettingAttribute(global::System.Configuration.SpecialSetting.ConnectionString)]
-        [global::System.Configuration.DefaultSettingValueAttribute("Data Source=waldb001;Initial Catalog=NW_DataDev;Persist Security Info=True;User I" +
-            "D=sa;Password=Scale_Us3r;TrustServerCertificate=True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Data Source=.\\;Initial Catalog=NW_Data;Persist Security Info=True;User ID=sa;Pass" +
+            "word=Scale_Us3r;TrustServerCertificate=True")]
         public string NW_DataConnectionString {
             get {
                 return ((string)(this["NW_DataConnectionString"]));

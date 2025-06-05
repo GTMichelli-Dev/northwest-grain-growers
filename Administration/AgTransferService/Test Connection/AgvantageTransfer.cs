@@ -477,56 +477,67 @@ namespace Agvantage_Transfer
                                 var ws1 = workbook.Worksheet(1);
                                 SendMessage($"{ws1.Rows().Count() - 1} Customer Records Recieved From Agvantage", false);
                                 foreach (IXLRow row in ws1.Rows())
-                                {
+                                { 
                                     if (IsNumeric(row.Cell(1).Value.ToString()))
                                     {
-
-                                        int Id = Convert.ToInt32(row.Cell(1).Value.ToString());
-                                        string description = row.Cell(2).Value.ToString();
-                                        bool Active = (row.Cell(3).Value.ToString() == "I" || row.Cell(1).Value.ToString() == "D") ? false : true;
-                                        string Email = row.Cell(4).Value.ToString();
-
-                                        var producer = nwDataset.AgvantageProducers.NewAgvantageProducersRow();
-
-                                        producer.UID = Guid.NewGuid();
-                                        producer.Id = Id;
-                                        producer.Active = Active;
-                                        producer.Description = description;
-                                       
-                                        producer.Print_WS = true;
-                                        producer.Company_Name = row.Cell(5).Value.ToString();
-                                        producer.Customer_Name1 = row.Cell(6).Value.ToString();
-                                        producer.Customer_Name2 = row.Cell(7).Value.ToString();
-                                        producer.Address1 = row.Cell(8).Value.ToString();
-                                        producer.Address2 = row.Cell(9).Value.ToString();
-                                        producer.City = row.Cell(10).Value.ToString();
-                                        producer.State = row.Cell(11).Value.ToString();
-                                        producer.Zip1 = row.Cell(12).Value.ToString();
-                                        producer.Zip2 = row.Cell(13).Value.ToString();
-                                        producer.Home_Phone = row.Cell(14).Value.ToString();
-                                        producer.Work_Phone = row.Cell(15).Value.ToString();
-                                        producer.Member = row.Cell(16).Value.ToString();
-                                        producer.Phone = row.Cell(17).Value.ToString();
-                                        producer.Member = row.Cell(18).Value.ToString();
-                                      
-                                        producer.Email_WS = true;
-                                        if (!string.IsNullOrWhiteSpace(Email) && IsValidEmail(Email))
+                                        try
                                         {
-                                            producer.Email_Address = Email;
+                                            int Id = Convert.ToInt32(row.Cell(1).Value.ToString());
+                                            string description = row.Cell(2).Value.ToString();
+                                            bool Active = (row.Cell(3).Value.ToString() == "I" || row.Cell(1).Value.ToString() == "D") ? false : true;
+                                            string Email = row.Cell(4).Value.ToString();
+
+                                            var producer = nwDataset.AgvantageProducers.NewAgvantageProducersRow();
+
+                                            producer.UID = Guid.NewGuid();
+                                            producer.Id = Id;
+                                            producer.Active = Active;
+                                            producer.Description = description;
+                                            if (producer.Id == 32899)
+                                            {
+                                                Debug.Print("Producer ID 32899");
+                                            }
+                                            producer.Print_WS = true;
+                                            producer.Company_Name = row.Cell(5).Value.ToString();
+                                            producer.Customer_Name1 = row.Cell(6).Value.ToString();
+                                            producer.Customer_Name2 = row.Cell(7).Value.ToString();
+                                            producer.Address1 = row.Cell(8).Value.ToString();
+                                            producer.Address2 = row.Cell(9).Value.ToString();
+                                            producer.City = row.Cell(10).Value.ToString();
+                                            producer.State = row.Cell(11).Value.ToString();
+                                            producer.Zip1 = row.Cell(12).Value.ToString();
+                                            producer.Zip2 = row.Cell(13).Value.ToString();
+                                            producer.Home_Phone = row.Cell(14).Value.ToString();
+                                            producer.Work_Phone = row.Cell(15).Value.ToString();
+                                            producer.Member = row.Cell(16).Value.ToString();
+                                            producer.Phone = row.Cell(17).Value.ToString();
+                                            producer.Member = row.Cell(18).Value.ToString();
+
                                             producer.Email_WS = true;
+                                            if (!string.IsNullOrWhiteSpace(Email) && IsValidEmail(Email))
+                                            {
+                                                producer.Email_Address = Email;
+                                                producer.Email_WS = true;
+                                            }
+                                            else
+                                            {
+                                                producer.SetEmail_AddressNull();
+                                                producer.Email_WS = false;
+                                            }
+                                            nwDataset.AgvantageProducers.AddAgvantageProducersRow(producer);
+                                            producersTableAdapter.Update(nwDataset);
                                         }
-                                        else
+                                        catch (Exception ex)
                                         {
-                                            producer.SetEmail_AddressNull();
-                                            producer.Email_WS = false;
+                                            SendMessage($"Error Processing Producer {row.Cell(1).Value.ToString()} {ex.Message}", true);
                                         }
-                                        nwDataset.AgvantageProducers.AddAgvantageProducersRow(producer);
+                                        
                                         RecordsTransfered += 1;
                                     }
                                 }
                                 try
                                 {
-                                    producersTableAdapter.Update(nwDataset);
+                                    
                                     Q.UpdateProducersFromAgvantage();
                                 }
                                 catch (Exception ex)

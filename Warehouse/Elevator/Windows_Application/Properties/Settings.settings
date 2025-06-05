@@ -11,10 +11,10 @@
     <Setting Name="NW_DataConnectionString" Type="(Connection string)" Scope="Application">
       <DesignTimeValue Profile="(Default)">&lt;?xml version="1.0" encoding="utf-16"?&gt;
 &lt;SerializableConnectionString xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"&gt;
-  &lt;ConnectionString&gt;Data Source=waldb001;Initial Catalog=NW_DataDev;Persist Security Info=True;User ID=sa;Password=Scale_Us3r;TrustServerCertificate=True&lt;/ConnectionString&gt;
+  &lt;ConnectionString&gt;Data Source=.\;Initial Catalog=NW_Data;Persist Security Info=True;User ID=sa;Password=Scale_Us3r;TrustServerCertificate=True&lt;/ConnectionString&gt;
   &lt;ProviderName&gt;System.Data.SqlClient&lt;/ProviderName&gt;
 &lt;/SerializableConnectionString&gt;</DesignTimeValue>
-      <Value Profile="(Default)">Data Source=waldb001;Initial Catalog=NW_DataDev;Persist Security Info=True;User ID=sa;Password=Scale_Us3r;TrustServerCertificate=True</Value>
+      <Value Profile="(Default)">Data Source=.\;Initial Catalog=NW_Data;Persist Security Info=True;User ID=sa;Password=Scale_Us3r;TrustServerCertificate=True</Value>
     </Setting>
   </Settings>
 </SettingsFile>

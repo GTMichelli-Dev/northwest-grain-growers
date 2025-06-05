@@ -245,7 +245,7 @@ bobj.crv.ViewerListener.prototype = {
             this._isResettingParamPanel = false; 
         }, this);
         
-        this._setInteractiveParams(null, onFinishCB);
+        this._setInteractiveParams(onFinishCB);
     },
     
     _onSelectPage: function(pgTxt) {
@@ -626,13 +626,14 @@ bobj.crv.ViewerListener.prototype = {
     */
     showAdvancedParamDialog : function(param) {
         var paramOpts = this._getCommonProperty('paramOpts');
-        if(!paramOpts.canOpenAdvancedDialog) {
-            this.showError(L_bobj_crv_AdvancedDialog_NoAjax, L_bobj_crv_EnableAjax);
-        }
-        else {
-        	this._focusedParamName = param.paramName;
-            
-            if (this._isPromptingTypeFlex()) {    
+        
+        this._focusedParamName = param.paramName;
+        
+        if (this._isPromptingTypeFlex()) {  
+        	if(!paramOpts.canOpenAdvancedDialog) {
+                this.showError(L_bobj_crv_AdvancedDialog_NoAjax, L_bobj_crv_EnableAjax);
+            }
+            else {
                 var flexAdapter = bobj.crv.params.ViewerFlexParameterAdapter;
                 flexAdapter.setCurrentIParamInfo (this._name, this._paramCtrl, param);
                     
@@ -651,11 +652,12 @@ bobj.crv.ViewerListener.prototype = {
                     var closeCB = this._getPromptDialogCloseCB();
                     this._viewer.showFlexPromptDialog(this.getServletURI(), closeCB);
                 }
-            } else {
-                 /* Need to fetch the interactive parameter HTML*/
-                this._request({promptDlg: this._cloneParameter(param)}, true);    
             }
+        } else {
+             /* Need to fetch the interactive parameter HTML*/
+                this._request({promptDlg: this._cloneParameter(param)}, true);    
         }
+        
     },
     
     _cloneParameter : function(param) {
@@ -796,56 +798,60 @@ bobj.crv.ViewerListener.prototype = {
      * Create CRPrompt instances from interactive parameters in state and pass 
      * them to the Viewer widget so it can display them in the parameter panel.
      */
-    _setInteractiveParams: function(paramList, onFinishCB) {
-        if (!this._ioHandler.canUseAjax()) {
-            var paramPanel = this._viewer.getParameterPanel();
-            if (paramPanel) {
-                paramPanel.showError(L_bobj_crv_InteractiveParam_NoAjax);
-            }
-            onFinishCB();
-            return;
-        }
-        
-        if (!paramList) {
-            var stateParamList = this._getCommonProperty('iactParams');
-        
-            var unusedParamList = [];
-            if (stateParamList) {
-                var Parameter = bobj.crv.params.Parameter;
-                var paramList = [];
-            
-                for (var i = 0; i < stateParamList.length; ++i) {
-                    if (stateParamList[i].isInUse != null && !stateParamList[i].isInUse)
-                        unusedParamList.push(new Parameter(stateParamList[i]));
-                    else
-                        paramList.push(new Parameter(stateParamList[i]));
-                }
-            }
-        }
-        
-        if (paramList && paramList.length) {
-            var callback = function (viewerListener, paramList) {
-                return function () {
-                    var paramPanel = viewerListener._viewer.getParameterPanel();
-                    if (paramPanel) {
-                        var paramOpts = viewerListener._getCommonProperty('paramOpts');
-                        viewerListener._paramCtrl = new bobj.crv.params.ParameterController(paramPanel, viewerListener, paramOpts);
-                        viewerListener._paramCtrl.setParameters(paramList, onFinishCB);
-                        viewerListener._paramCtrl.setUnusedParameters(unusedParamList);
-                    }
-                }
-            }
-            
-            bobj.loadJSResourceAndExecCallBack(bobj.crv.config.resources.ParameterControllerAndDeps, callback(this, paramList));
-        }
-        else {
-            onFinishCB();
-        }
-    },
+     _setInteractiveParams : function(onFinishCB) {
+         if (!this._ioHandler.canUseAjax()) {
+             var paramPanel = this._viewer.getParameterPanel();
+             if (paramPanel) {
+                 paramPanel.showError(L_bobj_crv_InteractiveParam_NoAjax);
+             }
+             onFinishCB();
+             return;
+         }
+
+         var unusedParamList = [];
+         var usedParamList = [];
+         var paramList = this._getCommonProperty('parameterFields');
+
+         if (paramList) {
+             var Parameter = bobj.crv.params.Parameter;
+             for ( var i = 0; i < paramList.length; i++) {
+                 var param = new Parameter(paramList[i]);
+                 if (param.isInteractive())
+                     usedParamList.push(param);
+                 else
+                     unusedParamList.push(param);
+             }
+         }
+         
+         if (usedParamList && usedParamList.length) {
+             var callback = function (viewerListener, paramList, unusedParamList) {
+                 return function () {
+                     var paramPanel = viewerListener._viewer.getParameterPanel();
+                     if (paramPanel) {
+                         var paramOpts = viewerListener._getCommonProperty('paramOpts');
+                         var controller = new bobj.crv.params.ParameterController(paramPanel, viewerListener, paramOpts);
+                         controller.setParameters(paramList, onFinishCB);
+                         controller.setUnusedParameters(unusedParamList);
+                         viewerListener.setParameterController(controller);
+                     }
+                 }
+             }
+             
+             bobj.loadJSResourceAndExecCallBack(bobj.crv.config.resources.ParameterControllerAndDeps, callback(this, usedParamList, unusedParamList));
+         }
+         else {
+             onFinishCB();
+         }
+     },
     
+     
     _isPromptingTypeFlex: function() {
     	var type = this.getPromptingType();
         return (type && type.toLowerCase() == bobj.crv.Viewer.PromptingTypes.FLEX);
+    },
+    
+    setParameterController : function (controller) {
+    	this._paramCtrl = controller;
     },
     
     clearAdvancedPromptData: function() {

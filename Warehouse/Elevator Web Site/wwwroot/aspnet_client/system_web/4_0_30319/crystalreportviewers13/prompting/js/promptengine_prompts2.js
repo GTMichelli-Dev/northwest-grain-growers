@@ -631,8 +631,12 @@ if (l)
 var scrY=_getScrollY(),scrX=_getScrollX()
 var h=l.offsetHeight, winCY=_winHeight(),y=_getPos(l).y
 
-if (y<scrY) window.scrollTo(scrX, y)
-else if (y+h>scrY+winCY) window.scrollTo(scrX, Math.max(y,y+h-winCY))
+if(uid == 0)
+    window.scrollTo(scrX, 0)
+else if (y<=scrY) 
+    window.scrollTo(scrX, y)
+else if (y+h>scrY+winCY) 
+    window.scrollTo(scrX, Math.max(y,y+h-winCY))
 }
 }
 
@@ -3291,28 +3295,42 @@ function promptengine_showHidePrompt(fieldSetId, imgId, currentImgPath, changeIm
     }
 }
 
-function promptengine_scrollTo(elt)
+function promptengine_scrollTo(elt, designer, uid)
 {
     if (!elt) return; 
 
     var scrY=_getScrollY(),scrX=_getScrollX()
-
-    // Ajax
-    if (elt.form)
+    if(designer == 1)
     {
         var h=elt.form.offsetHeight, winCY=elt.form.clientHeight, y=_getPos(elt,elt.form).y
-
-        elt.form.scrollLeft=scrX;
-        if (y<scrY) elt.form.scrollTop=y;
-        else if (y+h>scrY+winCY) elt.form.scrollTop=Math.max(y,y+h-winCY);
+        
+        if(uid == 0) window.scrollTo(scrX, y)
+        else if (y<scrY) window.scrollTo(scrX, y)
+        else if (y+h>scrY+winCY) window.scrollTo(scrX, Math.max(y,y+h-winCY))
     }
-    // non-Ajax
+
     else
     {
-        var h=elt.offsetHeight, winCY=_winHeight(), y=_getPos(elt).y
+        // Ajax
+        if (elt.form)
+        {
+            var h=elt.form.offsetHeight, winCY=elt.form.clientHeight, y=_getPos(elt,elt.form).y
 
-        if (y<scrY) window.scrollTo(scrX, y)
-        else if (y+h>scrY+winCY) window.scrollTo(scrX, Math.max(y,y+h-winCY))
+            elt.form.scrollLeft=scrX;
+            
+            if(uid == 0) elt.form.scrollTop=0;
+            else if (y<scrY) elt.form.scrollTop=y;
+            else if (y+h>scrY+winCY) elt.form.scrollTop=Math.max(y,y+h-winCY);
+        }
+        // non-Ajax
+        else
+        {
+            var h=elt.offsetHeight, winCY=_winHeight(), y=_getPos(elt).y
+            
+            if(uid == 0) window.scrollTo(scrX, y)
+            else if (y<scrY) window.scrollTo(scrX, y)
+            else if (y+h>scrY+winCY) window.scrollTo(scrX, Math.max(y,y+h-winCY))
+        }
     }
 }
 

@@ -399,7 +399,6 @@ bobj.crv.PrintUI.getHTML = function(){
                                                         "<tr>" +
                                                             (_ie?"<td class='dialogTitleLevel2'><label>":"<td class='dialogTitleLevel2'><label>") + 
                                                             L_bobj_crv_PrintRangeLbl + "</label></td>" +
-                                                            "<td class='dialogTitleLevel2Underline' style='width:100%'>&nbsp;</td>" +
                                                             "</tr>" +
                                                     "</table>" +
                                                 "</legend>" +
@@ -432,7 +431,6 @@ bobj.crv.PrintUI.getHTML = function(){
                                                 "<table style='width:100%;line-height:10px;'>" +
                                                     "<tr>" +
                                                         "<td class='dialogTitleLevel2' tabIndex=0><label>" + this.infoTitle + "</label></td>" +
-                                                        "<td class='dialogTitleLevel2Underline' style='width:100%'>&nbsp;</td>" +
                                                     "</tr>" +
                                                 "</table>" +
                                                 "<div style='margin:10px 0px 10px 25px;' class='dlgHelpText'>" +
@@ -574,7 +572,6 @@ bobj.crv.ExportUI._getExportList = function() {
                 "<tr>" +
                 (_ie?"<td class='dialogTitleLevel2'><label>":"<td class='dialogTitleLevel2'><label>") + 
                 		L_bobj_crv_ExportFormatLbl + "</label></td>" +
-                    "<td class='dialogTitleLevel2Underline' style='width:100%'>&nbsp;</td>" +
                 "</tr>" +
             "</table>" + 
             "<div style='margin:10px 25px;'>" +

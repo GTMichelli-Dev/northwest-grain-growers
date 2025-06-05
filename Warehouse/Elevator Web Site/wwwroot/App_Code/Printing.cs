@@ -16,6 +16,7 @@ using System.Text;
 using System.Xml.Serialization;
 
 using System.Xml.Linq;
+using System.Activities;
 
 /// <summary>
 /// Summary description for Printing
@@ -83,7 +84,7 @@ public class Printing
     private static SelectedPrinter DocumentPrinter(string Scale, String Printer, bool Inbound, int Location_Id)
     {
         SelectedPrinter PrinterToUse = new global::Printing.SelectedPrinter();
-        
+       
 
         if (string.IsNullOrEmpty(Printer))
         {
@@ -93,10 +94,6 @@ public class Printing
                 if (ScaleUsed == null)
                 {
                     Logging.Add_System_Log("Printing.cs .PrinterName ", string.Format("Cannot Find Scale{0} For Printer", Scale), Location_Id);
-                        PrinterToUse.PrinterName = "";
-                        PrinterToUse.Enabled = false;
-                        return PrinterToUse;
-                   
                 }
                 else
                 {
@@ -179,7 +176,6 @@ public class Printing
 
                 {
                     SelectedPrinter PrintertoUse = DocumentPrinter(Scale, Printer, true, LocationId);
-                    if ( PrintertoUse == null ) return true;
                     if (PrintertoUse.Enabled)
                     {
 
@@ -254,7 +250,6 @@ public class Printing
 
 
 
-
                     }
                 }
             }
@@ -308,6 +303,29 @@ public class Printing
         }
     }
 
+    public static void SetKioskMessage(string Message, int LocationId, string PrinterName)
+    {
+
+        if (string.IsNullOrEmpty(Message)) return;
+        if (string.IsNullOrEmpty(PrinterName)) PrinterName = "";
+        
+        try
+        {
+            var prompt = Kiosk.ScalePrompts.FirstOrDefault(x => x.PrinterName.ToUpper() == PrinterName.ToUpper());
+            if (prompt == null)
+            {
+                return; // No prompt found for this printer, so we do not set a message.
+            }
+            
+            prompt.ServerMessage = Message;
+            prompt.MessageTimeOut = 5000;
+            
+        }
+        catch (Exception ex)
+        {
+            Logging.Add_System_Log("Web.Printing.SetKioskMessage", ex.Message, LocationId);
+        }
+    }
 
     public static void PrintInbound_Inyard_Ticket(HttpServerUtility server, Guid LoadUID, int LocationId, string Scale = "", string Printer = "")
     {
@@ -320,7 +338,6 @@ public class Printing
                 using (LocalDataSet  localDataSet = new LocalDataSet())
                 {
                     SelectedPrinter PrintertoUse = DocumentPrinter(Scale, Printer, true, LocationId);
-                    
                     if (PrintertoUse.Enabled)
                     {
                         using (LocalDataSetTableAdapters.vwWeigh_SheetTableAdapter vwWeigh_SheetTableAdapter = new LocalDataSetTableAdapters.vwWeigh_SheetTableAdapter())
@@ -336,7 +353,7 @@ public class Printing
                                 Inbound_Inyard_Ticket.PrintOptions.ApplyPageMargins(margins);
 
                                 PrintTicket(Inbound_Inyard_Ticket, PrintertoUse.PrinterName, 1);
-
+                                SetKioskMessage("Printing <br /> Inbound Ticket", LocationId, PrintertoUse.PrinterName);
 
 
                                 string DirectoryPath = @"c:\ScaleTickets";
@@ -465,10 +482,11 @@ public class Printing
                                 OutboundTicket.PrintOptions.ApplyPageMargins(margins);
 
 
-                                Logging.Add_System_Log("Web.Printing. PrintInbound_Final_Ticket Load UID<" + LoadUID.ToString() + "> Printer Name<" + Printer + ">", "", LocationId);
-
+                               
 
                                 PrintTicket(OutboundTicket, PrintertoUse.PrinterName, 1);
+                                SetKioskMessage("Printing <br /> Inbound Ticket", LocationId, PrintertoUse.PrinterName);
+
 
                                 // OutboundTicket.PrintToPrinter(1, false, 1, 1);
 
@@ -527,6 +545,7 @@ public class Printing
                                 OutboundInyardTicket.PrintOptions.ApplyPageMargins(margins);
                                 PrintTicket(OutboundInyardTicket, PrintertoUse.PrinterName, 1);
                                 // OutboundInyardTicket.PrintToPrinter(1, false, 1, 1);
+                                SetKioskMessage("Printing <br /> Outbound Ticket", LocationId, PrintertoUse.PrinterName);
 
 
                                 string DirectoryPath = @"c:\ScaleTickets";
@@ -597,6 +616,7 @@ public class Printing
                                     PrintTicket(OutboundTicket, PrintertoUse.PrinterName, 1);
                                     //OutboundTicket.PrintToPrinter(1, false, 1, 1);
                                 }
+                                SetKioskMessage("Printing <br /> Outbound Ticket", LocationId, PrintertoUse.PrinterName);
 
                                 string DirectoryPath = @"c:\ScaleTickets";
                                 string Filename = DirectoryPath + @"\" + LocationId.ToString() + "_" + localDataSet.vw_Outbound_Load[0].Load_Id.ToString() + ".pdf";
@@ -721,6 +741,7 @@ public class Printing
                                 OutboundTicket.PrintOptions.ApplyPageMargins(margins);
                                 // OutboundTicket.PrintToPrinter(1, false, 1, 1);
                                 PrintTicket(OutboundTicket, PrintertoUse.PrinterName, 1);
+                                SetKioskMessage("Printing <br /> In Yard Ticket", LocationId, PrintertoUse.PrinterName);
 
                                 string DirectoryPath = @"c:\ScaleTickets";
                                 string Filename = DirectoryPath + @"\" + LocationId.ToString() + "_" + localDataSet.vwTransfer_Load[0].Load_Id.ToString() + ".pdf";
@@ -818,6 +839,7 @@ public class Printing
                                 OutboundTicket.PrintOptions.ApplyPageMargins(margins);
                                 //OutboundTicket.PrintToPrinter(1, false, 1, 1);
                                 PrintTicket(OutboundTicket, PrintertoUse.PrinterName, 1);
+                                SetKioskMessage("Printing <br /> Transfer Ticket", LocationId, PrintertoUse.PrinterName);
 
 
 

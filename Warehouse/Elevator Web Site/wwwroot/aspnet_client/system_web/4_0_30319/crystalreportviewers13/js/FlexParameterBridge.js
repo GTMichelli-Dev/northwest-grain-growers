@@ -47,7 +47,7 @@ bobj.crv.params.FlexParameterBridge = {
     },
     
     getInstallHTML : function() {
-        return L_bobj_crv_FlashRequired.replace("{0}", "<br><a href='http://www.adobe.com/go/getflash/' target='_blank'>") + "</a>";
+        return L_bobj_crv_FlashRequired.replace("{0}", "<br><a href='http://www.adobe.com/go/getflash/' target='_blank' rel='noopener noreferrer'>") + "</a>";
     },
 
     checkFlashPlayer : function() {

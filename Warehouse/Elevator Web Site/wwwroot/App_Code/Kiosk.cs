@@ -1,8 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using AjaxControlToolkit.HtmlEditor.ToolbarButtons;
+using CrystalDecisions.CrystalReports.ViewerObjectModel;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
+using System.Web.Script.Services;
 using System.Web.Services;
 
 /// <summary>
@@ -10,6 +13,7 @@ using System.Web.Services;
 /// </summary>
 [WebService(Namespace = "http://NWGGSCALE.NWG/")]
 [WebServiceBinding(ConformsTo = WsiProfiles.BasicProfile1_1)]
+[ScriptService]
 // To allow this Web Service to be called from script, using ASP.NET AJAX, uncomment the following line. 
 // [System.Web.Script.Services.ScriptService]
 public class Kiosk : System.Web.Services.WebService
@@ -22,17 +26,66 @@ public class Kiosk : System.Web.Services.WebService
         //InitializeComponent(); 
     }
 
+    public class scalePrompt
+    {
+        public string ScaleDescription { get; set; } = string.Empty;
+        public string PrinterName { get; set; } = string.Empty;
+        public Guid ScaleUid { get; set; }
+        public int LocationId { get; set; } = -1;
+        public string ServerMessage { get; set; }=string.Empty;
+        public int MessageTimeOut { get; set; } = 2000;
+        public string BackColor { get; set; }= "#FFFFFF"; // Default white background color
+        public string ForeColor { get; set; } = "#000000"; // Default black text color
+
+    }
+
+    public static List<scalePrompt> ScalePrompts = new List<scalePrompt>();
+
+    [WebMethod]
+    public object GetScale(string description, int locationId ,string printerName)
+    {
+        var row = Scales.GetScale(description, locationId);
+        if (row == null) return null;
+
+        if (ScalePrompts.FirstOrDefault(ScalePrompts => ScalePrompts.ScaleDescription == description && ScalePrompts.LocationId == locationId && ScalePrompts.PrinterName== printerName) == null)
+        {
+            ScalePrompts.Add(new scalePrompt { ScaleDescription = description,PrinterName=printerName,  ScaleUid=row.UID, LocationId = locationId, ServerMessage = string.Empty  });
+        }
+        var prompt = ScalePrompts.FirstOrDefault(x => x.ScaleDescription == description && x.LocationId == locationId);
+        
+   
+        var returnValue= new
+        {
+            Description = row.Description,
+            Location_Id = row.Location_Id,
+            OK = row.OK,
+            Error_Message = row.Error_Message,
+            Weight = row.Weight,
+            Last_Update = row.Last_Update,
+            Motion = row.Motion,
+            ServerMessage=prompt.ServerMessage,
+            MessageTimeOut=prompt.MessageTimeOut,
+            BackColor= prompt.BackColor,
+            ForeColor = prompt.ForeColor,
+
+           
+        };
+        prompt.ServerMessage= string.Empty; // Clear the server message after retrieval
+        prompt.MessageTimeOut = 2000; // Reset the timeout to default after retrieval
+        return returnValue;
+    }
+
     public enum TicketStatus
     {
-        Invalid,
-        InvalidScaleUID,
-        CheckInboundTicket,
-        Complete,
-        OldTicket,
-        InvalidLocation,
-        WeightToLow,
-        TruckNotUnloaded,
-        ReadyToComplete
+        Invalid=0,
+        InvalidScaleUID=1,
+        CheckInboundTicket=2,
+        Complete=3,
+        OldTicket=4,
+        InvalidLocation=5,
+        WeightToLow=6,
+        TruckNotUnloaded=7,
+        ReadyToComplete=8
     }
 
 
@@ -269,8 +322,6 @@ public class Kiosk : System.Web.Services.WebService
         string Result = "";
         try
         {
-
-
 
             bool ValidTicket = false;
 
