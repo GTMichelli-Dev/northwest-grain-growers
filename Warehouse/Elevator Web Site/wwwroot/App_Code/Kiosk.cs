@@ -75,6 +75,40 @@ public class Kiosk : System.Web.Services.WebService
         return returnValue;
     }
 
+    //[WebMethod]
+    //public object GetScale(string description, int locationId, string printerName)
+    //{
+    //    var row = Scales.GetScale(description, locationId);
+    //    if (row == null) return null;
+
+    //    if (ScalePrompts.FirstOrDefault(ScalePrompts => ScalePrompts.ScaleDescription == description && ScalePrompts.LocationId == locationId && ScalePrompts.PrinterName == printerName) == null)
+    //    {
+    //        ScalePrompts.Add(new scalePrompt { ScaleDescription = description, PrinterName = printerName, ScaleUid = row.UID, LocationId = locationId, ServerMessage = string.Empty });
+    //    }
+    //    var prompt = ScalePrompts.FirstOrDefault(x => x.ScaleDescription == description && x.LocationId == locationId);
+
+
+    //    var returnValue = new
+    //    {
+    //        Description = row.Description,
+    //        Location_Id = row.Location_Id,
+    //        OK = row.OK,
+    //        Error_Message = row.Error_Message,
+    //        Weight = row.Weight,
+    //        Last_Update = row.Last_Update,
+    //        Motion = row.Motion,
+    //        ServerMessage = prompt.ServerMessage,
+    //        MessageTimeOut = prompt.MessageTimeOut,
+    //        BackColor = prompt.BackColor,
+    //        ForeColor = prompt.ForeColor,
+
+
+    //    };
+    //    prompt.ServerMessage = string.Empty; // Clear the server message after retrieval
+    //    prompt.MessageTimeOut = 2000; // Reset the timeout to default after retrieval
+    //    return returnValue;
+    //}
+
     public enum TicketStatus
     {
         Invalid=0,
