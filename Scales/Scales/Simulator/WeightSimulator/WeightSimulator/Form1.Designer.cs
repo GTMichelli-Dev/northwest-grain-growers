@@ -53,6 +53,7 @@
             this.ckStayOnTop = new System.Windows.Forms.CheckBox();
             this.bwScaleUpdate = new System.ComponentModel.BackgroundWorker();
             this.ddScales = new System.Windows.Forms.ComboBox();
+            this.ckAlwaysMotion = new System.Windows.Forms.CheckBox();
             this.pnlScale.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Truck)).BeginInit();
             this.panel5.SuspendLayout();
@@ -301,12 +302,24 @@
             this.ddScales.TabIndex = 19;
             this.ddScales.SelectedIndexChanged += new System.EventHandler(this.ddScales_SelectedIndexChanged);
             // 
+            // ckAlwaysMotion
+            // 
+            this.ckAlwaysMotion.AutoSize = true;
+            this.ckAlwaysMotion.Location = new System.Drawing.Point(496, 10);
+            this.ckAlwaysMotion.Name = "ckAlwaysMotion";
+            this.ckAlwaysMotion.Size = new System.Drawing.Size(94, 17);
+            this.ckAlwaysMotion.TabIndex = 20;
+            this.ckAlwaysMotion.Text = "Always Motion";
+            this.ckAlwaysMotion.UseVisualStyleBackColor = true;
+            this.ckAlwaysMotion.CheckedChanged += new System.EventHandler(this.ckAlwaysMotion_CheckedChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(806, 224);
+            this.Controls.Add(this.ckAlwaysMotion);
             this.Controls.Add(this.ddScales);
             this.Controls.Add(this.ckStayOnTop);
             this.Controls.Add(this.panel1);
@@ -367,6 +380,7 @@
         private System.Windows.Forms.CheckBox ckStayOnTop;
         private System.ComponentModel.BackgroundWorker bwScaleUpdate;
         private System.Windows.Forms.ComboBox ddScales;
+        private System.Windows.Forms.CheckBox ckAlwaysMotion;
     }
 }
 

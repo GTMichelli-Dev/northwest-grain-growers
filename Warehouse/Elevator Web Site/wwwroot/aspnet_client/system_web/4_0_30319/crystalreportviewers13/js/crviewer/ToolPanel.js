@@ -278,7 +278,9 @@ bobj.crv.ToolPanel = {
     },
     
     resize : function(w, h) {
-        bobj.setOuterSize (this.layer, w, h);
+        if (bobj.crv.Viewer.getUpdateFlag() == false || bobj.crv.Viewer.getUpdateFlag() == null){        
+            bobj.setOuterSize (this.layer, w, h);
+        }
         this._doLayout ();
 
         var width = _ie && _isQuirksMode ? this.layer.offsetWidth : this.layer.clientWidth;
@@ -287,6 +289,7 @@ bobj.crv.ToolPanel = {
         
         // do not have a percent width if we have resized the tool panel
         this.width = width;
+        bobj.crv.Viewer.resetUpdateFlag();
     },
 
     addLeftBorder : function() {

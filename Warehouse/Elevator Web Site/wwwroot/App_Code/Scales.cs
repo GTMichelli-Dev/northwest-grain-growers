@@ -78,6 +78,29 @@ public class Scales
     }
 
 
+    public static LocalDataSet.Weigh_ScalesRow GetScaleByDescription(string Description)
+    {
+        try
+        {
+            if (!ScalesInitialized) UpdateScales();
+            LocalDataSet.Weigh_ScalesRow SelectedRow = null;
+            foreach (LocalDataSet.Weigh_ScalesRow row in weigh_ScalesDataTable)
+            {
+                if (Description.ToUpper() == row.Description.ToUpper() )
+                {
+                    SelectedRow = row;
+                    break;
+                }
+            }
+            return SelectedRow;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+
 
 
 

@@ -65,8 +65,9 @@
         <div class="container body-content text-center ">
             <asp:ContentPlaceHolder ID="MainContent" runat="server">
             </asp:ContentPlaceHolder>
-            <hr />
+           
             <footer id="footer">
+                 <hr />
                 <p>&copy; <%: DateTime.Now.Year %> - NWGG</p>
             </footer>
         </div>

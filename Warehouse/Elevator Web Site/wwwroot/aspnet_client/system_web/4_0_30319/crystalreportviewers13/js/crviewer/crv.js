@@ -9,7 +9,7 @@ if (typeof(bobj.crv) == 'undefined') {
     
     // Constants used in the viewer
     bobj.crv.ActxPrintControl_CLSID = 'B7DA1CA9-1EF8-4831-868A-A767093EA685';
-    bobj.crv.ActxPrintControl_Version = '13,0,30,3805';
+    bobj.crv.ActxPrintControl_Version = '13,0,38,5404';
     
     // Configuration for ALL viewers in a page
     // TODO The dhtmllib doesn't currently suport widgets from different locales

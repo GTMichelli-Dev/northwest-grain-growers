@@ -1,5 +1,6 @@
 ﻿using AjaxControlToolkit.HtmlEditor.ToolbarButtons;
 using CrystalDecisions.CrystalReports.ViewerObjectModel;
+using Microsoft.Ajax.Utilities;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -26,12 +27,11 @@ public class Kiosk : System.Web.Services.WebService
         //InitializeComponent(); 
     }
 
-    public class scalePrompt
+    public class KioskScale
     {
         public string ScaleDescription { get; set; } = string.Empty;
         public string PrinterName { get; set; } = string.Empty;
         public Guid ScaleUid { get; set; }
-        public int LocationId { get; set; } = -1;
         public string ServerMessage { get; set; }=string.Empty;
         public int MessageTimeOut { get; set; } = 2000;
         public string BackColor { get; set; }= "#FFFFFF"; // Default white background color
@@ -39,20 +39,20 @@ public class Kiosk : System.Web.Services.WebService
 
     }
 
-    public static List<scalePrompt> ScalePrompts = new List<scalePrompt>();
+    public static List<KioskScale> KioskPrompts = new List<KioskScale>();
 
     [WebMethod]
-    public object GetScale(string description, int locationId ,string printerName)
+    public object GetScale(string description,string printerName)
     {
-        var row = Scales.GetScale(description, locationId);
+        var row = Scales.GetScaleByDescription(description);
         if (row == null) return null;
 
-        if (ScalePrompts.FirstOrDefault(ScalePrompts => ScalePrompts.ScaleDescription == description && ScalePrompts.LocationId == locationId && ScalePrompts.PrinterName== printerName) == null)
+        if (KioskPrompts.FirstOrDefault(KioskScale => KioskScale.ScaleDescription == description && KioskScale.PrinterName== printerName) == null)
         {
-            ScalePrompts.Add(new scalePrompt { ScaleDescription = description,PrinterName=printerName,  ScaleUid=row.UID, LocationId = locationId, ServerMessage = string.Empty  });
+            KioskPrompts.Add(new KioskScale { ScaleDescription = description,PrinterName=printerName,  ScaleUid=row.UID, ServerMessage = string.Empty  });
         }
-        var prompt = ScalePrompts.FirstOrDefault(x => x.ScaleDescription == description && x.LocationId == locationId);
-        
+        var prompt = KioskPrompts.FirstOrDefault(x => x.ScaleDescription == description && x.PrinterName == printerName);
+         
    
         var returnValue= new
         {
@@ -416,8 +416,7 @@ public class Kiosk : System.Web.Services.WebService
                                 }
                                 else
                                 {
-                                    if (Weight > 100 && (DateTime.Now - Loads[0].Time_In).TotalMinutes > 2)
-                                    {
+      
                                         using (LocalDataSetTableAdapters.QueriesTableAdapter Q = new LocalDataSetTableAdapters.QueriesTableAdapter())
                                         {
 
@@ -446,11 +445,7 @@ public class Kiosk : System.Web.Services.WebService
                                                 }
                                         
                                         }
-                                    }
-                                    else
-                                    {
-                                        Result = "Weight Too Low ";
-                                    }
+            
                                 }
                             }
                         }
@@ -503,6 +498,8 @@ public class Kiosk : System.Web.Services.WebService
             else
             {
                 return TicketStatus.Invalid;
+
+
             }
         }
         else
@@ -560,13 +557,10 @@ public class Kiosk : System.Web.Services.WebService
                             if (Loads[0].IsTime_OutNull())
                             {
                                 if (Math.Abs(Loads[0].Weight_In - Weight) < 1000)
-                                {
+                                {   
                                     return TicketStatus.TruckNotUnloaded;
                                 }
-                                else if ((DateTime.Now - Loads[0].Time_In).TotalMinutes < 2)
-                                {
-                                    return TicketStatus.TruckNotUnloaded;
-                                }
+                               
                                 else
                                 {
                                     return TicketStatus.ReadyToComplete;

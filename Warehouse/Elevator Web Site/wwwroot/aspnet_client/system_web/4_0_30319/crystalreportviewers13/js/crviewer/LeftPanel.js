@@ -264,23 +264,23 @@ bobj.crv.LeftPanel.prototype = {
     * @return
     */
    _doLayout : function() {
-       if(!this._toolPanel || !this._panelNavigator || !this._panelHeader)
+        if(!this._toolPanel || !this._panelNavigator || !this._panelHeader)
            return;
        
-       var w = this.getWidth ();
-       var h = this.getHeight ();
-       var navigatorW = this._panelNavigator.getWidth ();
-       var newToolPanelWidth = w - navigatorW;
-       var newToolPanelHeight = h - this._panelHeader.getHeight ();
+        var w = this.getWidth ();
+        var h = this.getHeight ();
+        var navigatorW = this._panelNavigator.getWidth ();
+        var newToolPanelWidth = w - navigatorW;
+        var newToolPanelHeight = h - this._panelHeader.getHeight ();
        
-       if (this._toolPanel.isDisplayed()) {
-           this._toolPanel.resize (newToolPanelWidth, newToolPanelHeight);
-           this._toolPanel.move (navigatorW, this._panelHeader.getHeight ());
-       }
+        if (this._toolPanel.isDisplayed()) {            
+            this._toolPanel.resize (newToolPanelWidth, newToolPanelHeight);
+            this._toolPanel.move (navigatorW, this._panelHeader.getHeight ());
+        }
        
-       this._panelHeader.resize (newToolPanelWidth, null);
-       this._panelHeader.move (navigatorW, 0);
-       this._panelNavigator.resize(navigatorW, h);
+        this._panelHeader.resize (newToolPanelWidth, null);
+        this._panelHeader.move (navigatorW, 0);
+        this._panelNavigator.resize(navigatorW, h);
    },
 
     move : Widget_move,

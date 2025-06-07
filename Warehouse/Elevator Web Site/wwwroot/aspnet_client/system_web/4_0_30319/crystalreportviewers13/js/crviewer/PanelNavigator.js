@@ -106,7 +106,7 @@ bobj.crv.PanelNavigator.prototype = {
     },
 
     resize : function(w, h) {
-        bobj.setOuterSize (this.layer, w, h);
+        bobj.setOuterSize (this.layer, w, h - 1); // to best fit the height while zoom-in over 100% in browser
         bobj.setOuterSize (this._innerBorder, w -2, h -2); //Since border size is 1px for all edges
     },
 
@@ -117,8 +117,15 @@ bobj.crv.PanelNavigator.prototype = {
         
         return height;
     },
-    
+
+    getWidth: function() {
+        var width = bobj.isBorderBoxModel() ? 39 : 37;
+        if (this.layer) {
+           return Math.min(width, this.layer.offsetWidth);
+        }
+        return width;
+    },
+
     move : Widget_move,
-    getWidth : Widget_getWidth
 
 };

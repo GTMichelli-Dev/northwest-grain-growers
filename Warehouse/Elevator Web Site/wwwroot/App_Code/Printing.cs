@@ -17,6 +17,8 @@ using System.Xml.Serialization;
 
 using System.Xml.Linq;
 using System.Activities;
+using System.IdentityModel;
+using System.Drawing.Printing;
 
 /// <summary>
 /// Summary description for Printing
@@ -121,7 +123,8 @@ public class Printing
         bool ValidPrinter = false;
         try
         {
-            foreach (string InstalledPrinter in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
+            var printers= GetInstalledPrinters();
+            foreach (string InstalledPrinter in printers)
             {
                 if (PrinterToUse.PrinterName.ToUpper() == InstalledPrinter.ToUpper())
                 {
@@ -149,6 +152,16 @@ public class Printing
         return PrinterToUse;
     }
 
+
+    public static List<string> GetInstalledPrinters()
+    {
+        var printers = new List<string>();
+        foreach (string printer in PrinterSettings.InstalledPrinters)
+        {
+            printers.Add(printer);
+        }
+        return printers;
+    }
 
 
 
@@ -303,7 +316,7 @@ public class Printing
         }
     }
 
-    public static void SetKioskMessage(string Message, int LocationId, string PrinterName)
+    public static void SetKioskMessage(string Message,string PrinterName ,string Backcolor, string Forecolor)
     {
 
         if (string.IsNullOrEmpty(Message)) return;
@@ -311,19 +324,20 @@ public class Printing
         
         try
         {
-            var prompt = Kiosk.ScalePrompts.FirstOrDefault(x => x.PrinterName.ToUpper() == PrinterName.ToUpper());
+            var prompt = Kiosk.KioskPrompts.FirstOrDefault(x => x.PrinterName.ToUpper() == PrinterName.ToUpper());
             if (prompt == null)
             {
                 return; // No prompt found for this printer, so we do not set a message.
             }
-            
+            prompt.BackColor = Backcolor;
+            prompt.ForeColor = Forecolor;
             prompt.ServerMessage = Message;
             prompt.MessageTimeOut = 5000;
             
         }
         catch (Exception ex)
         {
-            Logging.Add_System_Log("Web.Printing.SetKioskMessage", ex.Message, LocationId);
+            Logging.Add_System_Log("Web.Printing.SetKioskMessage", ex.Message);
         }
     }
 
@@ -353,7 +367,7 @@ public class Printing
                                 Inbound_Inyard_Ticket.PrintOptions.ApplyPageMargins(margins);
 
                                 PrintTicket(Inbound_Inyard_Ticket, PrintertoUse.PrinterName, 1);
-                                SetKioskMessage("Printing <br /> Inbound Ticket", LocationId, PrintertoUse.PrinterName);
+                                SetKioskMessage("Printing <br /> Inbound Ticket",  PrintertoUse.PrinterName,"Lime","Black");
 
 
                                 string DirectoryPath = @"c:\ScaleTickets";
@@ -441,7 +455,7 @@ public class Printing
                                 Zen.Barcode.CodeQrBarcodeDraw barcode = new Zen.Barcode.CodeQrBarcodeDraw();
                                 System.Drawing.Image img = barcode.Draw(sb.ToString(), 100);
 
-                                Logging.Add_System_Log("Print Inbound Final Ticket", sb.ToString());
+                                Logging.Add_System_Log("Printing <br> Ticket", sb.ToString());
 
                                 MemoryStream ms = new MemoryStream();
                                 img.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
@@ -485,7 +499,7 @@ public class Printing
                                
 
                                 PrintTicket(OutboundTicket, PrintertoUse.PrinterName, 1);
-                                SetKioskMessage("Printing <br /> Inbound Ticket", LocationId, PrintertoUse.PrinterName);
+                                SetKioskMessage("Printing <br /> Ticket",  PrintertoUse.PrinterName, "Lime", "Black");
 
 
                                 // OutboundTicket.PrintToPrinter(1, false, 1, 1);
@@ -545,7 +559,7 @@ public class Printing
                                 OutboundInyardTicket.PrintOptions.ApplyPageMargins(margins);
                                 PrintTicket(OutboundInyardTicket, PrintertoUse.PrinterName, 1);
                                 // OutboundInyardTicket.PrintToPrinter(1, false, 1, 1);
-                                SetKioskMessage("Printing <br /> Outbound Ticket", LocationId, PrintertoUse.PrinterName);
+                                SetKioskMessage("Printing <br /> Ticket",  PrintertoUse.PrinterName, "Lime", "Black");
 
 
                                 string DirectoryPath = @"c:\ScaleTickets";
@@ -616,7 +630,7 @@ public class Printing
                                     PrintTicket(OutboundTicket, PrintertoUse.PrinterName, 1);
                                     //OutboundTicket.PrintToPrinter(1, false, 1, 1);
                                 }
-                                SetKioskMessage("Printing <br /> Outbound Ticket", LocationId, PrintertoUse.PrinterName);
+                                SetKioskMessage("Printing <br /> Ticket",  PrintertoUse.PrinterName, "Lime", "Black");
 
                                 string DirectoryPath = @"c:\ScaleTickets";
                                 string Filename = DirectoryPath + @"\" + LocationId.ToString() + "_" + localDataSet.vw_Outbound_Load[0].Load_Id.ToString() + ".pdf";
@@ -741,7 +755,7 @@ public class Printing
                                 OutboundTicket.PrintOptions.ApplyPageMargins(margins);
                                 // OutboundTicket.PrintToPrinter(1, false, 1, 1);
                                 PrintTicket(OutboundTicket, PrintertoUse.PrinterName, 1);
-                                SetKioskMessage("Printing <br /> In Yard Ticket", LocationId, PrintertoUse.PrinterName);
+                                SetKioskMessage("Printing <br /> In Yard Ticket", PrintertoUse.PrinterName, "Lime", "Black");
 
                                 string DirectoryPath = @"c:\ScaleTickets";
                                 string Filename = DirectoryPath + @"\" + LocationId.ToString() + "_" + localDataSet.vwTransfer_Load[0].Load_Id.ToString() + ".pdf";
@@ -839,7 +853,7 @@ public class Printing
                                 OutboundTicket.PrintOptions.ApplyPageMargins(margins);
                                 //OutboundTicket.PrintToPrinter(1, false, 1, 1);
                                 PrintTicket(OutboundTicket, PrintertoUse.PrinterName, 1);
-                                SetKioskMessage("Printing <br /> Transfer Ticket", LocationId, PrintertoUse.PrinterName);
+                                SetKioskMessage("Printing <br /> Transfer Ticket",  PrintertoUse.PrinterName, "Lime", "Black");
 
 
 

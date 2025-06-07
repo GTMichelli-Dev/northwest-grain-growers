@@ -48,6 +48,7 @@ bobj.crv.newViewer = function(kwArgs) {
     o._reportProcessing = null;
     o._eventListeners = [];
     o._statusbar = null;
+    o._isUpdateFlag = null;
     o._leftPanelResizeGrabber = newGrabberWidget(
         o.id + '_leftPanelResizeGrabber', 
         bobj.bindFunctionToObject(bobj.crv.Viewer.onGrabberMove, o),
@@ -92,6 +93,18 @@ bobj.crv.Viewer = {
         var swf = bobj.crv.params.FlexParameterBridge.getSWF(this.id);
         if (swf)
             swf.focus();
+    },
+    
+    setUpdateFlag : function () {
+        this._isUpdateFlag = true;
+    },
+    
+    resetUpdateFlag : function () {
+        this._isUpdateFlag = false;
+    },
+    
+    getUpdateFlag : function () {
+        return this._isUpdateFlag;
     },
     
     addChild : function(widget) {
@@ -402,6 +415,7 @@ bobj.crv.Viewer = {
         } else if (Type.None == panelType) {
             MochiKit.Signal.signal (this, 'hideToolPanel');
         }
+        bobj.crv.Viewer.setUpdateFlag();
         this._leftPanelResizeGrabber.setDisplay (!(Type.None == panelType));
         this._doLayout ();
     },

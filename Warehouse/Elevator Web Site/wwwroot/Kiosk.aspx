@@ -129,224 +129,296 @@
     <div class="prompt" id="prompt"></div>
 
 
-    <script type="text/javascript">
-        let inputBuffer = "";
-        let locationId = getQueryParam('id');
-        let scaleName = getQueryParam('scale');
-        let printer = getQueryParam('printer');
-        let weight = 0;
-        let scaleStatus = "";
-        let prompt = "";
-        let ok = false;
-        let motion = false;
-        let promptTmrSet = false;
+  <script type="text/javascript">
+      let inputBuffer = "";
+      let scaleName = getQueryParam('scale');
+      let printer = getQueryParam('printer');
+      let weight = 0;
+      let scaleStatus = "";
+      let prompt = "";
+      let ok = false;
+      let motion = false;
+      let promptTmrSet = false;
+      let lockedWeight = 0;
+      let pauseDefaultMessage = false;
 
+      console.log('printer', printer);
+      console.log('scaleName', scaleName);
 
-        $(document).ready(function () {
-            $('#navBar').hide();
-            $('#footer').hide();
+      //setInterval(() => {
+      //    fetch('/heartbeat-or-status')
+      //        .then(res => {
+      //            if (!res.ok) location.reload();
+      //        })
+      //        .catch(() => location.reload());
+      //}, 30000);
 
-            getWeight()
-        });
+      $(document).ready(function () {
+          $('#navBar').hide();
+          $('#footer').hide();
+          $('img[src="nwgg.jpg"]').css('cursor', 'pointer').on('click', function () {
+              location.reload();
+          });
+          getWeight();
+      });
 
+      function resetScalevalues() {
+          weight = 0;
+          scaleStatus = "";
+          lockedWeight = 0;
+          ok = false;
+          motion = false;
+      }
 
-        function resetScalevalues(){
-            let weight = 0;
-            let scaleStatus = "";
-            
-            let ok = false;
-            let motion = false;
-        }
+      function setPrompt(message, timeOut, backcolor, forecolor) {
+          promptTmrSet = true;
+          pauseDefaultMessage= false;
+          console.log("prompt", message, "timeOut", timeOut);
+          $('#prompt').html(message);
+          $('body').css({
+              'background-color': backcolor,
+              'color': forecolor
+          });
 
-        function setPrompt(message, timeOut, backcolor,forecolor) {
-            promptTmrSet = true;
-            $('#prompt').html(message);
-            $('body').css({
-                'background-color': backcolor,
-                'color': forecolor
-            });
-            setTimeout(function () {
-                $('body').css({
-                    'background-color': 'white',
-                    'color': 'black'
-                });
-                    promptTmrSet = false;
-                
-            }, timeOut);
-        }
-       
+          setTimeout(function () {
+              if (promptTmrSet) {
+                  $('body').css({
+                      'background-color': 'white',
+                      'color': 'black'
+                  });
+                  $('#prompt').html('');
+                  promptTmrSet = false;
+                 
+              }
+          }, timeOut);
+      }
 
-        $(document).on('keyup', function (event) {
-            if (event.key === "Enter") {
-                if (ok) {
-                    
-                    $.ajax({
-                        type: "POST",
-                        url: "Kiosk.asmx/CheckTicket",
-                        data: JSON.stringify({ Ticket: inputBuffer, Weight: parseInt(weight, 10) }),
-                        contentType: "application/json; charset=utf-8",
-                        dataType: "json",
-                        success: function (response) {
-                          
-                            console.log(response.d);
-                            
-                            switch (response.d) {
-                                case 0: // Invalid
-                                    setPrompt("Invalid Ticket", 2000,"red","black"); 
-                                    break;
-                                case 1: // InvalidScaleUID
-                                    setPrompt("Invalid Scale", 2000,"red", "white"); 
-                                    break;
-                                case 2: // CheckInboundTicket
-                                    $('#status').text('Check Inbound Ticket',"dodgerblue","black");
-                                    break;
-                                case 3: // Complete
-                                    $('#status').text('Complete', "dodgerblue", "black");
-                                    break;
-                                case 4: // OldTicket
-                                    setPrompt("Ticket<br/> Already Used", 2000,"yellow", "black"); 
-                                    break;
-                                case 5: // InvalidLocation
-                                    setPrompt("Invalid Location", 2000,"yellow","black"); 
-                                   
-                                    break;
-                                case 6: // WeightToLow
-                                    setPrompt("Truck <br/>Weight Too Low", 2000,"yellow","black"); 
-                                   
-                                    break;
-                                case 7: // TruckNotUnloaded
-                                    setPrompt("Truck Not<br/> Unloaded", 2000, "yellow", "black"); 
-                                    
-                                    break;
-                                case 8: // ReadyToComplete
-                                    setPrompt("Ready To Complete", 2000, "dodgerblue", "black"); 
-                                    
-                                    break;
-                                default:
-                                    setPrompt("Unknown Error", 2000,"red","black");
-                                   
-                                    break;
-                            }
-                        },
-                        error: function (xhr, status, error) {
-                            setPrompt("Unknown Error", 2000, "red", "black");
-                        }
-                    });
-                }
-                inputBuffer = "";
-            } else if (event.key.length === 1) {
-                inputBuffer += event.key;
-            }
-        });
+      $(document).on('keyup', async function (event) {
+          if (event.key === "Enter") {
+              if (ok) {
+                  try {
+                      const response = await fetch("Kiosk.asmx/CheckTicket", {
+                          method: "POST",
+                          headers: {
+                              "Content-Type": "application/json; charset=utf-8"
+                          },
+                          body: JSON.stringify({ Ticket: inputBuffer, Weight: parseInt(weight, 10) })
+                      });
+                      if (!response.ok) throw new Error("Network response was not ok");
+                      const result = await response.json();
+                      console.log("CheckTicket result:", result);
+                      switch (result.d) {
+                          case 0: setPrompt("Invalid Ticket", 2000, "red", "white"); break;
+                          case 1: setPrompt("Invalid Scale", 2000, "red", "white"); break;
+                          case 2: setPrompt("Ticket<br/> Already Used", 2000, "yellow", "black"); break;
+                          case 3:
+                              if (lockedWeight > 0) {
+                                  await callProcessTicket(inputBuffer, weight, scaleName, printer);
+                              } else {
+                                  setPrompt("Ticket<br/> Already Used", 2000, "yellow", "black"); break;
+                              }
+                              break;
+                          case 4: setPrompt("Ticket<br/> Already Used", 2000, "yellow", "black"); break;
+                          case 5: setPrompt("Invalid Location", 2000, "yellow", "black"); break;
+                          case 6: setPrompt("Truck <br/>Weight Too Low", 2000, "yellow", "black"); break;
+                          case 7: setPrompt("Truck Not<br/> Unloaded", 2000, "yellow", "black"); break;
+                          case 8:
+                              await callProcessTicket(inputBuffer, weight, scaleName, printer);
+                              break;
+                          default: setPrompt("Unknown Error", 2000, "red", "black"); break;
+                      }
+                  } catch (error) {
+                      setPrompt("Unknown Error", 2000, "red", "black");
+                  }
+              }
+              inputBuffer = "";
+          } else if (event.key.length === 1) {
+              inputBuffer += event.key;
+          }
+      });
 
-        function getQueryParam(name) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(name);
-        }
+      async function callProcessTicket(ticket, weight, scale, printer ) {
 
-        async function getWeight() {
-           
+          try {
+              if (motion) {
+                  const noMotion = await waitForNoMotion();
+                  if (!noMotion) {
+                      setPrompt('Canceled <br/> due to <br />Motion',2000, 'red', 'white');
+                      return null;
+                  }
+              }
+              $('body').css({
+                  'background-color': '#ffbf00',
+                  'color': 'black'
+              });
+              $('#prompt').html('Checking<br/>Ticket');
+              pauseDefaultMessage = true; 
+              promptTmrSet = false;
+              console.log("Processing ticket:", ticket, "Weight:", weight, "Scale:", scale, "Printer:", printer);
+              const response = await fetch("Kiosk.asmx/ProcessTicket", {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json; charset=utf-8"
+                  },
+                  body: JSON.stringify({
+                      Ticket: ticket,
+                      Weight: parseInt(weight, 10),
+                      Scale: scale,
+                      Printer: printer
+                  })
+              });
+             
+              if (!response.ok) {
+                  
+                  setPrompt("Error Saving Load", 2000, "red", "white");
+                  throw new Error("Network response was not ok");
+              }
 
-          
-         
+              const result = await response.json();
+              lockedWeight = weight;
+              console.log("Locked Weight", lockedWeight);
+              return result.d;
+          } catch (error) {
+              setPrompt("Unknown Error", 2000, "red", "black");
+              return null;
+          }
+      }
 
-            try {
-                if (locationId && scaleName && printer) {
-                    const response = await fetch('Kiosk.asmx/GetScale', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json; charset=utf-8'
-                        },
-                        body: JSON.stringify({ description: scaleName, locationId: parseInt(locationId), printerName: printer })
-                    });
+      function getQueryParam(name) {
+          const urlParams = new URLSearchParams(window.location.search);
+          return urlParams.get(name);
+      }
 
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
+      async function waitForNoMotion(timeoutMs = 10000, intervalMs = 200) {
+          const start = Date.now();
+          setPrompt("Waiting For <br/> Scale To<br/>Settle", timeoutMs, "dodgerblue", "black");
+          while (motion && (Date.now() - start) < timeoutMs) {
+              await new Promise(resolve => setTimeout(resolve, intervalMs));
+          }
+          return !motion;
+      }
 
-                    const result = await response.json();
-                    console.log(result.d);
-                     weight = result.d.Weight;
-                     scaleStatus = result.d.Error_Message;
-                     
-                     ok = result.d.OK;
-                     motion = result.d.Motion;
-                    let serverMessage = d.ServerMessage;
-                    let messageTimeOut = d.MessageTimeOut;
-                    let backColor = d.BackColor || 'white';
-                    let foreColor = d.ForeColor || 'black';
-                    if (serverMessage && serverMessage.length > 0) {
-                        setPrompt(serverMessage, messageTimeOut, backcolor, forecolor);
-                    }
+      async function getWeight() {
+          try {
+              if (scaleName && printer) {
+                  const response = await fetch('Kiosk.asmx/GetScale', {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json; charset=utf-8'
+                      },
+                      body: JSON.stringify({ description: scaleName, printerName: printer })
+                  });
 
-                    if (ok) {
-                        $('#weight').text(weight + ' lbs');
-                        if (motion) {
-                            $('#status').text('Motion');
-                            $('.main-container').css({
-                                'background-color': 'yellow',
-                                'color': 'black'
-                            });
-                            if (weight > 10000 && ! promptTmrSet) {
-                                $('#prompt').html('Please wait<br />for the scale<br />to settle.');
-                            } 
-                                
-                        } else {
-                            if (weight > 10000 && !promptTmrSet) {
-                                $('#prompt').html('Please wait<br />for Operator<br />Or Scan Ticket');
-                            } 
-                            else if (weight < 1000 && !promptTmrSet) {
-                                $('#prompt').html('Drive On<br />Scale<br />To Continue');
-                            }
-                            $('#status').text('Ok');
-                            $('.main-container').css({
-                                'background-color': 'white',
-                                'color': 'black'
-                            });
-                        }
+                  if (!response.ok) {
+                      $('#weight').text('ERROR');
+                      $('#status').text("");
+                      $('#scaleName').text('Connection');
+                      $('#printerName').text('Error');
+                      if (!promptTmrSet) $('#prompt').html('Error connecting to server');
+                      throw new Error('Network response was not ok');
+                      
+                      //setTimeout(function () {
+                      //    location.reload()
+                      //}, 2000);
+                  }
 
-                     
-                    } else {
-                        resetScalevalues();
-                        $('.main-container').css({
-                            'background-color': 'red',
-                            'color': 'white'
-                        });
+                  const result = await response.json();
+                  weight = result.d.Weight;
+                  scaleStatus = result.d.Error_Message;
+                  ok = result.d.OK;
+                  motion = result.d.Motion;
+                  let serverMessage = result.d.ServerMessage;
+                  let messageTimeOut = result.d.MessageTimeOut;
+                  let backColor = result.d.BackColor || 'white';
+                  let foreColor = result.d.ForeColor || 'black';
 
-                        $('#weight').text('ERROR');
+                  if (serverMessage && serverMessage.length > 0) {
+                      console.log('ServerMessage', serverMessage);
+                      setPrompt(serverMessage, messageTimeOut, backColor, foreColor);
+                  }
 
-                        $('#status').text(scaleStatus);
-                        $('#prompt').html('Please contact<br />the scale operator<br />for assistance.');
-                    }
-                } else {
-                    resetScalevalues();
-                    $('.main-container').css({
-                        'background-color': 'red',
-                        'color': 'white'
-                    });
-                    $('#weight').text('ERROR');
-                    $('#status').text("");
-                    $('#scaleName').text('Missing');
-                    $('#printerName').text('Parameters');
-                    $('#prompt').html('Missing id, scale<br /> or printer<br />Parameter');
-                    console.warn('Missing id, scale or printer in query string.');
-                }
-            } catch (error) {
-                resetScalevalues();
-                $('.main-container').css({
-                    'background-color': 'red',
-                    'color': 'white'
-                });
-                $('#weight').text('ERROR');
-                $('#status').text('');
-                $('#prompt').html('error');
-                console.error('Error:', error);
-            } finally {
-                setTimeout(getWeight, 500);
-            }
-        }
+                  if (ok) {
+                      $('#scaleName').text('');
+                      $('#printerName').text('');
+                      if ((lockedWeight>0) &&( Math.abs(weight - lockedWeight) > 500)) {
+                         console.log('Weight changed significantly, resetting locked weight');
+                          lockedWeight = 0;
+                      }
 
+                      $('#weight').text(weight + ' lbs');
 
+                      if (motion) {
+                          $('#status').text('Motion');
+                          if (!promptTmrSet) {
+                             $('.main-container').css({
+                                  'background-color': 'yellow',
+                                  'color': 'black'
+                              });
+                          }
+                      } else {
+                          $('#status').text('Ok');
+                          if (!promptTmrSet) {
+                           
+                              $('.main-container').css({
+                                  'background-color': 'white',
+                                  'color': 'black'
+                              });
+                          }
+                      }
+                      if (!promptTmrSet && !pauseDefaultMessage) {
+                          if (weight > 1000) {
+                              $('#prompt').html('Please wait<br />for Operator<br />Or Scan Ticket');
+                          } else {
+                              $('#prompt').html('Drive On<br />Scale<br />To Continue');
+                          }
+                        
+                      }
+                  } else {
+                      resetScalevalues();
+                      if (!promptTmrSet) {
+                          $('.main-container').css({
+                              'background-color': 'red',
+                              'color': 'white'
+                          });
+                          $('#scaleName').text('Scale');
+                          $('#printerName').text('Error');
+                          $('#weight').text('ERROR');
+                          $('#status').text(scaleStatus);
+                          $('#prompt').html('Please contact<br />the scale operator<br />for assistance.');
+                      }
+                  }
+              } else {
+                  resetScalevalues();
+                  if (!promptTmrSet) {
+                      $('.main-container').css({
+                          'background-color': 'red',
+                          'color': 'white'
+                      });
+                      $('#weight').text('ERROR');
+                      $('#status').text("");
+                      $('#scaleName').text('Missing');
+                      $('#printerName').text('Parameters');
+                      $('#prompt').html('Missing scale<br /> or printer<br />Parameter');
+                  }
+              }
+          } catch (error) {
+              $('#scaleName').text('System');
+              $('#printerName').text('Error');
+              resetScalevalues();
+              if (!promptTmrSet) {
+                  $('.main-container').css({
+                      'background-color': 'red',
+                      'color': 'white'
+                  });
+                  $('#weight').text('ERROR');
+                  $('#status').text('');
+                  $('#prompt').html('error');
+              }
+              console.error('Error:', error);
+          } finally {
+              setTimeout(getWeight, 500);
+          }
+      }
+  </script>
 
- </script>
 </asp:Content>

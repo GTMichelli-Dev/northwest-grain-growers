@@ -295,6 +295,7 @@ bobj.crv.ViewerListener.prototype = {
     _onResizeToolPanel: function(width) {
         this._setCommonProperty('toolPanelWidth', width);
         this._setCommonProperty('toolPanelWidthUnit', 'px');
+        bobj.crv.Viewer.setUpdateFlag();
     },
     
     _onHideToolPanel: function() {
@@ -924,6 +925,7 @@ bobj.crv.ViewerListener.prototype = {
 
         if (this._reportProcessing && showIndicator) {
             this._reportProcessing.delayedShow ();
+            bobj.crv.Viewer.setUpdateFlag();
         }
         
         var deferred = this._ioHandler.request(pageState, this._name, evArgs, allowAsynch, useIframe, defaultCallback, defaultErrCallback);
@@ -978,6 +980,7 @@ bobj.crv.ViewerListener.prototype = {
                 }
                 else if (this._viewer) {
                     this._viewer.update(json.update);
+                    bobj.crv.Viewer.setUpdateFlag();
                     bobj.crv.logger.info('Update Viewer');
                 }
             }

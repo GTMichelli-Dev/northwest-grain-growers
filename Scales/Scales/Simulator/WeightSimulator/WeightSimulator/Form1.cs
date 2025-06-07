@@ -229,6 +229,10 @@ namespace WeightSimulator
 
         public void SetWeight()
         {
+           
+            if (ckAlwaysMotion.Checked) Motion = true;
+           
+          
             lblWeight.Text = CurrentWeight.ToString();
             lblMotion.Visible = Motion;
         }
@@ -322,6 +326,16 @@ namespace WeightSimulator
         private void ddScales_SelectedIndexChanged(object sender, EventArgs e)
         {
             SelectedScale = ddScales.Text;
+        }
+
+        private void ckAlwaysMotion_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!ckAlwaysMotion.Checked)
+            {
+            
+                Motion = false;
+                timer1.Stop();
+            }
         }
     }
 }
