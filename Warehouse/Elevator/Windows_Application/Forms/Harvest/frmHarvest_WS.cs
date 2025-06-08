@@ -274,6 +274,7 @@ namespace NWGrain
 
         private void CloseWeightSheet(bool CloseLot)
         {
+            var RemotePrint = SiteOptions.GetRemotePrintOriginal();
             bool LotClosed = false;
             NWDataset.vwWeight_Sheet_InformationRow SelectedRow;
             SelectedRow = (NWDataset.vwWeight_Sheet_InformationRow)(DataRow)((DataRowView)this.vwWeight_Sheet_InformationBindingSource.Current).Row;
@@ -304,7 +305,7 @@ namespace NWGrain
                             }
                         }
                     }
-                    if (Weight_Sheet.Close_Weight_Sheets(Weight_Sheet.enumFilterType.WeightSheet, SelectedRow.WS_Id,true ) == System.Windows.Forms.DialogResult.OK)
+                    if (Weight_Sheet.Close_Weight_Sheets(RemotePrint, Weight_Sheet.enumFilterType.WeightSheet, SelectedRow.WS_Id,true ) == System.Windows.Forms.DialogResult.OK)
                     {
 
                         //using (frmNumber_Of_Copies frmNumber_Of_Copies = new frmNumber_Of_Copies())
@@ -598,7 +599,8 @@ namespace NWGrain
                             SelectedRow = (NWDataset.vwWeight_Sheet_InformationRow)(DataRow)((DataRowView)this.vwWeight_Sheet_InformationBindingSource.Current).Row;
                             if (!SelectedRow.Weight_Sheet_Closed)
                             {
-                                Weight_Sheet.Close_Weight_Sheets(Weight_Sheet.enumFilterType.WeightSheet, SelectedRow.WS_Id,true);
+                                var RemotePrint = SiteOptions.GetRemotePrintOriginal();
+                                Weight_Sheet.Close_Weight_Sheets(RemotePrint, Weight_Sheet.enumFilterType.WeightSheet, SelectedRow.WS_Id,true);
                             }
                             this.DialogResult = DialogResult.OK;
                             this.Close();

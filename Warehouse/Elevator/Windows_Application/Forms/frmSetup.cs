@@ -26,7 +26,12 @@ namespace NWGrain
 
         private void LoadData()
         {
-            
+
+        
+
+            this.ckRemoteOriginal.Checked = SiteOptions.GetRemotePrintOriginal();
+            this.ckTruckType.Checked = SiteOptions.GetPromptForTruckType();
+
             this.ckAllowTareLookup.Checked = Settings.AllowTareLookup;
             this.cboManualScalePrinter.Items.Add("");
             foreach (string printer in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
@@ -153,6 +158,10 @@ namespace NWGrain
             
             if (DR == System.Windows.Forms.DialogResult.OK)
             {
+
+                SiteOptions.SetRemotePrintOriginal(this.ckRemoteOriginal.Checked);
+                SiteOptions.SetPromptForTruckType(this.ckTruckType.Checked);
+
 
                 NWDataset.WorkStation_SetupRow row = Settings.workStation_SetupRow;
                 row.Allow_Multi_Locations= this.ckAllowMultlipleLocations.Checked;

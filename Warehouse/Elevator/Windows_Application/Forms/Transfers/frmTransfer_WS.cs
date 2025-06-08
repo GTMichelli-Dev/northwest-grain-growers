@@ -198,8 +198,8 @@ namespace NWGrain
             {
                 if (Alert.Show("Close Weight Sheet?", "Confirm Close", true) == System.Windows.Forms.DialogResult.Yes)
                 {
-
-                    if (Weight_Sheet.Close_Transfer_Weight_Sheets(Weight_Sheet.enumFilterType.WeightSheet, SelectedRow.WS_Id,true) == System.Windows.Forms.DialogResult.OK)
+                    var RemotePrint = SiteOptions.GetRemotePrintOriginal();
+                    if (Weight_Sheet.Close_Transfer_Weight_Sheets(RemotePrint, Weight_Sheet.enumFilterType.WeightSheet, SelectedRow.WS_Id,true) == System.Windows.Forms.DialogResult.OK)
                     {
                         this.DialogResult = DialogResult.OK;
                         this.Close();
@@ -472,7 +472,8 @@ namespace NWGrain
                             SelectedRow = (NWDataset.vwTransfer_Weight_Sheet_InformationRow)(DataRow)((DataRowView)this.vwTransferWeight_Sheet_InformationBindingSource.Current).Row;
                             if (!SelectedRow.Closed)
                             {
-                                Weight_Sheet.Close_Transfer_Weight_Sheets(Weight_Sheet.enumFilterType.WeightSheet, SelectedRow.WS_Id, false);
+                                var RemotePrint = SiteOptions.GetRemotePrintOriginal();
+                                Weight_Sheet.Close_Transfer_Weight_Sheets(RemotePrint, Weight_Sheet.enumFilterType.WeightSheet, SelectedRow.WS_Id, false);
                                 {
                                     this.DialogResult = DialogResult.OK;
                                     this.Close();

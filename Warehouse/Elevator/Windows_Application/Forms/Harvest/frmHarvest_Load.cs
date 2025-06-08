@@ -1084,7 +1084,7 @@ namespace NWGrain
                     }
                     else
                     {
-                        SaveField(vwWeigh_SheetRow.Load_UID);
+                     //   SaveField(vwWeigh_SheetRow.Load_UID);
                         Q.Update_WS_Carrier(vwWeigh_SheetRow.Weight_Sheet_UID, Carrier_Id, BOL_Type, Miles,Settings.Location_Id );
                         Q.Update_WS_WeighMaster(vwWeigh_SheetRow.Weight_Sheet_UID, WeighMaster);
                         Q.Update_Harvest_Load(vwWeigh_SheetRow.Load_UID, this.txtTruckId.Text, BOL, Bin, Protien, Comment);
@@ -1564,20 +1564,24 @@ namespace NWGrain
         {
             if ((Load_UID != null) && (Load_UID != Guid.Empty))
             {
-                if ((pnlField.Visible) && (cboField.SelectedIndex >= 0))
+                if (SiteOptions.GetPromptForTruckType())
                 {
-                    try
+                    if (Alert.Show("Is Truck An End Dump?", "Truck Type", true) == System.Windows.Forms.DialogResult.No)
                     {
-                        using (LoadFieldDataSet1TableAdapters.QueriesTableAdapter LFQ = new LoadFieldDataSet1TableAdapters.QueriesTableAdapter())
+                        try
                         {
-                            LFQ.UpdateLoadField(cboField.Text , Load_UID);
+                            using (LoadFieldDataSet1TableAdapters.QueriesTableAdapter LFQ = new LoadFieldDataSet1TableAdapters.QueriesTableAdapter())
+                            {
+                                LFQ.UpdateLoadField("End Dump", Load_UID);
+                            }
+                        }
+                        catch
+                        {
+
                         }
                     }
-                    catch 
-                    {
-
-                    }
                 }
+                
             }
         }
 

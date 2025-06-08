@@ -885,7 +885,7 @@ namespace NWGrain
                                                                 ,Bin
                                                                 ,Protein );
                          Q.Update_Transfer_WS_Carrier(this.vwTransfer_Weight_Sheet_InformationRow.Weight_Sheet_UID, Carrier_ID, this.vwTransfer_Weight_Sheet_InformationRow.Location_Id, this.vwTransfer_Weight_Sheet_InformationRow.Source_Id);
-
+                            SaveField(Load_UID);
                         }
 
                         catch (Exception ex)
@@ -1040,6 +1040,30 @@ namespace NWGrain
         }
 
 
+        public void SaveField(Guid Load_UID)
+        {
+            if ((Load_UID != null) && (Load_UID != Guid.Empty))
+            {
+                if (SiteOptions.GetPromptForTruckType())
+                {
+                    if (Alert.Show("Is Truck An End Dump?", "Truck Type", true) == System.Windows.Forms.DialogResult.No)
+                    {
+                        try
+                        {
+                            using (LoadFieldDataSet1TableAdapters.QueriesTableAdapter LFQ = new LoadFieldDataSet1TableAdapters.QueriesTableAdapter())
+                            {
+                                LFQ.UpdateLoadField("End Dump", Load_UID);
+                            }
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+                }
+
+            }
+        }
         private void btnReprint_Click(object sender, EventArgs e)
         {
             DialogResult DR = SaveData();

@@ -156,6 +156,7 @@
     <Compile Include="Code\Settings.cs" />
     <Compile Include="Code\Globals.cs" />
     <Compile Include="Code\Lot.cs" />
+    <Compile Include="Code\SiteOptions.cs" />
     <Compile Include="Code\System_Log.cs" />
     <Compile Include="Code\Toledo_Loadout_Connection.cs" />
     <Compile Include="Code\User_Input.cs" />
@@ -500,6 +501,9 @@
     </Compile>
     <Compile Include="Forms\frmPassword.Designer.cs">
       <DependentUpon>frmPassword.cs</DependentUpon>
+    </Compile>
+    <Compile Include="OptionsDataset.cs">
+      <DependentUpon>OptionsDataset.xsd</DependentUpon>
     </Compile>
     <Compile Include="OptionsDataset.Designer.cs">
       <AutoGen>True</AutoGen>

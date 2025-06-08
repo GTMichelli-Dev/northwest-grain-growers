@@ -11,7 +11,6 @@ namespace NWGrain
         static DateTime LastUpdate;
         static string CurrentWeighmaster;
         public static  System.Drawing.Point MainPoint;
-  
         public static string Weighmaster
         {
             get

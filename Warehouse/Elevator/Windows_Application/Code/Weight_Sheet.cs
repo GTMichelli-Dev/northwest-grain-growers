@@ -36,6 +36,7 @@ namespace NWGrain
 
         public static DialogResult PrintOriginalWeightSheets(PrintingTicket PrintingTicket)
         {
+            var RemotePrint=SiteOptions.GetRemotePrintOriginal();
             DialogResult DR = DialogResult.Cancel;
             using (WeightSheetDataSetTableAdapters.AllWeightSheetsTableAdapter allWeightSheetsTableAdapter = new WeightSheetDataSetTableAdapters.AllWeightSheetsTableAdapter())
             {
@@ -43,20 +44,24 @@ namespace NWGrain
                 {
                     if (allWeightSheetsTableAdapter.FillByOriginalNotPrinted(allWeightSheetsDataTable, Settings.Location_Id) > 0)
                     {
-                        PrintingTicket.SetPrompt("Printing Original Weight Sheets");
-                        Application.DoEvents();
-                        System.Threading.Thread.Sleep(200);
+                        if (!RemotePrint)
+                        {
+                            PrintingTicket.SetPrompt("Printing Original Weight Sheets");
+                            Application.DoEvents();
+                            System.Threading.Thread.Sleep(200);
+                        }
+                     
                         
                         foreach (WeightSheetDataSet.AllWeightSheetsRow row in allWeightSheetsDataTable)
                         {
                             bool Inbound = (row.Weight_Sheet_Type.ToUpper() == "INBOUND");
                             if (Inbound)
                             {
-                                DR = Close_Weight_Sheets(enumFilterType.EndOfDay, row.WS_Id, false);
+                                DR = Close_Weight_Sheets(RemotePrint,enumFilterType.EndOfDay, row.WS_Id, false);
                             }
                             else
                             {
-                                DR = Close_Transfer_Weight_Sheets(enumFilterType.EndOfDay, row.WS_Id, false);
+                                DR = Close_Transfer_Weight_Sheets(RemotePrint,enumFilterType.EndOfDay, row.WS_Id, false);
                             }
                             if (DR != DialogResult.OK)
                             {
@@ -70,22 +75,31 @@ namespace NWGrain
                         {
 
                             Email.EmailWeightSheets(allWeightSheetsDataTable);
-                            if (Alert.Show("Did Everything Print Ok", "Printing", true) == DialogResult.Yes)
+                            if (!RemotePrint)
                             {
-                                using (WeightSheetDataSetTableAdapters.QueriesTableAdapter Q = new WeightSheetDataSetTableAdapters.QueriesTableAdapter())
-                                {
-                                    foreach (WeightSheetDataSet.AllWeightSheetsRow row in allWeightSheetsDataTable)
-                                    {
 
-                                        Q.UpdateOriginalPrinted(true, row.Weight_Sheet_UID);
-                                       
+
+                                if (Alert.Show("Did Everything Print Ok", "Printing", true) == DialogResult.Yes)
+                                {
+                                    using (WeightSheetDataSetTableAdapters.QueriesTableAdapter Q = new WeightSheetDataSetTableAdapters.QueriesTableAdapter())
+                                    {
+                                        foreach (WeightSheetDataSet.AllWeightSheetsRow row in allWeightSheetsDataTable)
+                                        {
+
+                                            Q.UpdateOriginalPrinted(true, row.Weight_Sheet_UID);
+
+                                        }
                                     }
+                                    DR = DialogResult.OK;
                                 }
-                                DR = DialogResult.OK;
+                                else
+                                {
+                                    DR = DialogResult.Cancel;
+                                }
                             }
                             else
                             {
-                                DR = DialogResult.Cancel;
+                                DR = DialogResult.OK;
                             }
                         }
                     }
@@ -104,6 +118,7 @@ namespace NWGrain
 
         public static int PrintAllTodaysWeightSheets(PrintingTicket PrintingTicket)
         {
+            var RemotePrint = SiteOptions.GetRemotePrintOriginal();
             using (WeightSheetDataSetTableAdapters.AllWeightSheetsTableAdapter allWeightSheetsTableAdapter = new WeightSheetDataSetTableAdapters.AllWeightSheetsTableAdapter())
             {
                 using (WeightSheetDataSet.AllWeightSheetsDataTable allWeightSheetsDataTable = new WeightSheetDataSet.AllWeightSheetsDataTable())
@@ -120,11 +135,11 @@ namespace NWGrain
                                 bool Inbound = (row.Weight_Sheet_Type.ToUpper() == "INBOUND");
                                 if (Inbound)
                                 {
-                                    Close_Weight_Sheets(enumFilterType.EndOfDay, row.WS_Id, true);
+                                    Close_Weight_Sheets(RemotePrint,enumFilterType.EndOfDay, row.WS_Id, true);
                                 }
                                 else
                                 {
-                                    Close_Transfer_Weight_Sheets(enumFilterType.EndOfDay, row.WS_Id, true);
+                                    Close_Transfer_Weight_Sheets(RemotePrint,enumFilterType.EndOfDay, row.WS_Id, true);
                                 }
                             }
                         }
@@ -148,7 +163,7 @@ namespace NWGrain
 
         public enum enumFilterType { EndOfDay, WeightSheet, Lot };
 
-        public static DialogResult Close_Weight_Sheets(enumFilterType Filter = enumFilterType.EndOfDay, long ID = -1, bool Unofficial = false, bool reprint = false)
+        public static DialogResult Close_Weight_Sheets(bool RemotePrint,enumFilterType Filter = enumFilterType.EndOfDay, long ID = -1, bool Unofficial = false, bool reprint = false)
         {
             DialogResult DR = DialogResult.OK;
             using (NWDatasetTableAdapters.vw_Open_Harvest_LoadsTableAdapter vw_Open_Harvest_LoadsTableAdapter = new NWDatasetTableAdapters.vw_Open_Harvest_LoadsTableAdapter())
@@ -224,7 +239,7 @@ namespace NWGrain
                                 {
                                     foreach (NWDataset.Weight_SheetsRow row in Weight_SheetsTable)
                                     {
-                                        row.Closed = true;
+                                       if (!RemotePrint) row.Closed = true;
                                         Weight_SheetsTableAdapter.Update(Weight_SheetsTable);
                                         if (Unofficial && (Filter == enumFilterType.WeightSheet || (Filter == enumFilterType.Lot )))
                                         {
@@ -236,8 +251,11 @@ namespace NWGrain
                                         }
                                         else
                                         {
-                                            System.Diagnostics.Debug.Print("Printing Weight Sheet" + row.WS_Id.ToString());
-                                            Printing.PrintWeightSheet(row.UID, Unofficial);
+                                            if (!RemotePrint)
+                                            {
+                                                System.Diagnostics.Debug.Print("Printing Weight Sheet" + row.WS_Id.ToString());
+                                                Printing.PrintWeightSheet(row.UID, Unofficial);
+                                            }
                                         }
                                     }
                                     foreach (NWDataset.Weight_SheetsRow row in Weight_SheetsTable)
@@ -256,7 +274,7 @@ namespace NWGrain
         }
 
 
-        public static DialogResult Close_Transfer_Weight_Sheets(enumFilterType Filter = enumFilterType.EndOfDay, long ID = -1, bool Unofficial = false, bool reprint = false)
+        public static DialogResult Close_Transfer_Weight_Sheets(bool RemotePrint,enumFilterType Filter = enumFilterType.EndOfDay, long ID = -1, bool Unofficial = false, bool reprint = false)
         {
             DialogResult DR = DialogResult.OK;
             using (NWDatasetTableAdapters.vw_Open_Transfer_LoadsTableAdapter vw_Open_Transfer_LoadsTableAdapter = new NWDatasetTableAdapters.vw_Open_Transfer_LoadsTableAdapter())
@@ -329,8 +347,12 @@ namespace NWGrain
                                         }
                                         else
                                         {
-                                            System.Diagnostics.Debug.Print("Printing  Transfer Weight Sheet" + row.WS_Id.ToString());
-                                            Printing.PrintTransferWeightSheet(row.UID, Unofficial);
+                                            if (!RemotePrint)
+                                            {
+                                                System.Diagnostics.Debug.Print("Printing  Transfer Weight Sheet" + row.WS_Id.ToString());
+                                                Printing.PrintTransferWeightSheet(row.UID, Unofficial);
+
+                                            }
                                         }
 
                                     }

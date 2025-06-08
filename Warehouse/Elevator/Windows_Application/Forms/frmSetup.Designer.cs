@@ -48,6 +48,8 @@
             this.nWDataset = new NWGrain.NWDataset();
             this.bwReportPrintTest = new System.ComponentModel.BackgroundWorker();
             this.bwSamplePrintTest = new System.ComponentModel.BackgroundWorker();
+            this.ckRemoteOriginal = new System.Windows.Forms.CheckBox();
+            this.ckTruckType = new System.Windows.Forms.CheckBox();
             inbound_Kiosk_PrinterLabel = new System.Windows.Forms.Label();
             label1 = new System.Windows.Forms.Label();
             label2 = new System.Windows.Forms.Label();
@@ -58,7 +60,7 @@
             // 
             // inbound_Kiosk_PrinterLabel
             // 
-            inbound_Kiosk_PrinterLabel.Location = new System.Drawing.Point(67, 419);
+            inbound_Kiosk_PrinterLabel.Location = new System.Drawing.Point(67, 449);
             inbound_Kiosk_PrinterLabel.Name = "inbound_Kiosk_PrinterLabel";
             inbound_Kiosk_PrinterLabel.Size = new System.Drawing.Size(208, 29);
             inbound_Kiosk_PrinterLabel.TabIndex = 90;
@@ -68,7 +70,7 @@
             // 
             // label1
             // 
-            label1.Location = new System.Drawing.Point(62, 462);
+            label1.Location = new System.Drawing.Point(62, 492);
             label1.Name = "label1";
             label1.Size = new System.Drawing.Size(213, 29);
             label1.TabIndex = 93;
@@ -78,7 +80,7 @@
             // 
             // label2
             // 
-            label2.Location = new System.Drawing.Point(67, 326);
+            label2.Location = new System.Drawing.Point(67, 356);
             label2.Name = "label2";
             label2.Size = new System.Drawing.Size(208, 29);
             label2.TabIndex = 96;
@@ -87,7 +89,7 @@
             // 
             // label3
             // 
-            label3.Location = new System.Drawing.Point(9, 376);
+            label3.Location = new System.Drawing.Point(9, 406);
             label3.Name = "label3";
             label3.Size = new System.Drawing.Size(266, 29);
             label3.TabIndex = 108;
@@ -123,7 +125,7 @@
             // 
             this.cboGrade_Printer.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboGrade_Printer.FormattingEnabled = true;
-            this.cboGrade_Printer.Location = new System.Drawing.Point(293, 416);
+            this.cboGrade_Printer.Location = new System.Drawing.Point(293, 446);
             this.cboGrade_Printer.Name = "cboGrade_Printer";
             this.cboGrade_Printer.Size = new System.Drawing.Size(535, 37);
             this.cboGrade_Printer.TabIndex = 91;
@@ -132,7 +134,7 @@
             // 
             this.cboReport_Printer.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboReport_Printer.FormattingEnabled = true;
-            this.cboReport_Printer.Location = new System.Drawing.Point(293, 459);
+            this.cboReport_Printer.Location = new System.Drawing.Point(293, 489);
             this.cboReport_Printer.Name = "cboReport_Printer";
             this.cboReport_Printer.Size = new System.Drawing.Size(535, 37);
             this.cboReport_Printer.TabIndex = 94;
@@ -141,6 +143,8 @@
             // 
             this.panel1.Anchor = System.Windows.Forms.AnchorStyles.Top;
             this.panel1.BackColor = System.Drawing.SystemColors.Control;
+            this.panel1.Controls.Add(this.ckTruckType);
+            this.panel1.Controls.Add(this.ckRemoteOriginal);
             this.panel1.Controls.Add(this.lblTestPrint);
             this.panel1.Controls.Add(this.button5);
             this.panel1.Controls.Add(this.button4);
@@ -159,13 +163,13 @@
             this.panel1.Controls.Add(this.btnNewLot);
             this.panel1.Location = new System.Drawing.Point(13, 14);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1007, 620);
+            this.panel1.Size = new System.Drawing.Size(1007, 647);
             this.panel1.TabIndex = 95;
             // 
             // lblTestPrint
             // 
             this.lblTestPrint.ForeColor = System.Drawing.Color.Blue;
-            this.lblTestPrint.Location = new System.Drawing.Point(288, 517);
+            this.lblTestPrint.Location = new System.Drawing.Point(288, 547);
             this.lblTestPrint.Name = "lblTestPrint";
             this.lblTestPrint.Size = new System.Drawing.Size(540, 46);
             this.lblTestPrint.TabIndex = 115;
@@ -195,7 +199,7 @@
             // ckAllowTareLookup
             // 
             this.ckAllowTareLookup.AutoSize = true;
-            this.ckAllowTareLookup.Location = new System.Drawing.Point(293, 269);
+            this.ckAllowTareLookup.Location = new System.Drawing.Point(293, 213);
             this.ckAllowTareLookup.Name = "ckAllowTareLookup";
             this.ckAllowTareLookup.Size = new System.Drawing.Size(247, 33);
             this.ckAllowTareLookup.TabIndex = 110;
@@ -206,7 +210,7 @@
             // 
             this.cboManualScalePrinter.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboManualScalePrinter.FormattingEnabled = true;
-            this.cboManualScalePrinter.Location = new System.Drawing.Point(293, 373);
+            this.cboManualScalePrinter.Location = new System.Drawing.Point(293, 403);
             this.cboManualScalePrinter.Name = "cboManualScalePrinter";
             this.cboManualScalePrinter.Size = new System.Drawing.Size(535, 37);
             this.cboManualScalePrinter.TabIndex = 109;
@@ -214,7 +218,7 @@
             // ckAllowMultlipleLocations
             // 
             this.ckAllowMultlipleLocations.AutoSize = true;
-            this.ckAllowMultlipleLocations.Location = new System.Drawing.Point(293, 230);
+            this.ckAllowMultlipleLocations.Location = new System.Drawing.Point(293, 174);
             this.ckAllowMultlipleLocations.Name = "ckAllowMultlipleLocations";
             this.ckAllowMultlipleLocations.Size = new System.Drawing.Size(369, 33);
             this.ckAllowMultlipleLocations.TabIndex = 106;
@@ -239,7 +243,7 @@
             this.cboDefaultScale.DisplayMember = "Scale";
             this.cboDefaultScale.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboDefaultScale.FormattingEnabled = true;
-            this.cboDefaultScale.Location = new System.Drawing.Point(293, 323);
+            this.cboDefaultScale.Location = new System.Drawing.Point(293, 353);
             this.cboDefaultScale.Name = "cboDefaultScale";
             this.cboDefaultScale.Size = new System.Drawing.Size(535, 37);
             this.cboDefaultScale.TabIndex = 97;
@@ -260,12 +264,32 @@
             this.bwSamplePrintTest.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bwSamplePrintTest_DoWork);
             this.bwSamplePrintTest.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bwSamplePrintTest_RunWorkerCompleted);
             // 
+            // ckRemoteOriginal
+            // 
+            this.ckRemoteOriginal.AutoSize = true;
+            this.ckRemoteOriginal.Location = new System.Drawing.Point(293, 252);
+            this.ckRemoteOriginal.Name = "ckRemoteOriginal";
+            this.ckRemoteOriginal.Size = new System.Drawing.Size(342, 33);
+            this.ckRemoteOriginal.TabIndex = 116;
+            this.ckRemoteOriginal.Text = "Remote Print The Originals";
+            this.ckRemoteOriginal.UseVisualStyleBackColor = true;
+            // 
+            // ckTruckType
+            // 
+            this.ckTruckType.AutoSize = true;
+            this.ckTruckType.Location = new System.Drawing.Point(293, 291);
+            this.ckTruckType.Name = "ckTruckType";
+            this.ckTruckType.Size = new System.Drawing.Size(253, 33);
+            this.ckTruckType.TabIndex = 117;
+            this.ckTruckType.Text = "Ask For Truck Type";
+            this.ckTruckType.UseVisualStyleBackColor = true;
+            // 
             // frmSetup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(15F, 29F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.ClientSize = new System.Drawing.Size(1032, 646);
+            this.ClientSize = new System.Drawing.Size(1032, 673);
             this.Controls.Add(this.panel1);
             this.DoubleBuffered = true;
             this.Font = new System.Drawing.Font("Arial", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -299,5 +323,7 @@
         private System.ComponentModel.BackgroundWorker bwReportPrintTest;
         private System.ComponentModel.BackgroundWorker bwSamplePrintTest;
         private System.Windows.Forms.Label lblTestPrint;
+        private System.Windows.Forms.CheckBox ckTruckType;
+        private System.Windows.Forms.CheckBox ckRemoteOriginal;
     }
 }

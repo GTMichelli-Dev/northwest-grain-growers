@@ -30,7 +30,8 @@ namespace NWGrain
 
         private void btnOk_Click(object sender, EventArgs e)
         {
-            Weight_Sheet.Close_Weight_Sheets(Weight_Sheet.enumFilterType.Lot, _Lot_ID,true );
+            var RemotePrint = SiteOptions.GetRemotePrintOriginal();
+            Weight_Sheet.Close_Weight_Sheets(RemotePrint,Weight_Sheet.enumFilterType.Lot, _Lot_ID,true );
             this.DialogResult = DialogResult.OK;
             this.Close();
         }
