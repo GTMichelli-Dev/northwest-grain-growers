@@ -98,6 +98,7 @@ namespace NWGrain
 
         private void Load_Lists()
         {
+           
             foreach (Control ctrl in this.pnlInput.Controls)
             {
                 ctrl.GotFocus += ctrl_GotFocus;
@@ -113,6 +114,36 @@ namespace NWGrain
             this.cropVarietyTableAdapter.FillByDistinctCrops(this.cropsDataSet.CropVarietyList);
             //this.cropsTableAdapter.Fill(this.nWDataset.Crops);
             this.locationsTableAdapter.Fill(this.nWDataset.Locations);
+            try
+            {
+                var transferFilters = Options.Location_Options.GetTransferFilters();
+                if (transferFilters != null)
+                {
+                    foreach (var filter in transferFilters)
+                    {
+                        if (filter.DestinationLocationId == Settings.Location_Id)
+                        {
+                            // Remove the location row with Location_Id == filter.SourceLocationId
+                            var rowsToRemove = nWDataset.Locations
+                                .Where(loc => loc.Id == filter.SourceLocationId)
+                                .ToList();
+
+                            foreach (var row in rowsToRemove)
+                            {
+                                nWDataset.Locations.RemoveLocationsRow(row);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logging.Add_System_Log("frmTransfer_Weight_Sheet_Details.Load_Lists", ex.Message.ToString());
+
+
+            }
+          
+
             this.cbo_Crop.SelectedIndex = -1;
             this.cboSource.SelectedIndex = -1;
             this.cboVariety.SelectedIndex = -1;

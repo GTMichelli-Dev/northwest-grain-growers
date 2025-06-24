@@ -159,6 +159,7 @@
     <Compile Include="Code\SiteOptions.cs" />
     <Compile Include="Code\System_Log.cs" />
     <Compile Include="Code\Toledo_Loadout_Connection.cs" />
+    <Compile Include="Code\TransferFilterDto.cs" />
     <Compile Include="Code\User_Input.cs" />
     <Compile Include="Code\WeightSheetHaulerRate.cs" />
     <Compile Include="Code\Weight_Sheet.cs" />

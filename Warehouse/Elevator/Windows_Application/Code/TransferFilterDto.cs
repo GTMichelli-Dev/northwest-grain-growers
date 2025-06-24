@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace EFOptions.Dto
+namespace NWGrain
 {
 
     public partial class TransferFilterDto
@@ -11,15 +11,15 @@ namespace EFOptions.Dto
     {
         public Guid Uid { get; set; }
 
-       
+
 
         public int SourceLocationId { get; set; }
-       
+
         public int DestinationLocationId { get; set; }
 
         public string SourceDescription { get; set; }
         public string DestinationDescription { get; set; }
 
-        
+
     }
 }

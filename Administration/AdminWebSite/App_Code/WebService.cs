@@ -1,4 +1,11 @@
-﻿using System;
+﻿using BinData;
+using DocumentFormat.OpenXml.Drawing.ChartDrawing;
+using EFOptions.Dto;
+using EFOptions.Models;
+using Microsoft.Identity.Client;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Schema;
+using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Validation;
@@ -10,11 +17,6 @@ using System.Web.Mvc;
 using System.Web.Script.Serialization;
 using System.Web.Script.Services;
 using System.Web.Services;
-using BinData;
-using Newtonsoft.Json;
-using EFOptions.Dto;
-using Microsoft.Identity.Client;
-using Newtonsoft.Json.Schema;
 
 /// <summary>
 /// Summary description for WebService
@@ -50,21 +52,21 @@ public class WebService : System.Web.Services.WebService
         }
     }   
 
-    [WebMethod]
-    public string GetLocationLicenseType()
-    {
-        Options options = new Options();
+    //[WebMethod]
+    //public string GetLocationLicenseType()
+    //{
+    //    Options options = new Options();
 
-        options.EnsureAllLocationsHaveLicensedOption();  // sync version
-        var list = options.LoadLocationLicenseDtos();    // sync version
+    //    options.EnsureAllLocationsHaveLicensedOption();  // sync version
+    //    var list = options.LoadLocationLicenseDtos();    // sync version
 
-        var json = JsonConvert.SerializeObject(list, Formatting.Indented, new JsonSerializerSettings
-        {
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        });
+    //    var json = JsonConvert.SerializeObject(list, Formatting.Indented, new JsonSerializerSettings
+    //    {
+    //        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+    //    });
 
-        return json;
-    }
+    //    return json;
+    //}
 
 
     [WebMethod]
@@ -83,6 +85,109 @@ public class WebService : System.Web.Services.WebService
         return json;
     }
 
+
+
+    [WebMethod]
+    public string GetLocations()
+    {
+        
+        using (var context = new NW_DataContext())
+        {
+            var locations = context.Locations.Select(x => new LocationDTO
+            {
+                Uid = x.Uid,
+                Id=x.Id,
+                Description = x.Description,
+                Active = x.Active,
+                District = x.District,
+              
+
+            }).OrderBy(x => x.Description).ToList();
+            var json = JsonConvert.SerializeObject(locations, Formatting.Indented, new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            });
+
+            return json;
+        }
+
+       
+
+      
+    }
+
+
+    [WebMethod]
+    public AjaxResponse AddNewLocationFilter(int FromLocationId,string FromDescription ,int ToLocationId ,string ToDescription)
+    {
+        var ar = new AjaxResponse();
+        try
+        {
+
+            var options = new Options();    
+            var locationFilters = options.GetLocationFilters();
+            if (locationFilters.Any(x => x.SourceLocationId == FromLocationId && x.DestinationLocationId == ToLocationId))
+            {
+                ar.Message = $"Filter already From {FromDescription} To {ToDescription} exists.";
+                ar.Success = true;
+                return ar;
+            }
+            locationFilters.Add(new TransferFilterDto
+            {
+                Uid = Guid.NewGuid(),
+                SourceLocationId = FromLocationId,
+                DestinationLocationId = ToLocationId,
+                SourceDescription = FromDescription,
+                DestinationDescription = ToDescription
+            }); 
+            options.SaveTransferFilters(locationFilters);
+            return new AjaxResponse
+            {
+                Success = true,
+                Message = $"Filter added From {FromDescription} To {ToDescription}."
+            };
+        }
+        catch (DbEntityValidationException e)
+        {
+            ar.Message = ValidationErrors.getValidationErrors(e);
+        }
+        catch (Exception ex)
+        {
+            ar.Message = ex.Message + "<br/>" + ex.GetBaseException().Message;
+        }
+        return ar;
+    }
+
+
+    [WebMethod]
+    public AjaxResponse DeleteLocationFilter(Guid UID)
+    {
+        var ar = new AjaxResponse();
+        try
+        {
+
+            var options = new Options();
+            var locationFilters = options.GetLocationFilters();
+            locationFilters.RemoveAll(x => x.Uid == UID);
+            
+
+            options.SaveTransferFilters(locationFilters);
+            return new AjaxResponse
+            {
+                Success = true,
+                Message = $"Filter removed."
+            };
+        }
+        catch (DbEntityValidationException e)
+        {
+            ar.Message = ValidationErrors.getValidationErrors(e);
+        }
+        catch (Exception ex)
+        {
+            ar.Message = ex.Message + "<br/>" + ex.GetBaseException().Message;
+        }
+        return ar;
+    }
 
 
     [WebMethod]

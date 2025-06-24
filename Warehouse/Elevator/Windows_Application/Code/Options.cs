@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +13,7 @@ namespace NWGrain
 
         public class WorkStation_Options
         {
-           
+
 
 
             private static OptionsDataset.WorkStation_OptionsDataTable workStation_OptionsDataTable;
@@ -33,13 +34,13 @@ namespace NWGrain
 
             public static OptionsDataset.WorkStation_OptionsRow GetWorkStationOption(string Description)
             {
-               
-                    workStation_OptionsDataTable = new NWGrain.OptionsDataset.WorkStation_OptionsDataTable();
-                    using (OptionsDatasetTableAdapters.WorkStation_OptionsTableAdapter workStation_OptionsTableAdapter = new OptionsDatasetTableAdapters.WorkStation_OptionsTableAdapter())
-                    {
-                        workStation_OptionsTableAdapter.FillByServerDescription(workStation_OptionsDataTable, Description, Environment.MachineName);
-                    }
-               
+
+                workStation_OptionsDataTable = new NWGrain.OptionsDataset.WorkStation_OptionsDataTable();
+                using (OptionsDatasetTableAdapters.WorkStation_OptionsTableAdapter workStation_OptionsTableAdapter = new OptionsDatasetTableAdapters.WorkStation_OptionsTableAdapter())
+                {
+                    workStation_OptionsTableAdapter.FillByServerDescription(workStation_OptionsDataTable, Description, Environment.MachineName);
+                }
+
                 if (workStation_OptionsDataTable.Count > 0)
                 {
                     return workStation_OptionsDataTable[0];
@@ -56,7 +57,7 @@ namespace NWGrain
                 {
                     using (OptionsDatasetTableAdapters.WorkStation_OptionsTableAdapter workStation_OptionsTableAdapter = new OptionsDatasetTableAdapters.WorkStation_OptionsTableAdapter())
                     {
-                        workStation_OptionsTableAdapter.FillByServerDescription(workStation_OptionsDataTable, Description,Environment.MachineName);
+                        workStation_OptionsTableAdapter.FillByServerDescription(workStation_OptionsDataTable, Description, Environment.MachineName);
 
 
                         if (workStation_OptionsDataTable.Count > 0)
@@ -127,6 +128,44 @@ namespace NWGrain
                 }
                 return Location_OptionsDataTable;
             }
+
+
+
+            public static List<TransferFilterDto> GetTransferFilters()
+            {
+                using (var Location_OptionsDataTable = new NWGrain.OptionsDataset.Location_OptionsDataTable())
+                {
+                    using (OptionsDatasetTableAdapters.Location_OptionsTableAdapter Location_OptionsTableAdapter = new OptionsDatasetTableAdapters.Location_OptionsTableAdapter())
+                    {
+                        if (Location_OptionsTableAdapter.FillByLocationDescription(Location_OptionsDataTable, 0, "TransferFilter") == 0)
+                        {
+                            return new List<TransferFilterDto> { new TransferFilterDto() };
+                        }
+
+
+
+                        List<TransferFilterDto> transferFilters;
+                        try
+                        {
+                            transferFilters = JsonConvert.DeserializeObject<List<TransferFilterDto>>(Location_OptionsDataTable[0].Value);
+                            return transferFilters ?? new List<TransferFilterDto>();
+                        }
+                        catch
+                        {
+                            // If deserialization fails, return a list with a new TransferFilterDto
+                            return new List<TransferFilterDto> { new TransferFilterDto() };
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+
+
+
 
             public static OptionsDataset.Location_OptionsDataTable GetLocationOptions(int Location_Id)
             {

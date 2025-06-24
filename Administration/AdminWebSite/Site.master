@@ -67,6 +67,7 @@
                                 <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="dropdown04T">Sites<span class="caret"></span></a>
                                 <div class="dropdown-menu" aria-labelledby="dropdown04T">
                                     <a class="dropdown-item" href="/Locations/Locations">Locations</a>
+                                     <a class="dropdown-item" href="/Server/LocationsFilter">Location Filters</a>
                                     <a class="dropdown-item" href="/Setup/CurrentFuelPrice">Current Fuel Price</a>
                                     <a class="dropdown-item" href="/Bins/Bins">Bins</a>
                                 </div>
@@ -136,7 +137,7 @@
                                     </asp:PlaceHolder>
                                     <a class="dropdown-item" href="/Misc/LastLoadReported">Last Load Update</a>
                                     <a class="dropdown-item" href="/Server/Servers">Servers</a>
-                                    <a class="dropdown-item" href="/Server/Locations">Locations</a>
+                                   
                                 </div>
                             </li>
                         </asp:PlaceHolder>
