@@ -18,6 +18,10 @@ namespace NWGrain
         {
             this.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             IncludeToday = ShowToday; 
             UpdateData();    
 

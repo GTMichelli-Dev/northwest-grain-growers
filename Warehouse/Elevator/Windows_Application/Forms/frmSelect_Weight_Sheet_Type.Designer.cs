@@ -109,7 +109,10 @@
             this.Font = new System.Drawing.Font("Arial", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.Name = "frmSelect_Weight_Sheet_Type";
+            this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Load += new System.EventHandler(this.frmSelect_Weight_Sheet_Type_Load);
             this.panel1.ResumeLayout(false);

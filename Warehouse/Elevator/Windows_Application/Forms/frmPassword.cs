@@ -16,6 +16,10 @@ namespace NWGrain
         public frmPassword()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             Pass = Properties.Settings.Default.SetupPassword.ToLower();
         }
 
@@ -23,6 +27,10 @@ namespace NWGrain
         public frmPassword(string Password)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             this.panel1.Enabled = false;
             Pass = Password.ToLower();
             Point p = new Point(Program.FrmMain .Location.X + (Program.FrmMain.Width / 2 - this.Width / 2), Program.FrmMain.Location.Y + (Program.FrmMain.Height / 2 - this.Height / 2));

@@ -20,7 +20,10 @@ namespace NWGrain
         {
 
             InitializeComponent();
-
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             WS_UID = Weight_Sheet_UID;
             UpdateData();
             Wait = false;

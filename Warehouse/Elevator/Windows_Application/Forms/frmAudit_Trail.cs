@@ -14,6 +14,10 @@ namespace NWGrain
         public frmAudit_Trail()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
         }
 
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)

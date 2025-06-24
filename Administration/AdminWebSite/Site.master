@@ -136,6 +136,7 @@
                                     </asp:PlaceHolder>
                                     <a class="dropdown-item" href="/Misc/LastLoadReported">Last Load Update</a>
                                     <a class="dropdown-item" href="/Server/Servers">Servers</a>
+                                    <a class="dropdown-item" href="/Server/Locations">Locations</a>
                                 </div>
                             </li>
                         </asp:PlaceHolder>

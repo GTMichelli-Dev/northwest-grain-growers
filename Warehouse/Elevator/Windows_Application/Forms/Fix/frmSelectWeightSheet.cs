@@ -19,6 +19,10 @@ namespace NWGrain.Forms.Fix
         public frmSelectWeightSheet(bool transfer)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             Transfer = transfer;
            
             this.weightSheetsForSelectionTableAdapter.Fill(this.nWDataset.WeightSheetsForSelection, Settings.Location_Id);

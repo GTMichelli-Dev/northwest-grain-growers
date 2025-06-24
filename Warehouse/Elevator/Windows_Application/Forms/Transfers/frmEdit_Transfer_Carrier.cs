@@ -19,6 +19,10 @@ namespace NWGrain
         public frmEdit_Transfer_Carrier(Guid Weight_Sheet_UID ,int? CarrierId,int SourceId,int LocationId)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             Source_Id = SourceId;
             Location_Id = LocationId;
             

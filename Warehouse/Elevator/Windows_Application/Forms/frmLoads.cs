@@ -15,6 +15,11 @@ namespace NWGrain
         public frmLoads()
         {
             InitializeComponent();
+
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             this.cropsTableAdapter.Fill(this.nWDataset.Crops);
             this.producer_SourceSelectionTableAdapter.Fill(this.nWDataset.Producer_SourceSelection, Settings.Location_Id);
             this.cboCrop.SelectedIndex = -1;

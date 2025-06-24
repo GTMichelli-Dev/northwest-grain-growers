@@ -18,6 +18,10 @@ namespace NWGrain
         public frmOpen_Harvest_Loads(Weight_Sheet.enumFilterType Weight_Sheet_Filter_Type = Weight_Sheet.enumFilterType.EndOfDay, long Index = -1)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             Filter = Weight_Sheet_Filter_Type;
             ID = Index;
             UpdateData();

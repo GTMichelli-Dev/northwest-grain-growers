@@ -12,6 +12,9 @@ using System.Web.Script.Services;
 using System.Web.Services;
 using BinData;
 using Newtonsoft.Json;
+using EFOptions.Dto;
+using Microsoft.Identity.Client;
+using Newtonsoft.Json.Schema;
 
 /// <summary>
 /// Summary description for WebService
@@ -30,6 +33,55 @@ public class WebService : System.Web.Services.WebService
         //InitializeComponent(); 
     }
 
+
+    [WebMethod]
+    public void UpdateLicensedStatus(Guid uid, bool licensed)
+    {
+        using (var context = new EFOptions.Models.NW_DataContext())
+        {
+            var option = context.LocationOptions
+                .FirstOrDefault(lo => lo.Uid == uid && lo.Description == "Licensed");
+
+            if (option != null)
+            {
+                option.Value = licensed ? "True" : "False";
+                context.SaveChanges();
+            }
+        }
+    }   
+
+    [WebMethod]
+    public string GetLocationLicenseType()
+    {
+        Options options = new Options();
+
+        options.EnsureAllLocationsHaveLicensedOption();  // sync version
+        var list = options.LoadLocationLicenseDtos();    // sync version
+
+        var json = JsonConvert.SerializeObject(list, Formatting.Indented, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
+
+        return json;
+    }
+
+
+    [WebMethod]
+    public string GetLocationFilters()
+    {
+        Options options = new Options();
+
+        
+        var list = options.GetLocationFilters();    // sync version
+
+        var json = JsonConvert.SerializeObject(list, Formatting.Indented, new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        });
+
+        return json;
+    }
 
 
 

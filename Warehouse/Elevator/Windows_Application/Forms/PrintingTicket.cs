@@ -18,6 +18,10 @@ namespace NWGrain
 
           
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             if (!string.IsNullOrEmpty(Prompt))
             {
                 this.label1.Text = Prompt;

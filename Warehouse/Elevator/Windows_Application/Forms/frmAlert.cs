@@ -14,6 +14,10 @@ namespace NWGrain
         public frmAlert(string Prompt,string Header="",bool ShowYesNo_Buttons = false)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             this.lblHeader.Text = Header;
             this.lblPrompt.Text = Prompt;
             this.btnOk.Visible = !ShowYesNo_Buttons;

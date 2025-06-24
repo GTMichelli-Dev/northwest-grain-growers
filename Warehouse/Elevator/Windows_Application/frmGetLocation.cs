@@ -14,6 +14,10 @@ namespace NWGrain
         public frmGetLocation()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
         }
 
         private void panel1_Paint(object sender, PaintEventArgs e)

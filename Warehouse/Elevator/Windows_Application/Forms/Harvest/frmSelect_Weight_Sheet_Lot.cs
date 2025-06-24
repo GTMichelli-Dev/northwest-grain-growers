@@ -21,7 +21,10 @@ namespace NWGrain.Harvest_Lot
         {
             InitializeComponent();
 
-
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
 
             Wait = true;
    

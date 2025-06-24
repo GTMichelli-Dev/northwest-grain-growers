@@ -16,6 +16,10 @@ namespace NWGrain
         public SelectBin(string CurrentBin,string Ticket,bool ShowTicket=false )
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             SelectedBin = CurrentBin;
             this.binListTableAdapter.Fill(this.nWDataset.BinList,Settings.Location_Id );
             
@@ -32,6 +36,10 @@ namespace NWGrain
         public SelectBin(string CurrentBin,string SourceDescription,int SourceLocation, string Ticket, bool ShowTicket = false)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             SelectedBin = CurrentBin;
             this.binListTableAdapter.Fill(this.nWDataset.BinList, SourceLocation);
             label1.BackColor = Color.LightYellow;

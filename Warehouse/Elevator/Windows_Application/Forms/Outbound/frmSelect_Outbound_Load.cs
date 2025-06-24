@@ -26,6 +26,10 @@ namespace NWGrain
         public frmSelect_Outbound_Load()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             Reset_Filter(true);
             this.vwOutboundLoadBindingSource.Position = -1;
             

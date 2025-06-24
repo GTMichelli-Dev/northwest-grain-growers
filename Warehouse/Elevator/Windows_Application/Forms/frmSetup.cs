@@ -18,6 +18,10 @@ namespace NWGrain
         public frmSetup()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             LoadData();
    
             

@@ -14,6 +14,10 @@ namespace NWGrain
         public TareLookup()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             this.truckTareListTableAdapter.Fill(this.listsDataSet.TruckTareList, Settings.Location_Id, 1);
         }
 

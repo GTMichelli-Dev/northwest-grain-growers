@@ -17,6 +17,10 @@ namespace NWGrain
         public frmConfirmCloseLot(long Lot_Id, Guid Lot_UID)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             _Lot_ID = Lot_Id;
             _Lot_UID = Lot_UID;
             this.label1.Text = string.Format("There Are Open Weight Sheets For Lot {0}" + System.Environment.NewLine + "Do You Want To Close Them?",Lot_Id);

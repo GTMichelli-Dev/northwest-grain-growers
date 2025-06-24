@@ -48,8 +48,8 @@ namespace NWGrain
                 UpdateChecked = true;
             }
             
-            this.WindowState = FormWindowState.Normal;
-            this.Show();
+            //this.WindowState = FormWindowState.Normal;
+            //this.Show();
             this.BringToFront();
             this.TopMost=false;
         }

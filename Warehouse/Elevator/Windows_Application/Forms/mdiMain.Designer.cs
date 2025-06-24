@@ -57,6 +57,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "mdiMain";
             this.TopMost = true;
+            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Activated += new System.EventHandler(this.mdiMain_Activated);
             this.Load += new System.EventHandler(this.mdiMain_Load);
             this.ResumeLayout(false);

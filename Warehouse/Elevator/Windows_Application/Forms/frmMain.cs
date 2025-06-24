@@ -139,13 +139,13 @@ namespace NWGrain
                 Initialize_Location();
                 UpdateInfo.UpdatePath = Properties.Settings.Default.UpdatePath;
                 UpdateInfo.ProgramName = "NWGrain.exe";
-             
+
                 StartGridUpdate();
                 Scales.Connect();
                 Globals.MainPoint = this.Location;
             }
+            this.TopMost = false;
 
-            
             UpdateData();
         }
 
@@ -225,7 +225,7 @@ namespace NWGrain
             StopGridUpdate();
           
 
-            using (frmSelect_Weight_Sheet_Type frmSelect_Weight_Sheet_Type = new frmSelect_Weight_Sheet_Type())
+            using (frmSelect_Weight_Sheet_Type frmSelect_Weight_Sheet_Type = new frmSelect_Weight_Sheet_Type(Program.frmMdiMain))
             {
                 if (frmSelect_Weight_Sheet_Type.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {

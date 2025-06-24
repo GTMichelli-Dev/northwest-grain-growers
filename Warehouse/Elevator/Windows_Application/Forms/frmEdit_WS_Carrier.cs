@@ -26,6 +26,10 @@ namespace NWGrain
             Current_Weight_Sheet_UID = Weight_Sheet_UID;
             Startup = true;
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             foreach (Control ctrl in this.pnlInput.Controls)
             {
                 ctrl.GotFocus += ctrl_GotFocus;

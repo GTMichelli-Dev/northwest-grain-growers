@@ -14,6 +14,10 @@ namespace NWGrain.Forms
         public Loading()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
         }
 
         private void Loading_Resize(object sender, EventArgs e)

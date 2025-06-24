@@ -14,6 +14,10 @@ namespace NWGrain
         public frmSupervisor_Selection()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
         }
 
         private void button1_Click(object sender, EventArgs e)

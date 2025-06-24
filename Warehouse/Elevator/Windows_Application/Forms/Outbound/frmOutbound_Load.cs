@@ -24,6 +24,10 @@ namespace NWGrain
         public frmOutbound_Load()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             Load_Lists();
             pnlEdit.Visible = false;
             this.cboWeighMaster.Text = Globals.Weighmaster;
@@ -45,6 +49,10 @@ namespace NWGrain
         public frmOutbound_Load(Guid Outbound_UID)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             this.Outbound_Load_UID = Outbound_UID;
             this.vw_Outbound_LoadTableAdapter.FillByUID(this.nWDataset.vw_Outbound_Load, Outbound_UID);
             this.vw_Outbound_LoadRow = this.nWDataset.vw_Outbound_Load[0];

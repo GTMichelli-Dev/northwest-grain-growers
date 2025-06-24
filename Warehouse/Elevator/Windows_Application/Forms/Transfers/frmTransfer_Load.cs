@@ -109,6 +109,10 @@ namespace NWGrain
         public frmTransfer_Load(Guid Weight_Sheet_UID )
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             this.Weight_Sheet_UID = Weight_Sheet_UID;
             Load_Lists();
             CurrentBinName = string.Empty;
@@ -158,6 +162,10 @@ namespace NWGrain
         public frmTransfer_Load(Guid Weight_Sheet_UID,Guid Selected_Load_UID, bool ViewOnly)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             GetLoadValues(Weight_Sheet_UID, Selected_Load_UID, ViewOnly);
         }
 
@@ -1046,18 +1054,19 @@ namespace NWGrain
             {
                 if (SiteOptions.GetPromptForTruckType())
                 {
-                    if (Alert.Show("Is Truck An End Dump?", "Truck Type", true) == System.Windows.Forms.DialogResult.No)
+                    var result = Alert.Show("Is Truck An End Dump?", "Truck Type", true);
+                    if (result == System.Windows.Forms.DialogResult.Yes)
                     {
                         try
                         {
                             using (LoadFieldDataSet1TableAdapters.QueriesTableAdapter LFQ = new LoadFieldDataSet1TableAdapters.QueriesTableAdapter())
                             {
-                                LFQ.UpdateLoadField("End Dump", Load_UID);
+                                LFQ.UpdateLoadField("ED", Load_UID);
                             }
                         }
                         catch
                         {
-
+                          
                         }
                     }
                 }

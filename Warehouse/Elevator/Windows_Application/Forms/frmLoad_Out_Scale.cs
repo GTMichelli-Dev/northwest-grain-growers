@@ -20,6 +20,10 @@ namespace NWGrain
         public frmLoad_Out_Scale(Guid Load_UID)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             using (NWDatasetTableAdapters.LoadsTableAdapter LoadsTableAdapter = new NWDatasetTableAdapters.LoadsTableAdapter())
             {
 

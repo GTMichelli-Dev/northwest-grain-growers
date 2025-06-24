@@ -26,6 +26,10 @@ namespace NWGrain
         public frmTransfer_Weight_Sheet_Details()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             Load_Lists();
             this.cbo_Crop.SelectedIndex = -1;
             this.cbo_Crop.Text = "";
@@ -42,6 +46,10 @@ namespace NWGrain
         public frmTransfer_Weight_Sheet_Details(Guid Transfer_Weight_Sheet_UID )
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             Load_Lists();
             this.UpdateData(Transfer_Weight_Sheet_UID);
             this.lblPrompt.Text = "Transfer Weight Sheet";

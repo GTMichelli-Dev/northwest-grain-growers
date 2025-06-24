@@ -15,6 +15,10 @@ namespace NWGrain
         public frmLot_Weight_Sheets(Guid Lot_UID)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             this.vwWeight_Sheet_InformationTableAdapter.FillByLot_UID(this.nWDataset.vwWeight_Sheet_Information, Lot_UID,Settings.Location_Id );
             this.cboFilter.SelectedIndex = 0;
             this.label2.Text = this.nWDataset.vwWeight_Sheet_Information[0].Lot_Number.ToString();

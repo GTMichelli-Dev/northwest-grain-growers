@@ -14,6 +14,10 @@ namespace NWGrain
         public TodaysLoads()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             todaysLoadsTableAdapter.Fill(this.nWDataset.TodaysLoads, Settings.Location_Id);
         }
 

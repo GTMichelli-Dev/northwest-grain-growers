@@ -14,6 +14,10 @@ namespace NWGrain
         public frmShadow()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
         }
     }
 }

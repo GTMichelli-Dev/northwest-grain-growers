@@ -14,6 +14,10 @@ namespace NWGrain
         public ClosedLotsReport()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
 
             this.dtDateStart.Value = DateTime.Now;
             this.dtDateEnd.Value = DateTime.Now;

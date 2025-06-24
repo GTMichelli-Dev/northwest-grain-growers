@@ -14,6 +14,10 @@ namespace NWGrain
         public frmSiteLog()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
         }
 
         private void frmSiteLog_Load(object sender, EventArgs e)

@@ -23,6 +23,10 @@ namespace NWGrain
         public frmSplit_Weigh(string scaleDescription, Guid LoadUID )
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             inbound = (LoadUID == Guid.Empty );
             if (!inbound)
             {

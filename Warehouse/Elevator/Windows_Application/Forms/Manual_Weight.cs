@@ -21,6 +21,10 @@ namespace NWGrain
         public Manual_Weight(string Prompt,int DefaultWt,long? Load_Id , long Weight_Sheet_Id ,bool Ask_Why= true )
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             AskWhy = Ask_Why;
             TypeOfLoad = enumWeighType.HarvestLoad;
             if (Load_Id == null)
@@ -45,6 +49,10 @@ namespace NWGrain
         public Manual_Weight(string Prompt, int DefaultWt,bool Ask_Why= true )
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             AskWhy = Ask_Why;
             TypeOfLoad = enumWeighType.HarvestLoad;
             this.lblPrompt.Text = Prompt;

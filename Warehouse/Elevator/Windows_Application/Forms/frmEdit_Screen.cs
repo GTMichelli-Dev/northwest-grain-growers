@@ -18,6 +18,10 @@ namespace NWGrain
         public frmEdit_Screen(string Prompt)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             this.lblPrompt.Text = Prompt;
         }
 

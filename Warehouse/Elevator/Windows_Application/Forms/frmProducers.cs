@@ -14,8 +14,11 @@ namespace NWGrain
         public frmProducers()
         {
             InitializeComponent();
-         
 
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
         }
 
         private void producersBindingNavigatorSaveItem_Click(object sender, EventArgs e)

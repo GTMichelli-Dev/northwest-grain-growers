@@ -14,7 +14,11 @@ namespace NWGrain
         public frmLoading()
         {
             InitializeComponent();
-        
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
+
         }
 
         public void SetPrompt(string Message)

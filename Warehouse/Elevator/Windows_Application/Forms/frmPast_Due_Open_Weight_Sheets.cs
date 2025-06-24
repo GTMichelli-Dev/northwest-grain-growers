@@ -14,6 +14,10 @@ namespace NWGrain.Forms
         public frmPast_Due_Open_Weight_Sheets()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
         }
     }
 }

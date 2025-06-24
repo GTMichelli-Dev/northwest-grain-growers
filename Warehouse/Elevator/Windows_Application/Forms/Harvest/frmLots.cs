@@ -36,6 +36,10 @@ namespace NWGrain
         public frmLots()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             addPastDateItems();
 
 
@@ -44,6 +48,10 @@ namespace NWGrain
         public frmLots(Guid Weight_Sheet_To_Move, long Weight_Sheet, long LotNumber)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             addPastDateItems();
             Weight_Sheet_UID = Weight_Sheet_To_Move;
             //this.label3.BackColor = System.Drawing.Color.Red;

@@ -14,6 +14,10 @@ namespace NWGrain.Forms.Harvest_Lot
         public frmEdit_Harvest_Load()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
         }
     }
 }

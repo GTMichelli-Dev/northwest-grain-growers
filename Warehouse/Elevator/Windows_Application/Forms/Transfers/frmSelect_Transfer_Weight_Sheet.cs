@@ -19,6 +19,10 @@ namespace NWGrain
         public frmSelect_Transfer_Weight_Sheet(Guid Current_Weight_Sheet_UID ,bool hideIntake )
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             this.button2.Visible = !hideIntake;
             this.vw_Open_Transfer_Weight_SheetsTableAdapter.FillByValid_Weight_Sheet_Moves(this.nWDataset.vw_Open_Transfer_Weight_Sheets, Current_Weight_Sheet_UID, Settings.Location_Id);
               dataGridView1.ClearSelection();

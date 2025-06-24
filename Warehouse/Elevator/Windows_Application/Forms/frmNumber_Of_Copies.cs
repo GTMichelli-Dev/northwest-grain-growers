@@ -16,6 +16,10 @@ namespace NWGrain
         public frmNumber_Of_Copies(string Prompt="" )
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             if (!string.IsNullOrEmpty(Prompt))
             {
                 this.label1.Text = Prompt;

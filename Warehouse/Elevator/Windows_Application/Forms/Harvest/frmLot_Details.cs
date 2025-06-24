@@ -30,6 +30,10 @@ namespace NWGrain
         {
           //  Loading.Show("Loading Lot Details", Form.ActiveForm);
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             Original_Lot_UID = Lot_UID;
          
 
@@ -39,6 +43,10 @@ namespace NWGrain
         public frmLot_Details()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = Program.frmMdiMain;
             EnableLotDetails( );  
         }
 

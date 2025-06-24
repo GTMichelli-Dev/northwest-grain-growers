@@ -1,12 +1,13 @@
-﻿using System;
+﻿using AppUpdater;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Windows.Forms;
-using System.Threading;
-using System.IO;
-using AppUpdater;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks; // Ensure this using directive is present
+using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace NWGrain
 {
@@ -16,6 +17,12 @@ namespace NWGrain
         public static frmMain FrmMain;
         public static mdiMain frmMdiMain;
         static bool AllowMultSessions = false;
+        [DllImport("user32.dll")]
+        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
 
         /// <summary>
         /// The main entry point for the application.
@@ -23,6 +30,8 @@ namespace NWGrain
         [STAThread]
         static void Main(string[] args) // Changed to async Task
         {
+           
+
             if (args.Length > 0)
             {
                 foreach (string argument in args)
@@ -51,7 +60,7 @@ namespace NWGrain
                     Thread.Sleep(2000); // Synchronous delay
                     Application.DoEvents();
                     frmMdiMain = new NWGrain.mdiMain();
-                    frmMdiMain.WindowState = FormWindowState.Normal; // Ensure the form is maximized
+                //    frmMdiMain.WindowState = FormWindowState.Normal; // Ensure the form is maximized
                     Application.Run(frmMdiMain);
 
 
@@ -60,7 +69,16 @@ namespace NWGrain
             }
             else
             {
-                Alert.Show("Program Already Running");
+                // Try to bring the existing window to the front
+                IntPtr hWnd = FindWindow(null, "Your Main Window Title Here");
+                if (hWnd != IntPtr.Zero)
+                {
+                    SetForegroundWindow(hWnd);
+                }
+                else
+                {
+                    Alert.Show("Program Already Running");
+                }
             }
 
             // Stop The Scale Connection

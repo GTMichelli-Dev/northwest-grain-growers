@@ -14,9 +14,13 @@ namespace NWGrain
         public enum enumLoad_Type { Transfer, Harvest }
         public enumLoad_Type LoadType;
 
-        public frmSelect_Weight_Sheet_Type()
+        public frmSelect_Weight_Sheet_Type(Form owner)
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.ShowInTaskbar = false;
+            this.TopMost = true;
+            this.Owner = owner;
         }
 
         private void button3_Click(object sender, EventArgs e)
