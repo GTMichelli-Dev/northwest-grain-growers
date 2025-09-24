@@ -149,11 +149,11 @@ public class HikvisionController:ControllerBase
            baseImageStream: baseMs,
            overlayImageStream: overlayMs,
            outputPngPath: @"C:\Temp\1234567890_Inbound.png",
-           anchorX: AnchorX.Left,
+           anchorX: AnchorX.Right,
            anchorY: AnchorY.Top,
            marginX: 10,
            marginY: 10,
-           width: 600,          // height auto to preserve aspect
+           width: 500,          // height auto to preserve aspect
        clampToBounds: true);
         }
         return Ok();
