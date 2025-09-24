@@ -10,17 +10,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DevExtreme NuGet.config", "
 		NuGet.config = NuGet.config
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cameras", "Cameras", "{F226A8C2-9B35-439A-88B1-61EB59D9C342}"
-	ProjectSection(SolutionItems) = preProject
-		AxisCameraController.cs = AxisCameraController.cs
-		CameraControllerFactory.cs = CameraControllerFactory.cs
-		CameraOptions.cs = CameraOptions.cs
-		CameraService.cs = CameraService.cs
-		HikvisionCameraController.cs = HikvisionCameraController.cs
-		HttpClientFactory.cs = HttpClientFactory.cs
-		ICameraController.cs = ICameraController.cs
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

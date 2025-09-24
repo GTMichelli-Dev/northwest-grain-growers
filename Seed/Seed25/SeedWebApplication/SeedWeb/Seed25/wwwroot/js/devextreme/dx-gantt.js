@@ -1,7 +1,7 @@
 /*!
  * DevExpress Gantt (dx-gantt)
- * Version: 4.1.60
- * Build date: Thu Mar 13 2025
+ * Version: 4.1.62
+ * Build date: Wed Jun 04 2025
  *
  * Copyright (c) 2012 - 2025 Developer Express Inc. ALL RIGHTS RESERVED
  * Read about DevExpress licensing here: https://www.devexpress.com/Support/EULAs
@@ -7790,7 +7790,7 @@ var TaskAreaExportHelper = (function () {
     Object.defineProperty(TaskAreaExportHelper.prototype, "headerRowHeight", {
         get: function () {
             if (!this._headerRowHeight) {
-                var element = this.scaleElements[0].filter(function (el) { return !!el; })[0];
+                var element = this.scaleElements[0].filter(function (el) { return !!el && el.offsetHeight; })[0];
                 this._headerRowHeight = element === null || element === void 0 ? void 0 : element.offsetHeight;
             }
             return this._headerRowHeight;
@@ -16760,7 +16760,7 @@ var GridLayoutCalculator = (function () {
     GridLayoutCalculator.prototype.getTaskWrapperClassName = function (index) {
         var result = "dx-gantt-taskWrapper";
         var viewItem = this.getViewItem(index);
-        if (viewItem.task.isMilestone() && !viewItem.isCustom)
+        if (viewItem.task.isMilestone())
             result = "dx-gantt-milestoneWrapper";
         if (viewItem.selected)
             result += " dx-gantt-selectedTask";
@@ -16770,10 +16770,11 @@ var GridLayoutCalculator = (function () {
         if (!(0, common_1.isDefined)(this._taskWrapperPoints[index])) {
             var viewItem = this.getViewItem(index);
             var height = this.getTaskHeight(index);
+            var width = this.getTaskWidth(index);
             var y = index * this.tickSize.height + (this.tickSize.height - height) / 2;
             var result = new point_1.Point(this.getPosByDate(viewItem.task.start), y);
-            if (viewItem.task.isMilestone() && !viewItem.isCustom)
-                result.x -= height / 2;
+            if (viewItem.task.isMilestone())
+                result.x -= width / 2;
             this._taskWrapperPoints[index] = result;
         }
         return this._taskWrapperPoints[index].clone();
@@ -18143,15 +18144,17 @@ var CustomTaskRender = (function () {
         var taskWrapperInfo = this.gridLayoutCalculator.getTaskWrapperElementInfo(index);
         var taskElementInfo = this.gridLayoutCalculator.getTaskElementInfo(index, this.taskTitlePosition !== Enums_1.TaskTitlePosition.Inside);
         this.createCustomTaskWrapperElement(index, taskWrapperInfo);
-        var taskVisualElement = this.createCustomTaskVisualElement(index, taskElementInfo);
-        this._taskRender.createTaskTextElement(index, taskVisualElement);
+        var taskParent = this.taskElements[index];
+        if (this._renderHelper.taskTitlePosition === Enums_1.TaskTitlePosition.Outside)
+            this._taskRender.createTaskTextElement(index, taskParent);
+        this.createCustomTaskVisualElement(index, taskElementInfo);
         var taskResources = this.getTaskResources(task.id);
         var taskInformation = {
             cellSize: this.tickSize,
             isMilestone: task.isMilestone(),
             isParent: !!(viewItem === null || viewItem === void 0 ? void 0 : viewItem.children.length),
             taskData: task,
-            taskHTML: taskVisualElement,
+            taskHTML: taskParent.children,
             taskPosition: taskWrapperInfo.position,
             taskResources: taskResources,
             taskSize: taskElementInfo.size,
