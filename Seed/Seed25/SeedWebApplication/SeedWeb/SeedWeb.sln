@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36310.24
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Seed25", "Seed25\Seed25.csproj", "{DC50F125-293E-45E1-A1A8-DE57F5D917F0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DevExtreme NuGet.config", "DevExtreme NuGet.config", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		NuGet.config = NuGet.config
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cameras", "Cameras", "{F226A8C2-9B35-439A-88B1-61EB59D9C342}"
+	ProjectSection(SolutionItems) = preProject
+		AxisCameraController.cs = AxisCameraController.cs
+		CameraControllerFactory.cs = CameraControllerFactory.cs
+		CameraOptions.cs = CameraOptions.cs
+		CameraService.cs = CameraService.cs
+		HikvisionCameraController.cs = HikvisionCameraController.cs
+		HttpClientFactory.cs = HttpClientFactory.cs
+		ICameraController.cs = ICameraController.cs
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DC50F125-293E-45E1-A1A8-DE57F5D917F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC50F125-293E-45E1-A1A8-DE57F5D917F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC50F125-293E-45E1-A1A8-DE57F5D917F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC50F125-293E-45E1-A1A8-DE57F5D917F0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {96710B22-FC75-4D3B-8750-99FD062F4DF3}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,64 @@
+@using Seed25.Models
+
+<h2>Tickets</h2>
+
+<div>
+    @(Html.DevExtreme().SelectBox()
+        .ID("locationSelectBox")
+        .DataSource(ds => ds.WebApi()
+            .Controller("Ticket")
+            .LoadAction("GetLocations")
+            .Key("Id")
+        )
+        .DisplayExpr("Description")
+        .ValueExpr("Id")
+        .Value("") // Will be set by JS from localStorage
+        .OnValueChanged("onLocationChanged")
+        .Placeholder("Select a location...")
+        .Width(200)
+    )
+</div>
+
+@section scripts {
+    <script>
+        function onLocationChanged(e) {
+            if (e.value) {
+                localStorage.setItem("selectedLocationUid", e.value);
+            }
+        }
+
+        $(function () {
+            var saved = localStorage.getItem("selectedLocationUid");
+            if (saved) {
+                var selectBox = $("#locationSelectBox").dxSelectBox("instance");
+                selectBox.option("value", saved);
+            }
+        });
+    </script>
+}
+
+@(Html.DevExtreme().DataGrid<SampleOrder>()
+    .ShowBorders(true)
+    .DataSource(d => d.Mvc().Controller("SampleData").LoadAction("Get").Key("OrderID"))
+    .Columns(columns => {
+        columns.AddFor(m => m.OrderID);
+        columns.AddFor(m => m.OrderDate);
+        columns.AddFor(m => m.CustomerName);
+        columns.AddFor(m => m.ShipCountry);
+        columns.AddFor(m => m.ShipCity);
+    })
+    .Paging(p => p.PageSize(10))
+    .FilterRow(f => f.Visible(true))
+    .HeaderFilter(f => f.Visible(true))
+    .GroupPanel(p => p.Visible(true))
+    .Grouping(g => g.AutoExpandAll(false))
+    .RemoteOperations(true)
+    .Summary(s => s
+        .TotalItems(totalItems => {
+            totalItems.AddFor(m => m.ShipCity).SummaryType(SummaryType.Count);
+        })
+        .GroupItems(groupItems => {
+            groupItems.Add().SummaryType(SummaryType.Count);
+        })
+    )
+)

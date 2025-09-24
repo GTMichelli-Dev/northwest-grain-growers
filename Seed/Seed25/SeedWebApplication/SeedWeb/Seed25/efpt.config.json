@@ -1,0 +1,129 @@
+﻿{
+   "CodeGenerationMode": 4,
+   "ContextClassName": "Seed_DataContext",
+   "ContextNamespace": null,
+   "FilterSchemas": false,
+   "IncludeConnectionString": true,
+   "ModelNamespace": null,
+   "OutputContextPath": null,
+   "OutputPath": "Models",
+   "PreserveCasingWithRegex": true,
+   "ProjectRootNamespace": "Seed25",
+   "Schemas": null,
+   "SelectedHandlebarsLanguage": 2,
+   "SelectedToBeGenerated": 0,
+   "T4TemplatePath": null,
+   "Tables": [
+      {
+         "Name": "[dbo].[Bin_Areas]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[BinColors]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Bins]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Item_Location]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Item_Types]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Items]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Locations]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Lot_Analysis]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Lots]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PC_Allowed_To_Print]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Scale_Cameras]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Seed_Departments]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Seed_Ticket_Misc]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Seed_Ticket_Treatments]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Seed_Ticket_Varieties]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Seed_Ticket_Weights]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Seed_Tickets]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Seed_Trait]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[System_Log]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Trait]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TreatmentWeights]",
+         "ObjectType": 0
+      }
+   ],
+   "UiHint": null,
+   "UncountableWords": null,
+   "UseAsyncStoredProcedureCalls": true,
+   "UseBoolPropertiesWithoutDefaultSql": false,
+   "UseDatabaseNames": false,
+   "UseDatabaseNamesForRoutines": true,
+   "UseDateOnlyTimeOnly": true,
+   "UseDbContextSplitting": false,
+   "UseDecimalDataAnnotationForSprocResult": true,
+   "UseFluentApiOnly": true,
+   "UseHandleBars": false,
+   "UseHierarchyId": false,
+   "UseInflector": true,
+   "UseInternalAccessModifiersForSprocsAndFunctions": false,
+   "UseLegacyPluralizer": false,
+   "UseManyToManyEntity": false,
+   "UseNoDefaultConstructor": false,
+   "UseNoNavigations": false,
+   "UseNoObjectFilter": false,
+   "UseNodaTime": false,
+   "UseNullableReferences": false,
+   "UsePrefixNavigationNaming": false,
+   "UseSchemaFolders": false,
+   "UseSchemaNamespaces": false,
+   "UseSpatial": false,
+   "UseT4": false,
+   "UseT4Split": false
+}

@@ -1,0 +1,39 @@
+﻿
+@{
+    Layout = "~/Views/Shared/_KioskLayout.cshtml";
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <link href="/css/kiosk.css" rel="stylesheet" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Kiosk</title>
+</head>
+<body>
+
+
+    <div class="header-row, ">
+        <img src="nwgg.jpg" />
+        <div class="header-center">
+            <div class="header">
+                <div id="scaleName"> </div>
+
+                <div id="printerName"> </div>
+            </div>
+        </div>
+    </div>
+    <div class="main-container">
+        <div class="weight" id="weight"> --</div>
+        <div class="status" id="status"> </div>
+    </div>
+
+    <div class="prompt" id="prompt"> </div>
+
+
+</body>
+</html>
+@section scripts {
+    <script src="/js/sitejs/kiosk.js"></script>
+}

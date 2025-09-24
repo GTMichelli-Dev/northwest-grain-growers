@@ -1,0 +1,10 @@
+﻿@using DevExpress.AspNetCore
+@using DevExpress.AspNetCore.Reporting.WebDocumentViewer
+
+@{
+    ViewData["Title"] = "Inbound Ticket Viewer";
+}
+
+@(Html.DevExpress().WebDocumentViewer("InboundViewer")
+    .Height("900px")
+)

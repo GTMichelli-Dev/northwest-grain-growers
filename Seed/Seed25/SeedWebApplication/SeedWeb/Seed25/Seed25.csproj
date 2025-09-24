@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Remove="Api\TicketController.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="efpt.config.json.user" />
+    </ItemGroup>
+
+    <ItemGroup>
+    <PackageReference Include="DevExpress.AspNetCore.Reporting" Version="24.2.7" />
+    <PackageReference Include="DevExpress.Drawing.Skia" Version="24.2.7" />
+    <PackageReference Include="DevExpress.Reporting.Core" Version="24.2.7" />
+    <PackageReference Include="DevExtreme.AspNet.Data" Version="5.0.0" />
+    <PackageReference Include="DevExtreme.AspNet.Core" Version="24.2.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.14" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
+    </ItemGroup>
+
+    <ProjectExtensions><VisualStudio><UserProperties TemplateFeatures="NETCORE" /></VisualStudio></ProjectExtensions>
+
+</Project>
