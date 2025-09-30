@@ -14,6 +14,9 @@
     border: 2px solid #000;
     box-sizing: border-box;
     padding: 5px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .header-row {
@@ -34,7 +37,7 @@
     position: absolute;
     left: 0;
     right: 0;
-    top:5px;
+    top: 5px;
     text-align: center;
     pointer-events: none; /* Allows clicks to pass through if needed */
 }
@@ -61,9 +64,10 @@
     flex: 1 0 auto;
     margin: 0 auto;
 }
+
 .status {
     margin-top: 0px;
-    font-size: 3em;
+    font-size: clamp(1.25rem, 4vw, 3em);
     line-height: 1;
     min-height: 1em; /* Ensures height is maintained even if empty */
     text-align: center; /* Add this line to center the text */
@@ -71,17 +75,15 @@
 
 .weight {
     text-align: center;
-    font-size: 14em;
+    font-size: clamp(3rem, 12vw, 14em);
     font-weight: bold;
     width: 100%;
     margin-top: 2px; /* Move 25px lower */
     line-height: 1;
 }
 
-.button{
-    color:green;
-    
-
+.button {
+    color: green;
 }
 
 img[src="nwgg.jpg"] {
@@ -97,6 +99,9 @@ img[src="nwgg.jpg"] {
     border: 2px solid #000;
     box-sizing: border-box;
     padding: 5px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 @media (max-width: 600px) {
@@ -112,16 +117,38 @@ img[src="nwgg.jpg"] {
 
     .status {
         margin-top: 0px;
-        font-size: 1em;
+        font-size: clamp(1.25rem, 4vw, 3em);
         line-height: 1;
         min-height: 1em;
     }
 
     .weight {
-        font-size: 2em;
+        font-size: clamp(3rem, 12vw, 14em);
         line-height: 1;
     }
 }
 
 
 
+
+
+.main-container > .weight,
+.main-container > .status {
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+    box-sizing: border-box;
+}
+
+.main-container > .prompt {
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+    box-sizing: border-box;
+}

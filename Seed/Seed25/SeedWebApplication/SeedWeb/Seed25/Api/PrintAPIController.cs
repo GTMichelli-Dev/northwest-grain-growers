@@ -50,7 +50,7 @@ public class PrintApiController : ControllerBase
       
 
         XtraReport report = new InboundTicket(dto);
-        //report.Print("Kiosk");
+        report.Print("Kiosk");
         using (var ms = new MemoryStream())
         {
             report.ExportToPdf(ms);

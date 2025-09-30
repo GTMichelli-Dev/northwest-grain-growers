@@ -11,6 +11,10 @@ using System.Xml;
 using System.Xml.Linq;
 using Seed25.DTO;
 
+
+
+
+
 [ApiController]
 [Route("api/[controller]")]
 public class ScaleController : ControllerBase
@@ -19,6 +23,32 @@ public class ScaleController : ControllerBase
     private static readonly XNamespace NsSoap11 = "http://schemas.xmlsoap.org/soap/envelope/";
     private static readonly XNamespace NsSoap12 = "http://www.w3.org/2003/05/soap-envelope";
     private static readonly XNamespace NsLocal = "http://nwgglocal/";
+    
+    private static List<ScaleDTO> ScaleList = new List<ScaleDTO>();
+
+    [HttpPost("UpdateScale")]
+    public  IActionResult UpdateScale([FromBody] ScaleDTO scale)
+    {
+        if (scale == null || string.IsNullOrWhiteSpace(scale.Description))
+        {
+            return BadRequest(new { error = "Invalid scale data." });
+        }
+
+        var existingScale = ScaleList.Find(s => s.Description.Equals(scale.Description, StringComparison.OrdinalIgnoreCase));
+        if (existingScale == null)
+        {
+            ScaleList.Add(scale);
+        }
+        else
+        {
+            existingScale.Motion = scale.Motion;
+            existingScale.Ok = scale.Ok;
+            existingScale.Weight = scale.Weight;
+            existingScale.Status = scale.Status;
+            existingScale.LastUpdate = scale.LastUpdate;
+        }
+        return Ok(new { message = "Scale updated successfully." });
+    }
 
     [HttpGet("GetScales")]
     public async Task<IActionResult> GetScales()
@@ -161,29 +191,13 @@ public class ScaleController : ControllerBase
             {
                 var scale = new ScaleDTO();
                 var uidObj = row["UID"];
-                if (uidObj != null && Guid.TryParse(uidObj.ToString(), out var guidValue))
-                {
-                    scale.UID = guidValue;
-
-                }
-                else
-                {
-                    ok = false;
-                }
-                var locationObj = row["Location_Id"];
-                if (locationObj != null && int.TryParse(locationObj.ToString(), out var locationIdValue))
-                {
-                    scale.LocationId = locationIdValue;
-                }
-                else
-                {
-                    ok = false;
-                }
+               
+               
 
                 var descriptionObj = row["Description"];
                 if (descriptionObj != null)
                 {
-                    scale.ScaleDescription = descriptionObj as string ?? descriptionObj?.ToString() ?? string.Empty;
+                    scale.Description = descriptionObj as string ?? descriptionObj?.ToString() ?? string.Empty;
                 }
                 else
                 {
@@ -230,16 +244,7 @@ public class ScaleController : ControllerBase
                     ok = false;
                 }
 
-                var errorObj = row["Error_Message"];
-                if (errorObj != null)
-                {
-                    scale.ErrorMessage = errorObj as string ?? errorObj?.ToString() ?? string.Empty;
-                }
-                else
-                {
-                    ok = false;
-                }
-
+               
 
                 var updateObj = row["Last_Update"];
                 if (updateObj != null && DateTime.TryParse(updateObj.ToString(), out var LastUpdateValue))
