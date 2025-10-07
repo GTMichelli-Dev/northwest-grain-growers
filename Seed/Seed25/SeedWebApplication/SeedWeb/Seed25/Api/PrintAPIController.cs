@@ -136,26 +136,30 @@ public class PrintApiController : ControllerBase
 
             invoiceLotDTOs = new List<InvoiceLotDTO>
             {
-                new InvoiceLotDTO{ Lot="LOT-12345", ItemId= 123456,  ItemDescription= "SHINE CERTIFIED SWW" },
-                new InvoiceLotDTO{ Lot="LOT-23456", ItemId= 234567, ItemDescription= "LCS HYDRAX -1555 COAXIMUM CERTIFIED SWW" },
-                new InvoiceLotDTO{ Lot="LOT-34567", ItemId= 345678, ItemDescription= "LCS HYDRAX -777 COAXIMUM REGISTERED SWW" },
-                new InvoiceLotDTO{ Lot="LOT-45678", ItemId= 456789, ItemDescription= "LCS HYDRAX -777 COAXIMUM REGISTERED SWW" },
-                new InvoiceLotDTO{ Lot="LOT-56789", ItemId= 567890, ItemDescription= "LCS HYDRAX -777 COAXIMUM REGISTERED SWW" },
+                new InvoiceLotDTO{ Lot="ABCD-12345", ItemId= 123456,  ItemDescription= "SHINE CERTIFIED SWW" },
+                new InvoiceLotDTO{ Lot="AODFD-23456", ItemId= 234567, ItemDescription= "LCS HYDRAX -1555 COAXIMUM CERTIFIED SWW" },
+                new InvoiceLotDTO{ Lot="VFG-34567", ItemId= 345678, ItemDescription= "LCS HYDRAX -777 COAXIMUM REGISTERED SWW" },
+                new InvoiceLotDTO{ Lot="WSUD-45678", ItemId= 456789, ItemDescription= "LCS HYDRAX -777 COAXIMUM REGISTERED SWW" },
+                new InvoiceLotDTO{ Lot="IODdd-56789", ItemId= 567890, ItemDescription= "LCS HYDRAX -777 COAXIMUM REGISTERED SWW" },
     
             },
 
-            invoiceAnalysisDTOs = new List<InvoiceAnalysisDTO>
-            {
-                new InvoiceAnalysisDTO{ DateTested= DateTime.Now.AddDays(-2),  PureSeed= 98.5m, Germination= 92.0m, OtherCrop= 0.5m, WeedSeed= 0.2m, InertMatter= 1.3m, ItemDescription= "Foundation Seed", ItemId=123456 },
-                new InvoiceAnalysisDTO{ DateTested= DateTime.Now.AddDays(-5),  PureSeed= 97.2m, Germination= 90.5m, OtherCrop= 0.7m, WeedSeed= 0.3m, InertMatter= 1.8m, ItemDescription= "Certified Seed", ItemId=234567 },
-                new InvoiceAnalysisDTO{ DateTested= DateTime.Now.AddDays(-10), PureSeed= 99.0m, Germination= 95.0m, OtherCrop= 0.2m, WeedSeed= 0.1m, InertMatter= 0.7m, ItemDescription= "Registered Seed", ItemId=345678 },
-                new InvoiceAnalysisDTO{ DateTested= DateTime.Now.AddDays(-15), PureSeed= 96.8m, Germination= 88.0m, OtherCrop= 1.0m, WeedSeed= 0.4m, InertMatter= 1.8m, ItemDescription= "Treated Seed", ItemId=456789 },
-            },
-           
+         
 
         };
 
-      
+        dto.invoiceAnalysisDTOs = dto.InvoiceVarietyDTOs.Select((v, i) => new InvoiceAnalysisDTO
+        {
+            DateTested = DateTime.Now.AddDays(-2 - i * 3),
+            PureSeed = .95m - i * 0.1m,
+            Germination =1,
+            OtherCrop = 0.5m + i * 0.1m,
+            WeedSeed = 0.2m + i * 0.05m,
+            InertMatter = .13m + i * 0.2m,
+            ItemDescription = v.Description,
+            ItemId = v.ItemId
+        }).ToList();
+           
 
         if (pr.Type == "TRUCK")
         {
@@ -199,6 +203,8 @@ public class PrintApiController : ControllerBase
         }
     }
 }
+
+
 
 
 

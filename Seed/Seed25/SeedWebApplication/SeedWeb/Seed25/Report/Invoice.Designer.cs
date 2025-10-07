@@ -47,10 +47,10 @@
             this.VerticalDetail = new DevExpress.XtraReports.UI.VerticalDetailBand();
             this.xrWeightSubReport = new DevExpress.XtraReports.UI.XRSubreport();
             this.VerticalHeader = new DevExpress.XtraReports.UI.VerticalHeaderBand();
+            this.xrAnalysisSubreport = new DevExpress.XtraReports.UI.XRSubreport();
             this.xrVarietiesSubReport = new DevExpress.XtraReports.UI.XRSubreport();
             this.xrMiscSubReport = new DevExpress.XtraReports.UI.XRSubreport();
             this.xrTreatmentSubReport = new DevExpress.XtraReports.UI.XRSubreport();
-            this.xrAnalysisSubreport = new DevExpress.XtraReports.UI.XRSubreport();
             ((System.ComponentModel.ISupportInitialize)(this.objectDataSource1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
             // 
@@ -242,6 +242,13 @@
             this.VerticalHeader.Name = "VerticalHeader";
             this.VerticalHeader.WidthF = 1413.458F;
             // 
+            // xrAnalysisSubreport
+            // 
+            this.xrAnalysisSubreport.Dpi = 254F;
+            this.xrAnalysisSubreport.LocationFloat = new DevExpress.Utils.PointFloat(0F, 219.3003F);
+            this.xrAnalysisSubreport.Name = "xrAnalysisSubreport";
+            this.xrAnalysisSubreport.SizeF = new System.Drawing.SizeF(254F, 58.42F);
+            // 
             // xrVarietiesSubReport
             // 
             this.xrVarietiesSubReport.Dpi = 254F;
@@ -263,13 +270,6 @@
             this.xrTreatmentSubReport.Name = "xrTreatmentSubReport";
             this.xrTreatmentSubReport.SizeF = new System.Drawing.SizeF(254F, 58.42F);
             // 
-            // xrAnalysisSubreport
-            // 
-            this.xrAnalysisSubreport.Dpi = 254F;
-            this.xrAnalysisSubreport.LocationFloat = new DevExpress.Utils.PointFloat(0F, 219.3003F);
-            this.xrAnalysisSubreport.Name = "xrAnalysisSubreport";
-            this.xrAnalysisSubreport.SizeF = new System.Drawing.SizeF(254F, 58.42F);
-            // 
             // Invoice
             // 
             this.Bands.AddRange(new DevExpress.XtraReports.UI.Band[] {
@@ -289,13 +289,13 @@
             this.SnapGridSize = 25F;
             this.Version = "24.2";
             watermark1.Font = new DevExpress.Drawing.DXFont("Verdana", 72F, DevExpress.Drawing.DXFontStyle.Bold);
-            watermark1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(118)))), ((int)(((byte)(146)))), ((int)(((byte)(60)))));
+            watermark1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
             watermark1.Id = "Coaxium";
             watermark1.Text = "COAXIUM";
             watermark1.TextPosition = DevExpress.XtraPrinting.Drawing.WatermarkPosition.InFront;
             watermark1.TextTransparency = 165;
             watermark2.Font = new DevExpress.Drawing.DXFont("Verdana", 72F, DevExpress.Drawing.DXFontStyle.Bold);
-            watermark2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
+            watermark2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(176)))), ((int)(((byte)(80)))));
             watermark2.Id = "Clearfield";
             watermark2.Text = "CLEARFIELD";
             watermark2.TextPosition = DevExpress.XtraPrinting.Drawing.WatermarkPosition.InFront;

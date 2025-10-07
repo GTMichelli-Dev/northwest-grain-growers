@@ -102,6 +102,29 @@ namespace Seed25.Report
             };
 
 
+
+            if (this.xrAnalysisSubreport?.ReportSource == null)
+            {
+                this.xrAnalysisSubreport.ReportSource = new InvoiceAnalysisSubReport();
+            }
+
+
+            this.xrAnalysisSubreport.BeforePrint += (sender, e) =>
+            {
+                var current = this.GetCurrentRow() as InvoiceDTO;
+                if (current == null) return;
+
+
+                var sub = (XRSubreport)sender;
+                var subReport = (InvoiceAnalysisSubReport)sub.ReportSource;
+
+                subReport.DataSource = current.invoiceAnalysisDTOs;
+                subReport.DataMember = null;
+
+            };
+
+
+
             if (data.Type == "TRUCK")
             {
 
