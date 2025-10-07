@@ -1,4 +1,5 @@
-﻿using DevExpress.XtraReports.UI;
+﻿using DevExpress.ClipboardSource.SpreadsheetML;
+using DevExpress.XtraReports.UI;
 using Seed25.DTO;
 using System.Collections.Generic;
 
@@ -9,6 +10,8 @@ namespace Seed25.Report
         public InboundTicket()
         {
             InitializeComponent();
+            this.DataSource = new List<InboundTicketDTO>();
+            this.DataMember = ""; // optional
         }
 
         // Bind a single row
@@ -18,5 +21,7 @@ namespace Seed25.Report
             this.DataSource = new List<InboundTicketDTO> { data };
             this.DataMember = ""; // optional
         }
+
+      
     }
 }

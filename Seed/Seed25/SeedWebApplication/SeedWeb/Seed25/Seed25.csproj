@@ -5,21 +5,34 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Api\TicketController.cs" />
+    <Compile Remove="Report\InvoiceTreatmentsSubReport.cs" />
+    <Compile Remove="Report\InvoiceTreatmentsSubReport.Designer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Remove="Report\InvoiceTreatmentsSubReport.resx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="efpt.config.json.user" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DevExpress.AspNetCore.Reporting" Version="25.1.5" />
-    <PackageReference Include="DevExpress.Drawing.Skia" Version="25.1.5" />
-    <PackageReference Include="DevExpress.Reporting.Core" Version="25.1.5" />
+    <PackageReference Include="DevExpress.AspNetCore.Reporting" Version="24.2.7" />
+    <PackageReference Include="DevExpress.Drawing.Skia" Version="24.2.7" />
+    <PackageReference Include="DevExpress.Reporting.Core" Version="24.2.7" />
     <PackageReference Include="DevExtreme.AspNet.Data" Version="5.1.0" />
-    <PackageReference Include="DevExtreme.AspNet.Core" Version="25.1.5" />
+    <PackageReference Include="DevExtreme.AspNet.Core" Version="24.2.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.9" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
     <PackageReference Include="System.Text.Json" Version="9.0.9" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Report\InvoiceMiscSubReport.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Report\InvoiceTreatmentSubReport.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
   </ItemGroup>
   <ProjectExtensions>
     <VisualStudio>
