@@ -65,39 +65,36 @@ public class PrintApiController : ControllerBase
 
 
 
-
-
-
-    [HttpPost("GetInvoice")]
-    public IActionResult GetInvoice([FromBody] PrintRequest pr)
+    private InvoiceDTO GetSampleData(PrintRequest pr)
     {
-
         pr.Type = pr.Type.ToUpper();
+        if (pr.Type == "STRING") pr.Type = "TRUCK";
         var dto = new InvoiceDTO
         {
             UID = Guid.NewGuid(),
             Ticket = 123456,
             InvoiceDate = DateTime.Now,
             CustomerName = "3040870 - Valley Agrinomics ",
-            PO = "PO-78910",
-            BOL = "BOL-54321",
+            PO = "ABC-78910",
+            BOL = "ZXQ-345-54321",
             TruckId = "TRK-001",
             Weighmaster = "Mike Johnson",
-            Comments = "Handle with care",
+            Comments = "This is a comment Line ",
             Location = "Walla Walla Seed Plant",
             Address1 = "456 Seed St",
             Address2 = "Walla Walla, WA 99362",
             Phone = "509-555-1234",
             Type = pr.Type,
+            RequestedAmount = "Requested 1500 bu.",
             TreatedSeed = pr.TreatedSeed,
             Clearfield = pr.Clearfield,
             Coaxium = pr.Coaxium,
             InvoiceVarietyDTOs = new List<InvoiceVarietyDTO>
             {
-                new InvoiceVarietyDTO{ Description="SHINE CERTIFIED SWW", LotNumber="LOT-001-654", ItemId=987656, Percent= 0.01M ,Weight=1200 },
-                new InvoiceVarietyDTO{ Description="LCS HYDRAX -1555 COAXIMUM CERTIFIED SWW", LotNumber="LOT-002-34321", ItemId=123456, Percent= 0.223M, Weight=11200 },
-                new InvoiceVarietyDTO{ Description="LCS HYDRAX -777 COAXIMUM REGISTERED SWW", LotNumber="LOT-003-45654", ItemId=765432, Percent= 0.2534M, Weight=11200 },
-                new InvoiceVarietyDTO{ Description="LCS HYDRAX -777 COAXIMUM REGISTERED SWW", LotNumber="LOT-004-5432", ItemId=765434, Percent= 0.0254M, Weight=11200 },
+                new InvoiceVarietyDTO{ Description="SHINE CERTIFIED SWW", LotNumber="001-654", ItemId=987656, Percent= 0.01M ,Weight=1200 },
+                new InvoiceVarietyDTO{ Description="LCS HYDRAX -1555 COAXIMUM CERTIFIED SWW", LotNumber="002-34321", ItemId=123456, Percent= 0.223M, Weight=11200 },
+                new InvoiceVarietyDTO{ Description="LCS HYDRAX -777 COAXIMUM REGISTERED SWW", LotNumber="003-45654", ItemId=765432, Percent= 0.2534M, Weight=11200 },
+                new InvoiceVarietyDTO{ Description="LCS HYDRAX -777 COAXIMUM REGISTERED SWW", LotNumber="004-5432", ItemId=765434, Percent= 0.0254M, Weight=11200 },
                 //new InvoiceVarietyDTO{ Description="LCS HYDRAX -777 COAXIMUM REGISTERED SWW", ItemId=765423, Percent= 0.4M, Weight=11200 },
                 //new InvoiceVarietyDTO{ Description="Shine Certified", ItemId=987656, Percent= 0.02M, Weight=1200 },
                 //new InvoiceVarietyDTO{ Description="LCS HYDRAX -1555 COAXIMUM CERTIFIED SWW", ItemId=162345, Percent= 0.33M, Weight=11200 },
@@ -123,15 +120,35 @@ public class PrintApiController : ControllerBase
             },
             invoiceWeightDTOs = new List<InvoiceWeightDTO>
             {
-                new InvoiceWeightDTO{ ID=1, Gross= 23000M, Tare= 12000M, Net= 11000M, Unit="lbs" },
-                new InvoiceWeightDTO{ ID=2, Gross= 28000M, Tare= 15000M, Net= 13000M, Unit="lbs" },
-                new InvoiceWeightDTO{ ID=3, Gross= 32000M, Tare= 18000M, Net= 14000M, Unit="lbs" },
+                new InvoiceWeightDTO{  ID=12345678, Gross= 23000M, Tare= 12000M, Net= 11000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=12345679, Gross= 28000M, Tare= 15000M, Net= 13000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=12345680, Gross= 32000M, Tare= 18000M, Net= 14000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=12345681, Gross= 23000M, Tare= 12000M, Net= 11000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=12345682, Gross= 28000M, Tare= 15000M, Net= 13000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=12345683, Gross= 32000M, Tare= 18000M, Net= 14000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=12345684, Gross= 23000M, Tare= 12000M, Net= 11000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=12345678, Gross= 28000M, Tare= 15000M, Net= 13000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=9, Gross= 32000M, Tare= 18000M, Net= 14000M, Unit="lbs" },
+                 new InvoiceWeightDTO{ ID=3, Gross= 32000M, Tare= 18000M, Net= 14000M, Unit="lbs" },
                 new InvoiceWeightDTO{ ID=4, Gross= 23000M, Tare= 12000M, Net= 11000M, Unit="lbs" },
                 new InvoiceWeightDTO{ ID=5, Gross= 28000M, Tare= 15000M, Net= 13000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=6, Gross= 32000M, Tare= 18000M, Net= 14000M, Unit="lbs" },
+                 new InvoiceWeightDTO{ ID=5, Gross= 28000M, Tare= 15000M, Net= 13000M, Unit="lbs" },
                 new InvoiceWeightDTO{ ID=6, Gross= 32000M, Tare= 18000M, Net= 14000M, Unit="lbs" },
                 new InvoiceWeightDTO{ ID=7, Gross= 23000M, Tare= 12000M, Net= 11000M, Unit="lbs" },
                 new InvoiceWeightDTO{ ID=8, Gross= 28000M, Tare= 15000M, Net= 13000M, Unit="lbs" },
                 new InvoiceWeightDTO{ ID=9, Gross= 32000M, Tare= 18000M, Net= 14000M, Unit="lbs" },
+                 new InvoiceWeightDTO{ ID=3, Gross= 32000M, Tare= 18000M, Net= 14000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=4, Gross= 23000M, Tare= 12000M, Net= 11000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=9, Gross= 32000M, Tare= 18000M, Net= 14000M, Unit="lbs" },
+                 new InvoiceWeightDTO{ ID=3, Gross= 32000M, Tare= 18000M, Net= 14000M, Unit="lbs" },
+                new InvoiceWeightDTO{ ID=4, Gross= 23000M, Tare= 12000M, Net= 11000M, Unit="lbs" },
+            },
+            invoiceBagsDTOs = new List<InvoiceBagDTO>
+            {
+                new InvoiceBagDTO{ ID=1, Weight= 50M, Quantity= 100M, Unit="lbs" },
+                new InvoiceBagDTO{ ID=2, Weight= 25M, Quantity= 35M, Unit="lbs" },
+                new InvoiceBagDTO{ ID=3, Weight= 15.25M, Quantity= 1M, Unit="lbs" },
             },
 
             invoiceLotDTOs = new List<InvoiceLotDTO>
@@ -141,10 +158,10 @@ public class PrintApiController : ControllerBase
                 new InvoiceLotDTO{ Lot="VFG-34567", ItemId= 345678, ItemDescription= "LCS HYDRAX -777 COAXIMUM REGISTERED SWW" },
                 new InvoiceLotDTO{ Lot="WSUD-45678", ItemId= 456789, ItemDescription= "LCS HYDRAX -777 COAXIMUM REGISTERED SWW" },
                 new InvoiceLotDTO{ Lot="IODdd-56789", ItemId= 567890, ItemDescription= "LCS HYDRAX -777 COAXIMUM REGISTERED SWW" },
-    
+
             },
 
-         
+
 
         };
 
@@ -152,33 +169,58 @@ public class PrintApiController : ControllerBase
         {
             DateTested = DateTime.Now.AddDays(-2 - i * 3),
             PureSeed = .95m - i * 0.1m,
-            Germination =1,
+            Germination = 1,
             OtherCrop = 0.5m + i * 0.1m,
             WeedSeed = 0.2m + i * 0.05m,
             InertMatter = .13m + i * 0.2m,
             ItemDescription = v.Description,
             ItemId = v.ItemId
         }).ToList();
-           
+
 
         if (pr.Type == "TRUCK")
         {
-         
+
             dto.invoiceWeightDTOs = dto.invoiceWeightDTOs.Take(1).ToList();
+            dto.invoiceWeightDTOs[0].TruckId = dto.TruckId;
         }
-        
+        return dto;
+    }
+
+
+    [HttpPost("GetInvoice")]
+    public IActionResult GetInvoice([FromBody] PrintRequest pr)
+    {
+        var dto= GetSampleData(pr);
+
         XtraReport report = new Invoice(dto);
         using (var ms = new MemoryStream())
         {
             report.ExportToPdf(ms);
 
-            System.IO.File.WriteAllBytes(@"C:\Temp\invoice.pdf", ms.ToArray());
+            System.IO.File.WriteAllBytes(@"C:\Temp\LetterInvoice.pdf", ms.ToArray());
             return Ok();
 
         }
 
     }
 
+
+    [HttpPost("GetKioskInvoice")]
+    public IActionResult GetKioskInvoice([FromBody] PrintRequest pr)
+    {
+        var dto = GetSampleData(pr);
+        XtraReport report = new KioskInvoice(dto);
+        using (var ms = new MemoryStream())
+        {
+            report.ExportToPdf(ms);
+
+            System.IO.File.WriteAllBytes(@"C:\Temp\KioskInvoice.pdf", ms.ToArray());
+            return Ok();
+
+        }
+
+    }
 
 
 

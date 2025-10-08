@@ -24,11 +24,14 @@
         public bool Coaxium  { get; set; }
         public bool Clearfield { get; set; }
 
+        public string RequestedAmount { get; set; }
+
         public List< InvoiceLotDTO> invoiceLotDTOs { get; set; }= new List<InvoiceLotDTO>();
         public List<InvoiceVarietyDTO> InvoiceVarietyDTOs { get; set; }= new List<InvoiceVarietyDTO>();
         public List<InvoiceTreatmentDTO> invoiceTreatmentDTOs { get; set; } = new List<InvoiceTreatmentDTO>();
         public List<InvoiceAnalysisDTO> invoiceAnalysisDTOs { get; set; } = new List<InvoiceAnalysisDTO>();
         public List<InvoiceWeightDTO> invoiceWeightDTOs { get; set; } = new List<InvoiceWeightDTO>();
+        public List<InvoiceBagDTO> invoiceBagsDTOs { get; set; } = new List<InvoiceBagDTO>();
         public List<InvoiceMiscDTO> invoiceMiscDTOs { get; set; }= new List<InvoiceMiscDTO>();
        
 

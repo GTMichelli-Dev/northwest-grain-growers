@@ -27,10 +27,10 @@
     <PackageReference Include="System.Text.Json" Version="9.0.9" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="Report\InvoiceMiscSubReport.cs">
+    <Compile Update="Report\Invoice\Letter\InvoiceMiscSubReport.cs">
       <SubType>XtraReport</SubType>
     </Compile>
-    <Compile Update="Report\InvoiceTreatmentSubReport.cs">
+    <Compile Update="Report\Invoice\Letter\InvoiceTreatmentSubReport.cs">
       <SubType>XtraReport</SubType>
     </Compile>
   </ItemGroup>

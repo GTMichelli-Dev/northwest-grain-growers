@@ -1,4 +1,6 @@
 ﻿using DevExpress.XtraReports.UI;
+using NuGet.Protocol.Plugins;
+using Seed25.DTO;
 using System;
 using System.Collections;
 using System.ComponentModel;
@@ -6,11 +8,14 @@ using System.Drawing;
 
 namespace Seed25.Report
 {
-    public partial class InvoiceLotsSubReport : DevExpress.XtraReports.UI.XtraReport
+    public partial class KioskInvoiceTreatmentSubReport : DevExpress.XtraReports.UI.XtraReport
     {
-        public InvoiceLotsSubReport()
+        public KioskInvoiceTreatmentSubReport()
         {
             InitializeComponent();
+          
         }
+
+     
     }
 }

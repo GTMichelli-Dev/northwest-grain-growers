@@ -4,22 +4,29 @@ using System;
 using System.Collections;
 using System.ComponentModel;
 using System.Drawing;
+using DevExpress.XtraPrinting.BarCode;
 
 namespace Seed25.Report
 {
-    public partial class Invoice : DevExpress.XtraReports.UI.XtraReport
+    public partial class KioskInvoice : DevExpress.XtraReports.UI.XtraReport
     {
-        public Invoice()
+        public KioskInvoice()
         {
             InitializeComponent();
         }
 
 
-        public Invoice(InvoiceDTO data) : this()
+        public KioskInvoice(InvoiceDTO data) : this()
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
 
-
+            if (xrBarCode1.Symbology is QRCodeGenerator gen)
+            {
+                gen.CompactionMode = QRCodeCompactionMode.Byte; // <- key line
+                gen.Version = QRCodeVersion.AutoVersion;
+                gen.ErrorCorrectionLevel = QRCodeErrorCorrectionLevel.Q;
+            }
+            xrBarCode1.Text = "https://inetsgi.com/customer/780/f32d320d.pdf";
 
             this.DataSource = new List<InvoiceDTO> { data };
             this.DataMember = string.Empty;
@@ -39,7 +46,7 @@ namespace Seed25.Report
             // Ensure the subreport has a report instance
             if (this.xrVarietiesSubReport?.ReportSource == null)
             {
-                this.xrVarietiesSubReport.ReportSource = new InvoiceVarietySubReport();
+                this.xrVarietiesSubReport.ReportSource = new KioskInvoiceVarietySubReport();
             }
 
 
@@ -50,7 +57,7 @@ namespace Seed25.Report
 
 
                 var sub = (XRSubreport)sender;
-                var subReport = (InvoiceVarietySubReport)sub.ReportSource;
+                var subReport = (KioskInvoiceVarietySubReport)sub.ReportSource;
 
 
                 subReport.DataSource = current.InvoiceVarietyDTOs;
@@ -61,7 +68,7 @@ namespace Seed25.Report
 
             if (this.xrTreatmentSubReport?.ReportSource == null)
             {
-                this.xrTreatmentSubReport.ReportSource = new InvoiceTreatmentSubReport();
+                this.xrTreatmentSubReport.ReportSource = new KioskInvoiceTreatmentSubReport();
             }
 
 
@@ -72,7 +79,7 @@ namespace Seed25.Report
 
 
                 var sub = (XRSubreport)sender;
-                var subReport = (InvoiceTreatmentSubReport)sub.ReportSource;
+                var subReport = (KioskInvoiceTreatmentSubReport)sub.ReportSource;
 
                 subReport.DataSource = current.invoiceTreatmentDTOs;
                 subReport.DataMember = null;
@@ -83,7 +90,7 @@ namespace Seed25.Report
 
             if (this.xrMiscSubReport?.ReportSource == null)
             {
-                this.xrMiscSubReport.ReportSource = new InvoiceMiscSubReport();
+                this.xrMiscSubReport.ReportSource = new KioskInvoiceMiscSubReport();
             }
 
 
@@ -94,7 +101,7 @@ namespace Seed25.Report
 
 
                 var sub = (XRSubreport)sender;
-                var subReport = (InvoiceMiscSubReport)sub.ReportSource;
+                var subReport = (KioskInvoiceMiscSubReport)sub.ReportSource;
 
                 subReport.DataSource = current.invoiceMiscDTOs;
                 subReport.DataMember = null;
@@ -105,7 +112,7 @@ namespace Seed25.Report
 
             if (this.xrAnalysisSubreport?.ReportSource == null)
             {
-                this.xrAnalysisSubreport.ReportSource = new InvoiceAnalysisSubReport();
+                this.xrAnalysisSubreport.ReportSource = new KioskInvoiceAnalysisSubReport();
             }
 
 
@@ -116,7 +123,7 @@ namespace Seed25.Report
 
 
                 var sub = (XRSubreport)sender;
-                var subReport = (InvoiceAnalysisSubReport)sub.ReportSource;
+                var subReport = (KioskInvoiceAnalysisSubReport)sub.ReportSource;
 
                 subReport.DataSource = current.invoiceAnalysisDTOs;
                 subReport.DataMember = null;
@@ -130,7 +137,7 @@ namespace Seed25.Report
 
                 if (this.xrWeightSubReport?.ReportSource == null)
                 {
-                    this.xrWeightSubReport.ReportSource = new InvoiceTruckWeightSubReport();
+                    this.xrWeightSubReport.ReportSource = new KioskInvoiceTruckWeightSubReport();
                 }
 
 
@@ -141,7 +148,7 @@ namespace Seed25.Report
 
 
                     var sub = (XRSubreport)sender;
-                    var subReport = (InvoiceTruckWeightSubReport)sub.ReportSource;
+                    var subReport = (KioskInvoiceTruckWeightSubReport)sub.ReportSource;
 
                     subReport.DataSource = current.invoiceWeightDTOs;
                     subReport.DataMember = null;
@@ -152,7 +159,7 @@ namespace Seed25.Report
             {
                 if (this.xrWeightSubReport?.ReportSource == null)
                 {
-                    this.xrWeightSubReport.ReportSource = new InvoiceToteWeightsSubReport();
+                    this.xrWeightSubReport.ReportSource = new KioskInvoiceToteWeightsSubReport();
                 }
 
 
@@ -163,9 +170,31 @@ namespace Seed25.Report
 
 
                     var sub = (XRSubreport)sender;
-                    var subReport = (InvoiceToteWeightsSubReport)sub.ReportSource;
+                    var subReport = (KioskInvoiceToteWeightsSubReport)sub.ReportSource;
 
                     subReport.DataSource = current.invoiceWeightDTOs;
+                    subReport.DataMember = null;
+
+                };
+            }
+            else if (data.Type == "BAG")
+            {
+                if (this.xrWeightSubReport?.ReportSource == null)
+                {
+                    this.xrWeightSubReport.ReportSource = new KioskInvoiceBagWeightsSubReport();
+                }
+
+
+                this.xrWeightSubReport.BeforePrint += (sender, e) =>
+                {
+                    var current = this.GetCurrentRow() as InvoiceDTO;
+                    if (current == null) return;
+
+
+                    var sub = (XRSubreport)sender;
+                    var subReport = (KioskInvoiceBagWeightsSubReport)sub.ReportSource;
+
+                    subReport.DataSource = current.invoiceBagsDTOs;
                     subReport.DataMember = null;
 
                 };
