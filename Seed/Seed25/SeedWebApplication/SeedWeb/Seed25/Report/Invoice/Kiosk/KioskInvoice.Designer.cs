@@ -228,7 +228,7 @@
             // 
             // xrWeightSubReport
             // 
-            this.xrWeightSubReport.LocationFloat = new DevExpress.Utils.PointFloat(10.31891F, 327.4792F);
+            this.xrWeightSubReport.LocationFloat = new DevExpress.Utils.PointFloat(10.31891F, 215.2212F);
             this.xrWeightSubReport.Name = "xrWeightSubReport";
             this.xrWeightSubReport.SizeF = new System.Drawing.SizeF(99.99998F, 23.00003F);
             // 
@@ -236,7 +236,7 @@
             // 
             this.xrAnalysisSubreport.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Visible", "[DataSource.RowCount]>0")});
-            this.xrAnalysisSubreport.LocationFloat = new DevExpress.Utils.PointFloat(9.999998F, 298.0521F);
+            this.xrAnalysisSubreport.LocationFloat = new DevExpress.Utils.PointFloat(9.999998F, 332.9296F);
             this.xrAnalysisSubreport.Name = "xrAnalysisSubreport";
             this.xrAnalysisSubreport.SizeF = new System.Drawing.SizeF(100F, 23F);
             // 
@@ -244,7 +244,7 @@
             // 
             this.xrMiscSubReport.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Visible", "[DataSource.RowCount]>0")});
-            this.xrMiscSubReport.LocationFloat = new DevExpress.Utils.PointFloat(9.999998F, 268.625F);
+            this.xrMiscSubReport.LocationFloat = new DevExpress.Utils.PointFloat(9.999998F, 303.5025F);
             this.xrMiscSubReport.Name = "xrMiscSubReport";
             this.xrMiscSubReport.SizeF = new System.Drawing.SizeF(100F, 23F);
             // 
@@ -252,7 +252,7 @@
             // 
             this.xrTreatmentSubReport.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Visible", "[DataSource.RowCount]>0")});
-            this.xrTreatmentSubReport.LocationFloat = new DevExpress.Utils.PointFloat(9.999998F, 239.1979F);
+            this.xrTreatmentSubReport.LocationFloat = new DevExpress.Utils.PointFloat(9.999998F, 274.0754F);
             this.xrTreatmentSubReport.Name = "xrTreatmentSubReport";
             this.xrTreatmentSubReport.SizeF = new System.Drawing.SizeF(99.99999F, 22.99998F);
             // 
@@ -260,7 +260,7 @@
             // 
             this.xrVarietiesSubReport.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Visible", "[DataSource.RowCount]>0")});
-            this.xrVarietiesSubReport.LocationFloat = new DevExpress.Utils.PointFloat(10.31891F, 209.7709F);
+            this.xrVarietiesSubReport.LocationFloat = new DevExpress.Utils.PointFloat(10.31891F, 244.6483F);
             this.xrVarietiesSubReport.Name = "xrVarietiesSubReport";
             this.xrVarietiesSubReport.SizeF = new System.Drawing.SizeF(99.99999F, 22.99998F);
             // 
@@ -284,7 +284,7 @@
             // xrLabel17
             // 
             this.xrLabel17.Font = new DevExpress.Drawing.DXFont("Arial", 7F);
-            this.xrLabel17.LocationFloat = new DevExpress.Utils.PointFloat(0.3189087F, 350.4792F);
+            this.xrLabel17.LocationFloat = new DevExpress.Utils.PointFloat(0.3189087F, 355.9296F);
             this.xrLabel17.Multiline = true;
             this.xrLabel17.Name = "xrLabel17";
             this.xrLabel17.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
@@ -297,7 +297,7 @@
             // xrBarCode1
             // 
             this.xrBarCode1.AutoModule = true;
-            this.xrBarCode1.LocationFloat = new DevExpress.Utils.PointFloat(109.699F, 362.6053F);
+            this.xrBarCode1.LocationFloat = new DevExpress.Utils.PointFloat(109.699F, 368.0558F);
             this.xrBarCode1.Name = "xrBarCode1";
             this.xrBarCode1.NavigateUrl = "https://inetsgi.com/customer/780/f32d320d.pdf";
             this.xrBarCode1.Padding = new DevExpress.XtraPrinting.PaddingInfo(10, 10, 0, 0, 100F);
@@ -366,14 +366,14 @@
             this.RollPaper = true;
             this.SnapGridSize = 9.84252F;
             this.Version = "24.2";
-            watermark1.Font = new DevExpress.Drawing.DXFont("Verdana", 72F, DevExpress.Drawing.DXFontStyle.Bold);
-            watermark1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
+            watermark1.Font = new DevExpress.Drawing.DXFont("Verdana", 20F, DevExpress.Drawing.DXFontStyle.Bold);
+            watermark1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             watermark1.Id = "Coaxium";
             watermark1.Text = "COAXIUM";
             watermark1.TextPosition = DevExpress.XtraPrinting.Drawing.WatermarkPosition.InFront;
             watermark1.TextTransparency = 165;
-            watermark2.Font = new DevExpress.Drawing.DXFont("Verdana", 72F, DevExpress.Drawing.DXFontStyle.Bold);
-            watermark2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(176)))), ((int)(((byte)(80)))));
+            watermark2.Font = new DevExpress.Drawing.DXFont("Verdana", 20F, DevExpress.Drawing.DXFontStyle.Bold);
+            watermark2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             watermark2.Id = "Clearfield";
             watermark2.Text = "CLEARFIELD";
             watermark2.TextPosition = DevExpress.XtraPrinting.Drawing.WatermarkPosition.InFront;

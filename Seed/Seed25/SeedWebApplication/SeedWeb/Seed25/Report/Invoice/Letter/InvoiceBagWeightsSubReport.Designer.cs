@@ -76,9 +76,9 @@
             // 
             // xrLine2
             // 
-            this.xrLine2.LocationFloat = new DevExpress.Utils.PointFloat(4.81F, 12F);
+            this.xrLine2.LocationFloat = new DevExpress.Utils.PointFloat(43.84594F, 12F);
             this.xrLine2.Name = "xrLine2";
-            this.xrLine2.SizeF = new System.Drawing.SizeF(237.5F, 2.083333F);
+            this.xrLine2.SizeF = new System.Drawing.SizeF(198.4641F, 2.083332F);
             // 
             // xrLabel4
             // 
@@ -111,11 +111,11 @@
             this.xrLabel2.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[Weight]")});
             this.xrLabel2.Font = new DevExpress.Drawing.DXFont("Arial", 10F);
-            this.xrLabel2.LocationFloat = new DevExpress.Utils.PointFloat(4.810015F, 0F);
+            this.xrLabel2.LocationFloat = new DevExpress.Utils.PointFloat(43.84594F, 0F);
             this.xrLabel2.Multiline = true;
             this.xrLabel2.Name = "xrLabel2";
             this.xrLabel2.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabel2.SizeF = new System.Drawing.SizeF(61.45833F, 12F);
+            this.xrLabel2.SizeF = new System.Drawing.SizeF(54.22767F, 12F);
             this.xrLabel2.StylePriority.UseFont = false;
             this.xrLabel2.Text = "xrLabel2";
             this.xrLabel2.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopRight;
@@ -126,11 +126,11 @@
             this.xrLabel1.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[Quantity]")});
             this.xrLabel1.Font = new DevExpress.Drawing.DXFont("Arial", 10F);
-            this.xrLabel1.LocationFloat = new DevExpress.Utils.PointFloat(79.9983F, 0F);
+            this.xrLabel1.LocationFloat = new DevExpress.Utils.PointFloat(98.07428F, 0F);
             this.xrLabel1.Multiline = true;
             this.xrLabel1.Name = "xrLabel1";
             this.xrLabel1.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabel1.SizeF = new System.Drawing.SizeF(61.46F, 12F);
+            this.xrLabel1.SizeF = new System.Drawing.SizeF(43.38402F, 12F);
             this.xrLabel1.StylePriority.UseFont = false;
             this.xrLabel1.Text = "xrLabel1";
             this.xrLabel1.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopRight;
@@ -149,15 +149,15 @@
             this.xrLabel7,
             this.xrLabel6,
             this.xrLabel5});
-            this.ReportHeader.HeightF = 40.08333F;
+            this.ReportHeader.HeightF = 40.08334F;
             this.ReportHeader.Name = "ReportHeader";
             // 
             // xrLabel10
             // 
             this.xrLabel10.Font = new DevExpress.Drawing.DXFont("Arial", 14.24F);
-            this.xrLabel10.LocationFloat = new DevExpress.Utils.PointFloat(12.04068F, 0F);
+            this.xrLabel10.LocationFloat = new DevExpress.Utils.PointFloat(43.84594F, 0F);
             this.xrLabel10.Name = "xrLabel10";
-            this.xrLabel10.SizeF = new System.Drawing.SizeF(230.27F, 20F);
+            this.xrLabel10.SizeF = new System.Drawing.SizeF(198.4648F, 20F);
             this.xrLabel10.StylePriority.UseFont = false;
             this.xrLabel10.StylePriority.UseTextAlignment = false;
             this.xrLabel10.Text = "Bag Weights";
@@ -166,9 +166,9 @@
             // xrLine1
             // 
             this.xrLine1.LineWidth = 2F;
-            this.xrLine1.LocationFloat = new DevExpress.Utils.PointFloat(4.81F, 38F);
+            this.xrLine1.LocationFloat = new DevExpress.Utils.PointFloat(43.84594F, 38.00001F);
             this.xrLine1.Name = "xrLine1";
-            this.xrLine1.SizeF = new System.Drawing.SizeF(237.5F, 2.083333F);
+            this.xrLine1.SizeF = new System.Drawing.SizeF(198.4641F, 2.083328F);
             // 
             // xrLabel7
             // 
@@ -183,22 +183,22 @@
             // 
             // xrLabel6
             // 
-            this.xrLabel6.LocationFloat = new DevExpress.Utils.PointFloat(4.810015F, 20F);
+            this.xrLabel6.LocationFloat = new DevExpress.Utils.PointFloat(43.84594F, 20F);
             this.xrLabel6.Multiline = true;
             this.xrLabel6.Name = "xrLabel6";
             this.xrLabel6.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabel6.SizeF = new System.Drawing.SizeF(61.45833F, 16F);
+            this.xrLabel6.SizeF = new System.Drawing.SizeF(54.22767F, 16F);
             this.xrLabel6.StylePriority.UseTextAlignment = false;
             this.xrLabel6.Text = "Weight";
             this.xrLabel6.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopRight;
             // 
             // xrLabel5
             // 
-            this.xrLabel5.LocationFloat = new DevExpress.Utils.PointFloat(79.99762F, 21F);
+            this.xrLabel5.LocationFloat = new DevExpress.Utils.PointFloat(98.07361F, 21F);
             this.xrLabel5.Multiline = true;
             this.xrLabel5.Name = "xrLabel5";
             this.xrLabel5.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabel5.SizeF = new System.Drawing.SizeF(61.45833F, 16F);
+            this.xrLabel5.SizeF = new System.Drawing.SizeF(43.38402F, 16F);
             this.xrLabel5.StylePriority.UseTextAlignment = false;
             this.xrLabel5.Text = "Count";
             this.xrLabel5.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopRight;
@@ -217,11 +217,11 @@
             this.xrLabel9.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "Sum([Quantity])")});
             this.xrLabel9.Font = new DevExpress.Drawing.DXFont("Arial", 10F);
-            this.xrLabel9.LocationFloat = new DevExpress.Utils.PointFloat(79.9983F, 0F);
+            this.xrLabel9.LocationFloat = new DevExpress.Utils.PointFloat(98.07428F, 0F);
             this.xrLabel9.Multiline = true;
             this.xrLabel9.Name = "xrLabel9";
             this.xrLabel9.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabel9.SizeF = new System.Drawing.SizeF(61.46F, 12F);
+            this.xrLabel9.SizeF = new System.Drawing.SizeF(43.38402F, 12F);
             this.xrLabel9.StylePriority.UseFont = false;
             this.xrLabel9.Text = "xrLabel1";
             this.xrLabel9.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopRight;
