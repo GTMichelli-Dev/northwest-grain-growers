@@ -15,7 +15,8 @@ namespace Seed25.Controllers {
 
         [HttpGet]
         public object Get(DataSourceLoadOptions loadOptions) {
-            return DataSourceLoader.Load(SampleData.Orders, loadOptions);
+           
+           return DataSourceLoader.Load(Seed25.Models.SampleData.Orders, loadOptions);
         }
 
     }

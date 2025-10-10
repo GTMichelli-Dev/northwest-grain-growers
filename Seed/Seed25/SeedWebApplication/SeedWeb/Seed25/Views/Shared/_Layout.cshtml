@@ -73,11 +73,17 @@
 
             <div id="navbar" class="collapse navbar-collapse">
                 <ul class="navbar-nav me-auto">
+                    
                     <li class="nav-item"><a href="#" class="nav-link active">Home</a></li>
+
+                    <li class="nav-item">
+                        <div id="location-select" style="min-width:260px"></div>
+                    </li>
                     <li class="nav-item"><a href="#about" class="nav-link">About</a></li>
                     <li class="nav-item"><a href="#contact" class="nav-link">Contact</a></li>
                 </ul>
             </div>
+
         </div>
     </nav>
 
@@ -89,3 +95,61 @@
 </body>
 
 </html>
+
+
+<script>
+    // ---- LocalStorage helper ----
+    window.SiteLocation = (function () {
+        const KEY = "siteLocation"; // { id, description }
+        const get = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch { return null; } };
+        const set = (obj) => {
+            localStorage.setItem(KEY, JSON.stringify(obj || null));
+            window.dispatchEvent(new CustomEvent("siteLocation:changed", { detail: obj }));
+        };
+        return { get, set, KEY };
+    })();
+
+    // Build a root-anchored URL so it works no matter where the page lives
+    const apiUrl = '@Url.Content("~/api/Locations/list")';  // hits LocationsController.List
+
+    // Wait until DOM + your libraries are loaded
+    document.addEventListener("DOMContentLoaded", async function () {
+        // 1) Fetch data (simple & debuggable)
+        let data = [];
+        try {
+            const resp = await fetch(apiUrl, { cache: "no-store" });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            data = await resp.json(); // expects [{ id, description }, ...]
+        } catch (err) {
+            console.error("Failed to load locations:", err);
+            // Optional: show a fallback message in the UI
+            return;
+        }
+
+        // 2) Init the DevExtreme select AFTER data arrives
+        const saved = SiteLocation.get();
+
+        const $sel = $("#location-select").dxSelectBox({
+            dataSource: data,
+            valueExpr: "id",
+            displayExpr: "description",
+            searchEnabled: true,
+            showClearButton: true,
+            placeholder: "Select location…",
+            value: saved?.id ?? null,
+            onValueChanged: function (e) {
+                const match = data.find(x => x.id === e.value) || null;
+                SiteLocation.set(match ? { id: match.id, description: match.description } : null);
+            }
+        });
+
+        // 3) Optional: react to cross-tab changes
+        window.addEventListener("storage", (e) => {
+            if (e.key === SiteLocation.KEY) {
+                const newVal = e.newValue ? JSON.parse(e.newValue) : null;
+                const dx = $sel.dxSelectBox("instance");
+                if (dx) dx.option("value", newVal?.id ?? null);
+            }
+        });
+    });
+</script>

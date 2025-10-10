@@ -4,7 +4,7 @@
     {
         public Guid UID { get; set; }
 
-        public int Ticket { get; set; }
+        public long Ticket { get; set; }
         public DateTime InvoiceDate { get; set; }
    
         public string CustomerName { get; set; }

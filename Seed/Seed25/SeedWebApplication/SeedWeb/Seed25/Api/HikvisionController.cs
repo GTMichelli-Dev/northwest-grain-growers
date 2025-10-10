@@ -10,43 +10,51 @@ using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
 
 
+
+
 [ApiController]
 [Route("api/[controller]")]
 public class HikvisionController:ControllerBase
 {
   
 
-    [HttpPost("gotoPreset/{presetId}")]
-    public async Task<bool> GoToPresetAsync(int presetId)
+    [HttpPost("gotoPreset")]
+    public async Task<bool> GoToPresetAsync([FromBody] CameraRequest cr )
     {
             HttpClient _http;
     var handler = new HttpClientHandler
         {
-            Credentials = new NetworkCredential("admin", "Scale_Us3r"),
+            Credentials = new NetworkCredential(cr.Username,cr.Password),
             PreAuthenticate = true
         };
-        _http = new HttpClient(handler); //{ BaseAddress = new Uri($"http://{"10.165.1.62"}") };
-        var url = $"/ISAPI/PTZCtrl/channels/1/presets/{presetId}/goto";
-        var resp = await _http.PutAsync($"http://10.165.1.62/ISAPI/PTZCtrl/channels/1/presets/{presetId}/goto", new StringContent(""));
+        _http = new HttpClient(handler); 
+        var resp = await _http.PutAsync($"http://{cr.Ip}/ISAPI/PTZCtrl/channels/1/presets/{cr.PresetId}/goto", new StringContent(""));
         return resp.IsSuccessStatusCode;
     }
 
     public class CameraRequest
     {
-        /// <example>10.165.1.62</example>
+      
         public string Ip { get; set; } = default!;
-        /// <example>admin</example>
         public string Username { get; set; } = default!;
-        /// <example>Scale_Us3r</example>
         public string Password { get; set; } = default!;
-        /// <example>1</example>
         public int PresetId { get; set; }
-        /// <summary>Optional: channel number (default 1)</summary>
-        /// <example>1</example>
         public int Channel { get; set; } = 1;
-        /// <summary>Optional delay (ms) after goto before snapshot</summary>
-        /// <example>800</example>
         public int PostGotoDelayMs { get; set; } = 800;
+
+      
+    }
+
+    public class CameraOverlayRequest: CameraRequest
+    {
+        public long Ticket { get; set; }
+        public string AnchorX { get; set; }
+        public string AnchorY { get; set; }
+        public int MarginX { get; set; }
+        public int MarginY { get; set; }
+        public int Width { get; set; }
+        public bool KioskTicket { get; set; }
+
     }
 
     private MemoryStream GetInboundTicketImage()
@@ -110,51 +118,61 @@ public class HikvisionController:ControllerBase
     }
 
 
-    [HttpGet("testpictureOverlay")]
-    public async Task<IActionResult> testpictureOverlay()
+    
+
+    [HttpPost("testpictureOverlay")]
+    public async Task<IActionResult> testpictureOverlay([FromBody] CameraOverlayRequest cr)
     {
+
+
+        AnchorX anchorXEnum;
+        if (!Enum.TryParse<AnchorX>(cr.AnchorX, ignoreCase: true, out anchorXEnum))
+        {
+            anchorXEnum = AnchorX.Center;
+        }
+
+        AnchorY anchorYEnum;
+        if (!Enum.TryParse<AnchorY>(cr.AnchorY, ignoreCase: true, out anchorYEnum))
+        {
+            anchorYEnum = AnchorY.Top;
+        }
+
+
+        if (cr.Width < 100 || cr.Width > 2000) cr.Width = 500;
+        if (cr.MarginX < 0 || cr.MarginX > 500) cr.MarginX = 10;
+        if (cr.MarginY < 0 || cr.MarginY > 500) cr.MarginY = 10;
+        if (cr.PostGotoDelayMs < 500 || cr.PostGotoDelayMs > 10000) cr.PostGotoDelayMs = 800;
+
         var baseMs = await Cameras.CameraService.MoveAndShootToStreamAsync(
             vendor: Cameras.CameraVendor.Hikvision,
-            ipAddress: "10.165.1.62",
-            username: "admin",
-            password: "Scale_Us3r",
-            presetNumber: 1,
+            ipAddress: cr.Ip,
+            username: cr.Username,
+            password: cr.Password,
+            presetNumber: cr.PresetId,
             https: false,
             port: 80,
-            channel: 1);
+            channel: cr.Channel);
 
 
 
 
-        var dto = new InboundTicketDTO
+
+
+
+        using (var overlayMs = await new PrintApiController().GetPictureInvoiceEmbed(cr.Ticket,cr.KioskTicket))
         {
-            UID = Guid.NewGuid(),
-            Ticket = 1234567890,
-            Weight = 128200,
-            TimeIn = DateTime.Now,
-            Plant = "Wasco Seed Plant.",
-            Phone = "541-442-5555 ",
-            Prompt1 = "Goto Office",
-            Prompt2 = "Bring Ticket"
-        };
 
-        XtraReport report = new InboundTicket(dto);
-
-        using (var overlayMs = new MemoryStream())
-        {
-            await report.ExportToImageAsync(overlayMs);
-      
-
-           ImageComposer.OverlayImageAnchored(
+            ImageComposer.OverlayImageAnchored(
            baseImageStream: baseMs,
            overlayImageStream: overlayMs,
            outputPngPath: @"C:\Temp\1234567890_Inbound.png",
-           anchorX: AnchorX.Right,
-           anchorY: AnchorY.Top,
-           marginX: 10,
-           marginY: 10,
-           width: 500,          // height auto to preserve aspect
-       clampToBounds: true);
+           anchorX: anchorXEnum,
+           anchorY: anchorYEnum,
+
+           marginX: cr.MarginX,
+           marginY: cr.MarginY,
+           width: cr.Width,
+           clampToBounds: true);
         }
         return Ok();
     }
