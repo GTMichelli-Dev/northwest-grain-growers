@@ -20,29 +20,38 @@ public sealed class Worker(
         {
             try
             {
-                using var scope = services.CreateScope();    // new scope per run
+                using var scope = services.CreateScope();
                 var transfer = scope.ServiceProvider.GetRequiredService<AgvantageTransfer>();
+
                 await transfer.StartTransferAsync(
                     batchFile: _cfg.BatchFile,
                     completedFilePath: _cfg.CompletedFilePath,
                     timeout: TimeSpan.FromSeconds(_cfg.TimeoutSeconds),
                     updateInterval: TimeSpan.FromMinutes(_cfg.UpdateIntervalMinutes),
                     ct: stoppingToken);
-                await Task.Delay(TimeSpan.FromMinutes(_cfg.UpdateIntervalMinutes), stoppingToken);
 
-
-
+                logger.LogInformation("Worker completed a transfer cycle at {Time}", DateTimeOffset.Now);
             }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Transfer run failed");
             }
 
-            logger.LogInformation("Worker completed a transfer cycle at {Time}", DateTimeOffset.Now);
-            await Task.Delay(TimeSpan.FromMinutes(_cfg.UpdateIntervalMinutes), stoppingToken);
+            // Single delay governing cadence
+            try
+            {
+                await Task.Delay(TimeSpan.FromMinutes(_cfg.UpdateIntervalMinutes), stoppingToken);
+            }
+            catch (OperationCanceledException) { break; }
         }
+
+        logger.LogInformation("Worker stopping at {Time}", DateTimeOffset.Now);
     }
+
 }
 
 public sealed class AppSettings
