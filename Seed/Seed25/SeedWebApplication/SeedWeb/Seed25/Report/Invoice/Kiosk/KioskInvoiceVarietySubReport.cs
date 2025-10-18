@@ -1,5 +1,5 @@
 ﻿using DevExpress.XtraReports.UI;
-using NuGet.Protocol.Plugins;
+ 
 using Seed25.DTO;
 using System;
 using System.Collections;

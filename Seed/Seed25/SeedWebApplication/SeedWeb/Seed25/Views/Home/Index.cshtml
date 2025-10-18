@@ -17,9 +17,9 @@
         .Placeholder("Select a location...")
         .Width(200)
     )
-</div>
+</div> *@
 
-@section scripts {
+@* @section scripts {
     <script>
         function onLocationChanged(e) {
             if (e.value) {
@@ -35,7 +35,7 @@
             }
         });
     </script>
-}
+} *@
 
 @(Html.DevExtreme().DataGrid<SampleOrder>()
     .ShowBorders(true)
@@ -61,4 +61,4 @@
             groupItems.Add().SummaryType(SummaryType.Count);
         })
     )
-) *@
+)

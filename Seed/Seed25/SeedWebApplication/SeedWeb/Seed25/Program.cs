@@ -29,14 +29,14 @@ builder.Services.AddDbContext<Seed_DataContext>(options =>
 var app = builder.Build();
 
 // Enable Swagger middleware in development (or always, if you prefer)
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "Seed25 API V1");
     });
-}
+//}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

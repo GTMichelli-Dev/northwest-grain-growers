@@ -63,25 +63,59 @@ public class PrintApiController : ControllerBase
     }
 
 
-    public class PrintRequest
+    public class InvoiceRequest
     {
 
         public bool TreatedSeed { get; set; } = true;
         public bool Clearfield { get; set; } = false;
         public bool Coaxium { get; set; } = false;
         public string Type { get; set; } = "Truck";
-        public string Email { get; set; }
+     
+    }
+
+
+
+
+    public class EmailRequest : InvoiceRequest
+    {
+  
+        public string Email { get; set; } = "";
+    }
+
+
+    public class PrintRequest : InvoiceRequest
+    {
+
+        public string PrinterName { get; set; } = "";
+        public bool Kiosk { get; set; }
     }
 
 
 
 
 
-
     [HttpPost("GetInvoice")]
-    public IActionResult GetInvoice([FromBody] PrintRequest pr)
+    public IActionResult GetInvoice([FromBody] InvoiceRequest pr)
     {
         var dto= SampleData.GetSampleData(pr);
+
+        XtraReport report = new Invoice(dto);
+        using (var ms = new MemoryStream())
+        {
+            report.ExportToPdf(ms);
+
+            System.IO.File.WriteAllBytes(@"C:\Temp\LetterInvoice.pdf", ms.ToArray());
+            return Ok();
+
+        }
+
+    }
+
+
+    [HttpPost("SaveInvoice")]
+    public IActionResult SaveInvoice([FromBody] InvoiceRequest pr)
+    {
+        var dto = SampleData.GetSampleData(pr);
 
         XtraReport report = new Invoice(dto);
         using (var ms = new MemoryStream())
@@ -115,7 +149,7 @@ public class PrintApiController : ControllerBase
     }
 
     [HttpPost("EmailInvoice")]
-    public async Task<IActionResult> EmailInvoice([FromBody] PrintRequest pr)
+    public async Task<IActionResult> EmailInvoice([FromBody] EmailRequest pr)
     {
         try
         {
@@ -199,15 +233,21 @@ public class PrintApiController : ControllerBase
 
 
 
-            [HttpPost("PrintInvoice")]
+     [HttpPost("PrintInvoice")]
     public IActionResult PrintInvoice([FromBody] PrintRequest pr)
     {
         var dto = SampleData.GetSampleData(pr);
 
-        XtraReport report = new Invoice(dto);
+        XtraReport report;
+            if (pr.Kiosk)
+                report = new KioskInvoice(dto);
+            else
+                report= new Invoice(dto);
+
+        
         using (var ms = new MemoryStream())
         {
-            report.Print("ReportPrinter");
+            report.Print(pr.PrinterName);
             return Ok();
 
         }
@@ -216,7 +256,7 @@ public class PrintApiController : ControllerBase
 
 
     [HttpPost("GetKioskInvoice")]
-    public IActionResult GetKioskInvoice([FromBody] PrintRequest pr)
+    public IActionResult GetKioskInvoice([FromBody] InvoiceRequest pr)
     {
         var dto = SampleData.GetSampleData(pr);
         XtraReport report = new KioskInvoice(dto);

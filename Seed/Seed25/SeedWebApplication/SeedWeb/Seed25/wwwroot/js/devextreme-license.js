@@ -1,0 +1,3 @@
+﻿DevExpress.config({
+    licenseKey: 'ewogICJmb3JtYXQiOiAxLAogICJjdXN0b21lcklkIjogIjc2N2ZmZDA1LTNhNTgtNDVkNy1hNzI2LWJhZDI1ZGVhZDdhNiIsCiAgIm1heFZlcnNpb25BbGxvd2VkIjogMjUxCn0=.LqXPSMiIZ0Eq5mqeh0j9/O8nOS8HMksKtSzV3J4cB/pwT0I2p0k/YHiUPf+x6JZgyfg9LRm4SHRFVKOhhyX2myjSfERbsnTq0y4gUGQcTh56UteI+vcp0lycFxuF90R75rilfg=='
+});

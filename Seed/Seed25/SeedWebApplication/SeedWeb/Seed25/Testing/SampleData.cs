@@ -6,7 +6,7 @@ using static PrintApiController;
     {
 
 
-        public static InvoiceDTO GetSampleData(PrintRequest pr)
+        public static InvoiceDTO GetSampleData(InvoiceRequest pr)
         {
             pr.Type = pr.Type.ToUpper();
             if (pr.Type == "STRING") pr.Type = "TRUCK";
@@ -132,7 +132,7 @@ using static PrintApiController;
 
         public static InvoiceDTO GetSampleData(long Ticket)
         {
-            var pr = new PrintRequest { Type = "Truck", TreatedSeed = true, Clearfield = true, Coaxium = false };
+            var pr = new InvoiceRequest { Type = "Truck", TreatedSeed = true, Clearfield = true, Coaxium = false };
             pr.Type = pr.Type.ToUpper();
             if (pr.Type == "STRING") pr.Type = "TRUCK";
             var dto = new InvoiceDTO
