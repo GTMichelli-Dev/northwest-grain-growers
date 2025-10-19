@@ -291,7 +291,7 @@ namespace Agvantage_Transfer.Sync
                         if (row.NotInUse != dto.NotInUse) { row.NotInUse = dto.NotInUse; changed = true; }
                         if (!string.Equals(row.Lot, dto.Lot, StringComparison.Ordinal)) { row.Lot = dto.Lot; changed = true; }
                         if (!string.Equals(row.Comment, dto.Comment, StringComparison.Ordinal)) { row.Comment = dto.Comment; changed = true; }
-                        if (row.DefaultValue != dto.DefaultValue) { row.DefaultValue = dto.DefaultValue; changed = true; }
+                       // if (row.DefaultValue != dto.DefaultValue) { row.DefaultValue = dto.DefaultValue; changed = true; }
                         if (changed) updated++;
                     }
                     else
