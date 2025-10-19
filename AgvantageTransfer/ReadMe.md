@@ -1,5 +1,5 @@
 ﻿## Create Windows Service Installer 
-### All the Agvantage scripts are in the Agvantage Folder
+### All the Agvantage scripts are in the Agvantage Folder https://github.com/TotalScaleService/NorthwestGrainGrowers/tree/e378a03586d032bb9ff2997cf1d8bc2b284f2b3c/AgvantageTransfer/Agvantage
  
 Build the Windows Service installer using the following steps:
 1. This command publishes the application in Release configuration for Windows x64 runtime as a self-contained single file, including native libraries for self-extraction.
