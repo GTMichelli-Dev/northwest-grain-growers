@@ -1,0 +1,105 @@
+﻿@using AgvantageTransferLogViewer.Models
+@using DevExtreme.AspNet.Mvc
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Agvantage Transfer Log</h1>
+@(Html.DevExtreme().DataGrid<AgvantageTransferLog>()
+    .ID("transferLogGrid")
+    .DataSource(ds => ds.WebApi()
+        .Controller("TransferLog")
+        .LoadAction("Get")
+        .OnBeforeSend("dxBeforeSend")
+        .Key("Uid")
+    )
+    .ColumnAutoWidth(true)
+    .AllowColumnResizing(true)
+    .ColumnResizingMode(ColumnResizingMode.Widget)
+    .RemoteOperations(true)
+
+    .GroupPanel(gp => gp.Visible(true))
+    .Grouping(g => g.AutoExpandAll(false).ContextMenuEnabled(true))
+
+    .FilterRow(fr => fr.Visible(true).ApplyFilter(GridApplyFilterMode.Auto))
+    .HeaderFilter(hf => hf.Visible(true))
+    .SearchPanel(sp => sp.Visible(true).Width(240).Placeholder("Search logs"))
+    .FilterPanel(fp => fp.Visible(true))
+    .FilterBuilder(fb => fb.Fields(fields => {
+        fields.AddFor(m => m.TaskTime)
+              .DataType(FilterBuilderFieldDataType.DateTime)
+              .Name("TaskTime").Caption("Time");
+        fields.AddFor(m => m.Error)
+              .DataType(FilterBuilderFieldDataType.Boolean)
+              .Name("Error").Caption("Is Error");
+        fields.AddFor(m => m.Event)
+              .DataType(FilterBuilderFieldDataType.String)
+              .Name("Event").Caption("Event");
+        fields.AddFor(m => m.Message)
+              .DataType(FilterBuilderFieldDataType.String)
+              .Name("Message").Caption("Message");
+    }))
+
+    .Scrolling(s => s.Mode(GridScrollingMode.Virtual))
+    .Paging(p => p.Enabled(false))
+
+    .StateStoring(ss => ss.Enabled(true)
+        .Type(StateStoringType.LocalStorage)
+        .StorageKey("agv-transfer-log-grid"))
+
+    .ColumnChooser(cc => cc.Enabled(true).Mode(GridColumnChooserMode.Select))
+
+    .Columns(c => {
+        c.AddFor(m => m.TaskTime)
+         .Width(130)
+         .DataType(GridColumnDataType.DateTime)
+         .Format("M/d HH:mm")
+         .Alignment(HorizontalAlignment.Center);
+
+        c.AddFor(m => m.Error)
+         .Width(80)
+         .DataType(GridColumnDataType.Boolean)
+         .TrueText("Error")
+         .FalseText("OK");
+
+        // To start grouped by Event, uncomment the next line:
+        // c.AddFor(m => m.Event).GroupIndex(0);
+        c.AddFor(m => m.Event)
+          .Width(120);
+
+        c.AddFor(m => m.Message);
+    })
+)
+
+
+
+
+
+
+</div>
+<script>
+  window.dxBeforeSend = function(method, ajaxOptions) {
+    ajaxOptions.url = '@Url.Content("~/api/TransferLog/Get")';
+  };
+
+  (function () {
+    var timerId;
+    function refreshNow() {
+      var grid = $("#transferLogGrid").dxDataGrid("instance");
+      if (grid) grid.refresh();
+    }
+    function start() {
+      if (timerId) clearInterval(timerId);
+      timerId = setInterval(refreshNow, 10000);
+    }
+    document.addEventListener("DOMContentLoaded", start);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) refreshNow();
+    });
+    window.addEventListener("unload", function () {
+      if (timerId) clearInterval(timerId);
+    });
+  })();
+</script>
+
