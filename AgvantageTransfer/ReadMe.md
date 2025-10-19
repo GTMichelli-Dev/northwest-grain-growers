@@ -20,7 +20,7 @@ sc start   AgvantageTransfer
 
 
 
-3. To Rewmove the Service:
+3. To Remove the Service:
 ```cmd
 sc query "Agvantage Transfer"
 sc stop  "AgvantageTransfer"
