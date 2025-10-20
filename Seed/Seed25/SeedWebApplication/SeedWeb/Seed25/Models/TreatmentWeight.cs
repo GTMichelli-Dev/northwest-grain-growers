@@ -14,4 +14,8 @@ public partial class TreatmentWeight
     public int LocationId { get; set; }
 
     public double Weight { get; set; }
+
+    public virtual Item Item { get; set; }
+
+    public virtual Location Location { get; set; }
 }

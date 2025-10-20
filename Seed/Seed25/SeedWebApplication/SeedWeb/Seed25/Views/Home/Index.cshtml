@@ -1,64 +1,209 @@
 @using Seed25.Models
+@using Seed25.DTO
 
 <h2>Tickets</h2>
+<div class="d-flex align-items-center gap-2 flex-wrap mb-3">
+  <span class="fw-semibold me-1">Date:</span>
+  <div id="fromDate" class="d-inline-block"></div>
+  <span class="mx-1">–</span>
+  <div id="toDate" class="d-inline-block"></div>
 
-@* <div>
-    @(Html.DevExtreme().SelectBox()
-        .ID("locationSelectBox")
-        .DataSource(ds => ds.WebApi()
-            .Controller("Ticket")
-            .LoadAction("GetLocations")
-            .Key("Id")
-        )
-        .DisplayExpr("Description")
-        .ValueExpr("Id")
-        .Value("") // Will be set by JS from localStorage
-        .OnValueChanged("onLocationChanged")
-        .Placeholder("Select a location...")
-        .Width(200)
+  <span class="ms-3">Location:</span>
+  <div id="location-select" class="d-inline-block" style="min-width:260px"></div>
+
+  <button type="button" id="btnRefresh" class="btn btn-primary ms-2">Refresh</button>
+</div>
+
+@(Html.DevExtreme().DataGrid<SeedTicketSummaryDTO>()
+    .ID("ticketsGrid")
+    .DataSource(ds => ds.WebApi()
+        .Controller("SeedTicket")
+        .LoadAction("GetTicketSummary")   // POST api/SeedTicket/GetTicketSummary
+        .Key("UID")
+        .OnBeforeSend("dxBeforeSend")     // set body with today + location
     )
-</div> *@
-
-@* @section scripts {
-    <script>
-        function onLocationChanged(e) {
-            if (e.value) {
-                localStorage.setItem("selectedLocationUid", e.value);
-            }
-        }
-
-        $(function () {
-            var saved = localStorage.getItem("selectedLocationUid");
-            if (saved) {
-                var selectBox = $("#locationSelectBox").dxSelectBox("instance");
-                selectBox.option("value", saved);
-            }
-        });
-    </script>
-} *@
-
-@(Html.DevExtreme().DataGrid<SampleOrder>()
-    .ShowBorders(true)
-    .DataSource(d => d.Mvc().Controller("SampleData").LoadAction("Get").Key("OrderID"))
-    .Columns(columns => {
-        columns.AddFor(m => m.OrderID);
-        columns.AddFor(m => m.OrderDate);
-        columns.AddFor(m => m.CustomerName);
-        columns.AddFor(m => m.ShipCountry);
-        columns.AddFor(m => m.ShipCity);
+    .RemoteOperations(false)
+    .ColumnAutoWidth(true)
+    .Columns(c => {
+        c.AddFor(m => m.Location);
+        c.AddFor(m => m.InvoiceDate).DataType(GridColumnDataType.DateTime).Format("M/d/yyyy HH:mm");
+        c.AddFor(m => m.Ticket);
+        c.AddFor(m => m.StrTotallbs)
+        .Caption("Total lbs")
+        .Alignment(HorizontalAlignment.Right);
+        c.AddFor(m => m.CustomerName);
+        c.AddFor(m => m.TicketType);
+        c.AddFor(m => m.Status);
+        c.AddFor(m => m.TruckId);
+        c.AddFor(m => m.PO);
+        c.AddFor(m => m.BOL);
+         c.Add()
+         .Caption("Varieties")
+         .Width(420)
+         .EncodeHtml(false)          // allow <br/> for line breaks
+         .CellTemplate(new JS("varietiesCell")); 
+        c.AddFor(m => m.Comments);
     })
-    .Paging(p => p.PageSize(10))
-    .FilterRow(f => f.Visible(true))
-    .HeaderFilter(f => f.Visible(true))
-    .GroupPanel(p => p.Visible(true))
-    .Grouping(g => g.AutoExpandAll(false))
-    .RemoteOperations(true)
-    .Summary(s => s
-        .TotalItems(totalItems => {
-            totalItems.AddFor(m => m.ShipCity).SummaryType(SummaryType.Count);
-        })
-        .GroupItems(groupItems => {
-            groupItems.Add().SummaryType(SummaryType.Count);
-        })
-    )
 )
+
+@section Scripts {
+
+<script>
+  // ---- persistence keys
+  const STORE = {
+    from: 'seed.fromDate',   // 'YYYY-MM-DD'
+    to:   'seed.toDate',     // 'YYYY-MM-DD'
+    loc:  'seed.locationId'  // number
+  };
+
+   function varietiesCell(container, options) {
+    const list = options?.data?.Varieties || [];
+    console.log(list);
+    if (!list.length) return;
+
+    // Build lines safely (no HTML needed)
+    list.forEach(v => {
+      const desc = v?.Description || "";
+      const lot  = v?.Lot ? ` (Lot ${v.Lot})` : "";
+      $("<div>").text(desc + lot).appendTo(container);
+    });
+  }
+
+  // ---- date helpers (store as date-only strings to avoid TZ surprises)
+  function todayLocal() {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  }
+  function toDateOnlyString(d) {
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  }
+  function fromDateOnlyString(s) {
+    if (!s) return null;
+    const parts = s.split('-').map(Number);
+    if (parts.length !== 3) return null;
+    return new Date(parts[0], parts[1]-1, parts[2]);
+  }
+  function ensureRange(from, to) {
+    if (from > to) { const tmp = from; from = to; to = tmp;
+      if (window.DevExpress?.ui?.notify) DevExpress.ui.notify("From date was after To date — swapped.", "warning", 2000);
+    }
+    return { from, to };
+  }
+
+  // ---- location helpers (DevExtreme SelectBox or fallback)
+  function getSelectedLocationId() {
+    const $el = $("#location-select");
+    try {
+      const inst = $el.dxSelectBox("instance");
+      if (inst) return inst.option("value") || 0;
+    } catch {}
+    const v = $el.val();
+    return v ? parseInt(v, 10) : 0;
+  }
+  function setSelectedLocationId(id) {
+    const $el = $("#location-select");
+    try {
+      const inst = $el.dxSelectBox("instance");
+      if (inst) { inst.option("value", id); return; }
+    } catch {}
+    $el.val(id);
+  }
+
+  // ---- grid refresh
+  function refreshTickets() {
+    const grid = $("#ticketsGrid").dxDataGrid("instance");
+    if (grid) grid.refresh();
+  }
+
+  // ---- OnBeforeSend: build request body
+  function dxBeforeSend(method, ajaxOptions) {
+    if (method !== "load") return;
+
+    // Get current picker values (fallback to stored or today)
+    const fromInst = $("#fromDate").dxDateBox("instance");
+    const toInst   = $("#toDate").dxDateBox("instance");
+    let from = fromInst?.option("value") || fromDateOnlyString(localStorage.getItem(STORE.from)) || todayLocal();
+    let to   = toInst?.option("value")   || fromDateOnlyString(localStorage.getItem(STORE.to))   || todayLocal();
+
+    // normalize & enforce range
+    from = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+    to   = new Date(to.getFullYear(),   to.getMonth(),   to.getDate());
+    ({ from, to } = ensureRange(from, to));
+
+    // persist (date-only strings)
+    localStorage.setItem(STORE.from, toDateOnlyString(from));
+    localStorage.setItem(STORE.to,   toDateOnlyString(to));
+
+    // also persist location
+    const locId = getSelectedLocationId() || 0;
+    localStorage.setItem(STORE.loc, String(locId));
+
+    // send date-only strings; server treats day start via .Date
+    const req = {
+      FromDate: toDateOnlyString(from),
+      ToDate:   toDateOnlyString(to),
+      LocationId: locId
+    };
+    ajaxOptions.method = "POST";
+    ajaxOptions.contentType = "application/json";
+    ajaxOptions.data = JSON.stringify(req);
+  }
+
+  // ---- init UI and wire up events
+  $(function () {
+    // init From/To with saved or today
+    const fromSaved = fromDateOnlyString(localStorage.getItem(STORE.from)) || todayLocal();
+    const toSaved   = fromDateOnlyString(localStorage.getItem(STORE.to))   || todayLocal();
+
+    $("#fromDate").dxDateBox({
+      type: "date",
+      value: fromSaved,
+      displayFormat: "M/d/yyyy",
+      onValueChanged: e => {
+        // if user clears, set to today
+        const v = e.value || todayLocal();
+        localStorage.setItem(STORE.from, toDateOnlyString(v));
+        refreshTickets();
+      }
+    });
+    $("#toDate").dxDateBox({
+      type: "date",
+      value: toSaved,
+      displayFormat: "M/d/yyyy",
+      onValueChanged: e => {
+        const v = e.value || todayLocal();
+        localStorage.setItem(STORE.to, toDateOnlyString(v));
+        refreshTickets();
+      }
+    });
+
+    // restore saved location (if you store it)
+    const savedLoc = parseInt(localStorage.getItem(STORE.loc) || "0", 10) || 0;
+    if (savedLoc) setSelectedLocationId(savedLoc);
+
+    // wire refresh button
+    $("#btnRefresh").on("click", refreshTickets);
+
+    // auto-refresh when location changes
+    const $el = $("#location-select");
+    try {
+      const inst = $el.dxSelectBox("instance");
+      if (inst) inst.on("valueChanged", e => {
+        localStorage.setItem(STORE.loc, String(e.value || 0));
+        refreshTickets();
+      });
+      else $el.on("change", () => {
+        localStorage.setItem(STORE.loc, String(getSelectedLocationId() || 0));
+        refreshTickets();
+      });
+    } catch {
+      $el.on("change", () => {
+        localStorage.setItem(STORE.loc, String(getSelectedLocationId() || 0));
+        refreshTickets();
+      });
+    }
+  });
+</script>
+}
+

@@ -30,4 +30,10 @@ public partial class Location
     public string Address2 { get; set; }
 
     public string Address3 { get; set; }
+
+    public virtual ICollection<ItemLocation> ItemLocations { get; set; } = new List<ItemLocation>();
+
+    public virtual ICollection<PcAllowedToPrint> PcAllowedToPrints { get; set; } = new List<PcAllowedToPrint>();
+
+    public virtual ICollection<TreatmentWeight> TreatmentWeights { get; set; } = new List<TreatmentWeight>();
 }

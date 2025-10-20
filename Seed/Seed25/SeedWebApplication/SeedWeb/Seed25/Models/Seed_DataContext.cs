@@ -59,7 +59,7 @@ public partial class Seed_DataContext : DbContext
 
     public virtual DbSet<TreatmentWeight> TreatmentWeights { get; set; }
 
- 
+  
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Bin>(entity =>
@@ -75,9 +75,13 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Bins_UID")
                 .HasColumnName("UID");
-            entity.Property(e => e.Active).HasDefaultValue(true);
+            entity.Property(e => e.Active)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Bins_Inactive");
             entity.Property(e => e.AreaUid).HasColumnName("Area_UID");
+            entity.Property(e => e.Bushels).HasAnnotation("Relational:DefaultConstraintName", "DF_Bins_Bushels");
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255);
@@ -107,6 +111,7 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_BinAreas_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.Area)
                 .IsRequired()
@@ -129,6 +134,7 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_BinColors_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.BinName)
                 .IsRequired()
@@ -136,6 +142,7 @@ public partial class Seed_DataContext : DbContext
             entity.Property(e => e.ColorId).HasColumnName("ColorID");
             entity.Property(e => e.LocationId)
                 .HasDefaultValue(26)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_BinColors_LocationID")
                 .HasColumnName("LocationID");
         });
 
@@ -159,8 +166,11 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Items_UID")
                 .HasColumnName("UID");
-            entity.Property(e => e.Dept).HasDefaultValue(0);
+            entity.Property(e => e.Dept)
+                .HasDefaultValue(0)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Items_Dept");
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(250);
@@ -169,6 +179,7 @@ public partial class Seed_DataContext : DbContext
             entity.Property(e => e.ItemType)
                 .IsRequired()
                 .HasMaxLength(50);
+            entity.Property(e => e.NotInUse).HasAnnotation("Relational:DefaultConstraintName", "DF_Items_NotInUse");
             entity.Property(e => e.StoreLocation).HasColumnName("Store_Location");
             entity.Property(e => e.Uomcode)
                 .IsRequired()
@@ -176,6 +187,12 @@ public partial class Seed_DataContext : DbContext
                 .IsUnicode(false)
                 .IsFixedLength()
                 .HasColumnName("UOMCode");
+
+            entity.HasOne(d => d.ItemTypeNavigation).WithMany(p => p.Items)
+                .HasPrincipalKey(p => p.Description)
+                .HasForeignKey(d => d.ItemType)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Items_Item_Types");
         });
 
         modelBuilder.Entity<ItemLocation>(entity =>
@@ -194,11 +211,20 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_smItem_Location_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.DefaultValue).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.Inactive).HasAnnotation("Relational:DefaultConstraintName", "DF_Item_Location_Inactive");
             entity.Property(e => e.LocationId).HasColumnName("Location_ID");
             entity.Property(e => e.Lot).HasMaxLength(100);
+            entity.Property(e => e.NotInUse).HasAnnotation("Relational:DefaultConstraintName", "DF_Item_Location_NotInUse");
             entity.Property(e => e.Price).HasColumnType("money");
+
+            entity.HasOne(d => d.Location).WithMany(p => p.ItemLocations)
+                .HasPrincipalKey(p => p.Id)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Item_Location_Item_Location");
         });
 
         modelBuilder.Entity<ItemType>(entity =>
@@ -216,6 +242,7 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Item_Types_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.Description)
                 .IsRequired()
@@ -241,6 +268,7 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Locations_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.Address1).HasMaxLength(255);
             entity.Property(e => e.Address2).HasMaxLength(255);
@@ -262,6 +290,7 @@ public partial class Seed_DataContext : DbContext
                 .HasColumnName("Ticket_Printer");
             entity.Property(e => e.TicketSeed)
                 .HasDefaultValue(1000)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Locations_Ticket_Seed")
                 .HasColumnName("Ticket_Seed");
             entity.Property(e => e.WebsiteAddress)
                 .IsRequired()
@@ -282,16 +311,21 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.CurrentLabUid).HasColumnName("Current_Lab_UID");
             entity.Property(e => e.DateCreated)
                 .HasDefaultValueSql("(getdate())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_DateCreated")
                 .HasColumnType("datetime");
             entity.Property(e => e.Germination)
                 .HasDefaultValue(0.8500m)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_Germination")
                 .HasColumnType("decimal(10, 4)");
+            entity.Property(e => e.Inactive).HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_Inactive");
             entity.Property(e => e.InertMatter)
                 .HasDefaultValue(0.0200m)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_Inert_Matter")
                 .HasColumnType("decimal(10, 4)")
                 .HasColumnName("Inert_Matter");
             entity.Property(e => e.ItemLocationUid).HasColumnName("ItemLocationUID");
@@ -302,14 +336,17 @@ public partial class Seed_DataContext : DbContext
             entity.Property(e => e.Notes).HasColumnType("text");
             entity.Property(e => e.OtherCrop)
                 .HasDefaultValue(0.0005m)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_Other_Crop")
                 .HasColumnType("decimal(10, 4)")
                 .HasColumnName("Other_Crop");
             entity.Property(e => e.PureSeed)
                 .HasDefaultValue(0.9800m)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_Pure_Seed")
                 .HasColumnType("decimal(10, 4)")
                 .HasColumnName("Pure_Seed");
             entity.Property(e => e.WeedSeed)
                 .HasDefaultValue(0.0003m)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_Weed_Seed")
                 .HasColumnType("decimal(10, 4)")
                 .HasColumnName("Weed_Seed");
 
@@ -333,6 +370,7 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Lot_Analysis_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.DateTested)
                 .HasColumnType("datetime")
@@ -371,12 +409,19 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_PC_Allowed_To_Print_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.LocationId).HasColumnName("Location_ID");
             entity.Property(e => e.PcAddress)
                 .IsRequired()
                 .HasMaxLength(50)
                 .HasColumnName("PC_Address");
+
+            entity.HasOne(d => d.Location).WithMany(p => p.PcAllowedToPrints)
+                .HasPrincipalKey(p => p.Id)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PC_Allowed_To_Print_PC_Allowed_To_Print");
         });
 
         modelBuilder.Entity<ScaleCamera>(entity =>
@@ -394,6 +439,7 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Scale_Cameras_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.CameraLocation)
                 .IsRequired()
@@ -431,12 +477,17 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_SeedDepartments_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255);
-            entity.Property(e => e.NotUsed).HasColumnName("Not_Used");
-            entity.Property(e => e.SpringWheat).HasColumnName("Spring_Wheat");
+            entity.Property(e => e.NotUsed)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Seed_Departments_Not_Used")
+                .HasColumnName("Not_Used");
+            entity.Property(e => e.SpringWheat)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Seed_Departments_Sprint_Wheat")
+                .HasColumnName("Spring_Wheat");
         });
 
         modelBuilder.Entity<SeedTicket>(entity =>
@@ -452,24 +503,33 @@ public partial class Seed_DataContext : DbContext
 
             entity.HasIndex(e => e.LocationId, "IX_Seed_Tickets");
 
+            entity.HasIndex(e => new { e.Ticket, e.LocationId }, "IX_Seed_Tickets_Ticket_Location")
+                .IsUnique()
+                .HasFilter("([Ticket] IS NOT NULL)");
+
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Seed_Tickets_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.BagCnt).HasColumnName("Bag_Cnt");
             entity.Property(e => e.BagSize).HasColumnName("Bag_Size");
             entity.Property(e => e.Bol)
                 .HasMaxLength(50)
                 .HasColumnName("BOL");
+            entity.Property(e => e.Complete).HasAnnotation("Relational:DefaultConstraintName", "DF_Seed_Tickets_Complete");
             entity.Property(e => e.GrowerId).HasColumnName("Grower_ID");
             entity.Property(e => e.GrowerName)
                 .HasMaxLength(250)
                 .HasColumnName("Grower_Name");
             entity.Property(e => e.LocationId).HasColumnName("Location_ID");
+            entity.Property(e => e.Pending).HasAnnotation("Relational:DefaultConstraintName", "DF_Seed_Tickets_Pending");
             entity.Property(e => e.Po)
                 .HasMaxLength(50)
                 .HasColumnName("PO");
+            entity.Property(e => e.ReadOnly).HasAnnotation("Relational:DefaultConstraintName", "DF_Seed_Tickets_ReadOnly");
             entity.Property(e => e.TicketDate)
                 .HasDefaultValueSql("(getdate())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Seed_Tickets_Ticket_Date")
                 .HasColumnType("datetime")
                 .HasColumnName("Ticket_Date");
             entity.Property(e => e.TicketType)
@@ -495,6 +555,7 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Seed_Ticket_Misc_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.Comment)
                 .IsRequired()
@@ -526,6 +587,7 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Treatments_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.CustomName)
                 .HasMaxLength(250)
@@ -560,6 +622,7 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Ticket_Varieties_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.BinName)
                 .HasMaxLength(20)
@@ -600,9 +663,11 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Seed_Ticket_Weights_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.CreationDate)
                 .HasDefaultValueSql("(getdate())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Seed_Ticket_Weights_CreationDate")
                 .HasColumnType("datetime")
                 .HasColumnName("Creation_Date");
             entity.Property(e => e.EndingTime)
@@ -649,9 +714,20 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Seed_Trait_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.ItemId).HasColumnName("Item_Id");
             entity.Property(e => e.TraitId).HasColumnName("Trait_Id");
+
+            entity.HasOne(d => d.Item).WithMany(p => p.SeedTraits)
+                .HasPrincipalKey(p => p.Id)
+                .HasForeignKey(d => d.ItemId)
+                .HasConstraintName("FK_Seed_Trait_Items");
+
+            entity.HasOne(d => d.Trait).WithMany(p => p.SeedTraits)
+                .HasPrincipalKey(p => p.Id)
+                .HasForeignKey(d => d.TraitId)
+                .HasConstraintName("FK_Seed_Trait_Trait");
         });
 
         modelBuilder.Entity<SystemLog>(entity =>
@@ -667,6 +743,7 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_System_Log_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.CodeSource)
                 .IsRequired()
@@ -683,6 +760,7 @@ public partial class Seed_DataContext : DbContext
                 .HasColumnName("Server_Name");
             entity.Property(e => e.TimeDate)
                 .HasDefaultValueSql("(getdate())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_System_Log_Time_Date")
                 .HasColumnType("datetime")
                 .HasColumnName("Time_Date");
         });
@@ -704,12 +782,15 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trait_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.ColorIndex).HasColumnName("Color_Index");
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255);
-            entity.Property(e => e.Duration).HasDefaultValue(20);
+            entity.Property(e => e.Duration)
+                .HasDefaultValue(20)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trait_Duration");
             entity.Property(e => e.Id).HasColumnName("ID");
         });
 
@@ -728,8 +809,19 @@ public partial class Seed_DataContext : DbContext
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_TreatmentWeights_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.LocationId).HasColumnName("Location_Id");
+
+            entity.HasOne(d => d.Item).WithMany(p => p.TreatmentWeights)
+                .HasPrincipalKey(p => p.Id)
+                .HasForeignKey(d => d.ItemId)
+                .HasConstraintName("FK_TreatmentWeights_Items");
+
+            entity.HasOne(d => d.Location).WithMany(p => p.TreatmentWeights)
+                .HasPrincipalKey(p => p.Id)
+                .HasForeignKey(d => d.LocationId)
+                .HasConstraintName("FK_TreatmentWeights_Locations");
         });
 
         OnModelCreatingPartial(modelBuilder);

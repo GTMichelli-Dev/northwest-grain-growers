@@ -12,4 +12,6 @@ public partial class PcAllowedToPrint
     public int LocationId { get; set; }
 
     public string PcAddress { get; set; }
+
+    public virtual Location Location { get; set; }
 }
