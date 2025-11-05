@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DevExtreme.AspNet.Data;
+using DevExtreme.AspNet.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Seed25.DTO;
 using Seed25.Models;
-using Microsoft.EntityFrameworkCore;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -18,6 +20,8 @@ namespace Seed25.Api
 
 
 
+
+
     [Route("api/[controller]")]
     [ApiController]
     public class SeedTicketController : ControllerBase
@@ -28,8 +32,76 @@ namespace Seed25.Api
         private readonly Seed_DataContext _db;
         public SeedTicketController(Seed_DataContext db) => _db = db;
 
-        // POST: api/SeedTicket/GetTicketSummary
-        [HttpPost("GetTicketSummary")]
+
+
+
+
+
+
+[HttpGet("GetTicketSummary")]
+    public async Task<IActionResult> GetTicketSummary(
+    DataSourceLoadOptions loadOptions,
+    DateTime fromDate,
+    DateTime toDate,
+    int locationId = 0,
+    CancellationToken ct = default)
+    {
+        var start = fromDate.Date;
+        var endEx = toDate.Date.AddDays(1);
+
+        var qry = _db.SeedTickets.AsNoTracking()
+            .Where(t => t.TicketDate >= start && t.TicketDate < endEx);
+
+        if (locationId > 0)
+            qry = qry.Where(t => t.LocationId == locationId);
+
+        // Project to DTO in IQueryable so search/sort/paging happen in SQL
+        var projected = qry.Select(t => new SeedTicketSummaryDTO
+        {
+            UID = t.Uid,
+            Ticket = t.Ticket ?? 0,
+            TicketType = t.TicketType ?? Enumerations.TicketType.Unknown.ToString(),
+            Status = t.Void ? Enumerations.TicketStatus.Voided.ToString()
+                         : t.Complete ? Enumerations.TicketStatus.Finished.ToString()
+                         : t.Pending ? Enumerations.TicketStatus.Pending.ToString()
+                         : Enumerations.TicketStatus.Incomplete.ToString(),
+            InvoiceDate = t.TicketDate,
+            LocationId = t.LocationId,
+            CustomerName = t.GrowerName ?? "",
+            PO = t.Po ?? "",
+            BOL = t.Bol ?? "",
+            TruckId = t.TruckId ?? "",
+            Comments = t.Comments ?? "",
+            Location = _db.Locations.Where(x => x.Id == t.LocationId)
+                               .Select(x => x.Description)
+                               .FirstOrDefault() ?? "",
+
+            Varieties = t.SeedTicketVarieties.Select(v => new VarietyDescriptionDTO
+            {
+                Id = v.VarietyId,
+                Lot = v.Lot ?? string.Empty,
+                Description = _db.Items.Where(i => i.Id == v.VarietyId)
+                    .Select(i => i.Description)
+                    .FirstOrDefault() ?? v.CustomName
+            }).ToList()
+        });
+
+        // Let DevExtreme build SQL for search/filter/sort/paging over all rows
+        var result = await DataSourceLoader.LoadAsync(projected, loadOptions, ct);
+
+        // Add StrTotallbs formatting on the materialized result if you need it in the grid:
+        // If you need StrTotallbs server-side, load IDs and post-process; otherwise keep as is.
+
+        return new JsonResult(result);
+    }
+
+
+
+
+
+
+    // POST: api/SeedTicket/GetTicketSummary
+    [HttpPost("GetTicketSummary")]
         public async Task<IEnumerable<SeedTicketSummaryDTO>> GetTicketSummary(
             [FromBody] TicketSummaryRequest request, CancellationToken ct = default)
         {

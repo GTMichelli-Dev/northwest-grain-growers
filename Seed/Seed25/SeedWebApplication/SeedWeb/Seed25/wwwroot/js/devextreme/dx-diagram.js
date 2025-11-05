@@ -1,7 +1,7 @@
 /*!
  * DevExpress Diagram (dx-diagram)
- * Version: 2.2.21
- * Build date: Wed Aug 20 2025
+ * Version: 2.2.16
+ * Build date: Fri Apr 04 2025
  *
  * Copyright (c) 2012 - 2025 Developer Express Inc. ALL RIGHTS RESERVED
  * Read about DevExpress licensing here: https://www.devexpress.com/Support/EULAs
@@ -11720,7 +11720,6 @@ var EventManager = (function () {
     EventManager.prototype.initialize = function () {
         this.visualizersManager.initialize(this.control.model);
         this.mouseHandler.initialize(this.control.model);
-        this.textInputHandler.reset();
     };
     EventManager.prototype.beginUpdate = function (lockUpdateCanvas) {
         this.contextMenuHandler.beginUpdate();
@@ -14817,10 +14816,7 @@ var TextInputHandler = (function () {
         if (this.isTextInputActive())
             this.applyTextInput(evt.inputText);
     };
-    TextInputHandler.prototype.onFocus = function (_) {
-    };
-    TextInputHandler.prototype.reset = function () {
-        delete this.textInputItem;
+    TextInputHandler.prototype.onFocus = function (evt) {
     };
     TextInputHandler.prototype.hasCtrlModifier = function (key) {
         return (key & key_1.ModifierKey.Ctrl) > 0;
@@ -15393,11 +15389,10 @@ var VisualizerManager = (function (_super) {
             y1 = y1nc - CanvasSelectionManager_1.CanvasSelectionManager.extensionLineOffset;
             y2 = y2nc + lwCor + CanvasSelectionManager_1.CanvasSelectionManager.extensionLineOffset;
         }
-        var eps = this.settings.gridSize / 2;
         if (x1 !== undefined && x2 !== undefined) {
             var distanceText = this.getViewUnitText(Math.abs(x1nc - x2nc));
-            if (Math.abs(rect.center.y - sRect.center.y) < eps) {
-                var segment = new segment_1.Segment(new point_1.Point(x1, rect.center.y), new point_1.Point(x2, rect.center.y));
+            if (rect.center.y === sRect.center.y) {
+                var segment = new segment_1.Segment(new point_1.Point(x1, rect.center.y), new point_1.Point(x2, sRect.center.y));
                 this.extensionLinesVisualizer.addSegment(x1 > x2 ? ExtensionLinesVisualizer_1.ExtensionLineType.VerticalCenterAfter : ExtensionLinesVisualizer_1.ExtensionLineType.VerticalCenterBefore, segment, showDistance ? distanceText : "");
                 showDistance = false;
             }
@@ -15420,8 +15415,8 @@ var VisualizerManager = (function (_super) {
         }
         if (y1 !== undefined && y2 !== undefined) {
             var distanceText = this.getViewUnitText(Math.abs(y1nc - y2nc));
-            if (Math.abs(rect.center.x - sRect.center.x) < eps) {
-                var segment = new segment_1.Segment(new point_1.Point(rect.center.x, y1), new point_1.Point(rect.center.x, y2));
+            if (rect.center.x === sRect.center.x) {
+                var segment = new segment_1.Segment(new point_1.Point(rect.center.x, y1), new point_1.Point(sRect.center.x, y2));
                 this.extensionLinesVisualizer.addSegment(y1 > y2 ? ExtensionLinesVisualizer_1.ExtensionLineType.HorizontalCenterBelow : ExtensionLinesVisualizer_1.ExtensionLineType.HorizontalCenterAbove, segment, showDistance ? distanceText : "");
                 showDistance = false;
             }
@@ -24844,11 +24839,11 @@ var Enums_1 = __webpack_require__(5383);
 var ModelUtils_1 = __webpack_require__(4867);
 var DiagramModel = (function () {
     function DiagramModel(pageSize) {
-        if (pageSize === void 0) { pageSize = new size_1.Size(8400, 11910); }
+        if (pageSize === void 0) { pageSize = new size_1.Size(8391, 11906); }
         this.items = [];
         this.itemIndexByKey = {};
         this.keyCounter = 0;
-        this.pageSize = new size_1.Size(8400, 11910);
+        this.pageSize = new size_1.Size(8391, 11906);
         this.pageLandscape = false;
         this.pageColor = DiagramModel.defaultPageColor;
         this.units = Enums_1.DiagramUnit.In;
@@ -35276,12 +35271,11 @@ var CanvasViewManager = (function (_super) {
         this.setScroll(scroll);
     };
     CanvasViewManager.prototype.scrollIntoView = function (rectangle) {
-        var shift = this.getVisibileAreaAbsShift(true);
         rectangle = rectangle
             .clone()
             .applyConverter(unit_converter_1.UnitConverter.twipsToPixelsF)
             .multiply(this.actualZoom, this.actualZoom)
-            .moveRectangle(shift.x, shift.y);
+            .moveRectangle(this.paddings.left, this.paddings.top);
         var scroll = this.scroll;
         var container = this.containerSize;
         if (rectangle.x >= scroll.x && rectangle.y >= scroll.y && rectangle.right <= scroll.x + container.width && rectangle.bottom <= scroll.y + container.height)
@@ -35704,9 +35698,6 @@ var InputManager = (function () {
             Utils_2.HtmlFocusUtils.focusWithPreventScroll(this.textInputElement || this.inputElement);
         else
             Utils_2.HtmlFocusUtils.focusWithPreventScroll(this.inputElement);
-    };
-    InputManager.prototype.clear = function () {
-        this.setInputElementFocusHandlerMode(false);
     };
     InputManager.prototype.setClipboardData = function (data) {
         this.clipboardInputElement.value = data;
@@ -37535,7 +37526,6 @@ var RenderManager = (function () {
     RenderManager.prototype.clear = function () {
         this.items.clear();
         this.selection.clear();
-        this.input.clear();
     };
     RenderManager.prototype.attachPointerEvents = function (svgElement) {
         dom_1.DomUtils.addClassName(svgElement, TOUCH_ACTION_CSSCLASS);
@@ -38369,7 +38359,7 @@ var CanvasItemsManager_1 = __webpack_require__(8693);
 var TOOLBOX_CSSCLASS = "dxdi-toolbox";
 var DRAG_CAPTURED_CSSCLASS = "dxdi-tb-drag-captured";
 var START_DRAG_CSSCLASS = "dxdi-tb-start-drag-flag";
-var TOUCH_DRAGTIMEOUT_MS = 300;
+var TOUCH_DRAGTIMEOUT_MS = 800;
 var Toolbox = (function () {
     function Toolbox(parent, readOnly, allowDragging, shapeDescriptionManager, shapeTypes, getAllowedShapeTypes) {
         this.readOnly = readOnly;
@@ -38394,9 +38384,7 @@ var Toolbox = (function () {
     };
     Toolbox.prototype.createMainElement = function (parent) {
         var element = document.createElement("div");
-        element.classList.add(TOOLBOX_CSSCLASS);
-        if (browser_1.Browser.AndroidMobilePlatform)
-            element.classList.add("dxdi-nodrag");
+        element.setAttribute("class", TOOLBOX_CSSCLASS);
         element.draggable = true;
         if (this.emulateDragEvents)
             element.tabIndex = 0;
@@ -39195,14 +39183,14 @@ var DiagramSettings = (function () {
             { size: new size_1.Size(12240, 15840), text: "US-Letter ({width} x {height})" },
             { size: new size_1.Size(12240, 20160), text: "US-Legal ({width} x {height})" },
             { size: new size_1.Size(15817, 24491), text: "US-Tabloid ({width} x {height})" },
-            { size: new size_1.Size(47685, 67410), text: "A0 ({width} x {height})" },
-            { size: new size_1.Size(33675, 47685), text: "A1 ({width} x {height})" },
-            { size: new size_1.Size(23805, 33675), text: "A2 ({width} x {height})" },
-            { size: new size_1.Size(16830, 23805), text: "A3 ({width} x {height})" },
-            { size: new size_1.Size(11910, 16830), text: "A4 ({width} x {height})" },
-            { size: new size_1.Size(8400, 11910), text: "A5 ({width} x {height})" },
-            { size: new size_1.Size(5955, 8400), text: "A6 ({width} x {height})" },
-            { size: new size_1.Size(4200, 5955), text: "A7 ({width} x {height})" }
+            { size: new size_1.Size(47679, 67408), text: "A0 ({width} x {height})" },
+            { size: new size_1.Size(33676, 47679), text: "A1 ({width} x {height})" },
+            { size: new size_1.Size(23811, 33676), text: "A2 ({width} x {height})" },
+            { size: new size_1.Size(16838, 23811), text: "A3 ({width} x {height})" },
+            { size: new size_1.Size(11906, 16838), text: "A4 ({width} x {height})" },
+            { size: new size_1.Size(8391, 11906), text: "A5 ({width} x {height})" },
+            { size: new size_1.Size(5953, 8391), text: "A6 ({width} x {height})" },
+            { size: new size_1.Size(4195, 5953), text: "A7 ({width} x {height})" }
         ];
         this._viewUnits = Enums_1.DiagramUnit.In;
         this._connectorRoutingMode = ConnectorRoutingMode.AllShapesOnly;

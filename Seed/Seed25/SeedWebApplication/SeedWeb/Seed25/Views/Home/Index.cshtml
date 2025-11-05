@@ -1,6 +1,7 @@
 @using Seed25.Models
 @using Seed25.DTO
 
+@* 
 <h2>Tickets</h2>
 <div class="d-flex align-items-center gap-2 flex-wrap mb-3">
   <span class="fw-semibold me-1">Date:</span>
@@ -10,43 +11,138 @@
 
   <span class="ms-3">Location:</span>
   <div id="location-select" class="d-inline-block" style="min-width:260px"></div>
-
+  <a href="#" id="resetGrid" class="text-decoration-underline">Reset grid layout</a>
   <button type="button" id="btnRefresh" class="btn btn-primary ms-2">Refresh</button>
 </div>
 
-@(Html.DevExtreme().DataGrid<SeedTicketSummaryDTO>()
+@(
+Html.DevExtreme().DataGrid<SeedTicketSummaryDTO>()
     .ID("ticketsGrid")
     .DataSource(ds => ds.WebApi()
         .Controller("SeedTicket")
-        .LoadAction("GetTicketSummary")   // POST api/SeedTicket/GetTicketSummary
+        .LoadAction("GetTicketSummary")
         .Key("UID")
-        .OnBeforeSend("dxBeforeSend")     // set body with today + location
+        .LoadMethod("GET")
+        .LoadParams(new JS("getSummaryParams"))  // from/to/location as query params
     )
-    .RemoteOperations(false)
+    .Width("100%")
+    .RemoteOperations(true)                  // client filtering/grouping
+    .RowAlternationEnabled(true)
     .ColumnAutoWidth(true)
+
+    .Paging(p => p.Enabled(true).PageSize(50))
+    .Pager(p => p.Visible(true)
+                 .ShowInfo(true)
+                 .ShowPageSizeSelector(true)
+                 .AllowedPageSizes(new[] { 25, 50, 100, 500 }))
+
+    // add a toolbar button + set initial state from storage
+    .OnToolbarPreparing("ticketsToolbar")
+    .OnInitialized("ticketsInit")
+
+
+    // === make grouping/filtering easy ===
+    .FilterRow(fr => fr.Visible(true).ApplyFilter(GridApplyFilterMode.Auto))
+    .HeaderFilter(hf => hf.Visible(true))
+    .SearchPanel(sp => sp.Visible(true).HighlightCaseSensitive(false))
+    .GroupPanel(gp => gp.Visible(true))       // drag headers here to group
+    .Grouping(g => g.AutoExpandAll(false))    // keep groups collapsed by default
+    .AllowColumnResizing(true)
+    .AllowColumnReordering(true)
+    .ColumnChooser(cc => cc.Enabled(true).Mode(GridColumnChooserMode.Select))
+
+    // === persist grid state across reloads ===
+    .StateStoring(s => s
+        .Enabled(true)
+        .Type(DevExtreme.AspNet.Mvc.StateStoringType.LocalStorage)
+        .StorageKey("ticketsGridState:v1")    // bump the :v1 if you change columns
+    )
+
     .Columns(c => {
         c.AddFor(m => m.Location);
         c.AddFor(m => m.InvoiceDate).DataType(GridColumnDataType.DateTime).Format("M/d/yyyy HH:mm");
         c.AddFor(m => m.Ticket);
+
         c.AddFor(m => m.StrTotallbs)
-        .Caption("Total lbs")
-        .Alignment(HorizontalAlignment.Right);
+            .Caption("Total lbs")
+            .Alignment(HorizontalAlignment.Right);
+
         c.AddFor(m => m.CustomerName);
-        c.AddFor(m => m.TicketType);
+
+        c.Add()
+            .Caption("Varieties")
+            .Width(420)
+            .EncodeHtml(false)
+            .CellTemplate(new JS("varietiesCell"));
+
+        c.AddFor(m => m.TicketType).Caption("Type");
         c.AddFor(m => m.Status);
         c.AddFor(m => m.TruckId);
         c.AddFor(m => m.PO);
         c.AddFor(m => m.BOL);
-         c.Add()
-         .Caption("Varieties")
-         .Width(420)
-         .EncodeHtml(false)          // allow <br/> for line breaks
-         .CellTemplate(new JS("varietiesCell")); 
         c.AddFor(m => m.Comments);
     })
 )
+ *@
 
 @section Scripts {
+
+<script>
+  // --- Persist paging on/off across refreshes
+  const PAGING_KEY = "ticketsGrid:pagingEnabled";
+
+  function getPagingEnabled() {
+    const v = localStorage.getItem(PAGING_KEY);
+    return v === null ? true : v === "true"; // default ON
+  }
+  function setPagingEnabled(val) {
+    localStorage.setItem(PAGING_KEY, String(val));
+  }
+  function applyPaging(grid) {
+    const enabled = getPagingEnabled();
+    grid.option("paging.enabled", enabled);
+    grid.option("pager.visible", enabled);
+  }
+
+  // Called after grid is initialized — apply persisted paging state
+  function ticketsInit(e) {
+    applyPaging(e.component);
+  }
+
+  // Add a toggle button to the grid toolbar
+  function ticketsToolbar(e) {
+    const grid = e.component;
+    const isOn = getPagingEnabled();
+
+    e.toolbarOptions.items.unshift({
+      location: "after",
+      widget: "dxButton",
+      options: {
+        text: isOn ? "Paging: On" : "Paging: Off",
+        hint: "Toggle paging on/off",
+        onClick: function() {
+          const newVal = !getPagingEnabled();
+          setPagingEnabled(newVal);
+          applyPaging(grid);
+          this.option("text", newVal ? "Paging: On" : "Paging: Off");
+        }
+      }
+    });
+  }
+
+  // (If you’re using custom state storing for filters/grouping)
+  function gridStateLoad() {
+    try { return JSON.parse(localStorage.getItem("ticketsGridState:v1")); } catch { return null; }
+  }
+  function gridStateSave(state) {
+    try { localStorage.setItem("ticketsGridState:v1", JSON.stringify(state)); } catch {}
+  }
+</script>
+
+
+
+
+
 
 <script>
   // ---- persistence keys
@@ -55,6 +151,14 @@
     to:   'seed.toDate',     // 'YYYY-MM-DD'
     loc:  'seed.locationId'  // number
   };
+
+   document.getElementById('resetGrid')?.addEventListener('click', function (e) {
+    e.preventDefault();
+    localStorage.removeItem('ticketsGridState:v1');
+    const grid = $("#ticketsGrid").dxDataGrid("instance");
+    if (grid) grid.state(null); // resets to defaults
+  });
+
 
    function varietiesCell(container, options) {
     const list = options?.data?.Varieties || [];
@@ -204,6 +308,33 @@
       });
     }
   });
+
+
+
+
+    // --------------------------
+  // Provide query params for GET (DevExtreme .LoadParams)
+  // --------------------------
+  function getSummaryParams() {
+    let from = fromDateOnlyString(localStorage.getItem(STORE.from)) || todayLocal();
+    let to   = fromDateOnlyString(localStorage.getItem(STORE.to))   || todayLocal();
+    // enforce From <= To
+    if (from > to) { const t = from; from = to; to = t; }
+    // persist normalized
+    localStorage.setItem(STORE.from, toDateOnlyString(from));
+    localStorage.setItem(STORE.to,   toDateOnlyString(to));
+
+    const locIdStored = parseInt(localStorage.getItem(STORE.loc) || "0", 10) || 0;
+    const locId = locIdStored || getSelectedLocationId() || 0;
+    if (locId && locId !== locIdStored) localStorage.setItem(STORE.loc, String(locId));
+
+    // Returned properties become query string params
+    return {
+      fromDate: toDateOnlyString(from),
+      toDate:   toDateOnlyString(to),
+      locationId: locId
+    };
+  }
 </script>
 }
 
