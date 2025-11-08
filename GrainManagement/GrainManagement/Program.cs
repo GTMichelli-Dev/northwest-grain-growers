@@ -1,15 +1,17 @@
 ﻿using GrainManagement.Models;
+using GrainManagement.Services;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.SqlServer;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.Swagger;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.SwaggerUI;
-using Microsoft.Extensions.Caching.SqlServer;
 using System.Security.Claims;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +31,7 @@ builder.Services.AddDistributedSqlServerCache(o =>
     o.TableName = "TokenCache";
 });
 
+builder.Services.AddScoped<IJsonLog, JsonLog>();
 
 
 builder.Services.AddAuthorization(options =>

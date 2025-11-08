@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Agvantage_Transfer.DTOModels;
+namespace Agvantage_TransferV2.DTOModels;
     public class AgvantageItemLocationDTO
     {
         public int Id { get; set; }

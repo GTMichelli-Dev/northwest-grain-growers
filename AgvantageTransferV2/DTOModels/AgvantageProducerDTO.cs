@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Agvantage_Transfer.DTOModels;
+namespace Agvantage_TransferV2.DTOModels;
 
 public partial class AgvantageProducerDTO
 {

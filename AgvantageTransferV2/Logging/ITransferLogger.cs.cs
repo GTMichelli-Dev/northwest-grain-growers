@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Agvantage_Transfer.Logging;
+namespace Agvantage_TransferV2.Logging;
 
 public interface ITransferLogger
 {

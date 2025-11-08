@@ -1,10 +1,16 @@
 ﻿using DevExtreme.AspNet.Data;
 using DevExtreme.AspNet.Mvc;
 using GrainManagement.Models;
+using GrainManagement.DTO;
+using GrainManagement.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Linq;
+using System.Data;
+
+
+
+
 
 namespace GrainManagement
 {
@@ -13,10 +19,12 @@ namespace GrainManagement
     public class AccountsApiController : ControllerBase
     {
         private readonly dbContext _ctx;
+       
 
         public AccountsApiController(dbContext ctx)
         {
             _ctx = ctx;
+            
         }
 
         // GET: api/AccountsApi
@@ -28,7 +36,7 @@ namespace GrainManagement
                 .AsNoTracking()
                 .Select(a => new AccountDTO
                 {
-                    Uid = a.Uid,
+                  
                     AccountId = a.AccountId,
                     EntityName = a.EntityName,
                     LookupName = a.LookupName,
@@ -44,14 +52,18 @@ namespace GrainManagement
             return DataSourceLoader.Load(query, loadOptions);
         }
 
+
+       
+
+
         // PUT: api/AccountsApi/{key}
         [HttpPut("{key}")]
-        public IActionResult Put(Guid key, [FromBody] AccountDTO dto)
+        public IActionResult Put(long key, [FromBody] AccountDTO dto)
         {
-            if (dto == null || dto.Uid != key)
+            if (dto == null || dto.AccountId != key)
                 return BadRequest("Invalid account payload.");
 
-            var account = _ctx.Accounts.SingleOrDefault(a => a.Uid == key);
+            var account = _ctx.Accounts.SingleOrDefault(a => a.AccountId  == key);
             if (account == null)
                 return NotFound();
 

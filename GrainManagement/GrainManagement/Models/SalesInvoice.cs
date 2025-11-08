@@ -48,6 +48,4 @@ public partial class SalesInvoice
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
     public virtual SalesInvoiceLineItem SalesInvoiceLineItem { get; set; }
-
-    public virtual Account UidNavigation { get; set; }
 }

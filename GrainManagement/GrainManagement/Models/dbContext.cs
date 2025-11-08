@@ -163,54 +163,89 @@ public partial class dbContext : DbContext
     {
         modelBuilder.Entity<Account>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK_Producers");
-
             entity.ToTable("Accounts", "customer");
 
-            entity.HasIndex(e => e.AccountId, "IX_Accounts").IsUnique();
-
-            entity.HasIndex(e => e.EntityName, "IX_Accounts_Entity_Name").IsUnique();
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Account_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.AccountId).HasColumnName("AccountID");
+            entity.Property(e => e.AccountId).ValueGeneratedNever();
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Account_Active");
-            entity.Property(e => e.Address1).HasMaxLength(255);
-            entity.Property(e => e.Address2).HasMaxLength(255);
+            entity.Property(e => e.Address1)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_Address1");
+            entity.Property(e => e.Address2)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_Address2");
             entity.Property(e => e.AutoPrice)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Account_AutoPrice");
-            entity.Property(e => e.City).HasMaxLength(255);
-            entity.Property(e => e.Contact).HasMaxLength(255);
+            entity.Property(e => e.City)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_City");
+            entity.Property(e => e.Contact)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_Contact");
             entity.Property(e => e.CustomerPaysRoyalties).HasAnnotation("Relational:DefaultConstraintName", "DF_Account_CustomerPaysRoyalties");
-            entity.Property(e => e.Email).HasMaxLength(50);
+            entity.Property(e => e.Email)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_Email");
             entity.Property(e => e.EmailStatement).HasAnnotation("Relational:DefaultConstraintName", "DF_Account_EmailStatement");
             entity.Property(e => e.EntityName)
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.HedgedAccount).HasAnnotation("Relational:DefaultConstraintName", "DF_Account_HedgedAccount");
+            entity.Property(e => e.IsHauler).HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_IsHauler");
             entity.Property(e => e.IsProducer)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Account_Producer");
             entity.Property(e => e.LookupName)
                 .IsRequired()
-                .HasMaxLength(255);
+                .HasMaxLength(255)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_LookupName");
             entity.Property(e => e.Notes)
+                .IsRequired()
                 .HasDefaultValue("")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Account_Notes");
-            entity.Property(e => e.OwnerFirstName).HasMaxLength(255);
-            entity.Property(e => e.OwnerLastName).HasMaxLength(255);
-            entity.Property(e => e.Phone1).HasMaxLength(20);
-            entity.Property(e => e.Phone2).HasMaxLength(20);
-            entity.Property(e => e.Phone3).HasMaxLength(20);
+            entity.Property(e => e.OwnerFirstName)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_OwnerFirstName");
+            entity.Property(e => e.OwnerLastName)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_OwnerLastName");
+            entity.Property(e => e.Phone1)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_Phone1");
+            entity.Property(e => e.Phone2)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_Phone2");
+            entity.Property(e => e.Phone3)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_Phone3");
             entity.Property(e => e.PrintStatement)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Account_PrintStatement");
             entity.Property(e => e.State)
+                .IsRequired()
                 .HasMaxLength(50)
                 .HasDefaultValue("WA")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Account_State");
@@ -219,7 +254,11 @@ public partial class dbContext : DbContext
                 .HasDefaultValue(new DateOnly(2000, 1, 1))
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Account_TaxExemptDate");
             entity.Property(e => e.Wholesale).HasAnnotation("Relational:DefaultConstraintName", "DF_Account_Wholesale");
-            entity.Property(e => e.Zip).HasMaxLength(15);
+            entity.Property(e => e.Zip)
+                .IsRequired()
+                .HasMaxLength(15)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_Zip");
         });
 
         modelBuilder.Entity<AccountCustomPricing>(entity =>
@@ -245,11 +284,6 @@ public partial class dbContext : DbContext
                 .HasColumnType("money")
                 .HasColumnName("price");
             entity.Property(e => e.ProductVarietyItemUid).HasColumnName("ProductVarietyItemUID");
-
-            entity.HasOne(d => d.AccountU).WithMany(p => p.AccountCustomPricings)
-                .HasForeignKey(d => d.AccountUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_CustomCustomerPricing_Accounts");
 
             entity.HasOne(d => d.ProductVarietyItemU).WithMany(p => p.AccountCustomPricings)
                 .HasForeignKey(d => d.ProductVarietyItemUid)
@@ -285,11 +319,6 @@ public partial class dbContext : DbContext
             entity.Property(e => e.UseForSales)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_AccountGroups_UseForSales");
-
-            entity.HasOne(d => d.PrimaryAccountU).WithMany(p => p.AccountGroups)
-                .HasForeignKey(d => d.PrimaryAccountUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_AccountGroups_Accounts");
         });
 
         modelBuilder.Entity<AccountTruck>(entity =>
@@ -333,11 +362,6 @@ public partial class dbContext : DbContext
                 .HasDefaultValue(1)
                 .HasComment("This would be the order of the truck and pups so ParentTruck - then Pup ...")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_TruckIndex");
-
-            entity.HasOne(d => d.AccountU).WithMany(p => p.AccountTrucks)
-                .HasForeignKey(d => d.AccountUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Trucks_Accounts");
 
             entity.HasOne(d => d.ParentTruckU).WithMany(p => p.InverseParentTruckU)
                 .HasForeignKey(d => d.ParentTruckUid)
@@ -406,11 +430,6 @@ public partial class dbContext : DbContext
             entity.HasOne(d => d.AccountGroupU).WithMany(p => p.AssociatedGroupAccounts)
                 .HasForeignKey(d => d.AccountGroupUid)
                 .HasConstraintName("FK_AssociatedGroupAccounts_Group");
-
-            entity.HasOne(d => d.AccountU).WithMany(p => p.AssociatedGroupAccounts)
-                .HasForeignKey(d => d.AccountUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_AssociatedGroupAccounts_Account");
         });
 
         modelBuilder.Entity<AuditTrail>(entity =>
@@ -1484,11 +1503,6 @@ public partial class dbContext : DbContext
                 .HasDefaultValue(1)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_PurchaseOrders_StatusId");
 
-            entity.HasOne(d => d.AccountU).WithMany(p => p.PurchaseOrders)
-                .HasForeignKey(d => d.AccountUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_PurchaseOrders_Accounts");
-
             entity.HasOne(d => d.ParentPurchaseOrderU).WithMany(p => p.InverseParentPurchaseOrderU)
                 .HasForeignKey(d => d.ParentPurchaseOrderUid)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -1733,11 +1747,6 @@ public partial class dbContext : DbContext
             entity.HasOne(d => d.CarrierU).WithMany(p => p.SalesInvoices)
                 .HasForeignKey(d => d.CarrierUid)
                 .HasConstraintName("FK_SalesInvoices_Carriers");
-
-            entity.HasOne(d => d.UidNavigation).WithOne(p => p.SalesInvoice)
-                .HasForeignKey<SalesInvoice>(d => d.Uid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SalesInvoices_Accounts");
         });
 
         modelBuilder.Entity<SalesInvoiceLineItem>(entity =>
@@ -1796,11 +1805,6 @@ public partial class dbContext : DbContext
             entity.Property(e => e.ShipToState).HasMaxLength(50);
             entity.Property(e => e.ShipToZip).HasMaxLength(15);
             entity.Property(e => e.SiteId).HasColumnName("SiteID");
-
-            entity.HasOne(d => d.AccountU).WithMany(p => p.SalesOrders)
-                .HasForeignKey(d => d.AccountUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SalesOrders_Accounts");
 
             entity.HasOne(d => d.CarrierU).WithMany(p => p.SalesOrders)
                 .HasForeignKey(d => d.CarrierUid)

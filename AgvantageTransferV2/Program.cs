@@ -1,15 +1,14 @@
-﻿using Agvantage_Transfer;
-using Agvantage_Transfer.AtModels;
-using Agvantage_Transfer.Logging;
-using Agvantage_Transfer.NwModels;
-using Agvantage_Transfer.SeedModels;
-using Agvantage_Transfer.Sync;
+﻿using Agvantage_Transfer.AtLogModels;
+using Agvantage_TransferV2;
+using Agvantage_TransferV2.GmModels;
+using Agvantage_TransferV2.Logging;
+using Agvantage_TransferV2.Sync;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting.WindowsServices;
+using Microsoft.Extensions.Logging;
 
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -18,7 +17,7 @@ if (OperatingSystem.IsWindows())
 {
     builder.Services.AddWindowsService(options =>
     {
-        options.ServiceName = "Agvantage Transfer";
+        options.ServiceName = "Agvantage TransferV2";
     });
 
     // Log to Windows Event Log when running on Windows
@@ -27,16 +26,16 @@ if (OperatingSystem.IsWindows())
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
-builder.Services.AddDbContext<NW_DataContext>(o => o.UseSqlServer(builder.Configuration.GetConnectionString("NW_DataContext")));
-builder.Services.AddDbContext<AtDbContext>(o => o.UseSqlServer(builder.Configuration.GetConnectionString("AtDbContext")));
-builder.Services.AddDbContext<Seed_DataContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("Seed_DataContext")));
+builder.Services.AddDbContext<GMDbContext>(o => o.UseSqlServer(builder.Configuration.GetConnectionString("GmDbContext")));
 
-builder.Services.AddDbContextFactory<AtDbContext>(o => o.UseSqlServer(builder.Configuration.GetConnectionString("AtDbContext")));
+builder.Services.AddDbContextFactory<GMDbContext>(o => o.UseSqlServer(builder.Configuration.GetConnectionString("GmDbContext")));
 
-builder.Services.AddScoped<ICarrierSyncService, CarrierSyncService>();
-builder.Services.AddScoped<IProducerSyncService, ProducerSyncService>();
-builder.Services.AddScoped<ICropSyncService, CropSyncService>();
-builder.Services.AddScoped<ISeedSyncService, SeedSyncService>();
+builder.Services.AddDbContext<AtLogDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("AtLogDbContext")));
+builder.Services.AddDbContextFactory<AtLogDbContext>(o => o.UseSqlServer(builder.Configuration.GetConnectionString("AtLogDbContext")));
+//builder.Services.AddScoped<ICarrierSyncService, CarrierSyncService>();
+builder.Services.AddScoped<IAccountSyncService, AccountSyncService>();
+//builder.Services.AddScoped<ICropSyncService, CropSyncService>();
+//builder.Services.AddScoped<ISeedSyncService, SeedSyncService>();
 
 
 // Logging & app services

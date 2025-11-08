@@ -29,8 +29,6 @@ public partial class PurchaseOrder
 
     public int PurchaseOrderTypeId { get; set; }
 
-    public virtual Account AccountU { get; set; }
-
     public virtual ICollection<PurchaseOrder> InverseParentPurchaseOrderU { get; set; } = new List<PurchaseOrder>();
 
     public virtual PurchaseOrder ParentPurchaseOrderU { get; set; }

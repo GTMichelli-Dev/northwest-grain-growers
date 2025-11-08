@@ -1,16 +1,17 @@
-﻿using Agvantage_Transfer.AtModels;
+﻿using Agvantage_Transfer.AtLogModels;
+using Agvantage_TransferV2.GmModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Agvantage_Transfer.Logging;
+namespace Agvantage_TransferV2.Logging;
 
 public sealed class TransferLogger : ITransferLogger
 {
     private readonly ILogger<TransferLogger> _logger;
   
-    private readonly IDbContextFactory<AtDbContext> _factory;
+    private readonly IDbContextFactory<AtLogDbContext> _factory;
 
-    public TransferLogger(ILogger<TransferLogger> logger, IDbContextFactory<AtDbContext> factory)
+    public TransferLogger(ILogger<TransferLogger> logger, IDbContextFactory<AtLogDbContext> factory)
           => (_logger, _factory) = (logger, factory);
 
 
@@ -32,7 +33,7 @@ public sealed class TransferLogger : ITransferLogger
 
     private async Task WriteAsync(string message,  bool isError ,string eventDescription)
     {
-        
+
         message = FilterPasswords(message);
         if (isError) _logger.LogWarning("{Message}", message);
         else _logger.LogInformation("{Message}", message);

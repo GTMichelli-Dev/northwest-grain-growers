@@ -1,12 +1,13 @@
-﻿using Agvantage_Transfer.DTOModels;
-using Agvantage_Transfer.Logging;
+﻿using Agvantage_TransferV2.GmModels;
+using Agvantage_TransferV2.DTOModels;
+using Agvantage_TransferV2.Logging;
+using Agvantage_TransferV2.SeedModels;
 using ClosedXML.Excel;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
-using Agvantage_Transfer.SeedModels;
 
 
-namespace Agvantage_Transfer;
+namespace Agvantage_TransferV2;
 
 public sealed class ExcelImport( ITransferLogger log)
 {
@@ -89,64 +90,132 @@ public sealed class ExcelImport( ITransferLogger log)
 
 
 
-    public async Task<List<AgvantageProducerDTO>> LoadProducersAsync(string excelPath)
+    public async Task<List<Account>> LoadAccountsFromCustomersExcelAsync(string excelPath)
     {
-        var results = new List<AgvantageProducerDTO>();
-        if (string.IsNullOrWhiteSpace(excelPath) || !File.Exists(excelPath))
-            return results;
+        var results = new List<Account>();
 
-        await Task.Yield(); // keep signature truly async-friendly
+        if (string.IsNullOrWhiteSpace(excelPath) || !File.Exists(excelPath))
+        {
+            await _log.ErrorAsync("Customers.xlsx not found or path empty.", "Accounts");
+            return results;
+        }
+
+        await Task.Yield(); // keep async friendly
 
         using var wb = new XLWorkbook(excelPath);
         var ws = wb.Worksheet(1);
-
-        foreach (var row in ws.RowsUsed())
+        var used = ws.RangeUsed();
+        if (used == null)
         {
-            // mimic your guard: only rows with numeric ID in col 1
-            var idStr = row.Cell(1).GetValue<string>().Trim();
-            if (!idStr.All(char.IsDigit)) continue;
-
-            int id = int.Parse(idStr);
-            string desc = row.Cell(2).GetValue<string>()?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(desc)) continue;
-
-            // Active: your code intended "I" or "D" in col 3 => inactive
-            var activeToken = row.Cell(3).GetValue<string>().Trim().ToUpperInvariant();
-            bool active = !(activeToken == "I" || activeToken == "D");
-
-            string email = row.Cell(4).GetValue<string>()?.Trim() ?? string.Empty;
-
-            var dto = new AgvantageProducerDTO
-            {
-                Id = id,
-                Description = desc,
-                Active = active,
-                EmailAddress = string.IsNullOrWhiteSpace(email) ? null : email,
-                EmailWs = IsValidEmail(email),
-                PrintWs = true, // matches your TransferCustomer default
-                CompanyName = row.Cell(5).GetValue<string>()?.Trim(),
-                CustomerName1 = row.Cell(6).GetValue<string>()?.Trim(),
-                CustomerName2 = row.Cell(7).GetValue<string>()?.Trim(),
-                Address1 = row.Cell(8).GetValue<string>()?.Trim(),
-                Address2 = row.Cell(9).GetValue<string>()?.Trim(),
-                City = row.Cell(10).GetValue<string>()?.Trim(),
-                State = row.Cell(11).GetValue<string>()?.Trim(),
-                Zip1 = row.Cell(12).GetValue<string>()?.Trim(),
-                Zip2 = row.Cell(13).GetValue<string>()?.Trim(),
-                HomePhone = row.Cell(14).GetValue<string>()?.Trim(),
-                WorkPhone = row.Cell(15).GetValue<string>()?.Trim(),
-                MobilePhone = row.Cell(15).GetValue<string>()?.Trim(),
-
-                Member = row.Cell(16).GetValue<string>()?.Trim(),
-                Phone = row.Cell(17).GetValue<string>()?.Trim(),
-                // NOTE: col 18 was written to Member again in your code; skipping here
-            };
-
-            results.Add(dto);
+            await _log.ErrorAsync("No data found in Customers.xlsx.", "Accounts");
+            return results;
         }
 
+        var headerRow = used.FirstRowUsed();
+
+        var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var cell in headerRow.CellsUsed())
+        {
+            var key = NormalizeHeader(cell.GetString());
+            if (!string.IsNullOrEmpty(key) && !headerMap.ContainsKey(key))
+                headerMap[key] = cell.Address.ColumnNumber;
+        }
+
+        int colAccountId = FindColumn(headerMap, "accountid", "cscno");
+        int colEntityName = FindColumn(headerMap, "entityname", "csconm");
+        int colLookupName = FindColumn(headerMap, "lookupname", "cslknm");
+        int colOwnerFirstName = FindColumn(headerMap, "ownerfirstname", "csfrnm");
+        int colOwnerLastName = FindColumn(headerMap, "ownerlastname", "cslsnm");
+        int colAddress1 = FindColumn(headerMap, "address1", "csad1");
+        int colAddress2 = FindColumn(headerMap, "address2", "csad2");
+        int colCity = FindColumn(headerMap, "city", "cscity");
+        int colState = FindColumn(headerMap, "state", "csstat");
+        int colZip = FindColumn(headerMap, "zip", "cszip");
+        int colPhone1 = FindColumn(headerMap, "phone1", "csmphn");
+        int colPhone2 = FindColumn(headerMap, "phone2", "cswphn");
+        int colPhone3 = FindColumn(headerMap, "phone3", "cshphn");
+        int colEmail = FindColumn(headerMap, "email", "cseadr");
+        int colTaxExemptDate = FindColumn(headerMap, "taxexemptdate", "cstexd");
+        int colIsProducer = FindColumn(headerMap, "isproducer");
+        int colActive = FindColumn(headerMap, "active");
+        int colEmailStmt = FindColumn(headerMap, "emailstatement");
+        int colPrintStmt = FindColumn(headerMap, "printstatement");
+        int colTaxExempt = FindColumn(headerMap, "taxexempt");
+        int colWholesale = FindColumn(headerMap, "wholesale");
+        int colCustPaysRoy = FindColumn(headerMap, "customerpaysroyalties");
+        int colAutoPrice = FindColumn(headerMap, "autoprice");
+        int colContact = FindColumn(headerMap, "contact");
+        int colNotes = FindColumn(headerMap, "notes");
+
+        if (colAccountId <= 0)
+            throw new InvalidOperationException("Could not find AccountId column in Customers.xlsx.");
+
+        foreach (var row in ws.RowsUsed().Skip(1))
+        {
+            var idText = GetCell(row, colAccountId);
+            
+            if (string.IsNullOrWhiteSpace(idText)) continue;
+            if (!long.TryParse(idText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var accountId))
+                continue;
+
+            DateOnly taxExDate = default;
+            if (colTaxExemptDate > 0)
+            {
+                var cell = row.Cell(colTaxExemptDate);
+                if (cell.TryGetValue<DateTime>(out var dt))
+                    taxExDate = DateOnly.FromDateTime(dt);
+                else
+                {
+                    var s = cell.GetValue<string>().Trim();
+                    if (DateTime.TryParse(s, out dt))
+                        taxExDate = DateOnly.FromDateTime(dt);
+                }
+            }
+
+            var acc = new Account
+            {
+                AccountId = accountId,
+                EntityName = GetCell(row, colEntityName),
+                LookupName = GetCell(row, colLookupName),
+                OwnerFirstName = GetCell(row, colOwnerFirstName),
+                OwnerLastName = GetCell(row, colOwnerLastName),
+                Address1 = GetCell(row, colAddress1),
+                Address2 = GetCell(row, colAddress2),
+                City = GetCell(row, colCity),
+                State = GetCell(row, colState),
+                Zip = GetCell(row, colZip),
+                Phone1 = GetCell(row, colPhone1),
+                Phone2 = GetCell(row, colPhone2),
+                Phone3 = GetCell(row, colPhone3),
+                Email = GetCell(row, colEmail),
+                TaxExempt = ParseBool(GetCell(row, colTaxExempt)),
+                TaxExemptDate = taxExDate,
+                IsProducer = ParseBool(GetCell(row, colIsProducer)),
+                Active = ParseBool(GetCell(row, colActive)),
+                EmailStatement = ParseBool(GetCell(row, colEmailStmt)),
+                PrintStatement = ParseBool(GetCell(row, colPrintStmt)),
+                Wholesale = ParseBool(GetCell(row, colWholesale)),
+                CustomerPaysRoyalties = ParseBool(GetCell(row, colCustPaysRoy)),
+                AutoPrice = ParseBool(GetCell(row, colAutoPrice)),
+                Contact = GetCell(row, colContact),
+                Notes = GetCell(row, colNotes),
+                HedgedAccount = false,
+                IsHauler = false
+            };
+
+            results.Add(acc);
+        }
+
+        await _log.InfoAsync($"Loaded {results.Count} accounts from {excelPath}", "Accounts");
+
         return results;
+
+        // local helpers
+        static string GetCell(IXLRow row, int col) =>
+            col > 0 ? row.Cell(col).GetValue<string>().Trim() : string.Empty;
     }
+
+
 
 
 

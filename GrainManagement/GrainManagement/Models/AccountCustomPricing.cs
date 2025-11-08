@@ -27,8 +27,6 @@ public partial class AccountCustomPricing
 
     public decimal DiscountPercent { get; set; }
 
-    public virtual Account AccountU { get; set; }
-
     public virtual ProductVarietyItem ProductVarietyItemU { get; set; }
 
     public virtual Site Site { get; set; }

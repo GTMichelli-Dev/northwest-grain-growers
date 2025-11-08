@@ -3,7 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Agvantage_Transfer;
+namespace Agvantage_TransferV2;
 
 public sealed class Worker(
     ILogger<Worker> logger,
@@ -20,6 +20,7 @@ public sealed class Worker(
         {
             try
             {
+                logger.LogInformation("Starting a transfer cycle at {Time}", DateTimeOffset.Now);
                 using var scope = services.CreateScope();
                 var transfer = scope.ServiceProvider.GetRequiredService<AgvantageTransfer>();
 

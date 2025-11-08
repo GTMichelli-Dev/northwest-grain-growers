@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Agvantage_Transfer.Logging; // for ITransferLogger
+using Agvantage_TransferV2.Logging; // for ITransferLogger
 
-namespace Agvantage_Transfer.Diagnostics
+namespace Agvantage_TransferV2.Diagnostics
 {
     public static class EFLogHelpers
     {

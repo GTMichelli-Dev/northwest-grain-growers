@@ -34,8 +34,6 @@ public partial class AccountTruck
     /// </summary>
     public int TruckIndex { get; set; }
 
-    public virtual Account AccountU { get; set; }
-
     public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
 
     public virtual ICollection<AccountTruck> InverseParentTruckU { get; set; } = new List<AccountTruck>();

@@ -1,35 +1,37 @@
-﻿using Agvantage_Transfer.AtModels;
-using Agvantage_Transfer.Logging;
-using Agvantage_Transfer.NwModels;
-using Agvantage_Transfer.SeedModels;
-using Agvantage_Transfer.Sync;
+﻿using Agvantage_Transfer.AtLogModels;
+using Agvantage_TransferV2.GmModels;
+using Agvantage_TransferV2.Logging;
+
+using Agvantage_TransferV2.Sync;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
 
-namespace Agvantage_Transfer;
+namespace Agvantage_TransferV2;
 
 public sealed class AgvantageTransfer(
-    AtDbContext dbContext, 
+    GMDbContext dbContext, 
+    AtLogDbContext logDbContext,
     ITransferLogger log,
 
     ExcelImport excel,
-    NW_DataContext nwDb,
-    ICarrierSyncService carrierSync,
-     IProducerSyncService producerSync,
-     ICropSyncService cropSync,
-     ISeedSyncService seedSync,
+  
+  //  ICarrierSyncService carrierSync,
+     IAccountSyncService producerSync,
+    // ICropSyncService cropSync,
+    // ISeedSyncService seedSync,
     IOptions<AppSettings> options)
 {
-    private readonly ISeedSyncService _seedSync = seedSync;
-    private readonly ICropSyncService _cropSync = cropSync;
-    private readonly IProducerSyncService _producerSync = producerSync;
+    //private readonly ISeedSyncService _seedSync = seedSync;
+    //private readonly ICropSyncService _cropSync = cropSync;
+    private readonly IAccountSyncService _accountSync = producerSync;
     private readonly AppSettings _cfg = options.Value;
-    private readonly AtDbContext _db = dbContext;
+    private readonly GMDbContext _db = dbContext;
+    private readonly AtLogDbContext _logDb = logDbContext;
     private readonly ITransferLogger _log = log;
-    private readonly NW_DataContext _nw = nwDb;
-    private readonly ICarrierSyncService _carrierSync = carrierSync;
+   
+    //private readonly ICarrierSyncService _carrierSync = carrierSync;
 
     public bool TransferStarted { get; private set; }
     public enum ProcessState { Idle, Running, TimedOut }
@@ -57,10 +59,17 @@ public sealed class AgvantageTransfer(
         string batchFile, string completedFilePath,
         TimeSpan timeout, TimeSpan updateInterval, CancellationToken ct)
     {
-        // Example: keep your log table trim logic if desired
-        var allLogs = await _db.AgvantageTransferLogs.ToListAsync();
-        _db.AgvantageTransferLogs.RemoveRange(allLogs);
-        await _db.SaveChangesAsync();
+        // Replace the log trimming logic in StartProcessAsync with this:
+        var logCount = await _logDb.AgvantageTransferLogs.CountAsync();
+        if (logCount > 200)
+        {
+            var logsToDelete = await _logDb.AgvantageTransferLogs
+                .OrderBy(l => l.TaskTime)
+                .Take(logCount - 500)
+                .ToListAsync();
+            _logDb.AgvantageTransferLogs.RemoveRange(logsToDelete);
+            await _logDb.SaveChangesAsync();
+        }
 
         await _log.InfoAsync("Starting Transfer", "System");
 
@@ -89,10 +98,21 @@ public sealed class AgvantageTransfer(
         if (!batchExists) throw new FileNotFoundException($"Batch file not found: {batchFile}", "System");
         if (!workDirExists) throw new DirectoryNotFoundException($"Working directory not found: {workDir}");
 
+            
+
+
         _process = new()
         {
             StartInfo = new()
             {
+
+                //FileName = "wscript.exe",
+                //Arguments = $"{batchFile}",
+                //UseShellExecute = false,
+                //CreateNoWindow = true
+
+
+
                 FileName = "cmd.exe",
                 Arguments = $"/c \"{batchFile}\"",
                 WorkingDirectory = workDir,
@@ -151,36 +171,37 @@ public sealed class AgvantageTransfer(
     {
         xlsxFilePath = (xlsxFilePath ?? "").Trim();
         if (!xlsxFilePath.EndsWith('\\')) xlsxFilePath += "\\";
-        await _log.InfoAsync("Updating Carriers", "Nw_Data - Carriers");
-        var carriers = await excel.LoadCarriersAsync($"{_cfg.CompletedFilePath}\\Carriers.xlsx");
-        await _log.InfoAsync($"Worker loaded {carriers.Count} carriers", "Nw_Data - Carriers");
-        await _carrierSync.UpsertAsync(carriers);
-        await _log.InfoAsync("Updating Producers", "NW_Data - Producers");
-        var producers = await excel.LoadProducersAsync($"{_cfg.CompletedFilePath}\\Customers.xlsx");
-        await _log.InfoAsync($"Worker loaded {producers.Count} producers", "NW_Data - Producers");
-        await _producerSync.UpsertAsync(producers);
+        //await _log.InfoAsync("Updating Carriers", "Nw_Data - Carriers");
+        //var carriers = await excel.LoadCarriersAsync($"{_cfg.CompletedFilePath}\\Carriers.xlsx");
+        //await _log.InfoAsync($"Worker loaded {carriers.Count} carriers", "Nw_Data - Carriers");
+        //await _carrierSync.UpsertAsync(carriers);
+        await _log.InfoAsync("Updating Producers", "Accounts");
+        var accounts = await excel.LoadAccountsFromCustomersExcelAsync($"{_cfg.CompletedFilePath}\\Customers.xlsx");
+        await _log.InfoAsync($"Worker loaded {accounts.Count} accounts", "Accounts");
+        await _accountSync.UpsertAsync(accounts);
+        //await _producerSync.UpsertAsync(producers);
 
-        await _log.InfoAsync("Updating Crops", "NW_Data - Crops");
-        var crops = await excel.LoadCropsAsync($"{_cfg.CompletedFilePath}\\Crops.xlsx");
-        await _log.InfoAsync($"Worker loaded {crops.Count} Crops" ,"NW_Data - Crops");
-        await _cropSync.UpsertAsync(crops);
+        //await _log.InfoAsync("Updating Crops", "NW_Data - Crops");
+        //var crops = await excel.LoadCropsAsync($"{_cfg.CompletedFilePath}\\Crops.xlsx");
+        //await _log.InfoAsync($"Worker loaded {crops.Count} Crops" ,"NW_Data - Crops");
+        //await _cropSync.UpsertAsync(crops);
 
-        await _log.InfoAsync("Updating Seed Master", "Seed - Items");
-        var seedItems = await excel.LoadItemsAsync($"{_cfg.CompletedFilePath}\\SeedItemMasterFile.xlsx");
-        await _log.InfoAsync($"Worker loaded {seedItems.Count} Seed Master Items", "Seed - Items");
-        await _seedSync.UpsertSeedItemsAsync(seedItems);
+        //await _log.InfoAsync("Updating Seed Master", "Seed - Items");
+        //var seedItems = await excel.LoadItemsAsync($"{_cfg.CompletedFilePath}\\SeedItemMasterFile.xlsx");
+        //await _log.InfoAsync($"Worker loaded {seedItems.Count} Seed Master Items", "Seed - Items");
+        //await _seedSync.UpsertSeedItemsAsync(seedItems);
 
-        await _log.InfoAsync("Updating Seed Item Location Pricing", "Seed - ItemLocation");
-        var seedItemLocations = await excel.LoadItemLocationsAsync($"{_cfg.CompletedFilePath}\\SeedItemLocationPrice.xlsx");
-        await _log.InfoAsync($"Worker loaded {seedItemLocations.Count} Seed - ItemLocations", "Seed - ItemLocation");
-        await _seedSync.UpsertSeedItemLocationAsync(seedItemLocations);
+        //await _log.InfoAsync("Updating Seed Item Location Pricing", "Seed - ItemLocation");
+        //var seedItemLocations = await excel.LoadItemLocationsAsync($"{_cfg.CompletedFilePath}\\SeedItemLocationPrice.xlsx");
+        //await _log.InfoAsync($"Worker loaded {seedItemLocations.Count} Seed - ItemLocations", "Seed - ItemLocation");
+        //await _seedSync.UpsertSeedItemLocationAsync(seedItemLocations);
 
 
-        await _log.InfoAsync("Updating Seed Deptartments"," Seed - SeedDeptartments");
-        var seedDepartments = await excel.LoadSeedDepartmentsAsync($"{_cfg.CompletedFilePath}\\SeedDept.xlsx");
+        //await _log.InfoAsync("Updating Seed Deptartments"," Seed - SeedDeptartments");
+        //var seedDepartments = await excel.LoadSeedDepartmentsAsync($"{_cfg.CompletedFilePath}\\SeedDept.xlsx");
 
-        await _log.InfoAsync($"Worker loaded {seedDepartments.Count} SeedDeptartments"," Seed - SeedDeptartments");
-        await _seedSync.UpsertSeedDepartmentsAsync(seedDepartments);
+        //await _log.InfoAsync($"Worker loaded {seedDepartments.Count} SeedDeptartments"," Seed - SeedDeptartments");
+        //await _seedSync.UpsertSeedDepartmentsAsync(seedDepartments);
 
 
 

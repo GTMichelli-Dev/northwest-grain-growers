@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Agvantage_Transfer.SeedModels;
+namespace Agvantage_TransferV2.SeedModels;
 
 public partial class AgvantageSeedDepartmentDTO
 {

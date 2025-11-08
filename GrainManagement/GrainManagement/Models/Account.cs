@@ -7,8 +7,6 @@ namespace GrainManagement.Models;
 
 public partial class Account
 {
-    public Guid Uid { get; set; }
-
     public long AccountId { get; set; }
 
     public string EntityName { get; set; }
@@ -62,18 +60,4 @@ public partial class Account
     public bool HedgedAccount { get; set; }
 
     public bool IsHauler { get; set; }
-
-    public virtual ICollection<AccountCustomPricing> AccountCustomPricings { get; set; } = new List<AccountCustomPricing>();
-
-    public virtual ICollection<AccountGroup> AccountGroups { get; set; } = new List<AccountGroup>();
-
-    public virtual ICollection<AccountTruck> AccountTrucks { get; set; } = new List<AccountTruck>();
-
-    public virtual ICollection<AssociatedGroupAccount> AssociatedGroupAccounts { get; set; } = new List<AssociatedGroupAccount>();
-
-    public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; } = new List<PurchaseOrder>();
-
-    public virtual SalesInvoice SalesInvoice { get; set; }
-
-    public virtual ICollection<SalesOrder> SalesOrders { get; set; } = new List<SalesOrder>();
 }

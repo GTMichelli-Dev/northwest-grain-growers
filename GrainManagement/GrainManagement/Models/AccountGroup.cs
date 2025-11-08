@@ -22,6 +22,4 @@ public partial class AccountGroup
     public bool UseForReceive { get; set; }
 
     public virtual ICollection<AssociatedGroupAccount> AssociatedGroupAccounts { get; set; } = new List<AssociatedGroupAccount>();
-
-    public virtual Account PrimaryAccountU { get; set; }
 }

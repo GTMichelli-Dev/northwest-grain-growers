@@ -17,7 +17,5 @@ public partial class AssociatedGroupAccount
 
     public virtual AccountGroup AccountGroupU { get; set; }
 
-    public virtual Account AccountU { get; set; }
-
     public virtual ICollection<ReceivedInventoryPurchaseOrderLineItem> ReceivedInventoryPurchaseOrderLineItems { get; set; } = new List<ReceivedInventoryPurchaseOrderLineItem>();
 }

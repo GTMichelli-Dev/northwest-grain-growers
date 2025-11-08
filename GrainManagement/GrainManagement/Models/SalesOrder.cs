@@ -41,7 +41,5 @@ public partial class SalesOrder
 
     public string Notes { get; set; }
 
-    public virtual Account AccountU { get; set; }
-
     public virtual Carrier CarrierU { get; set; }
 }

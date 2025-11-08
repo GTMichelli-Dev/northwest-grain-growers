@@ -1,15 +1,15 @@
-﻿using Agvantage_Transfer.AtModels;
+﻿using Agvantage_TransferV2.GmModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Agvantage_Transfer
+namespace Agvantage_TransferV2
 {
     internal class DBLogging : IDBLogging
     {
         private readonly ILogger<AgvantageTransfer> _logger;
-        private readonly AtDbContext _atDbContext;
+        private readonly GMDbContext _atDbContext;
 
-        public DBLogging(ILogger<AgvantageTransfer> logger, AtDbContext dbContext)
+        public DBLogging(ILogger<AgvantageTransfer> logger, GMDbContext dbContext)
         {
             _logger = logger;
             _atDbContext = dbContext;
@@ -17,28 +17,30 @@ namespace Agvantage_Transfer
 
         public async Task ClearLog()
         {
-            var allLogs = await _atDbContext.AgvantageTransferLogs.ToListAsync();
-            _atDbContext.AgvantageTransferLogs.RemoveRange(allLogs);
-            await _atDbContext.SaveChangesAsync();
+            await Task.Delay(0); // Ensure async context
+            //var allLogs = await _atDbContext.AgvantageTransferLogs.ToListAsync();
+            //_atDbContext.AgvantageTransferLogs.RemoveRange(allLogs);
+            //await _atDbContext.SaveChangesAsync();
         }
 
         public async Task LogAsync(string message, bool isError = false)
         {
-            try
-            {
-                var logEntry = new AgvantageTransferLog
-                {
-                    Message = message,
-                    Error = isError,
-                    TaskTime = DateTime.Now
-                };
-                await _atDbContext.AgvantageTransferLogs.AddAsync(logEntry);
-                await _atDbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to log message to database: {Message}", message);
-            }
+            await Task.Delay(0);
+            //try
+            //{
+            //    var logEntry = new AgvantageTransferLog
+            //    {
+            //        Message = message,
+            //        Error = isError,
+            //        TaskTime = DateTime.Now
+            //    };
+            //    await _atDbContext.AgvantageTransferLogs.AddAsync(logEntry);
+            //    await _atDbContext.SaveChangesAsync();
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.LogError(ex, "Failed to log message to database: {Message}", message);
+            //}
         }
     }
 
