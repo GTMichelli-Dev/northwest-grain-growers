@@ -16,4 +16,6 @@ public partial class Trait
     public int ColorIndex { get; set; }
 
     public int Duration { get; set; }
+
+    public virtual ICollection<SeedTrait> SeedTraits { get; set; } = new List<SeedTrait>();
 }

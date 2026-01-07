@@ -27,5 +27,7 @@ public partial class ItemLocation
 
     public virtual ICollection<Bin> Bins { get; set; } = new List<Bin>();
 
+    public virtual Location Location { get; set; }
+
     public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
 }

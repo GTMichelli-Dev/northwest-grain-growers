@@ -45,6 +45,8 @@ public partial class SeedTicket
 
     public bool Returned { get; set; }
 
+    public bool Complete { get; set; }
+
     public virtual ICollection<SeedTicketMisc> SeedTicketMiscs { get; set; } = new List<SeedTicketMisc>();
 
     public virtual ICollection<SeedTicketTreatment> SeedTicketTreatments { get; set; } = new List<SeedTicketTreatment>();

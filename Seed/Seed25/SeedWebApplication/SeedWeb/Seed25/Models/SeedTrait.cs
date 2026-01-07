@@ -12,4 +12,8 @@ public partial class SeedTrait
     public int ItemId { get; set; }
 
     public int TraitId { get; set; }
+
+    public virtual Item Item { get; set; }
+
+    public virtual Trait Trait { get; set; }
 }

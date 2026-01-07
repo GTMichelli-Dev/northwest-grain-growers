@@ -28,4 +28,10 @@ public partial class Item
     public bool NotInUse { get; set; }
 
     public string Comment { get; set; }
+
+    public virtual ItemType ItemTypeNavigation { get; set; }
+
+    public virtual ICollection<SeedTrait> SeedTraits { get; set; } = new List<SeedTrait>();
+
+    public virtual ICollection<TreatmentWeight> TreatmentWeights { get; set; } = new List<TreatmentWeight>();
 }
