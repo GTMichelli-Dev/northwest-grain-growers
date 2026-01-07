@@ -1,0 +1,1 @@
+﻿Select * from COMDATA.U4DEPT
