@@ -19,7 +19,5 @@ public partial class ReceivedInventoryItem
 
     public Guid? WeightSheetUid { get; set; }
 
-    public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
-
     public virtual ReceivedInventoryPurchaseOrderLineItem RecievedInventoryPurchaseOrderLineItemU { get; set; }
 }

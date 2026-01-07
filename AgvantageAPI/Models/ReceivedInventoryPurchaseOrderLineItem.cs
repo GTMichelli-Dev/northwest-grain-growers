@@ -11,9 +11,7 @@ public partial class ReceivedInventoryPurchaseOrderLineItem
 
     public Guid PurchaseOrderLineItemUid { get; set; }
 
-    public Guid AccountGroupAccountUid { get; set; }
-
-    public virtual AssociatedGroupAccount AccountGroupAccountU { get; set; }
+    public int SplitGroupId { get; set; }
 
     public virtual PurchaseOrderLineItem PurchaseOrderLineItemU { get; set; }
 

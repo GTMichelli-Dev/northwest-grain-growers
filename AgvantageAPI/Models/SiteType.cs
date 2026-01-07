@@ -10,6 +10,4 @@ public partial class SiteType
     public int Id { get; set; }
 
     public string Description { get; set; }
-
-    public virtual ICollection<Site> Sites { get; set; } = new List<Site>();
 }

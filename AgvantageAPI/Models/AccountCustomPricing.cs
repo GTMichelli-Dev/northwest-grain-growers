@@ -7,15 +7,15 @@ namespace AgvantageAPI.Models;
 
 public partial class AccountCustomPricing
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
-    public Guid AccountUid { get; set; }
+    public long AccountId { get; set; }
 
     public string Description { get; set; }
 
     public int SiteId { get; set; }
 
-    public Guid ProductVarietyItemUid { get; set; }
+    public int ProductVarietyItemId { get; set; }
 
     public decimal Price { get; set; }
 
@@ -27,7 +27,7 @@ public partial class AccountCustomPricing
 
     public decimal DiscountPercent { get; set; }
 
-    public virtual ProductVarietyItem ProductVarietyItemU { get; set; }
+    public virtual Account Account { get; set; }
 
     public virtual Site Site { get; set; }
 }

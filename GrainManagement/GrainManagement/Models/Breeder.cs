@@ -7,9 +7,9 @@ namespace GrainManagement.Models;
 
 public partial class Breeder
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
-    public Guid GlAccountUid { get; set; }
+    public int GlaccountId { get; set; }
 
     public string Description { get; set; }
 
@@ -19,7 +19,7 @@ public partial class Breeder
 
     public string Notes { get; set; }
 
-    public virtual Glaccount GlAccountU { get; set; }
+    public virtual Glaccount Glaccount { get; set; }
 
     public virtual ICollection<ProductVariety> ProductVarieties { get; set; } = new List<ProductVariety>();
 }

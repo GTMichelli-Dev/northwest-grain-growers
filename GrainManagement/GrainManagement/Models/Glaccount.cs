@@ -7,37 +7,29 @@ namespace GrainManagement.Models;
 
 public partial class Glaccount
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
+
+    public int LocationCode { get; set; }
+
+    public string Name { get; set; }
 
     public string Description { get; set; }
 
-    public string AccountId { get; set; }
+    public string AccountNumber { get; set; }
 
-    public bool Receivable { get; set; }
-
-    public bool Editable { get; set; }
+    public string AccountType { get; set; }
 
     public bool Active { get; set; }
-
-    public string Notes { get; set; }
-
-    public string DefaultSalesCode { get; set; }
-
-    public string DefaultPurchaseCode { get; set; }
-
-    public bool UseGlaccountPurchaseCodes { get; set; }
-
-    public Guid DefaultUomUid { get; set; }
 
     public virtual ICollection<Breeder> Breeders { get; set; } = new List<Breeder>();
 
     public virtual GlchemicalAccount GlchemicalAccount { get; set; }
 
+    public virtual GlgrainAccount GlgrainAccount { get; set; }
+
     public virtual GlmiscAccount GlmiscAccount { get; set; }
 
-    public virtual GlseedAccount GlseedAccount { get; set; }
-
-    public virtual GlserviceAccount GlserviceAccount { get; set; }
+    public virtual ICollection<GlserviceAccount> GlserviceAccounts { get; set; } = new List<GlserviceAccount>();
 
     public virtual GltreatmentAccount GltreatmentAccount { get; set; }
 

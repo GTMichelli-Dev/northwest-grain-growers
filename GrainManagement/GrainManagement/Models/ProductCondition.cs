@@ -7,11 +7,11 @@ namespace GrainManagement.Models;
 
 public partial class ProductCondition
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
     public string Description { get; set; }
 
-    public Guid GlaccountUid { get; set; }
+    public int GlaccountId { get; set; }
 
     public bool Locked { get; set; }
 
@@ -19,7 +19,7 @@ public partial class ProductCondition
 
     public bool RequireLot { get; set; }
 
-    public virtual Glaccount GlaccountU { get; set; }
+    public virtual Glaccount Glaccount { get; set; }
 
     public virtual ICollection<ProductVarietyItem> ProductVarietyItems { get; set; } = new List<ProductVarietyItem>();
 

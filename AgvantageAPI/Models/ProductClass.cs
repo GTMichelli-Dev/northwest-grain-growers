@@ -7,17 +7,17 @@ namespace AgvantageAPI.Models;
 
 public partial class ProductClass
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
     public string Description { get; set; }
 
     public int ClassLevel { get; set; }
 
-    public Guid GlaccountUid { get; set; }
+    public int GlaccountId { get; set; }
 
     public virtual ICollection<AssignedProductClass> AssignedProductClasses { get; set; } = new List<AssignedProductClass>();
 
-    public virtual Glaccount GlaccountU { get; set; }
+    public virtual Glaccount Glaccount { get; set; }
 
     public virtual ICollection<ProductVarietyItem> ProductVarietyItems { get; set; } = new List<ProductVarietyItem>();
 }

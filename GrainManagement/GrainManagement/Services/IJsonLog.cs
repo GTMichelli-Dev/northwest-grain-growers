@@ -1,4 +1,4 @@
-﻿using GrainManagement.DTO;
+﻿using GrainManagement.Models.DTO;
 
 namespace GrainManagement.Services
 {

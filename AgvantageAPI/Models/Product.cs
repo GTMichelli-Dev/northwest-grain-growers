@@ -7,15 +7,15 @@ namespace AgvantageAPI.Models;
 
 public partial class Product
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
-    public Guid GlaccountUid { get; set; }
+    public int GlaccountId { get; set; }
 
     public string Description { get; set; }
 
     public bool Active { get; set; }
 
-    public Guid DefaultUomuid { get; set; }
+    public int DefaultUomId { get; set; }
 
     /// <summary>
     /// You Cannot Receive a Service like Delivery Fee
@@ -28,19 +28,17 @@ public partial class Product
 
     public string Notes { get; set; }
 
-    public Guid DefaultConditionUid { get; set; }
+    public int DefaultConditionId { get; set; }
 
     public virtual ICollection<AssignedProductClass> AssignedProductClasses { get; set; } = new List<AssignedProductClass>();
 
-    public virtual ProductCondition DefaultConditionU { get; set; }
+    public virtual ProductCondition DefaultCondition { get; set; }
 
-    public virtual Glaccount GlaccountU { get; set; }
+    public virtual UnitOfMeasure DefaultUom { get; set; }
 
-    public virtual LockedGlitem LockedGlitem { get; set; }
+    public virtual Glaccount Glaccount { get; set; }
 
     public virtual ICollection<ProductTrait> ProductTraits { get; set; } = new List<ProductTrait>();
 
     public virtual ICollection<ProductType> ProductTypes { get; set; } = new List<ProductType>();
-
-    public virtual SeedCommodityColor SeedCommodityColor { get; set; }
 }

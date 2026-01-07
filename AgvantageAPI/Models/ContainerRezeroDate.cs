@@ -7,9 +7,11 @@ namespace AgvantageAPI.Models;
 
 public partial class ContainerRezeroDate
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
-    public Guid ContainerUid { get; set; }
+    public int ContainerId { get; set; }
 
     public DateTime ZeroDate { get; set; }
+
+    public virtual Container Container { get; set; }
 }

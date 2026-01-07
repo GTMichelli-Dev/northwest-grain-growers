@@ -7,17 +7,17 @@ namespace GrainManagement.Models;
 
 public partial class ProductVarietyItem
 {
-    public Guid Uid { get; set; }
+    public long Id { get; set; }
 
     public string Description { get; set; }
 
-    public Guid ProductVarietyUid { get; set; }
+    public int ProductVarietyId { get; set; }
 
-    public Guid ProductClassUid { get; set; }
+    public int ProductClassId { get; set; }
 
-    public Guid UomUid { get; set; }
+    public int UomId { get; set; }
 
-    public Guid ProductConditionUid { get; set; }
+    public int ProductConditionId { get; set; }
 
     public bool Active { get; set; }
 
@@ -33,21 +33,17 @@ public partial class ProductVarietyItem
 
     public string Notes { get; set; }
 
-    public virtual ICollection<AccountCustomPricing> AccountCustomPricings { get; set; } = new List<AccountCustomPricing>();
+    public virtual ICollection<GrowerFieldCommodity> GrowerFieldCommodities { get; set; } = new List<GrowerFieldCommodity>();
 
-    public virtual ICollection<InventoryMovement> InventoryMovementFromProductVarietyItemUs { get; set; } = new List<InventoryMovement>();
+    public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
 
-    public virtual ICollection<InventoryMovement> InventoryMovementProductVarietyItemUs { get; set; } = new List<InventoryMovement>();
+    public virtual ProductClass ProductClass { get; set; }
 
-    public virtual ProductClass ProductClassU { get; set; }
+    public virtual ProductCondition ProductCondition { get; set; }
 
-    public virtual ProductCondition ProductConditionU { get; set; }
+    public virtual ProductVariety ProductVariety { get; set; }
 
     public virtual ICollection<ProductVarietyItemPrice> ProductVarietyItemPrices { get; set; } = new List<ProductVarietyItemPrice>();
 
-    public virtual ProductVariety ProductVarietyU { get; set; }
-
     public virtual ICollection<PurchaseOrderLineItem> PurchaseOrderLineItems { get; set; } = new List<PurchaseOrderLineItem>();
-
-    public virtual ICollection<SalesOrderLineItem> SalesOrderLineItems { get; set; } = new List<SalesOrderLineItem>();
 }

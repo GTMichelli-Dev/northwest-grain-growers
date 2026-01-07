@@ -9,17 +9,15 @@ public partial class LotLab
 {
     public Guid Uid { get; set; }
 
-    public string Id { get; set; }
+    public long LotId { get; set; }
+
+    public string LabDescription { get; set; }
 
     public long Quantitylbs { get; set; }
 
     public DateTime CreationDate { get; set; }
 
-    public Guid LotUid { get; set; }
-
     public bool Closed { get; set; }
 
-    public virtual ICollection<LabResult> LabResults { get; set; } = new List<LabResult>();
-
-    public virtual Lot LotU { get; set; }
+    public virtual Lot Lot { get; set; }
 }

@@ -6,11 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.SqlServer;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
-using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.Swagger;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using Swashbuckle.AspNetCore.SwaggerUI;
-using System.Security.Claims;
+using Microsoft.OpenApi;
 
 
 
@@ -81,8 +77,27 @@ builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.Authentic
     };
 });
 
-builder.Services.AddDbContext<dbContext>(
-      options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddDbContext<dbContext>((serviceProvider, options) =>
+{
+    var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    var httpContext = httpContextAccessor.HttpContext;
+
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+    var endpoint = httpContext?.GetEndpoint();
+    var useAdminConn = endpoint?.Metadata.GetMetadata<UseAdminConnectionAttribute>() != null;
+    if (useAdminConn)
+    {
+        connectionString = configuration.GetConnectionString("AdminConnection");
+    }
+
+    options.UseSqlServer(connectionString);
+});
+
+//builder.Services.AddDbContext<dbContext>(
+//      options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // MVC + Microsoft Identity UI (for login/logout endpoints)
 builder.Services.AddRazorPages().AddMicrosoftIdentityUI();

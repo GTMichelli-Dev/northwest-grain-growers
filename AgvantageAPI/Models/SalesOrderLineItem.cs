@@ -9,7 +9,7 @@ public partial class SalesOrderLineItem
 {
     public Guid Uid { get; set; }
 
-    public Guid? SalesOrderUid { get; set; }
+    public long SalesOrderId { get; set; }
 
     public Guid? ProductVarietyItemUid { get; set; }
 
@@ -21,7 +21,5 @@ public partial class SalesOrderLineItem
 
     public bool NoCertFee { get; set; }
 
-    public virtual ProductVarietyItem ProductVarietyItemU { get; set; }
-
-    public virtual ICollection<SalesInvoiceLineItem> SalesInvoiceLineItems { get; set; } = new List<SalesInvoiceLineItem>();
+    public virtual SalesOrder SalesOrder { get; set; }
 }

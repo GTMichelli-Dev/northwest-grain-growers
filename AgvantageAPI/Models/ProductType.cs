@@ -7,11 +7,11 @@ namespace AgvantageAPI.Models;
 
 public partial class ProductType
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
     public string Description { get; set; }
 
-    public Guid ProductUid { get; set; }
+    public int ProductId { get; set; }
 
     public bool Active { get; set; }
 
@@ -19,7 +19,7 @@ public partial class ProductType
 
     public decimal MarketPrice { get; set; }
 
-    public virtual Product ProductU { get; set; }
+    public virtual Product Product { get; set; }
 
     public virtual ICollection<ProductVariety> ProductVarieties { get; set; } = new List<ProductVariety>();
 }

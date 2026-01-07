@@ -20,4 +20,6 @@ public partial class ContainerStyle
     public bool Hidden { get; set; }
 
     public string Notes { get; set; }
+
+    public virtual ICollection<ContainerType> ContainerTypes { get; set; } = new List<ContainerType>();
 }

@@ -14,6 +14,4 @@ public partial class SeedCommodityColor
     public int ColorIndex { get; set; }
 
     public virtual SeedColor ColorIndexNavigation { get; set; }
-
-    public virtual Product ProductU { get; set; }
 }

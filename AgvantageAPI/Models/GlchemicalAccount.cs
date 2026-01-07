@@ -7,9 +7,9 @@ namespace AgvantageAPI.Models;
 
 public partial class GlchemicalAccount
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
-    public Guid GlaccountUid { get; set; }
+    public int GlaccountId { get; set; }
 
-    public virtual Glaccount GlaccountU { get; set; }
+    public virtual Glaccount Glaccount { get; set; }
 }

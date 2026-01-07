@@ -4,17 +4,48 @@
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
-   "MinimumProductVersion": "2.6.1186",
+   "IrregularWords": null,
+   "MinimumProductVersion": "2.6.1244",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Models",
+   "PluralRules": null,
    "PreserveCasingWithRegex": true,
    "ProjectRootNamespace": "GrainManagement",
    "Schemas": null,
    "SelectedHandlebarsLanguage": 2,
    "SelectedToBeGenerated": 0,
+   "SingularRules": null,
    "T4TemplatePath": null,
    "Tables": [
+      {
+         "Name": "[account].[AccountCustomPricing]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[account].[Accounts]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[account].[GrowerFieldCommodity]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[account].[GrowerFields]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[account].[SplitGroupPercents]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[account].[SplitGroups]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[account].[Trucks]",
+         "ObjectType": 0
+      },
       {
          "Name": "[container].[Cleaners]",
          "ObjectType": 0
@@ -40,27 +71,27 @@
          "ObjectType": 0
       },
       {
-         "Name": "[customer].[AccountCustomPricing]",
+         "Name": "[generalLedger].[GLAccounts]",
          "ObjectType": 0
       },
       {
-         "Name": "[customer].[AccountGroups]",
+         "Name": "[generalLedger].[GLChemicalAccounts]",
          "ObjectType": 0
       },
       {
-         "Name": "[customer].[Accounts]",
+         "Name": "[generalLedger].[GLGrainAccounts]",
          "ObjectType": 0
       },
       {
-         "Name": "[customer].[AccountTrucks]",
+         "Name": "[generalLedger].[GLMiscAccounts]",
          "ObjectType": 0
       },
       {
-         "Name": "[customer].[AssociatedGroupAccounts]",
+         "Name": "[generalLedger].[GLServiceAccounts]",
          "ObjectType": 0
       },
       {
-         "Name": "[customer].[CropSplits]",
+         "Name": "[generalLedger].[GLTreatmentAccounts]",
          "ObjectType": 0
       },
       {
@@ -84,39 +115,15 @@
          "ObjectType": 0
       },
       {
+         "Name": "[logistics].[Carriers]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[product].[AssignedProductClasses]",
          "ObjectType": 0
       },
       {
          "Name": "[product].[Breeders]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[product].[GLAccounts]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[product].[GLChemicalAccounts]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[product].[GLMiscAccounts]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[product].[GLSeedAccounts]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[product].[GLServiceAccounts]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[product].[GLTreatmentAccounts]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[product].[LockedGLItems]",
          "ObjectType": 0
       },
       {
@@ -196,7 +203,11 @@
          "ObjectType": 0
       },
       {
-         "Name": "[sale].[Carriers]",
+         "Name": "[purchase].[WeightSheetStatus]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[purchase].[WeightSheetTypes]",
          "ObjectType": 0
       },
       {
@@ -260,15 +271,15 @@
          "ObjectType": 0
       },
       {
-         "Name": "[system].[DbServers]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[system].[Logs]",
          "ObjectType": 0
       },
       {
          "Name": "[system].[OrderStatus]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[system].[Servers]",
          "ObjectType": 0
       },
       {

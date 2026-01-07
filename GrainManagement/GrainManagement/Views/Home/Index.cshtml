@@ -1,31 +1,229 @@
-@using GrainManagement.Models
+@using GrainManagement.Models.DTO
 
+<h2 style="text-align: center;">Location Summary</h2>
+<div style="display: flex; justify-content: center;">
+    <div id="lastrefresh" style="font-size:1.1em; margin-bottom: 6px; text-align: center;">
+        <span style="opacity:.7; font-size:.9em;">
+            Last refresh: <span id="lastRefresh">-</span>
+        </span>
+    </div>
+</div>
+<div style="display: flex; justify-content: center; align-items: center;">
+    <div id="dateRangeBox" style="width: 320px; margin-bottom: 10px;"></div>
+        <button id="manualRefreshBtn" type="button" class="btn btn-outline-dark"
+            style="margin-left:5px; margin-bottom:10px; height: 40px; min-width: 90px; display: flex; align-items: center;">
+            Refresh
+        </button>
+</div>
 
-<h2>Home</h2>
+<div id="totalsSummary" style="font-size:1.5em; margin: 8px 0 14px 0;">
+    <table style="margin: 0 auto; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 4px 12px;"><strong>Intake:</strong></td>
+            <td style="padding: 4px 12px;"><span id="sumIntakeLbs">-</span> lbs (<span id="sumIntakeBu">-</span> bu)</td>
+            <td style="padding: 4px 12px;"><strong>Outbound:</strong></td>
+            <td style="padding: 4px 12px;"><span id="sumOutboundLbs">-</span> lbs (<span id="sumOutboundBu">-</span> bu)</td>
+        </tr>
+        <tr>
+            <td style="padding: 4px 12px;"><strong>Transferred To:</strong></td>
+            <td style="padding: 4px 12px;"><span id="sumToLbs">-</span> lbs (<span id="sumToBu">-</span> bu)</td>
+            <td style="padding: 4px 12px;"><strong>Transferred From:</strong></td>
+            <td style="padding: 4px 12px;"><span id="sumFromLbs">-</span> lbs (<span id="sumFromBu">-</span> bu)</td>
+        </tr>
+    </table>
+</div>
 
+<div id="locationTotalsGrid"></div>
 
-@(Html.DevExtreme().DataGrid<SampleOrder>()
-    .ShowBorders(true)
-    .DataSource(d => d.Mvc().Controller("SampleData").LoadAction("Get").Key("OrderID"))
-    .Columns(columns => {
-        columns.AddFor(m => m.OrderID);
-        columns.AddFor(m => m.OrderDate);
-        columns.AddFor(m => m.CustomerName);
-        columns.AddFor(m => m.ShipCountry);
-        columns.AddFor(m => m.ShipCity);
-    })
-    .Paging(p => p.PageSize(10))
-    .FilterRow(f => f.Visible(true))
-    .HeaderFilter(f => f.Visible(true))
-    .GroupPanel(p => p.Visible(true))
-    .Grouping(g => g.AutoExpandAll(false))
-    .RemoteOperations(true)
-    .Summary(s => s
-        .TotalItems(totalItems => {
-            totalItems.AddFor(m => m.ShipCity).SummaryType(SummaryType.Count);
-        })
-        .GroupItems(groupItems => {
-            groupItems.Add().SummaryType(SummaryType.Count);
-        })
-    )
-)
+<script>
+    (function () {
+        // ---- helpers ----
+        const fmt = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+
+        function startOfToday(d) {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+        }
+        function endOfToday(d) {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+        }
+        function toYMD(d) {
+            // query as yyyy-mm-dd
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            return `${y}-${m}-${day}`;
+        }
+
+        // ---- state ----
+        let inFlight = null;
+        let aborter = null;
+
+        // ---- init date range (default today) ----
+        const now = new Date();
+        let currentRange = [startOfToday(now), endOfToday(now)];
+
+        const dateRange = $("#dateRangeBox").dxDateRangeBox({
+            label: "Filter by date range",
+            labelMode: "floating",
+            showClearButton: false,
+            value: currentRange,
+            displayFormat: "shortDate",
+            onValueChanged: function (e) {
+                if (e.value && e.value.length === 2) {
+                    currentRange = e.value;
+                    refreshData(); // refresh immediately on change
+                }
+            }
+        }).dxDateRangeBox("instance");
+
+        // ---- init grid ----
+        const grid = $("#locationTotalsGrid").dxDataGrid({
+            dataSource: [],
+            keyExpr: "LocationId",
+            showBorders: true,
+            rowAlternationEnabled: true,
+            columnAutoWidth: true,
+            paging: { enabled: false },
+            columns: [
+                {
+                    dataField: "LocationId",
+                    width: 110,
+                    headerCellTemplate: function(container) {
+                        $("<div>").css("text-align", "center").text("Id").appendTo(container);
+                    }
+                },
+                {
+                    dataField: "LocationName",
+                    minWidth: 160,
+                    headerCellTemplate: function(container) {
+                        $("<div>").css("text-align", "center").text("Location").appendTo(container);
+                    }
+                },
+                {
+                    dataField: "IntakeLbs",
+                    format: "#,##0",
+                    headerCellTemplate: function(container) {
+                        $("<div>").css("text-align", "center").html("Intake<br>(lbs)").appendTo(container);
+                    }
+                },
+                {
+                    dataField: "IntakeBushels",
+                    format: "#,##0",
+                    headerCellTemplate: function(container) {
+                        $("<div>").css("text-align", "center").html("Intake<br>(bu)").appendTo(container);
+                    }
+                },
+                {
+                    dataField: "OutboundLbs",
+                    format: "#,##0",
+                    headerCellTemplate: function(container) {
+                        $("<div>").css("text-align", "center").html("Outbound<br>(lbs)").appendTo(container);
+                    }
+                },
+                {
+                    dataField: "OutboundBushels",
+                    format: "#,##0",
+                    headerCellTemplate: function(container) {
+                        $("<div>").css("text-align", "center").html("Outbound<br>(bu)").appendTo(container);
+                    }
+                },
+                {
+                    dataField: "TransferedToLbs",
+                    format: "#,##0",
+                    headerCellTemplate: function(container) {
+                        $("<div>").css("text-align", "center").html("Transferred To<br>(lbs)").appendTo(container);
+                    }
+                },
+                {
+                    dataField: "TransferedToBushels",
+                    format: "#,##0",
+                    headerCellTemplate: function(container) {
+                        $("<div>").css("text-align", "center").html("Transferred To<br>(bu)").appendTo(container);
+                    }
+                },
+                {
+                    dataField: "TransferedFromLbs",
+                    format: "#,##0",
+                    headerCellTemplate: function(container) {
+                        $("<div>").css("text-align", "center").html("Transferred From<br>(lbs)").appendTo(container);
+                    }
+                },
+                {
+                    dataField: "TransferedFromBushels",
+                    format: "#,##0",
+                    headerCellTemplate: function(container) {
+                        $("<div>").css("text-align", "center").html("Transferred From<br>(bu)").appendTo(container);
+                    }
+                }
+            ]
+        }).dxDataGrid("instance");
+
+        function setSummary(rows) {
+            const sum = (field) => rows.reduce((acc, r) => acc + (r[field] || 0), 0);
+
+            const intakeLbs = sum("IntakeLbs");
+            const outboundLbs = sum("OutboundLbs");
+            const toLbs = sum("TransferedToLbs");
+            const fromLbs = sum("TransferedFromLbs");
+
+            // Bushels are already computed in DTO, but summing bushels is fine too
+            const intakeBu = sum("IntakeBushels");
+            const outboundBu = sum("OutboundBushels");
+            const toBu = sum("TransferedToBushels");
+            const fromBu = sum("TransferedFromBushels");
+
+            document.getElementById("sumIntakeLbs").textContent = fmt.format(intakeLbs);
+            document.getElementById("sumOutboundLbs").textContent = fmt.format(outboundLbs);
+            document.getElementById("sumToLbs").textContent = fmt.format(toLbs);
+            document.getElementById("sumFromLbs").textContent = fmt.format(fromLbs);
+
+            document.getElementById("sumIntakeBu").textContent = fmt.format(intakeBu);
+            document.getElementById("sumOutboundBu").textContent = fmt.format(outboundBu);
+            document.getElementById("sumToBu").textContent = fmt.format(toBu);
+            document.getElementById("sumFromBu").textContent = fmt.format(fromBu);
+
+            document.getElementById("lastRefresh").textContent = new Date().toLocaleString();
+        }
+
+        async function refreshData() {
+            // prevent piling up requests (especially with the 30s timer)
+            if (inFlight) return;
+
+            if (aborter) aborter.abort();
+            aborter = new AbortController();
+
+            const start = currentRange?.[0] ? toYMD(currentRange[0]) : "";
+            const end = currentRange?.[1] ? toYMD(currentRange[1]) : "";
+
+            const url = `/api/dashboard/location-totals?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+
+            inFlight = (async () => {
+                try {
+                    const resp = await fetch(url, { signal: aborter.signal });
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    const data = await resp.json();
+
+                    grid.option("dataSource", data);
+                    setSummary(data);
+                } catch (err) {
+                    if (err.name !== "AbortError") {
+                        console.error("Failed to refresh dashboard data:", err);
+                    }
+                } finally {
+                    inFlight = null;
+                }
+            })();
+        }
+
+        // initial load
+        refreshData();
+
+        // manual refresh button
+        document.getElementById("manualRefreshBtn").addEventListener("click", function () {
+            refreshData();
+        });
+
+        // refresh every 30 seconds
+        setInterval(refreshData, 30000);
+    })();
+</script>

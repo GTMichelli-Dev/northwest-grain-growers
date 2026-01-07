@@ -14,4 +14,8 @@ public partial class UomunitType
     public bool CanUseScale { get; set; }
 
     public string BaseUnitsName { get; set; }
+
+    public virtual ICollection<ContainerType> ContainerTypes { get; set; } = new List<ContainerType>();
+
+    public virtual ICollection<UnitOfMeasure> UnitOfMeasures { get; set; } = new List<UnitOfMeasure>();
 }

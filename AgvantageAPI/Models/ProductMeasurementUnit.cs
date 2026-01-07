@@ -7,13 +7,15 @@ namespace AgvantageAPI.Models;
 
 public partial class ProductMeasurementUnit
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
-    public Guid UomUid { get; set; }
+    public int UomId { get; set; }
 
-    public Guid GlAccountUid { get; set; }
+    public int GlAccountId { get; set; }
 
     public bool DefaultUom { get; set; }
 
-    public virtual Glaccount GlAccountU { get; set; }
+    public virtual Glaccount GlAccount { get; set; }
+
+    public virtual UnitOfMeasure Uom { get; set; }
 }

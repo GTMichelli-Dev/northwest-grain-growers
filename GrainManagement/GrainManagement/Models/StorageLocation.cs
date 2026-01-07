@@ -19,5 +19,5 @@ public partial class StorageLocation
 
     public int SiteId { get; set; }
 
-    public virtual Site Site { get; set; }
+    public virtual ICollection<Container> Containers { get; set; } = new List<Container>();
 }

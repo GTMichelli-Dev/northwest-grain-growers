@@ -9,11 +9,9 @@ public partial class WeightSheet
 {
     public Guid Uid { get; set; }
 
-    public int? SiteId { get; set; }
-
     public long Id { get; set; }
 
-    public int ServerId { get; set; }
+    public int SiteId { get; set; }
 
     public int WeightSheetType { get; set; }
 
@@ -24,4 +22,8 @@ public partial class WeightSheet
     public string InternalNotes { get; set; }
 
     public string Notes { get; set; }
+
+    public virtual Site Site { get; set; }
+
+    public virtual WeightSheetStatus Status { get; set; }
 }

@@ -7,7 +7,7 @@ namespace GrainManagement.Models;
 
 public partial class SitesDetail
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
     public int SiteId { get; set; }
 
@@ -15,9 +15,11 @@ public partial class SitesDetail
 
     public decimal DefaultScreeningsPercent { get; set; }
 
-    public Guid InHouseAccountUid { get; set; }
+    public long InHouseAccountId { get; set; }
 
     public bool Active { get; set; }
 
     public decimal CertFeePerLb { get; set; }
+
+    public virtual Account InHouseAccount { get; set; }
 }

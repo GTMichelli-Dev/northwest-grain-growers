@@ -37,10 +37,16 @@ public partial class ContainerType
 
     public int Idx { get; set; }
 
-    public Guid UomunitTypeUid { get; set; }
+    public int UomUnitTypeId { get; set; }
 
     /// <summary>
     /// this is the base View To Use in the web page
     /// </summary>
     public string ViewType { get; set; }
+
+    public virtual ContainerStyle ContainerStyle { get; set; }
+
+    public virtual ICollection<Container> Containers { get; set; } = new List<Container>();
+
+    public virtual UomunitType UomUnitType { get; set; }
 }

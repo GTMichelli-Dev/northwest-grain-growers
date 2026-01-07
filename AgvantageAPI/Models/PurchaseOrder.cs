@@ -7,15 +7,13 @@ namespace AgvantageAPI.Models;
 
 public partial class PurchaseOrder
 {
-    public Guid Uid { get; set; }
-
-    public Guid ParentPurchaseOrderUid { get; set; }
-
     public long Id { get; set; }
 
-    public int ServerId { get; set; }
+    public long ParentPurchaseOrderId { get; set; }
 
-    public Guid AccountUid { get; set; }
+    public int SiteId { get; set; }
+
+    public long AccountId { get; set; }
 
     public DateTime CreationDate { get; set; }
 
@@ -29,15 +27,19 @@ public partial class PurchaseOrder
 
     public int PurchaseOrderTypeId { get; set; }
 
-    public virtual ICollection<PurchaseOrder> InverseParentPurchaseOrderU { get; set; } = new List<PurchaseOrder>();
+    public virtual Account Account { get; set; }
 
-    public virtual PurchaseOrder ParentPurchaseOrderU { get; set; }
+    public virtual ICollection<PurchaseOrder> InverseParentPurchaseOrder { get; set; } = new List<PurchaseOrder>();
+
+    public virtual PurchaseOrder ParentPurchaseOrder { get; set; }
 
     public virtual ICollection<PurchaseOrderLineItem> PurchaseOrderLineItems { get; set; } = new List<PurchaseOrderLineItem>();
 
     public virtual PurchaseOrderType PurchaseOrderType { get; set; }
 
-    public virtual DbServer Server { get; set; }
+    public virtual Site Site { get; set; }
 
     public virtual OrderStatus Status { get; set; }
+
+    public virtual PurchaseOrderStatusList StatusNavigation { get; set; }
 }

@@ -11,15 +11,25 @@ public partial class UnitOfMeasure
 
     public string Description { get; set; }
 
-    public string Uom { get; set; }
+    public string Unit { get; set; }
 
     public int UnitsPrecision { get; set; }
 
     public int PricePrecision { get; set; }
 
-    public Guid UomTypeUid { get; set; }
+    public int UomTypeId { get; set; }
 
     public bool Active { get; set; }
 
     public decimal ConversionFactor { get; set; }
+
+    public virtual ICollection<ProductMeasurementUnit> ProductMeasurementUnits { get; set; } = new List<ProductMeasurementUnit>();
+
+    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+
+    public virtual ICollection<PurchaseOrderLineItemFreightRate> PurchaseOrderLineItemFreightRates { get; set; } = new List<PurchaseOrderLineItemFreightRate>();
+
+    public virtual ICollection<PurchaseOrderLineItem> PurchaseOrderLineItems { get; set; } = new List<PurchaseOrderLineItem>();
+
+    public virtual UomunitType UomType { get; set; }
 }

@@ -8,10 +8,6 @@ namespace AgvantageAPI.Models;
 
 public partial class dbContext : DbContext
 {
-    public dbContext()
-    {
-    }
-
     public dbContext(DbContextOptions<dbContext> options)
         : base(options)
     {
@@ -21,15 +17,11 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<AccountCustomPricing> AccountCustomPricings { get; set; }
 
-    public virtual DbSet<AccountGroup> AccountGroups { get; set; }
-
-    public virtual DbSet<AccountTruck> AccountTrucks { get; set; }
+    public virtual DbSet<AgvantageItemMaster> AgvantageItemMasters { get; set; }
 
     public virtual DbSet<AlertEmail> AlertEmails { get; set; }
 
     public virtual DbSet<AssignedProductClass> AssignedProductClasses { get; set; }
-
-    public virtual DbSet<AssociatedGroupAccount> AssociatedGroupAccounts { get; set; }
 
     public virtual DbSet<AuditTrail> AuditTrails { get; set; }
 
@@ -47,29 +39,27 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<ContainerType> ContainerTypes { get; set; }
 
-    public virtual DbSet<CropSplit> CropSplits { get; set; }
-
-    public virtual DbSet<DbServer> DbServers { get; set; }
-
     public virtual DbSet<Glaccount> Glaccounts { get; set; }
 
     public virtual DbSet<GlchemicalAccount> GlchemicalAccounts { get; set; }
 
-    public virtual DbSet<GlmiscAccount> GlmiscAccounts { get; set; }
+    public virtual DbSet<GlgrainAccount> GlgrainAccounts { get; set; }
 
-    public virtual DbSet<GlseedAccount> GlseedAccounts { get; set; }
+    public virtual DbSet<GlmiscAccount> GlmiscAccounts { get; set; }
 
     public virtual DbSet<GlserviceAccount> GlserviceAccounts { get; set; }
 
     public virtual DbSet<GltreatmentAccount> GltreatmentAccounts { get; set; }
+
+    public virtual DbSet<GrowerField> GrowerFields { get; set; }
+
+    public virtual DbSet<GrowerFieldCommodity> GrowerFieldCommodities { get; set; }
 
     public virtual DbSet<InventoryEvent> InventoryEvents { get; set; }
 
     public virtual DbSet<InventoryMovement> InventoryMovements { get; set; }
 
     public virtual DbSet<LabResult> LabResults { get; set; }
-
-    public virtual DbSet<LockedGlitem> LockedGlitems { get; set; }
 
     public virtual DbSet<Log> Logs { get; set; }
 
@@ -139,6 +129,8 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<SeedVarietyColor> SeedVarietyColors { get; set; }
 
+    public virtual DbSet<Server> Servers { get; set; }
+
     public virtual DbSet<Site> Sites { get; set; }
 
     public virtual DbSet<SiteDistrict> SiteDistricts { get; set; }
@@ -147,9 +139,15 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<SitesDetail> SitesDetails { get; set; }
 
+    public virtual DbSet<SplitGroup> SplitGroups { get; set; }
+
+    public virtual DbSet<SplitGroupPercent> SplitGroupPercents { get; set; }
+
     public virtual DbSet<StorageLocation> StorageLocations { get; set; }
 
     public virtual DbSet<TokenCache> TokenCaches { get; set; }
+
+    public virtual DbSet<Truck> Trucks { get; set; }
 
     public virtual DbSet<UnitOfMeasure> UnitOfMeasures { get; set; }
 
@@ -161,16 +159,19 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<WeightSheet> WeightSheets { get; set; }
 
+    public virtual DbSet<WeightSheetStatus> WeightSheetStatuses { get; set; }
+
+    public virtual DbSet<WeightSheetType> WeightSheetTypes { get; set; }
+
     public virtual DbSet<WsdaTestReport> WsdaTestReports { get; set; }
 
-   
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Account>(entity =>
         {
-            entity.ToTable("Accounts", "customer");
+            entity.ToTable("Accounts", "account");
 
-            entity.Property(e => e.AccountId).ValueGeneratedNever();
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Account_Active");
@@ -208,7 +209,6 @@ public partial class dbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.HedgedAccount).HasAnnotation("Relational:DefaultConstraintName", "DF_Account_HedgedAccount");
-            entity.Property(e => e.IsHauler).HasAnnotation("Relational:DefaultConstraintName", "DF_Accounts_IsHauler");
             entity.Property(e => e.IsProducer)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Account_Producer");
@@ -268,15 +268,10 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<AccountCustomPricing>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK_CustomCustomerPricing");
+            entity.ToTable("AccountCustomPricing", "account");
 
-            entity.ToTable("AccountCustomPricing", "customer");
+            entity.HasIndex(e => e.Description, "IX_AccountCustomPricing").IsUnique();
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_CustomCustomerPricing_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.AccountUid).HasColumnName("AccountUID");
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_CustomCustomerPricing_Active");
@@ -288,12 +283,10 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Price)
                 .HasColumnType("money")
                 .HasColumnName("price");
-            entity.Property(e => e.ProductVarietyItemUid).HasColumnName("ProductVarietyItemUID");
 
-            entity.HasOne(d => d.ProductVarietyItemU).WithMany(p => p.AccountCustomPricings)
-                .HasForeignKey(d => d.ProductVarietyItemUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_CustomCustomerPricing_ProductVarietyItems");
+            entity.HasOne(d => d.Account).WithMany(p => p.AccountCustomPricings)
+                .HasForeignKey(d => d.AccountId)
+                .HasConstraintName("FK_AccountCustomPricing_Accounts");
 
             entity.HasOne(d => d.Site).WithMany(p => p.AccountCustomPricings)
                 .HasForeignKey(d => d.SiteId)
@@ -301,77 +294,27 @@ public partial class dbContext : DbContext
                 .HasConstraintName("FK_AccountCustomPricing_Sites");
         });
 
-        modelBuilder.Entity<AccountGroup>(entity =>
+        modelBuilder.Entity<AgvantageItemMaster>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK__AccountG__C5B1960294FFDF5B");
+            entity.ToTable("AgvantageItemMaster", "agvantage");
 
-            entity.ToTable("AccountGroups", "customer");
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_AccountGroups_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.Active)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_AccountGroups_Active");
-            entity.Property(e => e.Description)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.PrimaryAccountUid).HasColumnName("PrimaryAccountUID");
-            entity.Property(e => e.UseForReceive)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_AccountGroups_UseForReceive");
-            entity.Property(e => e.UseForSales)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_AccountGroups_UseForSales");
-        });
-
-        modelBuilder.Entity<AccountTruck>(entity =>
-        {
-            entity.HasKey(e => e.Uid).HasName("PK_Trucks_1");
-
-            entity.ToTable("AccountTrucks", "customer");
-
-            entity.HasIndex(e => new { e.AccountUid, e.Description }, "IX_Trucks_1").IsUnique();
-
-            entity.HasIndex(e => e.RfidTag, "UX_Trucks_RfidTag_NotEmpty")
-                .IsUnique()
-                .HasFilter("([RfidTag]<>'')");
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_UID_1")
-                .HasColumnName("UID");
-            entity.Property(e => e.AccountUid).HasColumnName("AccountUID");
-            entity.Property(e => e.Active)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_Active_1");
-            entity.Property(e => e.Description)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.ParentTruckUid)
-                .HasComment("If this was a pup to a truck then the parent truck would be another truck UID otherwise the same UID")
-                .HasColumnName("ParentTruckUID");
-            entity.Property(e => e.RetainTare)
-                .HasComment("if true the tare is kept and reused ")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_RetainTare");
-            entity.Property(e => e.RfidTag)
-                .IsRequired()
+            entity.Property(e => e.Description).HasMaxLength(100);
+            entity.Property(e => e.InventoryGlnumber)
                 .HasMaxLength(50)
                 .HasDefaultValue("")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_RfidTag");
-            entity.Property(e => e.Tare)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_Tare")
-                .HasColumnType("decimal(10, 4)");
-            entity.Property(e => e.TruckIndex)
-                .HasDefaultValue(1)
-                .HasComment("This would be the order of the truck and pups so ParentTruck - then Pup ...")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_TruckIndex");
-
-            entity.HasOne(d => d.ParentTruckU).WithMany(p => p.InverseParentTruckU)
-                .HasForeignKey(d => d.ParentTruckUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Trucks_Trucks");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_AgvantageItemMaster_InventoryGLNumber")
+                .HasColumnName("InventoryGLNumber");
+            entity.Property(e => e.ItemNumber).HasMaxLength(50);
+            entity.Property(e => e.PurchaseGlnumber)
+                .HasMaxLength(50)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_AgvantageItemMaster_PurchaseGLNumber")
+                .HasColumnName("PurchaseGLNumber");
+            entity.Property(e => e.SalesGlnumber)
+                .HasMaxLength(50)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_AgvantageItemMaster_SalesGLNumber")
+                .HasColumnName("SalesGLNumber");
         });
 
         modelBuilder.Entity<AlertEmail>(entity =>
@@ -396,45 +339,19 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<AssignedProductClass>(entity =>
         {
-            entity.HasKey(e => e.Uid);
-
             entity.ToTable("AssignedProductClasses", "product");
 
-            entity.HasIndex(e => new { e.ProductClassesUid, e.ProductUid }, "IX_AssignedProductClasses_1").IsUnique();
+            entity.HasIndex(e => new { e.ProductClassId, e.ProductId }, "IX_AssignedProductClasses").IsUnique();
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_AssignedProductClasses_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.ProductClassesUid).HasColumnName("ProductClassesUID");
-            entity.Property(e => e.ProductUid).HasColumnName("ProductUID");
-
-            entity.HasOne(d => d.ProductClassesU).WithMany(p => p.AssignedProductClasses)
-                .HasForeignKey(d => d.ProductClassesUid)
+            entity.HasOne(d => d.ProductClass).WithMany(p => p.AssignedProductClasses)
+                .HasForeignKey(d => d.ProductClassId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_AssignedProductClasses_ProductClasses");
 
-            entity.HasOne(d => d.ProductU).WithMany(p => p.AssignedProductClasses)
-                .HasForeignKey(d => d.ProductUid)
+            entity.HasOne(d => d.Product).WithMany(p => p.AssignedProductClasses)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_AssignedProductClasses_Products");
-        });
-
-        modelBuilder.Entity<AssociatedGroupAccount>(entity =>
-        {
-            entity.HasKey(e => e.Uid).HasName("PK__AccountGroups");
-
-            entity.ToTable("AssociatedGroupAccounts", "customer");
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_AssociatedGroupAccounts_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.AccountGroupUid).HasColumnName("AccountGroupUID");
-            entity.Property(e => e.AccountUid).HasColumnName("AccountUID");
-            entity.Property(e => e.PercentOfSplit).HasColumnType("decimal(5, 4)");
-
-            entity.HasOne(d => d.AccountGroupU).WithMany(p => p.AssociatedGroupAccounts)
-                .HasForeignKey(d => d.AccountGroupUid)
-                .HasConstraintName("FK_AssociatedGroupAccounts_Group");
         });
 
         modelBuilder.Entity<AuditTrail>(entity =>
@@ -481,18 +398,10 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<Breeder>(entity =>
         {
-            entity.HasKey(e => e.Uid);
-
             entity.ToTable("Breeders", "product");
 
-            entity.HasIndex(e => new { e.Description, e.GlAccountUid }, "IX_Breeders").IsUnique();
+            entity.HasIndex(e => new { e.Description, e.GlaccountId }, "IX_Breeders_Description_GlAccountId").IsUnique();
 
-            entity.HasIndex(e => new { e.GlAccountUid, e.Abv }, "IX_Breeders_1").IsUnique();
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Breeders_UID")
-                .HasColumnName("UID");
             entity.Property(e => e.Abv)
                 .IsRequired()
                 .HasMaxLength(50);
@@ -502,30 +411,26 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255);
-            entity.Property(e => e.GlAccountUid).HasColumnName("GlAccountUID");
+            entity.Property(e => e.GlaccountId).HasColumnName("GLAccountId");
             entity.Property(e => e.Notes)
                 .IsRequired()
                 .HasMaxLength(255)
                 .HasDefaultValue("")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Breeders_Notes");
 
-            entity.HasOne(d => d.GlAccountU).WithMany(p => p.Breeders)
-                .HasForeignKey(d => d.GlAccountUid)
+            entity.HasOne(d => d.Glaccount).WithMany(p => p.Breeders)
+                .HasForeignKey(d => d.GlaccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Breeders_GLAccounts");
         });
 
         modelBuilder.Entity<Carrier>(entity =>
         {
-            entity.HasKey(e => e.Uid);
-
-            entity.ToTable("Carriers", "sale");
+            entity.ToTable("Carriers", "logistics");
 
             entity.HasIndex(e => e.Description, "IX_Carriers").IsUnique();
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Carriers_UID")
-                .HasColumnName("UID");
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255);
@@ -536,6 +441,8 @@ public partial class dbContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK_Cleaners_1");
 
             entity.ToTable("Cleaners", "container");
+
+            entity.HasIndex(e => new { e.Description, e.SiteId }, "IX_Cleaners").IsUnique();
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Active)
@@ -553,29 +460,20 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<Container>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("Containers", "container");
+            entity.ToTable("Containers", "container");
 
-            entity.HasIndex(e => new { e.Description, e.StorageLocationUid, e.ContainerTypeUid }, "IX_Containers").IsUnique();
+            entity.HasIndex(e => new { e.Description, e.StorageLocationId, e.ContainerTypeId }, "IX_Containers").IsUnique();
 
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Storage_Active");
             entity.Property(e => e.Capacity).HasAnnotation("Relational:DefaultConstraintName", "DF_Containers_Capacity");
             entity.Property(e => e.CleanerBin).HasAnnotation("Relational:DefaultConstraintName", "DF_Containers_CleanerBin");
-            entity.Property(e => e.ContainerTypeUid).HasColumnName("ContainerTypeUID");
             entity.Property(e => e.Coordinates)
                 .IsRequired()
                 .HasMaxLength(250)
                 .HasDefaultValue("")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Containers_Coordinates");
-            entity.Property(e => e.CustomerId)
-                .IsRequired()
-                .HasMaxLength(255)
-                .HasDefaultValue("")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Containers_CustomerID")
-                .HasColumnName("CustomerID");
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255)
@@ -588,26 +486,33 @@ public partial class dbContext : DbContext
                 .HasMaxLength(255)
                 .HasDefaultValue("")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Containers_Notes");
-            entity.Property(e => e.StorageLocationUid).HasColumnName("StorageLocationUID");
             entity.Property(e => e.Tare).HasAnnotation("Relational:DefaultConstraintName", "DF_Storage_Tare");
             entity.Property(e => e.Virtual).HasAnnotation("Relational:DefaultConstraintName", "DF_Containers_Virtual");
+
+            entity.HasOne(d => d.ContainerType).WithMany(p => p.Containers)
+                .HasForeignKey(d => d.ContainerTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Containers_ContainerTypes");
+
+            entity.HasOne(d => d.StorageLocation).WithMany(p => p.Containers)
+                .HasForeignKey(d => d.StorageLocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Containers_StorageLocations");
         });
 
         modelBuilder.Entity<ContainerRezeroDate>(entity =>
         {
-            entity.HasKey(e => e.Uid);
-
             entity.ToTable("ContainerRezeroDates", "container");
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ContainerRezeroDates_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.ContainerUid).HasColumnName("ContainerUID");
             entity.Property(e => e.ZeroDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ContainerRezeroDates_ZeroDate")
                 .HasColumnType("datetime");
+
+            entity.HasOne(d => d.Container).WithMany(p => p.ContainerRezeroDates)
+                .HasForeignKey(d => d.ContainerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ContainerRezeroDates_Containers");
         });
 
         modelBuilder.Entity<ContainerStyle>(entity =>
@@ -620,9 +525,7 @@ public partial class dbContext : DbContext
 
             entity.HasIndex(e => e.Id, "IX_ContainerStyles_2").IsUnique();
 
-            entity.Property(e => e.Id)
-                .ValueGeneratedNever()
-                .HasColumnName("ID");
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Notes)
                 .HasDefaultValue("")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ContainerStyles_Notes");
@@ -639,7 +542,6 @@ public partial class dbContext : DbContext
 
             entity.HasIndex(e => e.Description, "IX_StorageTypes_Description").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ContainerTypes_Active");
@@ -657,187 +559,151 @@ public partial class dbContext : DbContext
             entity.Property(e => e.IsBin).HasAnnotation("Relational:DefaultConstraintName", "DF_ContainerTypes_Bin");
             entity.Property(e => e.NonSeedOnly).HasAnnotation("Relational:DefaultConstraintName", "DF_ContainerTypes_NonSeedOnly");
             entity.Property(e => e.SeedOnly).HasAnnotation("Relational:DefaultConstraintName", "DF_ContainerTypes_SeedOnly");
-            entity.Property(e => e.UomunitTypeUid).HasColumnName("UOMUnitTypeUID");
             entity.Property(e => e.UseForSeedReceiving).HasAnnotation("Relational:DefaultConstraintName", "DF_ContainerTypes_UseForSeedReceiving");
             entity.Property(e => e.ViewType)
                 .IsRequired()
                 .HasMaxLength(50)
                 .HasComment("this is the base View To Use in the web page");
-        });
 
-        modelBuilder.Entity<CropSplit>(entity =>
-        {
-            entity.HasKey(e => e.Uid).HasName("PK_CropSplit");
+            entity.HasOne(d => d.ContainerStyle).WithMany(p => p.ContainerTypes)
+                .HasForeignKey(d => d.ContainerStyleId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ContainerTypes_ContainerStyles");
 
-            entity.ToTable("CropSplits", "customer");
-
-            entity.Property(e => e.Uid)
-                .ValueGeneratedNever()
-                .HasColumnName("UID");
-            entity.Property(e => e.AccountUid).HasColumnName("AccountUID");
-            entity.Property(e => e.Percent).HasColumnType("decimal(8, 7)");
-        });
-
-        modelBuilder.Entity<DbServer>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK_Servers");
-
-            entity.ToTable("DbServers", "system");
-
-            entity.HasIndex(e => e.Id, "IX_Servers_ID").IsUnique();
-
-            entity.HasIndex(e => e.ServerName, "IX_Servers_Name").IsUnique();
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.ServerName)
-                .IsRequired()
-                .HasMaxLength(100);
+            entity.HasOne(d => d.UomUnitType).WithMany(p => p.ContainerTypes)
+                .HasForeignKey(d => d.UomUnitTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ContainerTypes_UOMUnitTypes");
         });
 
         modelBuilder.Entity<Glaccount>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK_GL_Account");
+            entity.ToTable("GLAccounts", "generalLedger");
 
-            entity.ToTable("GLAccounts", "product");
+            entity.HasIndex(e => new { e.AccountNumber, e.LocationCode }, "IX_GL_Accounts").IsUnique();
 
-            entity.HasIndex(e => e.Description, "IX_GL_Account_Description").IsUnique();
-
-            entity.HasIndex(e => e.AccountId, "IX_GL_Accounts").IsUnique();
-
-            entity.HasIndex(e => e.DefaultPurchaseCode, "IX_GL_Accounts_DefaultPurchaseCode")
-                .IsUnique()
-                .HasFilter("([DefaultPurchaseCode] IS NOT NULL)");
-
-            entity.HasIndex(e => e.DefaultSalesCode, "IX_GL_Accounts_DefaultSalesCode")
-                .IsUnique()
-                .HasFilter("([DefaultSalesCode] IS NOT NULL)");
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GL_Groups_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.AccountId)
+            entity.Property(e => e.AccountNumber)
                 .IsRequired()
-                .HasMaxLength(50)
-                .HasColumnName("AccountID");
+                .HasMaxLength(50);
+            entity.Property(e => e.AccountType)
+                .IsRequired()
+                .HasMaxLength(20);
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_GL_Accounts_Active");
-            entity.Property(e => e.DefaultPurchaseCode).HasMaxLength(50);
-            entity.Property(e => e.DefaultSalesCode).HasMaxLength(50);
-            entity.Property(e => e.DefaultUomUid).HasColumnName("DefaultUomUID");
-            entity.Property(e => e.Description)
+            entity.Property(e => e.Description).HasMaxLength(255);
+            entity.Property(e => e.Name)
                 .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.Editable)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GL_Groups_Editable");
-            entity.Property(e => e.Notes)
-                .HasMaxLength(255)
-                .HasDefaultValue("")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GL_Accounts_Notes");
-            entity.Property(e => e.Receivable)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GL_Accounts_Recievable");
-            entity.Property(e => e.UseGlaccountPurchaseCodes)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GL_Accounts_UseDefaultSalesPurchaseCodes")
-                .HasColumnName("UseGLAccountPurchaseCodes");
+                .HasMaxLength(50);
         });
 
         modelBuilder.Entity<GlchemicalAccount>(entity =>
         {
-            entity.HasKey(e => e.Uid);
+            entity.ToTable("GLChemicalAccounts", "generalLedger");
 
-            entity.ToTable("GLChemicalAccounts", "product");
+            entity.HasIndex(e => e.GlaccountId, "IX_GLChemicalAccounts").IsUnique();
 
-            entity.HasIndex(e => e.GlaccountUid, "IX_GLChemicalAccounts").IsUnique();
+            entity.Property(e => e.GlaccountId).HasColumnName("GLAccountId");
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GLChemicalAccounts_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.GlaccountUid).HasColumnName("GLAccountUID");
+            entity.HasOne(d => d.Glaccount).WithOne(p => p.GlchemicalAccount)
+                .HasForeignKey<GlchemicalAccount>(d => d.GlaccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GLChemicalAccounts_GLAccounts");
+        });
 
-            entity.HasOne(d => d.GlaccountU).WithOne(p => p.GlchemicalAccount)
-                .HasForeignKey<GlchemicalAccount>(d => d.GlaccountUid)
-                .HasConstraintName("FK_GLChemicalAccounts_GLAccounts1");
+        modelBuilder.Entity<GlgrainAccount>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_GLSeedAccounts");
+
+            entity.ToTable("GLGrainAccounts", "generalLedger");
+
+            entity.HasIndex(e => e.GlaccountId, "IX_GLGrainAccounts").IsUnique();
+
+            entity.Property(e => e.GlaccountId).HasColumnName("GLAccountId");
+
+            entity.HasOne(d => d.Glaccount).WithOne(p => p.GlgrainAccount)
+                .HasForeignKey<GlgrainAccount>(d => d.GlaccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GLGrainAccounts_GLAccounts");
         });
 
         modelBuilder.Entity<GlmiscAccount>(entity =>
         {
-            entity.HasKey(e => e.Uid);
+            entity.ToTable("GLMiscAccounts", "generalLedger");
 
-            entity.ToTable("GLMiscAccounts", "product");
+            entity.HasIndex(e => e.GlaccountId, "IX_GLMiscAccounts").IsUnique();
 
-            entity.HasIndex(e => e.GlaccountUid, "IX_GLMiscAccounts").IsUnique();
+            entity.Property(e => e.GlaccountId).HasColumnName("GLAccountId");
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GLMiscAccounts_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.GlaccountUid).HasColumnName("GLAccountUID");
-
-            entity.HasOne(d => d.GlaccountU).WithOne(p => p.GlmiscAccount)
-                .HasForeignKey<GlmiscAccount>(d => d.GlaccountUid)
-                .HasConstraintName("FK_GLMiscAccounts_GLAccounts1");
-        });
-
-        modelBuilder.Entity<GlseedAccount>(entity =>
-        {
-            entity.HasKey(e => e.Uid);
-
-            entity.ToTable("GLSeedAccounts", "product");
-
-            entity.HasIndex(e => e.GlaccountUid, "IX_GLSeedAccounts").IsUnique();
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GLSeedAccounts_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.GlaccountUid).HasColumnName("GLAccountUID");
-
-            entity.HasOne(d => d.GlaccountU).WithOne(p => p.GlseedAccount)
-                .HasForeignKey<GlseedAccount>(d => d.GlaccountUid)
-                .HasConstraintName("FK_GLSeedAccounts_GLAccounts1");
+            entity.HasOne(d => d.Glaccount).WithOne(p => p.GlmiscAccount)
+                .HasForeignKey<GlmiscAccount>(d => d.GlaccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GLMiscAccounts_GLAccounts");
         });
 
         modelBuilder.Entity<GlserviceAccount>(entity =>
         {
-            entity.HasKey(e => e.Uid);
+            entity.ToTable("GLServiceAccounts", "generalLedger");
 
-            entity.ToTable("GLServiceAccounts", "product");
+            entity.HasIndex(e => e.GlaccountId, "IX_GLServiceAccounts");
 
-            entity.HasIndex(e => e.GlaccountUid, "IX_GLServiceAccounts").IsUnique();
+            entity.Property(e => e.GlaccountId).HasColumnName("GLAccountId");
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GLServiceAccounts_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.GlaccountUid).HasColumnName("GLAccountUID");
-
-            entity.HasOne(d => d.GlaccountU).WithOne(p => p.GlserviceAccount)
-                .HasForeignKey<GlserviceAccount>(d => d.GlaccountUid)
-                .HasConstraintName("FK_GLServiceAccounts_GLAccounts1");
+            entity.HasOne(d => d.Glaccount).WithMany(p => p.GlserviceAccounts)
+                .HasForeignKey(d => d.GlaccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GLServiceAccounts_GLAccounts");
         });
 
         modelBuilder.Entity<GltreatmentAccount>(entity =>
         {
-            entity.HasKey(e => e.Uid);
+            entity.ToTable("GLTreatmentAccounts", "generalLedger");
 
-            entity.ToTable("GLTreatmentAccounts", "product");
+            entity.HasIndex(e => e.GlaccountId, "IX_GLTreatmentAccounts").IsUnique();
 
-            entity.HasIndex(e => e.GlaccountUid, "IX_GLTreatmentAccounts").IsUnique();
+            entity.Property(e => e.GlaccountId).HasColumnName("GLAccountId");
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GLTreatmentAccounts_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.GlaccountUid).HasColumnName("GLAccountUID");
+            entity.HasOne(d => d.Glaccount).WithOne(p => p.GltreatmentAccount)
+                .HasForeignKey<GltreatmentAccount>(d => d.GlaccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GLTreatmentAccounts_GLAccounts");
+        });
 
-            entity.HasOne(d => d.GlaccountU).WithOne(p => p.GltreatmentAccount)
-                .HasForeignKey<GltreatmentAccount>(d => d.GlaccountUid)
-                .HasConstraintName("FK_GLTreatmentAccounts_GLAccounts1");
+        modelBuilder.Entity<GrowerField>(entity =>
+        {
+            entity.ToTable("GrowerFields", "account");
+
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.HasOne(d => d.Account).WithMany(p => p.GrowerFields)
+                .HasForeignKey(d => d.AccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GrowerFields_Accounts");
+        });
+
+        modelBuilder.Entity<GrowerFieldCommodity>(entity =>
+        {
+            entity.ToTable("GrowerFieldCommodity", "account");
+
+            entity.Property(e => e.Id)
+                .ValueGeneratedNever()
+                .HasColumnName("id");
+            entity.Property(e => e.CreationDate)
+                .HasDefaultValueSql("(getdate())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_GrowerFieldCommodity_CreationDate")
+                .HasColumnType("datetime");
+
+            entity.HasOne(d => d.GrowerField).WithMany(p => p.GrowerFieldCommodities)
+                .HasForeignKey(d => d.GrowerFieldId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GrowerFieldCommodity_GrowerFields");
+
+            entity.HasOne(d => d.ProductVarietyItem).WithMany(p => p.GrowerFieldCommodities)
+                .HasForeignKey(d => d.ProductVarietyItemId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GrowerFieldCommodity_ProductVarietyItems");
         });
 
         modelBuilder.Entity<InventoryEvent>(entity =>
@@ -856,25 +722,16 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<InventoryMovement>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK__Inventor__C5B19602D41A9A5B");
+            entity
+                .HasNoKey()
+                .ToTable("InventoryMovements", "Inventory");
 
-            entity.ToTable("InventoryMovements", "Inventory");
-
-            entity.Property(e => e.Uid)
-                .ValueGeneratedNever()
-                .HasColumnName("UID");
             entity.Property(e => e.CreationDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_InventoryMovementHistory_creationDate")
                 .HasColumnType("datetime");
             entity.Property(e => e.Driver).HasMaxLength(255);
-            entity.Property(e => e.FromContainerUid).HasColumnName("FromContainerUID");
-            entity.Property(e => e.FromLotUid).HasColumnName("FromLotUID");
-            entity.Property(e => e.FromProductVarietyItemUid).HasColumnName("FromProductVarietyItemUID");
-            entity.Property(e => e.Id)
-                .HasDefaultValueSql("([inventory].[NextInventoryMovmentId]())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_InventoryMovements_ID")
-                .HasColumnName("ID");
+            entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.InboundQuantityBase)
                 .HasComment("")
                 .HasColumnType("decimal(18, 4)");
@@ -884,7 +741,6 @@ public partial class dbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.InventoryEventId).HasColumnName("InventoryEventID");
-            entity.Property(e => e.LotUid).HasColumnName("LotUID");
             entity.Property(e => e.Notes).HasMaxLength(255);
             entity.Property(e => e.OutboundQuantityBase)
                 .HasComment("")
@@ -892,45 +748,18 @@ public partial class dbContext : DbContext
             entity.Property(e => e.OutboundScaleDescription).HasMaxLength(255);
             entity.Property(e => e.OutboundTime).HasColumnType("datetime");
             entity.Property(e => e.OutboundWeighmaster).HasMaxLength(255);
-            entity.Property(e => e.ProductVarietyItemUid).HasColumnName("ProductVarietyItemUID");
-            entity.Property(e => e.ReceivedInventoryItemUid).HasColumnName("ReceivedInventoryItemUID");
-            entity.Property(e => e.ReturnedSalesOrderLineUid).HasColumnName("ReturnedSalesOrderLineUID");
-            entity.Property(e => e.ServerId)
-                .HasDefaultValueSql("([system].[serverid]())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_InventoryMovements_ServerID")
-                .HasColumnName("ServerID");
-            entity.Property(e => e.ToContainerUid).HasColumnName("ToContainerUID");
-            entity.Property(e => e.TruckUid).HasColumnName("TruckUID");
 
-            entity.HasOne(d => d.FromLotU).WithMany(p => p.InventoryMovementFromLotUs)
-                .HasForeignKey(d => d.FromLotUid)
-                .HasConstraintName("FK_InventoryMovements_Lots1");
-
-            entity.HasOne(d => d.FromProductVarietyItemU).WithMany(p => p.InventoryMovementFromProductVarietyItemUs)
-                .HasForeignKey(d => d.FromProductVarietyItemUid)
-                .HasConstraintName("FK_InventoryMovements_ProductVarietyItems1");
-
-            entity.HasOne(d => d.InventoryEvent).WithMany(p => p.InventoryMovements)
+            entity.HasOne(d => d.InventoryEvent).WithMany()
                 .HasForeignKey(d => d.InventoryEventId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_InventoryMovements_InventoryEvents1");
 
-            entity.HasOne(d => d.LotU).WithMany(p => p.InventoryMovementLotUs)
-                .HasForeignKey(d => d.LotUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_InventoryMovements_Lots");
-
-            entity.HasOne(d => d.ProductVarietyItemU).WithMany(p => p.InventoryMovementProductVarietyItemUs)
-                .HasForeignKey(d => d.ProductVarietyItemUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_InventoryMovements_ProductVarietyItems");
-
-            entity.HasOne(d => d.ReceivedInventoryItemU).WithMany(p => p.InventoryMovements)
-                .HasForeignKey(d => d.ReceivedInventoryItemUid)
+            entity.HasOne(d => d.ReceivedInventoryItem).WithMany()
+                .HasForeignKey(d => d.ReceivedInventoryItemId)
                 .HasConstraintName("FK_InventoryMovements_ReceivedInventoryItems");
 
-            entity.HasOne(d => d.TruckU).WithMany(p => p.InventoryMovements)
-                .HasForeignKey(d => d.TruckUid)
+            entity.HasOne(d => d.Truck).WithMany()
+                .HasForeignKey(d => d.TruckId)
                 .HasConstraintName("FK_InventoryMovements_AccountTrucks");
         });
 
@@ -949,39 +778,6 @@ public partial class dbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.Value).IsRequired();
-
-            entity.HasOne(d => d.LabU).WithMany(p => p.LabResults)
-                .HasForeignKey(d => d.LabUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_LabResults_LotLabs");
-        });
-
-        modelBuilder.Entity<LockedGlitem>(entity =>
-        {
-            entity.HasKey(e => e.Uid);
-
-            entity.ToTable("LockedGLItems", "product");
-
-            entity.HasIndex(e => e.GlitemUid, "IX_LockedGLItems").IsUnique();
-
-            entity.HasIndex(e => e.Vns, "NonClusteredIndex-LockedGlItemUQ_BoolCol")
-                .IsUnique()
-                .HasFilter("([VNS]=(1))");
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_LockedGLItems_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.GlitemUid).HasColumnName("GLItemUID");
-            entity.Property(e => e.Vns)
-                .HasComment("This Item Is Cover Crop or VNS ")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_LockedGLItems_VNS")
-                .HasColumnName("VNS");
-
-            entity.HasOne(d => d.GlitemU).WithOne(p => p.LockedGlitem)
-                .HasForeignKey<LockedGlitem>(d => d.GlitemUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_LockedGLItems_GL_Items");
         });
 
         modelBuilder.Entity<Log>(entity =>
@@ -1008,19 +804,26 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<Lot>(entity =>
         {
-            entity.HasKey(e => e.Uid);
+            entity.HasKey(e => e.Id).HasName("PK_Lots_1");
 
             entity.ToTable("Lots", "Inventory");
 
-            entity.Property(e => e.Uid)
-                .ValueGeneratedNever()
-                .HasColumnName("UID");
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.CreationDate).HasColumnType("datetime");
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.Notes).IsRequired();
-            entity.Property(e => e.ProductVarietyItemUid).HasColumnName("ProductVarietyItemUID");
+
+            entity.HasOne(d => d.ProductVarietyItem).WithMany(p => p.Lots)
+                .HasForeignKey(d => d.ProductVarietyItemId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Lots_ProductVarietyItems");
+
+            entity.HasOne(d => d.Site).WithMany(p => p.Lots)
+                .HasForeignKey(d => d.SiteId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Lots_Sites1");
         });
 
         modelBuilder.Entity<LotLab>(entity =>
@@ -1028,6 +831,8 @@ public partial class dbContext : DbContext
             entity.HasKey(e => e.Uid).HasName("PK_inventoryLabs");
 
             entity.ToTable("LotLabs", "Inventory");
+
+            entity.HasIndex(e => e.LabDescription, "IX_LotLabs");
 
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newid())")
@@ -1038,17 +843,16 @@ public partial class dbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_LotLabs_CreationDate")
                 .HasColumnType("datetime");
-            entity.Property(e => e.Id)
+            entity.Property(e => e.LabDescription)
                 .IsRequired()
                 .HasMaxLength(255)
                 .HasDefaultValue("")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_LotLabs_ID")
-                .HasColumnName("ID");
-            entity.Property(e => e.LotUid).HasColumnName("LotUID");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LotLabs_ID");
             entity.Property(e => e.Quantitylbs).HasAnnotation("Relational:DefaultConstraintName", "DF_LotLabs_Quantitylbs");
 
-            entity.HasOne(d => d.LotU).WithMany(p => p.LotLabs)
-                .HasForeignKey(d => d.LotUid)
+            entity.HasOne(d => d.Lot).WithMany(p => p.LotLabs)
+                .HasForeignKey(d => d.LotId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_LotLabs_Lots");
         });
 
@@ -1077,12 +881,11 @@ public partial class dbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF__Payments__Paymen__3EAA7722")
                 .HasColumnType("datetime");
-            entity.Property(e => e.PaymentMethodUid).HasColumnName("PaymentMethodUID");
             entity.Property(e => e.ReferenceNumber).HasMaxLength(100);
             entity.Property(e => e.SalesInvoiceUid).HasColumnName("SalesInvoiceUID");
 
-            entity.HasOne(d => d.PaymentMethodU).WithMany(p => p.Payments)
-                .HasForeignKey(d => d.PaymentMethodUid)
+            entity.HasOne(d => d.PaymentMethodNavigation).WithMany(p => p.Payments)
+                .HasForeignKey(d => d.PaymentMethod)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Payments_PaymentMethods");
 
@@ -1094,16 +897,11 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<PaymentMethod>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK_PaymentTypes");
-
             entity.ToTable("PaymentMethods", "sale");
 
             entity.HasIndex(e => e.TypeOfPayment, "IX_PaymentTypes").IsUnique();
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_PaymentTypes_UID")
-                .HasColumnName("UID");
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.TypeOfPayment)
                 .IsRequired()
                 .HasMaxLength(50);
@@ -1121,38 +919,23 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK_GL_Items");
+            entity.HasKey(e => e.Id).HasName("PK_GL_Items");
 
             entity.ToTable("Products", "product");
 
-            entity.HasIndex(e => new { e.Description, e.GlaccountUid }, "IX_GL_Items").IsUnique();
+            entity.HasIndex(e => new { e.Description, e.GlaccountId }, "IX_Products").IsUnique();
 
-            entity.HasIndex(e => e.DefaultUomuid, "IX_GL_Items_1");
-
-            entity.HasIndex(e => e.GlaccountUid, "IX_GL_Items_2");
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductsCodes_UID")
-                .HasColumnName("UID");
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Products_Active");
             entity.Property(e => e.CanUseScale)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Products_CanUseScale");
-            entity.Property(e => e.DefaultConditionUid).HasColumnName("DefaultConditionUID");
-            entity.Property(e => e.DefaultUomuid)
-                .HasDefaultValue(new Guid("fa0ddf24-7401-49f6-85c3-8ffd60b6aeb7"))
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Products_DefaultUOMUID")
-                .HasColumnName("DefaultUOMUID");
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255);
-            entity.Property(e => e.GlaccountUid)
-                .HasDefaultValue(new Guid("1bb4ce4c-349d-44a2-abbd-85dd54cf6694"))
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Products_GLAccountUID")
-                .HasColumnName("GLAccountUID");
+            entity.Property(e => e.GlaccountId).HasColumnName("GLAccountId");
             entity.Property(e => e.Hidden).HasAnnotation("Relational:DefaultConstraintName", "DF_Products_Hidden");
             entity.Property(e => e.Notes)
                 .HasMaxLength(255)
@@ -1163,111 +946,88 @@ public partial class dbContext : DbContext
                 .HasComment("You Cannot Receive a Service like Delivery Fee")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Products_CanReceiveItem");
 
-            entity.HasOne(d => d.DefaultConditionU).WithMany(p => p.Products)
-                .HasForeignKey(d => d.DefaultConditionUid)
+            entity.HasOne(d => d.DefaultCondition).WithMany(p => p.Products)
+                .HasForeignKey(d => d.DefaultConditionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Products_ProductConditions");
 
-            entity.HasOne(d => d.GlaccountU).WithMany(p => p.Products)
-                .HasForeignKey(d => d.GlaccountUid)
+            entity.HasOne(d => d.DefaultUom).WithMany(p => p.Products)
+                .HasForeignKey(d => d.DefaultUomId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Products_UnitOfMeasures");
+
+            entity.HasOne(d => d.Glaccount).WithMany(p => p.Products)
+                .HasForeignKey(d => d.GlaccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Products_GLAccounts");
         });
 
         modelBuilder.Entity<ProductClass>(entity =>
         {
-            entity.HasKey(e => e.Uid);
-
             entity.ToTable("ProductClasses", "product");
 
-            entity.HasIndex(e => new { e.Description, e.GlaccountUid }, "IX_ProductClasses").IsUnique();
+            entity.HasIndex(e => new { e.Description, e.GlaccountId }, "IX_ProductClasses_Description_GlAccountId").IsUnique();
 
-            entity.HasIndex(e => new { e.ClassLevel, e.GlaccountUid }, "IX_ProductClasses_1").IsUnique();
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductClasses_UID")
-                .HasColumnName("UID");
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255);
-            entity.Property(e => e.GlaccountUid)
-                .HasDefaultValue(new Guid("1bb4ce4c-349d-44a2-abbd-85dd54cf6694"))
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductClasses_GLAccountUID")
-                .HasColumnName("GLAccountUID");
+            entity.Property(e => e.GlaccountId).HasColumnName("GLAccountId");
 
-            entity.HasOne(d => d.GlaccountU).WithMany(p => p.ProductClasses)
-                .HasForeignKey(d => d.GlaccountUid)
+            entity.HasOne(d => d.Glaccount).WithMany(p => p.ProductClasses)
+                .HasForeignKey(d => d.GlaccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductClasses_GLAccounts");
         });
 
         modelBuilder.Entity<ProductCondition>(entity =>
         {
-            entity.HasKey(e => e.Uid);
-
             entity.ToTable("ProductConditions", "product");
 
-            entity.HasIndex(e => new { e.Description, e.GlaccountUid }, "IX_ProductConditions").IsUnique();
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductConditions_UID")
-                .HasColumnName("UID");
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductConditions_Active");
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255);
-            entity.Property(e => e.GlaccountUid)
-                .HasDefaultValue(new Guid("1bb4ce4c-349d-44a2-abbd-85dd54cf6694"))
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductConditions_GLAccountUID")
-                .HasColumnName("GLAccountUID");
+            entity.Property(e => e.GlaccountId).HasColumnName("GLAccountId");
             entity.Property(e => e.Locked).HasAnnotation("Relational:DefaultConstraintName", "DF_ProductConditions_Locked");
             entity.Property(e => e.RequireLot).HasAnnotation("Relational:DefaultConstraintName", "DF_ProductConditions_RequireLot");
 
-            entity.HasOne(d => d.GlaccountU).WithMany(p => p.ProductConditions)
-                .HasForeignKey(d => d.GlaccountUid)
+            entity.HasOne(d => d.Glaccount).WithMany(p => p.ProductConditions)
+                .HasForeignKey(d => d.GlaccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductConditions_GLAccounts");
         });
 
         modelBuilder.Entity<ProductMeasurementUnit>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK_GLAccounttUOM");
-
             entity.ToTable("ProductMeasurementUnits", "product");
 
-            entity.HasIndex(e => new { e.GlAccountUid, e.UomUid }, "IX_ProductUOM");
+            entity.HasIndex(e => new { e.GlAccountId, e.UomId }, "IX_ProductMeasurementUnits").IsUnique();
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GLAccounttUOM_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.DefaultUom)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GLAccountUOM_DefaultUnit")
-                .HasColumnName("DefaultUOM");
-            entity.Property(e => e.GlAccountUid).HasColumnName("GlAccountUID");
-            entity.Property(e => e.UomUid).HasColumnName("UomUID");
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.DefaultUom).HasAnnotation("Relational:DefaultConstraintName", "DF_GLAccountUOM_DefaultUnit");
 
-            entity.HasOne(d => d.GlAccountU).WithMany(p => p.ProductMeasurementUnits)
-                .HasForeignKey(d => d.GlAccountUid)
-                .HasConstraintName("FK_GLAccounttUOM_GLAccounts");
+            entity.HasOne(d => d.GlAccount).WithMany(p => p.ProductMeasurementUnits)
+                .HasForeignKey(d => d.GlAccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductMeasurementUnits_GLAccounts");
+
+            entity.HasOne(d => d.Uom).WithMany(p => p.ProductMeasurementUnits)
+                .HasForeignKey(d => d.UomId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductMeasurementUnits_UnitOfMeasures");
         });
 
         modelBuilder.Entity<ProductTrait>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK_SeedTraits");
+            entity.HasKey(e => e.Id).HasName("PK_SeedTraits");
 
             entity.ToTable("ProductTraits", "product");
 
-            entity.HasIndex(e => new { e.Description, e.ProductUid }, "IX_SeedTraits").IsUnique();
+            entity.HasIndex(e => new { e.Description, e.ProductId }, "IX_ProductTraits").IsUnique();
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_SeedTraits_UID")
-                .HasColumnName("UID");
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductTraits_Active");
@@ -1275,25 +1035,21 @@ public partial class dbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.Notes).HasMaxLength(255);
-            entity.Property(e => e.ProductUid).HasColumnName("ProductUID");
 
-            entity.HasOne(d => d.ProductU).WithMany(p => p.ProductTraits)
-                .HasForeignKey(d => d.ProductUid)
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductTraits)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductTraits_Products");
         });
 
         modelBuilder.Entity<ProductType>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK_GL_ItemType");
+            entity.HasKey(e => e.Id).HasName("PK_GL_ItemType");
 
             entity.ToTable("ProductTypes", "product");
 
-            entity.HasIndex(e => new { e.ProductUid, e.Description }, "IX_ProductTypes").IsUnique();
+            entity.HasIndex(e => new { e.Description, e.ProductId }, "IX_ProductTypes_1").IsUnique();
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_GL_ItemType_UID")
-                .HasColumnName("UID");
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductTypes_Active");
@@ -1307,32 +1063,25 @@ public partial class dbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductTypes_MarketPriceDate")
                 .HasColumnType("datetime");
-            entity.Property(e => e.ProductUid).HasColumnName("ProductUID");
 
-            entity.HasOne(d => d.ProductU).WithMany(p => p.ProductTypes)
-                .HasForeignKey(d => d.ProductUid)
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductTypes)
+                .HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductTypes_Products");
         });
 
         modelBuilder.Entity<ProductVariety>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK_ProductVariety");
+            entity.HasKey(e => e.Id).HasName("PK_ProductVariety");
 
             entity.ToTable("ProductVarietys", "product");
 
-            entity.HasIndex(e => new { e.ProductTypeUid, e.Description }, "IX_ProductVarietys").IsUnique();
+            entity.HasIndex(e => e.Description, "IX_ProductVarietys").IsUnique();
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductVariety_UID")
-                .HasColumnName("UID");
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductVarietys_Active");
-            entity.Property(e => e.BreederUid)
-                .HasDefaultValue(new Guid("e4e9f129-2a9a-44d9-888b-af4565c426c9"))
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductVariety_BreederUID")
-                .HasColumnName("BreederUID");
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255);
@@ -1340,37 +1089,30 @@ public partial class dbContext : DbContext
                 .IsRequired()
                 .HasDefaultValue("")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductVarietys_Notes");
-            entity.Property(e => e.ProductTraitUid)
-                .HasDefaultValue(new Guid("0422243c-d34c-4065-903b-3be8f94b2d34"))
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductVarietys_ProductTraitUID")
-                .HasColumnName("ProductTraitUID");
-            entity.Property(e => e.ProductTypeUid).HasColumnName("ProductTypeUID");
 
-            entity.HasOne(d => d.BreederU).WithMany(p => p.ProductVarieties)
-                .HasForeignKey(d => d.BreederUid)
+            entity.HasOne(d => d.Breeder).WithMany(p => p.ProductVarieties)
+                .HasForeignKey(d => d.BreederId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ProductVariety_Breeders");
+                .HasConstraintName("FK_ProductVarietys_Breeders");
 
-            entity.HasOne(d => d.ProductTraitU).WithMany(p => p.ProductVarieties)
-                .HasForeignKey(d => d.ProductTraitUid)
+            entity.HasOne(d => d.ProductTrait).WithMany(p => p.ProductVarieties)
+                .HasForeignKey(d => d.ProductTraitId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductVarietys_ProductTraits");
 
-            entity.HasOne(d => d.ProductTypeU).WithMany(p => p.ProductVarieties)
-                .HasForeignKey(d => d.ProductTypeUid)
+            entity.HasOne(d => d.ProductType).WithMany(p => p.ProductVarieties)
+                .HasForeignKey(d => d.ProductTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductVarietys_ProductTypes");
         });
 
         modelBuilder.Entity<ProductVarietyItem>(entity =>
         {
-            entity.HasKey(e => e.Uid);
-
             entity.ToTable("ProductVarietyItems", "product");
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductVarietyItem_UID")
-                .HasColumnName("UID");
+            entity.HasIndex(e => e.Description, "IX_ProductVarietyItems").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductVarietyItem_Active");
@@ -1385,12 +1127,6 @@ public partial class dbContext : DbContext
                 .HasMaxLength(255)
                 .HasDefaultValue("")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductVarietyItem_Notes");
-            entity.Property(e => e.ProductClassUid)
-                .HasDefaultValue(new Guid("69931e82-cdb2-48fc-8c61-b99733ebd117"))
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductVarietyItem_ProductClassUID")
-                .HasColumnName("ProductClassUID");
-            entity.Property(e => e.ProductConditionUid).HasColumnName("ProductConditionUID");
-            entity.Property(e => e.ProductVarietyUid).HasColumnName("ProductVarietyUID");
             entity.Property(e => e.PurchaseCode)
                 .IsRequired()
                 .HasMaxLength(255)
@@ -1407,37 +1143,34 @@ public partial class dbContext : DbContext
                 .HasMaxLength(255)
                 .HasDefaultValue("")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductVarietyItem_SalesCode");
-            entity.Property(e => e.UomUid).HasColumnName("UomUID");
 
-            entity.HasOne(d => d.ProductClassU).WithMany(p => p.ProductVarietyItems)
-                .HasForeignKey(d => d.ProductClassUid)
+            entity.HasOne(d => d.ProductClass).WithMany(p => p.ProductVarietyItems)
+                .HasForeignKey(d => d.ProductClassId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductVarietyItems_ProductClasses");
 
-            entity.HasOne(d => d.ProductConditionU).WithMany(p => p.ProductVarietyItems)
-                .HasForeignKey(d => d.ProductConditionUid)
+            entity.HasOne(d => d.ProductCondition).WithMany(p => p.ProductVarietyItems)
+                .HasForeignKey(d => d.ProductConditionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ProductVarietyItems_ProductConditions1");
+                .HasConstraintName("FK_ProductVarietyItems_ProductConditions");
 
-            entity.HasOne(d => d.ProductVarietyU).WithMany(p => p.ProductVarietyItems)
-                .HasForeignKey(d => d.ProductVarietyUid)
+            entity.HasOne(d => d.ProductVariety).WithMany(p => p.ProductVarietyItems)
+                .HasForeignKey(d => d.ProductVarietyId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductVarietyItems_ProductVarietys");
         });
 
         modelBuilder.Entity<ProductVarietyItemPrice>(entity =>
         {
-            entity.HasKey(e => e.Uid);
+            entity.HasKey(e => e.Id).HasName("PK_ProductVarietyItemPrices_1");
 
             entity.ToTable("ProductVarietyItemPrices", "product");
 
-            entity.Property(e => e.Uid)
-                .ValueGeneratedNever()
-                .HasColumnName("UID");
+            entity.HasIndex(e => new { e.SiteId, e.ProductVarietyItemId }, "IX_ProductVarietyItemPrices").IsUnique();
+
             entity.Property(e => e.CleaningFee)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Gl_ItemSitePrice_CleaningFee")
                 .HasColumnType("money");
-            entity.Property(e => e.ProductVarietyItemUid).HasColumnName("ProductVarietyItemUID");
             entity.Property(e => e.RetailPrice)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Gl_ItemSitePrice_RetailPrice")
                 .HasColumnType("money");
@@ -1451,14 +1184,19 @@ public partial class dbContext : DbContext
             entity.Property(e => e.ScreeningsPercent)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Gl_ItemSitePrice_ScreeningsPercent")
                 .HasColumnType("decimal(6, 4)");
-            entity.Property(e => e.SiteUid).HasColumnName("SiteUID");
             entity.Property(e => e.WholesalePrice)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Gl_ItemSitePrice_WholesalePrice")
                 .HasColumnType("money");
 
-            entity.HasOne(d => d.ProductVarietyItemU).WithMany(p => p.ProductVarietyItemPrices)
-                .HasForeignKey(d => d.ProductVarietyItemUid)
+            entity.HasOne(d => d.ProductVarietyItem).WithMany(p => p.ProductVarietyItemPrices)
+                .HasForeignKey(d => d.ProductVarietyItemId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProductVarietyItemPrices_ProductVarietyItems");
+
+            entity.HasOne(d => d.Site).WithMany(p => p.ProductVarietyItemPrices)
+                .HasForeignKey(d => d.SiteId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProductVarietyItemPrices_Sites");
         });
 
         modelBuilder.Entity<ProductVarietySeedColor>(entity =>
@@ -1474,52 +1212,43 @@ public partial class dbContext : DbContext
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ProductVarietySeedColor_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.ProductTypeUid).HasColumnName("ProductTypeUID");
-
-            entity.HasOne(d => d.ProductTypeU).WithMany(p => p.ProductVarietySeedColors)
-                .HasForeignKey(d => d.ProductTypeUid)
-                .HasConstraintName("FK_ProductVarietySeedColor_ProductVarietys");
         });
 
         modelBuilder.Entity<PurchaseOrder>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK_PurchaseOrder");
+            entity.HasKey(e => e.Id).HasName("PK_PurchaseOrder");
 
             entity.ToTable("PurchaseOrders", "purchase");
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_PurchaseOrders_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.AccountUid).HasColumnName("AccountUID");
+            entity.HasIndex(e => e.Id, "IX_PurchaseOrders").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.CreationDate).HasColumnType("datetime");
             entity.Property(e => e.CustomerReference).IsRequired();
-            entity.Property(e => e.Id)
-                .HasDefaultValueSql("([purchase].[NextPurchaseOrderId]())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_PurchaseOrders_ID")
-                .HasColumnName("ID");
             entity.Property(e => e.Notes).IsRequired();
-            entity.Property(e => e.ParentPurchaseOrderUid).HasColumnName("ParentPurchaseOrderUID");
+            entity.Property(e => e.ParentPurchaseOrderId).HasColumnName("ParentPurchaseOrderID");
             entity.Property(e => e.PurchaseOrderTypeId).HasColumnName("PurchaseOrderTypeID");
-            entity.Property(e => e.ServerId)
-                .HasDefaultValueSql("([system].[serverid]())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_PurchaseOrders_ServerID")
-                .HasColumnName("ServerID");
             entity.Property(e => e.StatusId)
                 .HasDefaultValue(1)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_PurchaseOrders_StatusId");
 
-            entity.HasOne(d => d.ParentPurchaseOrderU).WithMany(p => p.InverseParentPurchaseOrderU)
-                .HasForeignKey(d => d.ParentPurchaseOrderUid)
+            entity.HasOne(d => d.Account).WithMany(p => p.PurchaseOrders)
+                .HasForeignKey(d => d.AccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_PurchaseOrders_PurchaseOrders");
+                .HasConstraintName("FK_PurchaseOrders_Accounts");
+
+            entity.HasOne(d => d.ParentPurchaseOrder).WithMany(p => p.InverseParentPurchaseOrder)
+                .HasForeignKey(d => d.ParentPurchaseOrderId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PurchaseOrders_PurchaseOrders3");
 
             entity.HasOne(d => d.PurchaseOrderType).WithMany(p => p.PurchaseOrders)
                 .HasForeignKey(d => d.PurchaseOrderTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PurchaseOrders_PurchaseOrderType");
 
-            entity.HasOne(d => d.Server).WithMany(p => p.PurchaseOrders)
-                .HasForeignKey(d => d.ServerId)
+            entity.HasOne(d => d.Site).WithMany(p => p.PurchaseOrders)
+                .HasForeignKey(d => d.SiteId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PurchaseOrders_DbServers");
 
@@ -1527,6 +1256,11 @@ public partial class dbContext : DbContext
                 .HasForeignKey(d => d.StatusId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PurchaseOrders_OrderStatus");
+
+            entity.HasOne(d => d.StatusNavigation).WithMany(p => p.PurchaseOrders)
+                .HasForeignKey(d => d.StatusId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PurchaseOrders_PurchaseOrderStatusLists");
         });
 
         modelBuilder.Entity<PurchaseOrderLineItem>(entity =>
@@ -1536,41 +1270,42 @@ public partial class dbContext : DbContext
             entity.ToTable("PurchaseOrderLineItems", "purchase");
 
             entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
+                .HasDefaultValueSql("(newsequentialid())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_PurchaseOrderLineItems_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.Acres).HasColumnType("decimal(10, 1)");
             entity.Property(e => e.AmountBase).HasColumnType("decimal(20, 4)");
             entity.Property(e => e.CustomerReference).IsRequired();
-            entity.Property(e => e.Id).HasColumnName("ID");
-            entity.Property(e => e.LotUid).HasColumnName("LotUID");
             entity.Property(e => e.Notes).IsRequired();
             entity.Property(e => e.Preimum).HasColumnType("money");
-            entity.Property(e => e.ProductVarietyItemUid).HasColumnName("ProductVarietyItemUID");
-            entity.Property(e => e.PurchaseOrderUid).HasColumnName("PurchaseOrderUID");
+            entity.Property(e => e.PurchaseOrderId).HasColumnName("PurchaseOrderID");
             entity.Property(e => e.StateCleanout).HasColumnType("decimal(18, 5)");
             entity.Property(e => e.StateDockage).HasColumnType("decimal(18, 5)");
-            entity.Property(e => e.StatusId).HasColumnName("StatusID");
-            entity.Property(e => e.UnitOfMeasureUid).HasColumnName("UnitOfMeasureUID");
             entity.Property(e => e.YieldLbs).HasColumnType("decimal(10, 2)");
 
-            entity.HasOne(d => d.LotU).WithMany(p => p.PurchaseOrderLineItems)
-                .HasForeignKey(d => d.LotUid)
+            entity.HasOne(d => d.Lot).WithMany(p => p.PurchaseOrderLineItems)
+                .HasForeignKey(d => d.LotId)
                 .HasConstraintName("FK_PurchaseOrderLineItems_Lots");
 
-            entity.HasOne(d => d.ProductVarietyItemU).WithMany(p => p.PurchaseOrderLineItems)
-                .HasForeignKey(d => d.ProductVarietyItemUid)
+            entity.HasOne(d => d.ProductVarietyItem).WithMany(p => p.PurchaseOrderLineItems)
+                .HasForeignKey(d => d.ProductVarietyItemId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PurchaseOrderLineItems_ProductVarietyItems");
 
-            entity.HasOne(d => d.PurchaseOrderU).WithMany(p => p.PurchaseOrderLineItems)
-                .HasForeignKey(d => d.PurchaseOrderUid)
+            entity.HasOne(d => d.PurchaseOrder).WithMany(p => p.PurchaseOrderLineItems)
+                .HasForeignKey(d => d.PurchaseOrderId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PurchaseOrderLineItems_PurchaseOrders");
 
             entity.HasOne(d => d.Status).WithMany(p => p.PurchaseOrderLineItems)
                 .HasForeignKey(d => d.StatusId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PurchaseOrderLineItems_OrderStatus");
+
+            entity.HasOne(d => d.UnitOfMeasure).WithMany(p => p.PurchaseOrderLineItems)
+                .HasForeignKey(d => d.UnitOfMeasureId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PurchaseOrderLineItems_UnitOfMeasures");
         });
 
         modelBuilder.Entity<PurchaseOrderLineItemFreightRate>(entity =>
@@ -1582,7 +1317,7 @@ public partial class dbContext : DbContext
             entity.HasIndex(e => new { e.Description, e.PurchaseOrderLineItemUid }, "IX_SeedContractFreightRates");
 
             entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
+                .HasDefaultValueSql("(newsequentialid())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_SeedContractFreightRates_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.Description)
@@ -1593,17 +1328,21 @@ public partial class dbContext : DbContext
                 .HasDefaultValue("")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_SeedContractFreightRates_Notes");
             entity.Property(e => e.PurchaseOrderLineItemUid).HasColumnName("PurchaseOrderLineItemUID");
-            entity.Property(e => e.RatePerUom)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_SeedContractFreightRates_Rate")
-                .HasColumnType("money")
-                .HasColumnName("RatePerUOM");
-            entity.Property(e => e.SiteUid).HasColumnName("SiteUID");
-            entity.Property(e => e.UomUid).HasColumnName("UomUID");
 
             entity.HasOne(d => d.PurchaseOrderLineItemU).WithMany(p => p.PurchaseOrderLineItemFreightRates)
                 .HasForeignKey(d => d.PurchaseOrderLineItemUid)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PurchaseOrderLineItemFreightRates_PurchaseOrderLineItems");
+
+            entity.HasOne(d => d.Site).WithMany(p => p.PurchaseOrderLineItemFreightRates)
+                .HasForeignKey(d => d.SiteId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PurchaseOrderLineItemFreightRates_Sites");
+
+            entity.HasOne(d => d.Uom).WithMany(p => p.PurchaseOrderLineItemFreightRates)
+                .HasForeignKey(d => d.UomId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PurchaseOrderLineItemFreightRates_UnitOfMeasures");
         });
 
         modelBuilder.Entity<PurchaseOrderLineItemPricing>(entity =>
@@ -1613,7 +1352,7 @@ public partial class dbContext : DbContext
             entity.ToTable("PurchaseOrderLineItemPricing", "purchase");
 
             entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
+                .HasDefaultValueSql("(newsequentialid())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_PurchaseOrderLineItemPricing_UID")
                 .HasColumnName("UID");
             entity.Property(e => e.BaseAmount).HasColumnType("decimal(20, 4)");
@@ -1625,10 +1364,10 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Notes)
                 .IsRequired()
                 .HasMaxLength(255);
-            entity.Property(e => e.PurchaseOrderLineUid).HasColumnName("PurchaseOrderLineUID");
+            entity.Property(e => e.PurchaseOrderLineItemUid).HasColumnName("PurchaseOrderLineItemUID");
 
-            entity.HasOne(d => d.PurchaseOrderLineU).WithMany(p => p.PurchaseOrderLineItemPricings)
-                .HasForeignKey(d => d.PurchaseOrderLineUid)
+            entity.HasOne(d => d.PurchaseOrderLineItemU).WithMany(p => p.PurchaseOrderLineItemPricings)
+                .HasForeignKey(d => d.PurchaseOrderLineItemUid)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PurchaseOrderLineItemPricing_PurchaseOrderLineItems");
         });
@@ -1637,9 +1376,9 @@ public partial class dbContext : DbContext
         {
             entity.ToTable("PurchaseOrderStatusLists", "purchase");
 
-            entity.Property(e => e.Id)
-                .ValueGeneratedNever()
-                .HasColumnName("ID");
+            entity.HasIndex(e => e.Description, "IX_PurchaseOrderStatusLists").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(25);
@@ -1649,9 +1388,9 @@ public partial class dbContext : DbContext
         {
             entity.ToTable("PurchaseOrderType", "purchase");
 
-            entity.Property(e => e.Id)
-                .ValueGeneratedNever()
-                .HasColumnName("ID");
+            entity.HasIndex(e => e.Description, "IX_PurchaseOrderType").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(25);
@@ -1706,13 +1445,7 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Uid)
                 .ValueGeneratedNever()
                 .HasColumnName("UID");
-            entity.Property(e => e.AccountGroupAccountUid).HasColumnName("AccountGroupAccountUID");
             entity.Property(e => e.PurchaseOrderLineItemUid).HasColumnName("PurchaseOrderLineItemUID");
-
-            entity.HasOne(d => d.AccountGroupAccountU).WithMany(p => p.ReceivedInventoryPurchaseOrderLineItems)
-                .HasForeignKey(d => d.AccountGroupAccountUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ReceivedInventoyPurchaseOrders_AccountGroupAccounts");
 
             entity.HasOne(d => d.PurchaseOrderLineItemU).WithMany(p => p.ReceivedInventoryPurchaseOrderLineItems)
                 .HasForeignKey(d => d.PurchaseOrderLineItemUid)
@@ -1730,8 +1463,6 @@ public partial class dbContext : DbContext
                 .HasDefaultValueSql("(newid())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_SalesInvoices_UID")
                 .HasColumnName("UID");
-            entity.Property(e => e.AccountUid).HasColumnName("AccountUID");
-            entity.Property(e => e.CarrierUid).HasColumnName("CarrierUID");
             entity.Property(e => e.Contact).HasMaxLength(255);
             entity.Property(e => e.ContactEmail).HasMaxLength(50);
             entity.Property(e => e.ContactPhone).HasMaxLength(20);
@@ -1749,8 +1480,13 @@ public partial class dbContext : DbContext
             entity.Property(e => e.ShipToZip).HasMaxLength(15);
             entity.Property(e => e.SiteId).HasColumnName("SiteID");
 
-            entity.HasOne(d => d.CarrierU).WithMany(p => p.SalesInvoices)
-                .HasForeignKey(d => d.CarrierUid)
+            entity.HasOne(d => d.Account).WithMany(p => p.SalesInvoices)
+                .HasForeignKey(d => d.AccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_SalesInvoices_Accounts");
+
+            entity.HasOne(d => d.Carrier).WithMany(p => p.SalesInvoices)
+                .HasForeignKey(d => d.CarrierId)
                 .HasConstraintName("FK_SalesInvoices_Carriers");
         });
 
@@ -1769,16 +1505,6 @@ public partial class dbContext : DbContext
             entity.Property(e => e.SalesInvoiceUid).HasColumnName("SalesInvoiceUID");
             entity.Property(e => e.SalesOrderLineItemUid).HasColumnName("SalesOrderLineItemUID");
 
-            entity.HasOne(d => d.InventoryMovementU).WithMany(p => p.SalesInvoiceLineItems)
-                .HasForeignKey(d => d.InventoryMovementUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SalesInvoiceLineItems_InventoryMovements");
-
-            entity.HasOne(d => d.SalesOrderLineItemU).WithMany(p => p.SalesInvoiceLineItems)
-                .HasForeignKey(d => d.SalesOrderLineItemUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SalesInvoiceLineItems_SalesOrderLineItems");
-
             entity.HasOne(d => d.UidNavigation).WithOne(p => p.SalesInvoiceLineItem)
                 .HasForeignKey<SalesInvoiceLineItem>(d => d.Uid)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -1787,32 +1513,28 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<SalesOrder>(entity =>
         {
-            entity.HasKey(e => e.Uid);
-
             entity.ToTable("SalesOrders", "sale");
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_SalesOrders_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.AccountUid).HasColumnName("AccountUID");
-            entity.Property(e => e.CarrierUid).HasColumnName("CarrierUID");
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Contact).HasMaxLength(255);
             entity.Property(e => e.ContactEmail).HasMaxLength(50);
             entity.Property(e => e.ContactPhone).HasMaxLength(20);
             entity.Property(e => e.CreationDate).HasColumnType("datetime");
             entity.Property(e => e.CustomerReference).HasMaxLength(255);
-            entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.Notes).IsRequired();
-            entity.Property(e => e.SalesOrderStatusId).HasColumnName("SalesOrderStatusID");
             entity.Property(e => e.ShipToAddress).HasMaxLength(255);
             entity.Property(e => e.ShipToCity).HasMaxLength(255);
             entity.Property(e => e.ShipToState).HasMaxLength(50);
             entity.Property(e => e.ShipToZip).HasMaxLength(15);
             entity.Property(e => e.SiteId).HasColumnName("SiteID");
 
-            entity.HasOne(d => d.CarrierU).WithMany(p => p.SalesOrders)
-                .HasForeignKey(d => d.CarrierUid)
+            entity.HasOne(d => d.Account).WithMany(p => p.SalesOrders)
+                .HasForeignKey(d => d.AccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_SalesOrders_Accounts");
+
+            entity.HasOne(d => d.Carrier).WithMany(p => p.SalesOrders)
+                .HasForeignKey(d => d.CarrierId)
                 .HasConstraintName("FK_SalesOrders_Carriers");
         });
 
@@ -1829,11 +1551,10 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Price).HasColumnType("money");
             entity.Property(e => e.ProductVarietyItemUid).HasColumnName("ProductVarietyItemUID");
             entity.Property(e => e.QuantityBaseAmount).HasColumnType("decimal(18, 4)");
-            entity.Property(e => e.SalesOrderUid).HasColumnName("SalesOrderUID");
 
-            entity.HasOne(d => d.ProductVarietyItemU).WithMany(p => p.SalesOrderLineItems)
-                .HasForeignKey(d => d.ProductVarietyItemUid)
-                .HasConstraintName("FK_SalesOrderLineItems_ProductVarietyItems");
+            entity.HasOne(d => d.SalesOrder).WithMany(p => p.SalesOrderLineItems)
+                .HasForeignKey(d => d.SalesOrderId)
+                .HasConstraintName("FK_SalesOrderLineItems_SalesOrders");
         });
 
         modelBuilder.Entity<SeedColor>(entity =>
@@ -1885,10 +1606,6 @@ public partial class dbContext : DbContext
                 .HasPrincipalKey(p => p.Id)
                 .HasForeignKey(d => d.ColorIndex)
                 .HasConstraintName("FK_SeedCommdityColors_SeedColors");
-
-            entity.HasOne(d => d.ProductU).WithOne(p => p.SeedCommodityColor)
-                .HasForeignKey<SeedCommodityColor>(d => d.ProductUid)
-                .HasConstraintName("FK_SeedCommdityColors_GL_Items");
         });
 
         modelBuilder.Entity<SeedGroupSeedContract>(entity =>
@@ -1923,6 +1640,20 @@ public partial class dbContext : DbContext
                 .HasPrincipalKey(p => p.Id)
                 .HasForeignKey(d => d.ColorIndex)
                 .HasConstraintName("FK_SeedVarietyColors_SeedColors");
+        });
+
+        modelBuilder.Entity<Server>(entity =>
+        {
+            entity.ToTable("Servers", "system");
+
+            entity.HasIndex(e => e.Id, "IX_Servers_ID").IsUnique();
+
+            entity.HasIndex(e => e.ServerName, "IX_Servers_Name").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.ServerName)
+                .IsRequired()
+                .HasMaxLength(100);
         });
 
         modelBuilder.Entity<Site>(entity =>
@@ -1973,16 +1704,6 @@ public partial class dbContext : DbContext
                 .HasMaxLength(20)
                 .HasDefaultValue("")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Sites_Zip");
-
-            entity.HasOne(d => d.District).WithMany(p => p.Sites)
-                .HasForeignKey(d => d.DistrictId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Sites_SiteDistricts");
-
-            entity.HasOne(d => d.Type).WithMany(p => p.Sites)
-                .HasForeignKey(d => d.TypeId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Sites_SiteTypes");
         });
 
         modelBuilder.Entity<SiteDistrict>(entity =>
@@ -1993,7 +1714,6 @@ public partial class dbContext : DbContext
 
             entity.HasIndex(e => e.Description, "IX_SiteDistricts").IsUnique();
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(255);
@@ -2015,14 +1735,10 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<SitesDetail>(entity =>
         {
-            entity.HasKey(e => e.Uid).HasName("PK_SiteDetails");
-
             entity.ToTable("SitesDetails", "seed");
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_SitesDetails_UID")
-                .HasColumnName("UID");
+            entity.HasIndex(e => e.SiteId, "IX_SitesDetails").IsUnique();
+
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_SitesDetails_Active");
@@ -2037,7 +1753,57 @@ public partial class dbContext : DbContext
                 .HasDefaultValue(0.05m)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_SitesDetails_DefaultScreeningsPercent")
                 .HasColumnType("decimal(6, 4)");
-            entity.Property(e => e.InHouseAccountUid).HasColumnName("InHouseAccountUID");
+
+            entity.HasOne(d => d.InHouseAccount).WithMany(p => p.SitesDetails)
+                .HasForeignKey(d => d.InHouseAccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_SitesDetails_Accounts");
+        });
+
+        modelBuilder.Entity<SplitGroup>(entity =>
+        {
+            entity.ToTable("SplitGroups", "account");
+
+            entity.HasIndex(e => e.SplitGroupNumber, "IX_SplitGroups_1");
+
+            entity.HasIndex(e => e.Description, "IX_SplitGroups_2");
+
+            entity.Property(e => e.Active)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_AccountGroups_Active");
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.UseForReceive)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_AccountGroups_UseForReceive");
+            entity.Property(e => e.UseForSales)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_AccountGroups_UseForSales");
+
+            entity.HasOne(d => d.PrimaryAccount).WithMany(p => p.SplitGroups)
+                .HasForeignKey(d => d.PrimaryAccountId)
+                .HasConstraintName("FK_SplitGroups_Accounts");
+        });
+
+        modelBuilder.Entity<SplitGroupPercent>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__SplitGroupPrecents");
+
+            entity.ToTable("SplitGroupPercents", "account");
+
+            entity.HasIndex(e => new { e.SplitGroupId, e.AccountId }, "IX_SplitGroupPercents").IsUnique();
+
+            entity.Property(e => e.SplitPercent).HasColumnType("decimal(10, 7)");
+
+            entity.HasOne(d => d.Account).WithMany(p => p.SplitGroupPercents)
+                .HasForeignKey(d => d.AccountId)
+                .HasConstraintName("FK_SplitGroupPrecents_Accounts");
+
+            entity.HasOne(d => d.SplitGroup).WithMany(p => p.SplitGroupPercents)
+                .HasForeignKey(d => d.SplitGroupId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_SplitGroupPercents_SplitGroups");
         });
 
         modelBuilder.Entity<StorageLocation>(entity =>
@@ -2046,7 +1812,8 @@ public partial class dbContext : DbContext
 
             entity.ToTable("StorageLocations", "container");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.HasIndex(e => new { e.Description, e.SiteId }, "IX_StorageLocations").IsUnique();
+
             entity.Property(e => e.Active)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_SiteLocations_Active");
@@ -2062,11 +1829,6 @@ public partial class dbContext : DbContext
                 .IsRequired()
                 .HasDefaultValue("")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_StorageLocations_Notes");
-
-            entity.HasOne(d => d.Site).WithMany(p => p.StorageLocations)
-                .HasForeignKey(d => d.SiteId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_StorageLocations_Sites");
         });
 
         modelBuilder.Entity<TokenCache>(entity =>
@@ -2079,13 +1841,65 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Value).IsRequired();
         });
 
+        modelBuilder.Entity<Truck>(entity =>
+        {
+            entity.HasKey(e => e.Uid).HasName("PK_Trucks_1");
+
+            entity.ToTable("Trucks", "account");
+
+            entity.HasIndex(e => new { e.CarrierId, e.Description }, "UX_Truck_Carrier_Description")
+                .IsUnique()
+                .HasFilter("([CarrierId] IS NOT NULL)");
+
+            entity.HasIndex(e => e.RfidTag, "UX_Trucks_RfidTag_NotEmpty")
+                .IsUnique()
+                .HasFilter("([RfidTag]<>'')");
+
+            entity.Property(e => e.Uid)
+                .HasDefaultValueSql("(newid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_UID_1")
+                .HasColumnName("UID");
+            entity.Property(e => e.Active)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_Active_1");
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.ParentTruckUid)
+                .HasComment("If this was a pup to a truck then the parent truck would be another truck UID otherwise the same UID")
+                .HasColumnName("ParentTruckUID");
+            entity.Property(e => e.RetainTare)
+                .HasComment("if true the tare is kept and reused ")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_RetainTare");
+            entity.Property(e => e.RfidTag)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_RfidTag");
+            entity.Property(e => e.Tare)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_Tare")
+                .HasColumnType("decimal(10, 4)");
+            entity.Property(e => e.TruckIndex)
+                .HasDefaultValue(1)
+                .HasComment("This would be the order of the truck and pups so ParentTruck - then Pup ...")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_TruckIndex");
+
+            entity.HasOne(d => d.Account).WithMany(p => p.Trucks)
+                .HasForeignKey(d => d.AccountId)
+                .HasConstraintName("FK_AccountTrucks_Accounts");
+
+            entity.HasOne(d => d.Carrier).WithMany(p => p.Trucks)
+                .HasForeignKey(d => d.CarrierId)
+                .HasConstraintName("FK_Trucks_Carriers");
+        });
+
         modelBuilder.Entity<UnitOfMeasure>(entity =>
         {
             entity.ToTable("UnitOfMeasures", "system");
 
             entity.HasIndex(e => e.Description, "IX_UnitOfMeasure").IsUnique();
 
-            entity.HasIndex(e => e.Uom, "IX_UnitOfMeasure_Abv").IsUnique();
+            entity.HasIndex(e => e.Unit, "IX_UnitOfMeasure_Abv").IsUnique();
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Active)
@@ -2101,12 +1915,15 @@ public partial class dbContext : DbContext
             entity.Property(e => e.PricePrecision)
                 .HasDefaultValue(2)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_UnitOfMeasure_PricePercesion");
-            entity.Property(e => e.UnitsPrecision).HasAnnotation("Relational:DefaultConstraintName", "DF_UnitOfMeasure_Precision");
-            entity.Property(e => e.Uom)
+            entity.Property(e => e.Unit)
                 .IsRequired()
-                .HasMaxLength(50)
-                .HasColumnName("UOM");
-            entity.Property(e => e.UomTypeUid).HasColumnName("UomTypeUID");
+                .HasMaxLength(50);
+            entity.Property(e => e.UnitsPrecision).HasAnnotation("Relational:DefaultConstraintName", "DF_UnitOfMeasure_Precision");
+
+            entity.HasOne(d => d.UomType).WithMany(p => p.UnitOfMeasures)
+                .HasForeignKey(d => d.UomTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_UnitOfMeasures_UOMUnitTypes");
         });
 
         modelBuilder.Entity<UomunitType>(entity =>
@@ -2129,7 +1946,7 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Uid);
+            entity.HasKey(e => e.Id).HasName("PK_Users_1");
 
             entity.ToTable("Users", "users");
 
@@ -2137,10 +1954,9 @@ public partial class dbContext : DbContext
 
             entity.HasIndex(e => e.UserPin, "IX_UserPin").IsUnique();
 
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Users_UID")
-                .HasColumnName("UID");
+            entity.Property(e => e.Active)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Users_Active");
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(255);
@@ -2148,23 +1964,18 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<UserPrivilege>(entity =>
         {
-            entity.HasKey(e => e.Uid);
+            entity.HasKey(e => e.Id).HasName("PK_UserPrivileges_1");
 
             entity.ToTable("UserPrivileges", "users");
-
-            entity.Property(e => e.Uid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_UserPrivileges_UID")
-                .HasColumnName("UID");
-            entity.Property(e => e.UserUid).HasColumnName("UserUID");
 
             entity.HasOne(d => d.Privilege).WithMany(p => p.UserPrivileges)
                 .HasForeignKey(d => d.PrivilegeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_UserPrivileges_Privileges");
 
-            entity.HasOne(d => d.UserU).WithMany(p => p.UserPrivileges)
-                .HasForeignKey(d => d.UserUid)
+            entity.HasOne(d => d.User).WithMany(p => p.UserPrivileges)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_UserPrivileges_Users");
         });
 
@@ -2174,6 +1985,8 @@ public partial class dbContext : DbContext
 
             entity.ToTable("WeightSheet", "purchase");
 
+            entity.HasIndex(e => new { e.Id, e.SiteId }, "IX_WeightSheet").IsUnique();
+
             entity.Property(e => e.Uid)
                 .HasDefaultValueSql("(newid())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_WeightSheet_UID")
@@ -2182,14 +1995,44 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.InternalNotes).IsRequired();
             entity.Property(e => e.Notes).IsRequired();
-            entity.Property(e => e.ServerId)
-                .HasDefaultValueSql("([system].[serverid]())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_WeightSheet_ServerID")
-                .HasColumnName("ServerID");
             entity.Property(e => e.SiteId).HasColumnName("SiteID");
             entity.Property(e => e.StatusId)
                 .HasDefaultValue(1)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_WeightSheet_StatusId");
+
+            entity.HasOne(d => d.Site).WithMany(p => p.WeightSheets)
+                .HasForeignKey(d => d.SiteId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_WeightSheet_Sites");
+
+            entity.HasOne(d => d.Status).WithMany(p => p.WeightSheets)
+                .HasForeignKey(d => d.StatusId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_WeightSheet_WeightSheetStatus");
+        });
+
+        modelBuilder.Entity<WeightSheetStatus>(entity =>
+        {
+            entity.ToTable("WeightSheetStatus", "purchase");
+
+            entity.HasIndex(e => e.Description, "IX_WeightSheetStatus").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<WeightSheetType>(entity =>
+        {
+            entity.ToTable("WeightSheetTypes", "purchase");
+
+            entity.HasIndex(e => e.Description, "IX_WeightSheetTypes").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(50);
         });
 
         modelBuilder.Entity<WsdaTestReport>(entity =>

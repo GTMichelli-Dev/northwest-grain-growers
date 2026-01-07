@@ -7,11 +7,11 @@ namespace GrainManagement.Models;
 
 public partial class ProductVarietyItemPrice
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
-    public Guid SiteUid { get; set; }
+    public int SiteId { get; set; }
 
-    public Guid ProductVarietyItemUid { get; set; }
+    public long ProductVarietyItemId { get; set; }
 
     public decimal RetailPrice { get; set; }
 
@@ -25,5 +25,7 @@ public partial class ProductVarietyItemPrice
 
     public decimal ScreeningsPercent { get; set; }
 
-    public virtual ProductVarietyItem ProductVarietyItemU { get; set; }
+    public virtual ProductVarietyItem ProductVarietyItem { get; set; }
+
+    public virtual Site Site { get; set; }
 }

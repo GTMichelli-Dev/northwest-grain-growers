@@ -7,11 +7,13 @@ namespace AgvantageAPI.Models;
 
 public partial class User
 {
-    public Guid Uid { get; set; }
+    public long Id { get; set; }
 
     public int UserPin { get; set; }
 
     public string Name { get; set; }
+
+    public bool Active { get; set; }
 
     public virtual ICollection<UserPrivilege> UserPrivileges { get; set; } = new List<UserPrivilege>();
 }

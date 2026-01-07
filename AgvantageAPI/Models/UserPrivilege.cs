@@ -7,13 +7,13 @@ namespace AgvantageAPI.Models;
 
 public partial class UserPrivilege
 {
-    public Guid Uid { get; set; }
+    public long Id { get; set; }
 
     public int PrivilegeId { get; set; }
 
-    public Guid UserUid { get; set; }
+    public long UserId { get; set; }
 
     public virtual Privilege Privilege { get; set; }
 
-    public virtual User UserU { get; set; }
+    public virtual User User { get; set; }
 }

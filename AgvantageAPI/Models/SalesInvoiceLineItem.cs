@@ -23,9 +23,5 @@ public partial class SalesInvoiceLineItem
 
     public bool NoCertFee { get; set; }
 
-    public virtual InventoryMovement InventoryMovementU { get; set; }
-
-    public virtual SalesOrderLineItem SalesOrderLineItemU { get; set; }
-
     public virtual SalesInvoice UidNavigation { get; set; }
 }

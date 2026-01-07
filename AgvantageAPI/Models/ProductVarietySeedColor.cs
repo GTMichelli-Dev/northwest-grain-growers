@@ -14,6 +14,4 @@ public partial class ProductVarietySeedColor
     public int ColorIndex { get; set; }
 
     public int DurationSeconds { get; set; }
-
-    public virtual ProductVariety ProductTypeU { get; set; }
 }

@@ -9,11 +9,9 @@ public partial class PurchaseOrderLineItem
 {
     public Guid Uid { get; set; }
 
-    public Guid PurchaseOrderUid { get; set; }
+    public long PurchaseOrderId { get; set; }
 
-    public long Id { get; set; }
-
-    public Guid ProductVarietyItemUid { get; set; }
+    public long ProductVarietyItemId { get; set; }
 
     public int StatusId { get; set; }
 
@@ -27,13 +25,13 @@ public partial class PurchaseOrderLineItem
 
     public decimal YieldLbs { get; set; }
 
-    public Guid UnitOfMeasureUid { get; set; }
+    public int UnitOfMeasureId { get; set; }
 
     public decimal? StateCleanout { get; set; }
 
     public decimal? StateDockage { get; set; }
 
-    public Guid? LotUid { get; set; }
+    public long? LotId { get; set; }
 
     public bool ApplicationSubmitted { get; set; }
 
@@ -43,17 +41,19 @@ public partial class PurchaseOrderLineItem
 
     public bool RequireGrowerField { get; set; }
 
-    public virtual Lot LotU { get; set; }
+    public virtual Lot Lot { get; set; }
 
-    public virtual ProductVarietyItem ProductVarietyItemU { get; set; }
+    public virtual ProductVarietyItem ProductVarietyItem { get; set; }
+
+    public virtual PurchaseOrder PurchaseOrder { get; set; }
 
     public virtual ICollection<PurchaseOrderLineItemFreightRate> PurchaseOrderLineItemFreightRates { get; set; } = new List<PurchaseOrderLineItemFreightRate>();
 
     public virtual ICollection<PurchaseOrderLineItemPricing> PurchaseOrderLineItemPricings { get; set; } = new List<PurchaseOrderLineItemPricing>();
 
-    public virtual PurchaseOrder PurchaseOrderU { get; set; }
-
     public virtual ICollection<ReceivedInventoryPurchaseOrderLineItem> ReceivedInventoryPurchaseOrderLineItems { get; set; } = new List<ReceivedInventoryPurchaseOrderLineItem>();
 
     public virtual OrderStatus Status { get; set; }
+
+    public virtual UnitOfMeasure UnitOfMeasure { get; set; }
 }

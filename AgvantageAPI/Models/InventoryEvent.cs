@@ -13,6 +13,4 @@ public partial class InventoryEvent
     public int Id { get; set; }
 
     public string Description { get; set; }
-
-    public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
 }

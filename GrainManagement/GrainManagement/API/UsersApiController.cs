@@ -7,10 +7,12 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using GrainManagement.Models.DTO;
 
 namespace GrainManagement.Controllers
 {
     [Route("api/[controller]")]
+    [UseAdminConnection]
     [ApiController]
     public class UsersApiController : ControllerBase
     {
@@ -42,7 +44,7 @@ namespace GrainManagement.Controllers
             var dtoQuery = users
                 .Select(u => new UserEditDto
                 {
-                    Uid = u.Uid,
+                    Id = u.Id,
                     UserPin = u.UserPin,   // <-- IMPORTANT: now DevExtreme can sort on this
                     Name = u.Name,
                     PrivilegeIds = u.UserPrivileges
@@ -96,7 +98,7 @@ namespace GrainManagement.Controllers
             // Create user
             var user = new User
             {
-                Uid = Guid.NewGuid(),
+                
                 UserPin = dto.UserPin,
                 Name = dto.Name
             };
@@ -109,8 +111,8 @@ namespace GrainManagement.Controllers
             {
                 _ctx.UserPrivileges.Add(new UserPrivilege
                 {
-                    Uid = Guid.NewGuid(),
-                    UserUid = user.Uid,
+                    
+                    UserId = user.Id,
                     PrivilegeId = pid
                 });
             }
@@ -120,7 +122,7 @@ namespace GrainManagement.Controllers
             // Return the created row as the grid expects
             var result = new UserEditDto
             {
-                Uid = user.Uid,
+                Id = user.Id,
                 UserPin = user.UserPin,
                 Name = user.Name,
                 PrivilegeIds = newIds,
@@ -132,14 +134,14 @@ namespace GrainManagement.Controllers
         }
 
         [HttpPut("{key}")]
-        public IActionResult Put(Guid key, [FromBody] UserEditDto dto)
+        public IActionResult Put(long key, [FromBody] UserEditDto dto)
         {
             if (dto == null)
                 return BadRequest("Invalid user payload.");
 
             var user = _ctx.Users
                 .Include(u => u.UserPrivileges)
-                .SingleOrDefault(u => u.Uid == key);
+                .SingleOrDefault(u => u.Id == key);
 
             if (user == null)
                 return NotFound();
@@ -153,11 +155,11 @@ namespace GrainManagement.Controllers
 
             // Uniqueness checks use the final values
             bool pinExists = _ctx.Users
-                .Any(u => u.UserPin == newPin && u.Uid != key);
+                .Any(u => u.UserPin == newPin && u  .Id != key);
             if (pinExists)
                 return Conflict(new { message = "User Pin must be unique." });
 
-            if (newPin > 9999)
+            if (newPin > 9999)  
             {
                 return BadRequest(new { message = "User Pin must be less than 10000." });
             }
@@ -166,7 +168,7 @@ namespace GrainManagement.Controllers
                 return BadRequest(new { message = "User Pin must be greater than 0." });
             }
             bool nameExists = _ctx.Users
-                .Any(u => u.Name == newName && u.Uid != key);
+                .Any(u => u.Name == newName && u.Id != key);
             if (nameExists)
                 return Conflict(new { message = "User name must be unique." });
 
@@ -191,8 +193,8 @@ namespace GrainManagement.Controllers
             {
                 _ctx.UserPrivileges.Add(new UserPrivilege
                 {
-                    Uid = Guid.NewGuid(),
-                    UserUid = user.Uid,
+               
+                    UserId = user.Id,
                     PrivilegeId = pid
                 });
             }
@@ -203,11 +205,11 @@ namespace GrainManagement.Controllers
 
 
         [HttpDelete("{key}")]
-        public IActionResult Delete(Guid key)
+        public IActionResult Delete(long key)
         {
             var user = _ctx.Users
                 .Include(u => u.UserPrivileges)
-                .SingleOrDefault(u => u.Uid == key);
+                .SingleOrDefault(u => u.Id == key);
 
             if (user == null)
                 return NotFound();

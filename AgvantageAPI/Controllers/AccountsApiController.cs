@@ -31,8 +31,8 @@ namespace AgvantageAPI.Controllers
             _config = config;
         }
 
-    
 
+       
 
         [HttpGet("GetAccountsFromAgvantage")]
         public async Task<IActionResult> GetAccountsFromAgvantage()
@@ -47,15 +47,20 @@ namespace AgvantageAPI.Controllers
         {
             try
             {
+                string? companyDataFile = _config["CompanyDataFile"];
                 string? connectionString = _config.GetConnectionString("AgvantageConnectionString");
                 if (string.IsNullOrEmpty(connectionString))
                 {
                     await _log.LogError(logDTOs, new Exception("Connection string 'AgvantageConnectionString' is null or empty."), "Connection string 'AgvantageConnectionString' is null or empty.");
                     return new ObjectResult("Connection string is missing.") { StatusCode = 500 };
                 }
+                if (string.IsNullOrEmpty(companyDataFile))
+                {
+                    await _log.LogError(logDTOs, new Exception("Company Data File Name is null or empty."), "Company Data File Name is null or empty.");
+                    return new ObjectResult("Company Data File is missing.") { StatusCode = 500 };
+                }
 
-                string sql = @"
-                SELECT
+                string sql = $@"SELECT
                     CSCNO   AS AccountId,
                     CSCONM  AS EntityName,
                     CSLKNM  AS LookupName,
@@ -83,7 +88,7 @@ namespace AgvantageAPI.Controllers
                     COALESCE(CSMEMO, '') ||
                     COALESCE(CSNOT1, '') ||
                     COALESCE(CSNOT2, '') AS Notes
-                FROM COMDATA.U4CSTMR";
+                FROM {companyDataFile}.U4CSTMR";
 
                 var accountList = new List<Account>();
 
@@ -97,20 +102,20 @@ namespace AgvantageAPI.Controllers
                         {
                             var newRow = new Account
                             {
-                                AccountId = rdr.GetInt64(0),
-                                EntityName = rdr.GetString(1),
-                                LookupName = rdr.GetString(2),
-                                OwnerFirstName = rdr.GetString(3),
-                                OwnerLastName = rdr.GetString(4),
-                                Address1 = rdr.GetString(5),
-                                Address2 = rdr.GetString(6),
-                                City = rdr.GetString(7),
-                                State = rdr.GetString(8),
-                                Zip = rdr.GetString(9),
-                                Phone1 = rdr.GetString(10),
-                                Phone2 = rdr.GetString(11),
-                                Phone3 = rdr.GetString(12),
-                                Email = rdr.GetString(13),
+                                Id = rdr.GetInt64(0),
+                                EntityName = rdr.GetString(1).Trim(),
+                                LookupName = rdr.GetString(2).Trim(),
+                                OwnerFirstName = rdr.GetString(3).Trim(),
+                                OwnerLastName = rdr.GetString(4).Trim(),
+                                Address1 = rdr.GetString(5).Trim(),
+                                Address2 = rdr.GetString(6).Trim(),
+                                City = rdr.GetString(7).Trim(),
+                                State = rdr.GetString(8).Trim(),
+                                Zip = rdr.GetString(9).Trim(),
+                                Phone1 = rdr.GetString(10).Trim(),
+                                Phone2 = rdr.GetString(11).Trim(),
+                                Phone3 = rdr.GetString(12).Trim(),
+                                Email = rdr.GetString(13).Trim(),
                                 TaxExemptDate = DateOnly.FromDateTime(DateTime.Now.AddYears(-100)),
                                 IsProducer = rdr.GetBoolean(15),
                                 Active = rdr.GetBoolean(16),
@@ -120,8 +125,8 @@ namespace AgvantageAPI.Controllers
                                 Wholesale = rdr.GetBoolean(20),
                                 CustomerPaysRoyalties = rdr.GetBoolean(21),
                                 AutoPrice = rdr.GetBoolean(22),
-                                Contact = rdr.GetString(23),
-                                Notes = rdr.GetString(24)
+                                Contact = rdr.GetString(23).Trim(),
+                                Notes = rdr.GetString(24).Trim( )
                             };
 
                             if (!rdr.IsDBNull(14))
@@ -173,17 +178,17 @@ namespace AgvantageAPI.Controllers
             {
                 // Load all current accounts from DB
                 var dbAccounts = await _ctx.Accounts.ToListAsync();
-                var dbAccountsById = dbAccounts.ToDictionary(a => a.AccountId);
+                var dbAccountsById = dbAccounts.ToDictionary(a => a.Id);
 
                 // Track incoming AccountIds
-                var incomingIds = new HashSet<long>(accountList.Select(a => a.AccountId));
+                var incomingIds = new HashSet<long>(accountList.Select(a => a.Id));
                 var updated = 0;
                 var added = 0;
                 var deactivated = 0;
                 // Update or add incoming accounts
                 foreach (var incoming in accountList)
                 {
-                    if (dbAccountsById.TryGetValue(incoming.AccountId, out var dbAcc))
+                    if (dbAccountsById.TryGetValue(incoming.Id, out var dbAcc))
                     {
                         updated++;
                         // Update fields
@@ -225,7 +230,7 @@ namespace AgvantageAPI.Controllers
                 // Mark accounts as inactive if not in incoming list
                 foreach (var dbAcc in dbAccounts)
                 {
-                    if (!incomingIds.Contains(dbAcc.AccountId) && dbAcc.Active)
+                    if (!incomingIds.Contains(dbAcc.Id) && dbAcc.Active)
                     {
                         deactivated++;
                         dbAcc.Active = false;

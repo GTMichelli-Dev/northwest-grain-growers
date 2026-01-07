@@ -7,21 +7,19 @@ namespace AgvantageAPI.Models;
 
 public partial class InventoryMovement
 {
-    public Guid Uid { get; set; }
-
     public long Id { get; set; }
 
-    public int ServerId { get; set; }
+    public int SiteId { get; set; }
 
     public DateTime CreationDate { get; set; }
 
-    public Guid ProductVarietyItemUid { get; set; }
+    public Guid ProductVarietyItemId { get; set; }
 
     public int InventoryEventId { get; set; }
 
-    public Guid? FromContainerUid { get; set; }
+    public Guid? FromContainerId { get; set; }
 
-    public Guid? ToContainerUid { get; set; }
+    public Guid? ToContainerId { get; set; }
 
     public decimal InboundQuantityBase { get; set; }
 
@@ -39,35 +37,25 @@ public partial class InventoryMovement
 
     public string OutboundWeighmaster { get; set; }
 
-    public Guid? TruckUid { get; set; }
+    public Guid? TruckId { get; set; }
 
     public string Driver { get; set; }
 
-    public Guid? FromProductVarietyItemUid { get; set; }
+    public Guid? FromProductVarietyItemId { get; set; }
 
-    public Guid? ReceivedInventoryItemUid { get; set; }
+    public Guid? ReceivedInventoryItemId { get; set; }
 
-    public Guid? ReturnedSalesOrderLineUid { get; set; }
+    public Guid? ReturnedSalesOrderLineId { get; set; }
 
-    public Guid LotUid { get; set; }
+    public Guid LotId { get; set; }
 
-    public Guid? FromLotUid { get; set; }
+    public Guid? FromLotId { get; set; }
 
     public string Notes { get; set; }
 
-    public virtual Lot FromLotU { get; set; }
-
-    public virtual ProductVarietyItem FromProductVarietyItemU { get; set; }
-
     public virtual InventoryEvent InventoryEvent { get; set; }
 
-    public virtual Lot LotU { get; set; }
+    public virtual ReceivedInventoryItem ReceivedInventoryItem { get; set; }
 
-    public virtual ProductVarietyItem ProductVarietyItemU { get; set; }
-
-    public virtual ReceivedInventoryItem ReceivedInventoryItemU { get; set; }
-
-    public virtual ICollection<SalesInvoiceLineItem> SalesInvoiceLineItems { get; set; } = new List<SalesInvoiceLineItem>();
-
-    public virtual AccountTruck TruckU { get; set; }
+    public virtual Truck Truck { get; set; }
 }

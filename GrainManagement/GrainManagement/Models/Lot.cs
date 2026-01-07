@@ -7,11 +7,13 @@ namespace GrainManagement.Models;
 
 public partial class Lot
 {
-    public Guid Uid { get; set; }
+    public long Id { get; set; }
+
+    public int SiteId { get; set; }
 
     public DateTime CreationDate { get; set; }
 
-    public Guid ProductVarietyItemUid { get; set; }
+    public long ProductVarietyItemId { get; set; }
 
     public bool Closed { get; set; }
 
@@ -19,11 +21,11 @@ public partial class Lot
 
     public string Description { get; set; }
 
-    public virtual ICollection<InventoryMovement> InventoryMovementFromLotUs { get; set; } = new List<InventoryMovement>();
-
-    public virtual ICollection<InventoryMovement> InventoryMovementLotUs { get; set; } = new List<InventoryMovement>();
-
     public virtual ICollection<LotLab> LotLabs { get; set; } = new List<LotLab>();
 
+    public virtual ProductVarietyItem ProductVarietyItem { get; set; }
+
     public virtual ICollection<PurchaseOrderLineItem> PurchaseOrderLineItems { get; set; } = new List<PurchaseOrderLineItem>();
+
+    public virtual Site Site { get; set; }
 }

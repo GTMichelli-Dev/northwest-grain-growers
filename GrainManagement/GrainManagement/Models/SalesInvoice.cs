@@ -17,7 +17,7 @@ public partial class SalesInvoice
 
     public DateTime CreationDate { get; set; }
 
-    public Guid AccountUid { get; set; }
+    public long AccountId { get; set; }
 
     public bool TaxExempt { get; set; }
 
@@ -37,13 +37,15 @@ public partial class SalesInvoice
 
     public string ContactEmail { get; set; }
 
-    public Guid? CarrierUid { get; set; }
+    public long? CarrierId { get; set; }
 
     public string Notes { get; set; }
 
     public Guid? ReturnedScalesOrderUid { get; set; }
 
-    public virtual Carrier CarrierU { get; set; }
+    public virtual Account Account { get; set; }
+
+    public virtual Carrier Carrier { get; set; }
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 

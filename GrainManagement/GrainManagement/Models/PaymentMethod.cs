@@ -7,7 +7,7 @@ namespace GrainManagement.Models;
 
 public partial class PaymentMethod
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
     public string TypeOfPayment { get; set; }
 

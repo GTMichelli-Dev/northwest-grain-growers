@@ -7,13 +7,13 @@ namespace AgvantageAPI.Models;
 
 public partial class Container
 {
-    public long Id { get; set; }
+    public int Id { get; set; }
 
     public string Description { get; set; }
 
-    public Guid ContainerTypeUid { get; set; }
+    public int ContainerTypeId { get; set; }
 
-    public Guid StorageLocationUid { get; set; }
+    public int StorageLocationId { get; set; }
 
     public long Capacity { get; set; }
 
@@ -29,9 +29,15 @@ public partial class Container
 
     public string Notes { get; set; }
 
-    public string CustomerId { get; set; }
-
     public bool Virtual { get; set; }
 
     public string Coordinates { get; set; }
+
+    public long? AccountId { get; set; }
+
+    public virtual ICollection<ContainerRezeroDate> ContainerRezeroDates { get; set; } = new List<ContainerRezeroDate>();
+
+    public virtual ContainerType ContainerType { get; set; }
+
+    public virtual StorageLocation StorageLocation { get; set; }
 }

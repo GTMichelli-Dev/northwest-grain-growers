@@ -7,8 +7,6 @@ namespace GrainManagement.Models;
 
 public partial class SalesOrder
 {
-    public Guid Uid { get; set; }
-
     public long Id { get; set; }
 
     public int SiteId { get; set; }
@@ -17,7 +15,7 @@ public partial class SalesOrder
 
     public int SalesOrderStatusId { get; set; }
 
-    public Guid AccountUid { get; set; }
+    public long AccountId { get; set; }
 
     public bool TaxExempt { get; set; }
 
@@ -37,9 +35,13 @@ public partial class SalesOrder
 
     public string ContactEmail { get; set; }
 
-    public Guid? CarrierUid { get; set; }
+    public long? CarrierId { get; set; }
 
     public string Notes { get; set; }
 
-    public virtual Carrier CarrierU { get; set; }
+    public virtual Account Account { get; set; }
+
+    public virtual Carrier Carrier { get; set; }
+
+    public virtual ICollection<SalesOrderLineItem> SalesOrderLineItems { get; set; } = new List<SalesOrderLineItem>();
 }

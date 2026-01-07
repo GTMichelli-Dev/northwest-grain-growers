@@ -7,13 +7,13 @@ namespace GrainManagement.Models;
 
 public partial class AssignedProductClass
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
-    public Guid ProductUid { get; set; }
+    public int ProductId { get; set; }
 
-    public Guid ProductClassesUid { get; set; }
+    public int ProductClassId { get; set; }
 
-    public virtual ProductClass ProductClassesU { get; set; }
+    public virtual Product Product { get; set; }
 
-    public virtual Product ProductU { get; set; }
+    public virtual ProductClass ProductClass { get; set; }
 }

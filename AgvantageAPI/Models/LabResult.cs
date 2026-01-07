@@ -14,6 +14,4 @@ public partial class LabResult
     public string Test { get; set; }
 
     public string Value { get; set; }
-
-    public virtual LotLab LabU { get; set; }
 }

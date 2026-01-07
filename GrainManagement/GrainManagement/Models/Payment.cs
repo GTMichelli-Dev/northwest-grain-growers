@@ -15,13 +15,13 @@ public partial class Payment
 
     public decimal Amount { get; set; }
 
-    public Guid PaymentMethodUid { get; set; }
+    public int PaymentMethod { get; set; }
 
     public string ReferenceNumber { get; set; }
 
     public string Notes { get; set; }
 
-    public virtual PaymentMethod PaymentMethodU { get; set; }
+    public virtual PaymentMethod PaymentMethodNavigation { get; set; }
 
     public virtual SalesInvoice SalesInvoiceU { get; set; }
 }

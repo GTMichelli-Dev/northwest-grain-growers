@@ -11,11 +11,9 @@ public partial class PurchaseOrderLineItemFreightRate
 
     public Guid PurchaseOrderLineItemUid { get; set; }
 
-    public Guid SiteUid { get; set; }
+    public int SiteId { get; set; }
 
-    public decimal RatePerUom { get; set; }
-
-    public Guid UomUid { get; set; }
+    public int UomId { get; set; }
 
     public string Notes { get; set; }
 
@@ -24,4 +22,8 @@ public partial class PurchaseOrderLineItemFreightRate
     public bool Active { get; set; }
 
     public virtual PurchaseOrderLineItem PurchaseOrderLineItemU { get; set; }
+
+    public virtual Site Site { get; set; }
+
+    public virtual UnitOfMeasure Uom { get; set; }
 }

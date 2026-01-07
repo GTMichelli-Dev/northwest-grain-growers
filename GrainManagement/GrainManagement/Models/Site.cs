@@ -33,9 +33,13 @@ public partial class Site
 
     public virtual ICollection<Cleaner> Cleaners { get; set; } = new List<Cleaner>();
 
-    public virtual SiteDistrict District { get; set; }
+    public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
 
-    public virtual ICollection<StorageLocation> StorageLocations { get; set; } = new List<StorageLocation>();
+    public virtual ICollection<ProductVarietyItemPrice> ProductVarietyItemPrices { get; set; } = new List<ProductVarietyItemPrice>();
 
-    public virtual SiteType Type { get; set; }
+    public virtual ICollection<PurchaseOrderLineItemFreightRate> PurchaseOrderLineItemFreightRates { get; set; } = new List<PurchaseOrderLineItemFreightRate>();
+
+    public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; } = new List<PurchaseOrder>();
+
+    public virtual ICollection<WeightSheet> WeightSheets { get; set; } = new List<WeightSheet>();
 }

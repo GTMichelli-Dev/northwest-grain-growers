@@ -7,11 +7,15 @@ namespace GrainManagement.Models;
 
 public partial class Carrier
 {
-    public Guid Uid { get; set; }
+    public long Id { get; set; }
 
     public string Description { get; set; }
+
+    public bool Active { get; set; }
 
     public virtual ICollection<SalesInvoice> SalesInvoices { get; set; } = new List<SalesInvoice>();
 
     public virtual ICollection<SalesOrder> SalesOrders { get; set; } = new List<SalesOrder>();
+
+    public virtual ICollection<Truck> Trucks { get; set; } = new List<Truck>();
 }

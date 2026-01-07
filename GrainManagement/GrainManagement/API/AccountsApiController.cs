@@ -1,12 +1,13 @@
 ﻿using DevExtreme.AspNet.Data;
 using DevExtreme.AspNet.Mvc;
 using GrainManagement.Models;
-using GrainManagement.DTO;
+using GrainManagement.Models.DTO;
 using GrainManagement.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Data;
+using System.Threading.Tasks;
 
 
 
@@ -27,43 +28,63 @@ namespace GrainManagement
             
         }
 
+        //// GET: api/AccountsApi
+        //[HttpGet]
+        //public async Task<object> Get(DataSourceLoadOptions loadOptions)
+        //{
+        //    var query = _ctx.Accounts
+        //        .AsNoTracking()
+        //        .Select(a => new AccountDTO
+        //        {
+        //            Id = a.Id,
+        //            EntityName = a.EntityName,
+        //            LookupName = a.LookupName,
+        //            OwnerFirstName = a.OwnerFirstName,
+        //            OwnerLastName = a.OwnerLastName,
+        //            IsProducer = a.IsProducer,
+        //            Active = a.Active,
+        //            Notes = a.Notes,
+        //            HedgedAccount = a.HedgedAccount,
+        //        });
+
+        //    return await DataSourceLoader.LoadAsync(query, loadOptions ?? new DataSourceLoadOptions());
+        //}
+
+
         // GET: api/AccountsApi
         [HttpGet]
-        public object Get(DataSourceLoadOptions loadOptions)
+        public async Task<object> Get()
         {
-            // Project EF entity -> AccountDTO
-            var query = _ctx.Accounts
-                .AsNoTracking()
-                .Select(a => new AccountDTO
-                {
-                  
-                    AccountId = a.AccountId,
-                    EntityName = a.EntityName,
-                    LookupName = a.LookupName,
-                    OwnerFirstName = a.OwnerFirstName,
-                    OwnerLastName = a.OwnerLastName,
-                    IsProducer = a.IsProducer,
-                    Active = a.Active,
-                    Notes = a.Notes,
-                    HedgedAccount = a.HedgedAccount,
-                    IsHauler = a.IsHauler
-                });
+            var query = await _ctx.Accounts
+                       .AsNoTracking()
+                       .Select(a => new AccountDTO
+                       {
 
-            return DataSourceLoader.Load(query, loadOptions);
+                           Id = a.Id,
+                           EntityName = a.EntityName,
+                           LookupName = a.LookupName,
+                           OwnerFirstName = a.OwnerFirstName,
+                           OwnerLastName = a.OwnerLastName,
+                           IsProducer = a.IsProducer,
+                           Active = a.Active,
+                           Notes = a.Notes,
+                           HedgedAccount = a.HedgedAccount,
+                       }).OrderBy(x => x.Id).ToListAsync();
+            return query;
         }
 
 
-       
+
 
 
         // PUT: api/AccountsApi/{key}
         [HttpPut("{key}")]
         public IActionResult Put(long key, [FromBody] AccountDTO dto)
         {
-            if (dto == null || dto.AccountId != key)
+            if (dto == null || dto.Id != key)
                 return BadRequest("Invalid account payload.");
 
-            var account = _ctx.Accounts.SingleOrDefault(a => a.AccountId  == key);
+            var account = _ctx.Accounts.SingleOrDefault(a => a.Id  == key);
             if (account == null)
                 return NotFound();
 
@@ -77,7 +98,7 @@ namespace GrainManagement
             account.Active = dto.Active;
             account.Notes = dto.Notes ?? account.Notes;
             account.HedgedAccount = dto.HedgedAccount;
-            account.IsHauler = dto.IsHauler;
+            
 
             _ctx.SaveChanges();
             return Ok();

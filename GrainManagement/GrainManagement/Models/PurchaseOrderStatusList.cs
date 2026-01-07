@@ -10,4 +10,6 @@ public partial class PurchaseOrderStatusList
     public int Id { get; set; }
 
     public string Description { get; set; }
+
+    public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; } = new List<PurchaseOrder>();
 }

@@ -7,7 +7,7 @@ namespace AgvantageAPI.Models;
 
 public partial class Account
 {
-    public long AccountId { get; set; }
+    public long Id { get; set; }
 
     public string EntityName { get; set; }
 
@@ -59,5 +59,21 @@ public partial class Account
 
     public bool HedgedAccount { get; set; }
 
-    public bool IsHauler { get; set; }
+    public virtual ICollection<AccountCustomPricing> AccountCustomPricings { get; set; } = new List<AccountCustomPricing>();
+
+    public virtual ICollection<GrowerField> GrowerFields { get; set; } = new List<GrowerField>();
+
+    public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; } = new List<PurchaseOrder>();
+
+    public virtual ICollection<SalesInvoice> SalesInvoices { get; set; } = new List<SalesInvoice>();
+
+    public virtual ICollection<SalesOrder> SalesOrders { get; set; } = new List<SalesOrder>();
+
+    public virtual ICollection<SitesDetail> SitesDetails { get; set; } = new List<SitesDetail>();
+
+    public virtual ICollection<SplitGroupPercent> SplitGroupPercents { get; set; } = new List<SplitGroupPercent>();
+
+    public virtual ICollection<SplitGroup> SplitGroups { get; set; } = new List<SplitGroup>();
+
+    public virtual ICollection<Truck> Trucks { get; set; } = new List<Truck>();
 }

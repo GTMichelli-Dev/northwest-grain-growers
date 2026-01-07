@@ -7,9 +7,9 @@ namespace GrainManagement.Models;
 
 public partial class ProductTrait
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
-    public Guid ProductUid { get; set; }
+    public int ProductId { get; set; }
 
     public string Description { get; set; }
 
@@ -17,7 +17,7 @@ public partial class ProductTrait
 
     public string Notes { get; set; }
 
-    public virtual Product ProductU { get; set; }
+    public virtual Product Product { get; set; }
 
     public virtual ICollection<ProductVariety> ProductVarieties { get; set; } = new List<ProductVariety>();
 }

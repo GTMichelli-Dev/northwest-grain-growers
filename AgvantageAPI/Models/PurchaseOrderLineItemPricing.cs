@@ -9,7 +9,7 @@ public partial class PurchaseOrderLineItemPricing
 {
     public Guid Uid { get; set; }
 
-    public Guid PurchaseOrderLineUid { get; set; }
+    public Guid PurchaseOrderLineItemUid { get; set; }
 
     public DateTime CreationDate { get; set; }
 
@@ -19,5 +19,5 @@ public partial class PurchaseOrderLineItemPricing
 
     public string Notes { get; set; }
 
-    public virtual PurchaseOrderLineItem PurchaseOrderLineU { get; set; }
+    public virtual PurchaseOrderLineItem PurchaseOrderLineItemU { get; set; }
 }

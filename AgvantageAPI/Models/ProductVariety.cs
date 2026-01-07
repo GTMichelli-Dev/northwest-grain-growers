@@ -7,27 +7,25 @@ namespace AgvantageAPI.Models;
 
 public partial class ProductVariety
 {
-    public Guid Uid { get; set; }
+    public int Id { get; set; }
 
-    public Guid ProductTypeUid { get; set; }
+    public int ProductTypeId { get; set; }
 
-    public Guid ProductTraitUid { get; set; }
+    public int ProductTraitId { get; set; }
 
     public string Description { get; set; }
 
-    public Guid BreederUid { get; set; }
+    public int BreederId { get; set; }
 
     public bool Active { get; set; }
 
     public string Notes { get; set; }
 
-    public virtual Breeder BreederU { get; set; }
+    public virtual Breeder Breeder { get; set; }
 
-    public virtual ProductTrait ProductTraitU { get; set; }
+    public virtual ProductTrait ProductTrait { get; set; }
 
-    public virtual ProductType ProductTypeU { get; set; }
+    public virtual ProductType ProductType { get; set; }
 
     public virtual ICollection<ProductVarietyItem> ProductVarietyItems { get; set; } = new List<ProductVarietyItem>();
-
-    public virtual ICollection<ProductVarietySeedColor> ProductVarietySeedColors { get; set; } = new List<ProductVarietySeedColor>();
 }
