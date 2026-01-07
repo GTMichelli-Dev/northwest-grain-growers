@@ -12,11 +12,10 @@ public partial class TicketCreator : System.Web.UI.Page
     {
         try
         {
-            if (this.ddNumberOfCopies.SelectedIndex < 0) this.ddNumberOfCopies.SelectedIndex = 0;
             if (!this.IsPostBack)
             {
                 if (Session["Weighmaster"] == null) Session["Weighmaster"] = "";
-               
+                this.txtWeighmaster.Text = Session["Weighmaster"].ToString();
 
                 this.grdVarieties.Columns[2].Visible = PLC.PLCConnected;
                 ReportDataSet reportDataset = SeedTicketInfo.GetAllTicketInfo(SeedTicketInfo.seedTicketDataSet, SeedTicketInfo.CurrentSeedTicketRow.UID);
@@ -26,7 +25,6 @@ public partial class TicketCreator : System.Web.UI.Page
 
 
                 if (!SeedTicketInfo.CurrentSeedTicketRow.IsWeighmasterNull()) this.txtWeighmaster.Text = SeedTicketInfo.CurrentSeedTicketRow.Weighmaster;
-                if ( string.IsNullOrWhiteSpace(this.txtWeighmaster.Text) ) this.txtWeighmaster.Text = Session["Weighmaster"].ToString();
                 if (!SeedTicketInfo.CurrentSeedTicketRow.IsPONull()) this.txtPO.Text = SeedTicketInfo.CurrentSeedTicketRow.PO;
                 if (!SeedTicketInfo.CurrentSeedTicketRow.IsBOLNull()) this.txtBOL.Text = SeedTicketInfo.CurrentSeedTicketRow.BOL;
                 if (!SeedTicketInfo.CurrentSeedTicketRow.IsCommentsNull()) this.txtComment.Text = SeedTicketInfo.CurrentSeedTicketRow.Comments;
@@ -125,17 +123,17 @@ public partial class TicketCreator : System.Web.UI.Page
         {
 
         }
+       
+        lnkGrower.Enabled = !ReadOnly;
 
-        //lnkGrower.Enabled = !ReadOnly;
-        
-        //btnVarieties.Visible = !ReadOnly;
-        //btnTreatments.Visible = !ReadOnly;
-        //btnMisc.Visible = !ReadOnly;
-        //txtBOL.ReadOnly = ReadOnly;
-        //txtComment.ReadOnly = ReadOnly;
-        //txtVehicle.ReadOnly = ReadOnly;
-        //txtPO.ReadOnly = ReadOnly;
-        //pnlTicketDetails.Enabled = !ReadOnly;
+        btnVarieties.Visible = !ReadOnly;
+        btnTreatments.Visible = !ReadOnly;
+        btnMisc.Visible = !ReadOnly;
+        txtBOL.ReadOnly = ReadOnly;
+        txtComment.ReadOnly = ReadOnly;
+        txtVehicle.ReadOnly = ReadOnly;
+        txtPO.ReadOnly = ReadOnly;
+        pnlTicketDetails.Enabled = !ReadOnly;
         SetPLCButtonState();
 
     }
@@ -762,23 +760,19 @@ public partial class TicketCreator : System.Web.UI.Page
 
     protected void btnSave_Click(object sender, EventArgs e)
     {
-       
-        SeedTicketInfo.CurrentSeedTicketRow.Weighmaster = txtWeighmaster.Text;
-        Session["Weighmaster"] = SeedTicketInfo.CurrentSeedTicketRow.Weighmaster;
         SeedTicketInfo.SaveTicket();
         Response.Redirect("~/Default.aspx");
     }
 
     protected void btnComplete_Click(object sender, EventArgs e)
     {
-        SeedTicketInfo.CurrentSeedTicketRow.Weighmaster = txtWeighmaster.Text;
-        Session["Weighmaster"] = SeedTicketInfo.CurrentSeedTicketRow.Weighmaster;
+
         SeedTicketInfo.CompleteTicket();
         Guid UID = SeedTicketInfo.CurrentSeedTicketRow.UID;
         SeedTicketInfo.CurrentSeedTicketRow = null;
         SeedTicketInfo.seedTicketDataSet = null;
-        PrintTicket(UID);
-        Response.Redirect("~/Default.aspx");
+        PrintTicket(UID, 2);
+        
 
 
 
@@ -786,13 +780,11 @@ public partial class TicketCreator : System.Web.UI.Page
 
 
 
-    public void PrintTicket(Guid UID)
+    public void PrintTicket(Guid UID,int Copies=1)
     {
         if (GlobalVars.UsePrinter)
         {
-            int numberOfCopies =int.Parse( ddNumberOfCopies.SelectedValue);
-
-            //   Response.Redirect($"~/PrintTicket?Copies={Copies}&UID={UID}");
+            Response.Redirect($"~/PrintTicket?Copies={Copies}&UID={UID}");
             Printing.Print_Ticket(UID, "", 2);
         }
         else
@@ -804,7 +796,6 @@ public partial class TicketCreator : System.Web.UI.Page
 
     protected void btnPrint_Click(object sender, EventArgs e)
     {
-     
         PrintTicket(SeedTicketInfo.CurrentSeedTicketRow.UID);
 
 
@@ -814,7 +805,6 @@ public partial class TicketCreator : System.Web.UI.Page
     protected void ddPrintDestination_TextChanged(object sender, EventArgs e)
     {
         GlobalVars.UsePrinter = (ddPrintDestination.SelectedIndex == 0) ? true : false;
-        
     }
 
     protected void btnImage_Click(object sender, EventArgs e)

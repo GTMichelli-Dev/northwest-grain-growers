@@ -40,21 +40,7 @@ public class WebService : System.Web.Services.WebService
         
     }
 
-    [WebMethod]
-    [ScriptMethod]
-    public void PrintTicket(Guid UID, int Copies = 1)
-    {
-        if (GlobalVars.UsePrinter)
-        {
-            //   Response.Redirect($"~/PrintTicket?Copies={Copies}&UID={UID}");
-            Printing.Print_Ticket(UID, "", 2);
-        }
-        else
-        {
-            Printing.Send_TicketToBrowser(UID, false);
-        }
 
-    }
 
     [WebMethod]
     [ScriptMethod(UseHttpGet = false, ResponseFormat = ResponseFormat.Json)]

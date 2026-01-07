@@ -7,21 +7,18 @@ using System.Web.UI.WebControls;
 
 public partial class PrintTicket : System.Web.UI.Page
 {
-
-
     public Guid UID
     {
         get
         {
-            Guid uid = Guid.Empty; 
+            Guid uid = Guid.Empty;
             if (Request.QueryString["UID"] == null)
             {
                 Response.Redirect("~/Default.aspx");
             }
             else
             {
-                
-                if (!Guid.TryParse(Request.QueryString["UID"].ToString(),out uid))
+                if (!Guid.TryParse(Request.QueryString["UID"].ToString(), out uid))
                 {
                     Response.Redirect("~/Default.aspx");
                 }
@@ -29,7 +26,6 @@ public partial class PrintTicket : System.Web.UI.Page
             return uid;
         }
     }
-
 
     public int Copies
     {
@@ -44,8 +40,6 @@ public partial class PrintTicket : System.Web.UI.Page
         }
     }
 
-
-
     public bool NonSeed
     {
         get
@@ -53,7 +47,6 @@ public partial class PrintTicket : System.Web.UI.Page
             return (Request.QueryString["NonSeed"] != null);
         }
     }
-
 
     public string TruckId
     {
@@ -67,9 +60,6 @@ public partial class PrintTicket : System.Web.UI.Page
             return Vehicle;
         }
     }
-
-
-
 
     public int Weight
     {
@@ -88,7 +78,7 @@ public partial class PrintTicket : System.Web.UI.Page
     {
         if (!this.IsPostBack)
         {
-            if (NonSeed )
+            if (NonSeed)
             {
                 lblHeader.Text = "Printing Non Seed ticket";
             }
@@ -104,34 +94,56 @@ public partial class PrintTicket : System.Web.UI.Page
                         }
                         else
                         {
-                            lblHeader.Text = (Copies == 1) ? $"Printing Ticket {seed_TicketsDataTable[0].Ticket }" : $"Printing {Copies} Copies Of Ticket {seed_TicketsDataTable[0].Ticket }";
+                            lblHeader.Text = (Copies == 1) ? $"Printing Ticket {seed_TicketsDataTable[0].Ticket}" : $"Printing {Copies} Copies Of Ticket {seed_TicketsDataTable[0].Ticket}";
                         }
                     }
                 }
-
-            }  
+            }
         }
     }
 
-    protected void tmrPrint_Tick(object sender, EventArgs e)
+    protected void ddlCopies_SelectedIndexChanged(object sender, EventArgs e)
     {
-        hfCnt.Value = int.Parse(hfCnt.Value) + 1.ToString();
-        tmrPrint.Enabled = false;
-        if (int.Parse(hfCnt.Value)==1)
-        {
-            if (NonSeed )
-            {
-                Printing.PrintNonSeedTicket(TruckId, Weight, 1);
-            }
-            else
-            {
-                Printing.Print_Ticket(UID, GlobalVars.ReportPrinter, Copies);
-            }
+        hfCnt.Value = ddlCopies.SelectedValue;
+        tmrPrint.Enabled = true;
+    }
 
-            
-            System.Threading.Thread.Sleep(3000);
-            Response.Redirect("~/Default.aspx");
+
+
+
+    protected void btnHidden_Click(object sender, EventArgs e)
+    {
+        hfCnt.Value = ddlCopies.SelectedValue;
+        int copies = int.Parse(hfCnt.Value);
+        if (NonSeed)
+        {
+            Printing.PrintNonSeedTicket(TruckId, Weight, copies);
+        }
+        else
+        {
+            Printing.Print_Ticket(UID, GlobalVars.ReportPrinter, copies);
         }
 
+        System.Threading.Thread.Sleep(3000);
+        Response.Redirect("~/Default.aspx");
+    }
+
+
+
+    protected void tmrPrint_Tick(object sender, EventArgs e)
+    {
+        tmrPrint.Enabled = false;
+        int copies = int.Parse(hfCnt.Value);
+        if (NonSeed)
+        {
+            Printing.PrintNonSeedTicket(TruckId, Weight, copies);
+        }
+        else
+        {
+            Printing.Print_Ticket(UID, GlobalVars.ReportPrinter, copies);
+        }
+
+        System.Threading.Thread.Sleep(3000);
+        Response.Redirect("~/Default.aspx");
     }
 }

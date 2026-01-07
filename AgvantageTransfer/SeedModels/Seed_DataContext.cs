@@ -27,7 +27,15 @@ public partial class Seed_DataContext : DbContext
         {
             entity.HasKey(e => e.Uid);
 
-            entity.ToTable(tb => tb.HasTrigger("UpdateCrop_Varieties"));
+         
+
+            entity.ToTable("Items", tb =>
+            {
+                tb.HasTrigger("UpdateCrop_Varieties");
+                tb.HasTrigger("dbo.MSmerge_del_42B813C36C01448AAC04F74564289034");
+                tb.HasTrigger("dbo.MSmerge_ins_42B813C36C01448AAC04F74564289034");
+                tb.HasTrigger("dbo.MSmerge_upd_42B813C36C01448AAC04F74564289034");
+            });
 
             entity.HasIndex(e => e.Id, "IX_Items").IsUnique();
 
@@ -66,8 +74,14 @@ public partial class Seed_DataContext : DbContext
         {
             entity.HasKey(e => e.Uid).HasName("PK_ItemLocation");
 
-            entity.ToTable("Item_Location", tb => tb.HasTrigger("trigger_Insert_Lot_Analysys"));
-
+           
+            entity.ToTable("Item_Location", tb =>
+            {
+                tb.HasTrigger("trigger_Insert_Lot_Analysys");
+                tb.HasTrigger("dbo.MSmerge_del_AC164A58E68D4720BB15CD7439DCF11D");
+                tb.HasTrigger("dbo.MSmerge_ins_AC164A58E68D4720BB15CD7439DCF11D");
+                tb.HasTrigger("dbo.MSmerge_upd_AC164A58E68D4720BB15CD7439DCF11D");
+            });
             entity.HasIndex(e => new { e.Id, e.LocationId }, "IX_Item_Location_ID_Location").IsUnique();
 
             entity.Property(e => e.Uid)
@@ -83,7 +97,13 @@ public partial class Seed_DataContext : DbContext
         {
             entity.HasKey(e => e.Uid);
 
-            entity.ToTable("Item_Types");
+      
+            entity.ToTable("Item_Types", tb =>
+            {
+                tb.HasTrigger("dbo.MSmerge_del_AED7848748E645D2B2585108063E83F8");
+                tb.HasTrigger("dbo.MSmerge_ins_AED7848748E645D2B2585108063E83F8");
+                tb.HasTrigger("dbo.MSmerge_upd_AED7848748E645D2B2585108063E83F8");
+            });
 
             entity.HasIndex(e => e.Description, "IX_Item_Types").IsUnique();
 
@@ -99,7 +119,12 @@ public partial class Seed_DataContext : DbContext
         {
             entity.HasKey(e => e.Uid).HasName("PK_SeedDepartments");
 
-            entity.ToTable("Seed_Departments");
+            entity.ToTable("Seed_Departments", tb =>
+            {
+                tb.HasTrigger("dbo.MSmerge_del_4949DCE28B6A4D0193D5097F9DDFF4B1");
+                tb.HasTrigger("dbo.MSmerge_ins_4949DCE28B6A4D0193D5097F9DDFF4B1");
+                tb.HasTrigger("dbo.MSmerge_upd_4949DCE28B6A4D0193D5097F9DDFF4B1");
+            });
 
             entity.HasIndex(e => e.Id, "IX_SeedDepartments").IsUnique();
 

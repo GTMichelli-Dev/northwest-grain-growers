@@ -1,5 +1,4 @@
-﻿
-using Agvantage_Transfer.Logging;
+﻿using Agvantage_Transfer.Logging;
 using Agvantage_Transfer.NwModels;
 using DocumentFormat.OpenXml.Office2010.Excel;
 using DocumentFormat.OpenXml.Spreadsheet;
@@ -11,10 +10,10 @@ public sealed class ProducerSyncService : IProducerSyncService
 {
     private readonly NW_DataContext _nw;
     private readonly ITransferLogger _log;
-   
+
     public ProducerSyncService(NW_DataContext nw, ITransferLogger log)
     {
-        
+
         _nw = nw;
         _log = log;
     }
@@ -73,6 +72,7 @@ public sealed class ProducerSyncService : IProducerSyncService
 
             foreach (var x in incoming)
             {
+               
                 // Rule 1: duplicate ID in DTO -> exclude + warn
                 if (!seenIds.Add(x.Id))
                 {
@@ -84,28 +84,44 @@ public sealed class ProducerSyncService : IProducerSyncService
                 // Rule 1: duplicate Description in DTO (normalized) -> exclude + warn
                 if (!seenNames.Add(x.Key))
                 {
-                    dupName++;
-                    await _log.WarnAsync($"Producer DTO duplicate Description '{x.Desc}' — excluding Id {x.Id}.", "NW_Data - Producers");
-                    continue;
+                    try
+                    {
+                        dupName++;
+                        await _log.WarnAsync($"Producer DTO duplicate Description '{x.Desc}' — excluding Id {x.Id}.", "NW_Data - Producers");
+                        continue;
+                    }
+                    catch (Exception ex)
+                    {
+                        await _log.WarnAsync($"Error during logging duplicate Description for Producer DTO Id {x.Id} '{x.Desc}': {TransferLogger.UsefulMessage(ex)}", "NW_Data - Producers");
+                    }
+
                 }
 
                 // Rule 2: DTO.Id does not exist in Producers -> mark inactive + exclude + warn
-                if (!byId.ContainsKey(x.Id))
-                {
-                    idMissing++;
-                    // mark inactive on the DTO instance (local)
-                    x.Raw.Active = false;
-                    await _log.WarnAsync($"Producer DTO Id {x.Id} not found in Producers — marking inactive and excluding '{x.Desc}'.", "NW_Data - Producers");
-                    continue;
-                }
+                //if (!byId.ContainsKey(x.Id))
+                //{
+                //    idMissing++;
+                //    // mark inactive on the DTO instance (local)
+                //    x.Raw.Active = false;
+                //    await _log.WarnAsync($"Producer DTO Id {x.Id} not found in Producers — marking inactive and excluding '{x.Desc}'.", "NW_Data - Producers");
+                //    continue;
+                //}
 
                 // Rule 3: same Description exists in Producers but bound to a different Id -> exclude + warn
                 if (byName.TryGetValue(x.Key, out var prodsWithName) && prodsWithName.Any(p => p.Id != x.Id))
                 {
-                    nameIdClash++;
-                    var otherIds = string.Join(", ", prodsWithName.Select(p => p.Id).Distinct().OrderBy(v => v));
-                    await _log.WarnAsync($"Description '{x.Desc}' already used by Producer Id(s) [{otherIds}] — excluding DTO Id {x.Id}.", "NW_Data - Producers");
-                    continue;
+                    try
+                    {
+                        nameIdClash++;
+                        var otherIds = string.Join(", ", prodsWithName.Select(p => p.Id).Distinct().OrderBy(v => v));
+                        await _log.WarnAsync($"Description '{x.Desc}' already used by Producer Id(s) [{otherIds}] — excluding DTO Id {x.Id}.", "NW_Data - Producers");
+                        continue;
+                    }
+                    catch (Exception ex)
+                    {
+                        await _log.WarnAsync($"Error during logging name/ID clash for Producer DTO Id {x.Id} '{x.Desc}': {TransferLogger.UsefulMessage(ex)}", "NW_Data - Producers");
+                    }
+
                 }
 
                 // Accept this DTO for update-by-Id
@@ -117,77 +133,115 @@ public sealed class ProducerSyncService : IProducerSyncService
             // Update only existing Producer rows matched by Id
             foreach (var x in accepted)
             {
-                // Multiple DB rows with same Id is possible; update the first and warn about extras
-                var rows = byId[x.Id];
-                if (rows.Count > 1)
+                try
                 {
-                    await _log.WarnAsync($"Multiple Producer rows found for Id {x.Id} — updating the first, please dedupe DB.", "NW_Data - Producers");
+                    // Check if the Id exists in the byId dictionary
+                    if (!byId.TryGetValue(x.Id, out List<Producer> rows))
+                    {
+                        // If the Id does not exist, create a new Producer row
+                        var newProducer = new Producer
+                        {
+                            Id = x.Id,
+                            Description = x.Desc,
+                            Active = x.Active,
+                            EmailAddress = x.EmailAddress,
+                            EmailWs = x.EmailWs,
+                            PrintWs = x.PrintWs,
+                            CompanyName = x.CompanyName,
+                            CustomerName1 = x.CustomerName1,
+                            CustomerName2 = x.CustomerName2,
+                            Address1 = x.Address1,
+                            Address2 = x.Address2,
+                            City = x.City,
+                            State = x.State,
+                            Zip1 = x.Zip1,
+                            Zip2 = x.Zip2,
+                            HomePhone = x.HomePhone,
+                            WorkPhone = x.WorkPhone,
+                            MobilePhone = x.MobilePhone,
+                            Phone = x.Phone,
+                            Member = x.Member
+                        };
+
+                        // Add the new Producer to the database context
+                        _nw.Producers.Add(newProducer);
+                        await _log.InfoAsync($"Created new Producer with Id {x.Id} and Description '{x.Desc}'.", "NW_Data - Producers");
+                        continue;
+                    }
+
+                    // If multiple rows exist for the same Id, warn and update the first
+                    if (rows.Count > 1)
+                    {
+                        await _log.WarnAsync($"Multiple Producer rows found for Id {x.Id} — updating the first, please dedupe DB.", "NW_Data - Producers");
+                    }
+
+                    var p = rows[0];
+                    bool changed = false;
+
+                    // Update existing Producer properties
+                    if (!string.Equals(p.Description, x.Desc, StringComparison.Ordinal))
+                    { p.Description = x.Desc; changed = true; }
+
+                    if (p.Active != x.Active) { p.Active = x.Active; changed = true; }
+
+                    if (!string.Equals(p.EmailAddress, x.EmailAddress, StringComparison.OrdinalIgnoreCase))
+                    { p.EmailAddress = x.EmailAddress; changed = true; }
+
+                    if (p.EmailWs != x.EmailWs) { p.EmailWs = x.EmailWs; changed = true; }
+                    if (p.PrintWs != x.PrintWs) { p.PrintWs = x.PrintWs; changed = true; }
+
+                    if (!string.Equals(p.CompanyName, x.CompanyName, StringComparison.Ordinal))
+                    { p.CompanyName = x.CompanyName; changed = true; }
+
+                    if (!string.Equals(p.CustomerName1, x.CustomerName1, StringComparison.Ordinal))
+                    { p.CustomerName1 = x.CustomerName1; changed = true; }
+
+                    if (!string.Equals(p.CustomerName2, x.CustomerName2, StringComparison.Ordinal))
+                    { p.CustomerName2 = x.CustomerName2; changed = true; }
+
+                    if (!string.Equals(p.Address1, x.Address1, StringComparison.Ordinal))
+                    { p.Address1 = x.Address1; changed = true; }
+
+                    if (!string.Equals(p.Address2, x.Address2, StringComparison.Ordinal))
+                    { p.Address2 = x.Address2; changed = true; }
+
+                    if (!string.Equals(p.City, x.City, StringComparison.Ordinal))
+                    { p.City = x.City; changed = true; }
+
+                    if (!string.Equals(p.State, x.State, StringComparison.Ordinal))
+                    { p.State = x.State; changed = true; }
+
+                    if (!string.Equals(p.Zip1, x.Zip1, StringComparison.Ordinal))
+                    { p.Zip1 = x.Zip1; changed = true; }
+
+                    if (!string.Equals(p.Zip2, x.Zip2, StringComparison.Ordinal))
+                    { p.Zip2 = x.Zip2; changed = true; }
+
+                    if (!string.Equals(p.HomePhone, x.HomePhone, StringComparison.Ordinal))
+                    { p.HomePhone = x.HomePhone; changed = true; }
+
+                    if (!string.Equals(p.WorkPhone, x.WorkPhone, StringComparison.Ordinal))
+                    { p.WorkPhone = x.WorkPhone; changed = true; }
+
+                    if (!string.Equals(p.MobilePhone, x.MobilePhone, StringComparison.Ordinal))
+                    { p.MobilePhone = x.MobilePhone; changed = true; }
+
+                    if (!string.Equals(p.Phone, x.Phone, StringComparison.Ordinal))
+                    { p.Phone = x.Phone; changed = true; }
+
+                    if (!string.Equals(p.Member, x.Member, StringComparison.Ordinal))
+                    { p.Member = x.Member; changed = true; }
+
+                    if (changed) updated++;
                 }
-
-                var p = rows[0];
-                bool changed = false;
-
-                // Keep Description aligned to DTO unless it would violate Rule 3 (guarded above)
-                if (!string.Equals(p.Description, x.Desc, StringComparison.Ordinal))
-                { p.Description = x.Desc; changed = true; }
-
-                if (p.Active != x.Active) { p.Active = x.Active; changed = true; }
-
-                if (!string.Equals(p.EmailAddress, x.EmailAddress, StringComparison.OrdinalIgnoreCase))
-                { p.EmailAddress = x.EmailAddress; changed = true; }
-
-                if (p.EmailWs != x.EmailWs) { p.EmailWs = x.EmailWs; changed = true; }
-                if (p.PrintWs != x.PrintWs) { p.PrintWs = x.PrintWs; changed = true; }
-
-                if (!string.Equals(p.CompanyName, x.CompanyName, StringComparison.Ordinal))
-                { p.CompanyName = x.CompanyName; changed = true; }
-
-                if (!string.Equals(p.CustomerName1, x.CustomerName1, StringComparison.Ordinal))
-                { p.CustomerName1 = x.CustomerName1; changed = true; }
-
-                if (!string.Equals(p.CustomerName2, x.CustomerName2, StringComparison.Ordinal))
-                { p.CustomerName2 = x.CustomerName2; changed = true; }
-
-                if (!string.Equals(p.Address1, x.Address1, StringComparison.Ordinal))
-                { p.Address1 = x.Address1; changed = true; }
-
-                if (!string.Equals(p.Address2, x.Address2, StringComparison.Ordinal))
-                { p.Address2 = x.Address2; changed = true; }
-
-                if (!string.Equals(p.City, x.City, StringComparison.Ordinal))
-                { p.City = x.City; changed = true; }
-
-                if (!string.Equals(p.State, x.State, StringComparison.Ordinal))
-                { p.State = x.State; changed = true; }
-
-                if (!string.Equals(p.Zip1, x.Zip1, StringComparison.Ordinal))
-                { p.Zip1 = x.Zip1; changed = true; }
-
-                if (!string.Equals(p.Zip2, x.Zip2, StringComparison.Ordinal))
-                { p.Zip2 = x.Zip2; changed = true; }
-
-                if (!string.Equals(p.HomePhone, x.HomePhone, StringComparison.Ordinal))
-                { p.HomePhone = x.HomePhone; changed = true; }
-
-                if (!string.Equals(p.WorkPhone, x.WorkPhone, StringComparison.Ordinal))
-                { p.WorkPhone = x.WorkPhone; changed = true; }
-
-                if (!string.Equals(p.MobilePhone, x.MobilePhone, StringComparison.Ordinal))
-                { p.MobilePhone = x.MobilePhone; changed = true; }
-
-                if (!string.Equals(p.Phone, x.Phone, StringComparison.Ordinal))
-                { p.Phone = x.Phone; changed = true; }
-
-                if (!string.Equals(p.Member, x.Member, StringComparison.Ordinal))
-                { p.Member = x.Member; changed = true; }
-
-                if (changed) updated++;
+                catch (Exception ex)
+                {
+                    await _log.WarnAsync($"Error updating Producer Id {x.Id} '{x.Desc}': {TransferLogger.UsefulMessage(ex)}", "NW_Data - Producers");
+                }
             }
 
-           
-                await _log.InfoAsync(
-                    $"Producers Update — skipped due to rules: duplicateId={dupId}, duplicateDesc={dupName}, idMissingInDB={idMissing}, descIdClash={nameIdClash}.", "NW_Data - Producers");
-           
+            await _log.InfoAsync($"Producers Update — skipped due to rules: duplicateId={dupId}, duplicateDesc={dupName}, idMissingInDB={idMissing}, descIdClash={nameIdClash}.", "NW_Data - Producers");
+
             await _nw.SaveChangesAsync();
             _nw.ChangeTracker.Clear();
         }

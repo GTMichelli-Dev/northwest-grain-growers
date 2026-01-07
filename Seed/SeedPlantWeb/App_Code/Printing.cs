@@ -55,7 +55,6 @@ public class Printing
                         SeedTicket.Subreports[1].SetDataSource(reportDataSet);
                         SeedTicket.Subreports[2].SetDataSource(reportDataSet);
                         SeedTicket.Subreports[3].SetDataSource(reportDataSet);
-                        SeedTicket.Subreports[4].SetDataSource(reportDataSet);
 
                         //see if the printer is valid 
                         bool ValidPrinter = false;
@@ -389,12 +388,11 @@ public class Printing
                     {
                         ticketReport.Load(HttpContext.Current.Server.MapPath("~/Reports/OutboundSeedTicket.rpt"));
                         ticketReport.SetDataSource(reportDataset );
-                 
                         ticketReport.Subreports[0].SetDataSource(reportDataset);
                         ticketReport.Subreports[1].SetDataSource(reportDataset);
                         ticketReport.Subreports[2].SetDataSource(reportDataset);
-                        ticketReport.Subreports[3].SetDataSource(reportDataset);
-                        ticketReport.Subreports[4].SetDataSource(reportDataset);
+
+
 
                         System.IO.Stream ms = ticketReport.ExportToStream(ExportFormatType.PortableDocFormat);
                         MemoryStream stream = new MemoryStream();
@@ -431,7 +429,7 @@ public class Printing
         }
         using (ReportDataSet reportDataSet = new ReportDataSet())
         {
-            using ( ReportDataSetTableAdapters.TicketLocationTableAdapter ticketLocationTableAdapter = new ReportDataSetTableAdapters.TicketLocationTableAdapter())
+            using (ReportDataSetTableAdapters.TicketLocationTableAdapter ticketLocationTableAdapter = new ReportDataSetTableAdapters.TicketLocationTableAdapter())
             {
                 ticketLocationTableAdapter.FillByCSVTickets(reportDataSet.TicketLocation, TicketFilter);
             }
@@ -563,7 +561,6 @@ public class Printing
                         ticketReport.Subreports[1].SetDataSource(reportDataset);
                         ticketReport.Subreports[2].SetDataSource(reportDataset);
                         ticketReport.Subreports[3].SetDataSource(reportDataset);
-                        ticketReport.Subreports[4].SetDataSource(reportDataset);
 
                         ExportOptions exportOpts = new ExportOptions();
                         exportOpts.ExportFormatType = ExportFormatType.PortableDocFormat;
@@ -621,7 +618,6 @@ public class Printing
                         ticketReport.Subreports[1].SetDataSource(reportDataset);
                         ticketReport.Subreports[2].SetDataSource(reportDataset);
                         ticketReport.Subreports[3].SetDataSource(reportDataset);
-                        ticketReport.Subreports[4].SetDataSource(reportDataset);
 
                         ExportOptions exportOpts = new ExportOptions();
                         exportOpts.ExportFormatType = ExportFormatType.PortableDocFormat;

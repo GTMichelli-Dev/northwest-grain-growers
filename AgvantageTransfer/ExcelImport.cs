@@ -115,7 +115,10 @@ public sealed class ExcelImport( ITransferLogger log)
             bool active = !(activeToken == "I" || activeToken == "D");
 
             string email = row.Cell(4).GetValue<string>()?.Trim() ?? string.Empty;
-
+            if (id == 700970)
+            {
+                Console.WriteLine($"Debug: Producer 700970 email='{email}'");
+            }
             var dto = new AgvantageProducerDTO
             {
                 Id = id,
