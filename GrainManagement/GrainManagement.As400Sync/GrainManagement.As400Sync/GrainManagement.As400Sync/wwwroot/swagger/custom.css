@@ -1,0 +1,39 @@
+﻿/* ===== NW Grain Growers – Swagger Branding ===== */
+
+/* Top bar background */
+.swagger-ui .topbar {
+    background-color: #3f6f2a !important; /* NWGG dark green */
+    border-bottom: 3px solid #c7a64b; /* NWGG gold */
+}
+
+    /* Force proper layout */
+    .swagger-ui .topbar .topbar-wrapper {
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    /* 🔥 REMOVE Swagger logo + link entirely */
+    .swagger-ui .topbar .link {
+        display: none !important;
+    }
+
+    /* 🔥 INSERT database logo */
+    .swagger-ui .topbar .topbar-wrapper::before {
+        content: "";
+        display: inline-block;
+        width: 34px;
+        height: 34px;
+        background-image: url("/swagger/db-logo.png");
+        background-repeat: no-repeat;
+        background-size: contain;
+        margin-right: 12px;
+    }
+
+    /* Service title */
+    .swagger-ui .topbar .topbar-wrapper::after {
+        content: "GrainManagement • AS400 Sync";
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+    }

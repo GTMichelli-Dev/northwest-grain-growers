@@ -7,26 +7,19 @@ namespace GrainManagement.As400Sync;
 public sealed class As400SyncWorker : BackgroundService
 {
     private readonly ILogger<As400SyncWorker> _log;
-    private readonly As400Reader _as400;
-    private readonly AccountsUpserter _accountUpserter;
-    private readonly ProductItemsUpserter _productUpserter;
-    private readonly SplitGroupsUpserter _splitGroupsUpserter;
-
+    private readonly As400SyncRunner _runner;
+    private readonly SyncCoordinator _coord;
     private readonly As400SyncOptions _opt;
 
     public As400SyncWorker(
         ILogger<As400SyncWorker> log,
-    As400Reader as400,
-    AccountsUpserter accountUpserter,
-    IOptions<As400SyncOptions> opt,
-    ProductItemsUpserter productUpserter,
-    SplitGroupsUpserter splitGroupsUpserter)
+        As400SyncRunner runner,
+        SyncCoordinator coord,
+        IOptions<As400SyncOptions> opt)
     {
         _log = log;
-        _as400 = as400;
-        _accountUpserter = accountUpserter;
-        _productUpserter = productUpserter;
-        _splitGroupsUpserter = splitGroupsUpserter;
+        _runner = runner;
+        _coord = coord;
         _opt = opt.Value;
     }
 
@@ -34,77 +27,37 @@ public sealed class As400SyncWorker : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var runStartedUtc = DateTime.UtcNow;
-
-
             try
             {
-                _log.LogInformation("AS400 sync start at {Utc}", runStartedUtc);
-
-                var syncRunId = Guid.NewGuid();
+                // Run in the same order you had before, but each run respects the lock.
                 if (_opt.SyncAccounts)
-                {
-                    int accountCount = 0;
+                    await RunIfNotRunningAsync(SyncJob.Accounts, stoppingToken);
 
-                    await foreach (var row in _as400.ReadAccountsAsync(stoppingToken))
-                    {
-                      
-
-
-                        await _accountUpserter.UpsertAsync(row, syncRunId, DateTime.UtcNow, stoppingToken);
-                        accountCount++;
-
-                        if (accountCount % Math.Max(1, _opt.BatchSize) == 0)
-                            _log.LogInformation("Upserted {Count} account rows...", accountCount);
-                    }
-
-                    // Mark any AS400-sourced accounts not seen in this run as inactive.
-                    await _accountUpserter.MarkMissingAsInactiveAsync(syncRunId, stoppingToken);
-
-                    _log.LogInformation("Accounts sync completed. Upserted={Count} SyncRunId={SyncRunId}", accountCount, syncRunId);
-                }
                 if (_opt.SyncProducts)
-                {
-                    int count = 0;
+                    await RunIfNotRunningAsync(SyncJob.Products, stoppingToken);
 
-                    await foreach (var row in _as400.ReadAllProductItemsAsync(stoppingToken))
-                    {
-                        await _productUpserter.UpsertAsync(row, syncRunId, DateTime.UtcNow, stoppingToken);
-                        count++;
-                    }
-
-                    await _productUpserter.MarkMissingAsInactiveAsync(syncRunId, DateTime.UtcNow, stoppingToken);
-
-                    _log.LogInformation("Products sync completed. Upserted={Count} SyncRunId={SyncRunId}",
-                        count, syncRunId);
-                }
                 if (_opt.SyncSplitGroups)
-                {
-                    var rows = new List<As400LandlordSplitPercentRow>(capacity: 50_000);
-
-                    await foreach (var row in _as400.ReadLandlordSplitPercentsAsync(stoppingToken))
-                        rows.Add(row);
-
-                    await _splitGroupsUpserter.UpsertAsync(rows, stoppingToken);
-
-                    _log.LogInformation("SplitGroups sync complete. Rows={Count}", rows.Count);
-                }
-
-
-
-                _log.LogInformation("AS400 sync completed.");
+                    await RunIfNotRunningAsync(SyncJob.SplitGroups, stoppingToken);
             }
             catch (Exception ex)
             {
-                _log.LogError(ex, "AS400 sync failed");
+                _log.LogError(ex, "AS400 sync worker loop failed");
             }
-
-
-
-
 
             var delay = TimeSpan.FromMinutes(Math.Max(1, _opt.RunEveryMinutes));
             await Task.Delay(delay, stoppingToken);
         }
+    }
+
+    private async Task RunIfNotRunningAsync(SyncJob job, CancellationToken ct)
+    {
+        await using var lease = await _coord.TryAcquireAsync(job, ct);
+        if (lease is null)
+        {
+            _log.LogInformation("{Job} sync skipped (already running).", job);
+            return;
+        }
+
+        await _runner.RunAsync(job, ct);
     }
 }
