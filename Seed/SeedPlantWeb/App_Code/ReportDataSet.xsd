@@ -682,17 +682,23 @@ WHERE        (ID = @ID)</CommandText>
           </TableAdapter>
           <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="ClearfieldCoxamiumTicketsTableAdapter" GeneratorDataComponentClassName="ClearfieldCoxamiumTicketsTableAdapter" Name="ClearfieldCoxamiumTickets" UserDataComponentName="ClearfieldCoxamiumTicketsTableAdapter">
             <MainSource>
-              <DbSource ConnectionRef="Seed_DataConnectionString (Web.config)" DbObjectName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN Dept = 71 OR dept = 72 OR Dept = 74 THEN 1 ELSE 0 END AS Clearfield, CASE WHEN Dept = 73 OR Dept = 75 THEN 1 ELSE 0 END AS Coxamium FROM Seed_Ticket_Varieties INNER JOIN Seed_Tickets ON Seed_Ticket_Varieties.Seed_Ticket_UID = Seed_Tickets.UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+              <DbSource ConnectionRef="Seed_DataConnectionString (Web.config)" DbObjectName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN EXISTS (SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75)) THEN 0 ELSE CASE WHEN Dept IN (71, 72, 74) THEN 1 ELSE 0 END END AS Clearfield, CASE WHEN EXISTS (SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75)) THEN 0 ELSE CASE WHEN Dept IN (73, 75) THEN 1 ELSE 0 END END AS Coxamium FROM Seed_Tickets INNER JOIN Seed_Ticket_Varieties ON Seed_Tickets.UID = Seed_Ticket_Varieties.Seed_Ticket_UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
                 <SelectCommand>
                   <DbCommand CommandType="Text" ModifiedByUser="true">
-                    <CommandText>SELECT   Ticket, UID, convert(bit,SUM(Clearfield)) as  Clearfield, convert(bit, Sum(Coxamium)) AS Coxamium
-FROM     (SELECT        Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN Dept = 71 OR
-                                                    dept = 72 OR
-                                                    Dept = 74 THEN 1 ELSE 0 END AS Clearfield, CASE WHEN Dept = 73 OR
-                                                    Dept = 75 THEN 1 ELSE 0 END AS Coxamium
-             FROM      Seed_Ticket_Varieties INNER JOIN
-                           Seed_Tickets ON Seed_Ticket_Varieties.Seed_Ticket_UID = Seed_Tickets.UID INNER JOIN
-                           Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id) AS tbl
+                    <CommandText>SELECT        Ticket, UID, CONVERT(bit, SUM(Clearfield)) AS Clearfield, CONVERT(bit, SUM(Coxamium)) AS Coxamium
+FROM            (SELECT        Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN EXISTS
+                                                        (SELECT        1
+                                                          FROM            Seed_Ticket_Varieties stv INNER JOIN
+                                                                                    Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id
+                                                          WHERE        stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75)) THEN 0 ELSE CASE WHEN Dept IN (71, 72, 74) THEN 1 ELSE 0 END END AS Clearfield, 
+                                                    CASE WHEN EXISTS
+                                                        (SELECT        1
+                                                          FROM            Seed_Ticket_Varieties stv INNER JOIN
+                                                                                    Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id
+                                                          WHERE        stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75)) THEN 0 ELSE CASE WHEN Dept IN (73, 75) THEN 1 ELSE 0 END END AS Coxamium
+                          FROM            Seed_Tickets INNER JOIN
+                                                    Seed_Ticket_Varieties ON Seed_Tickets.UID = Seed_Ticket_Varieties.Seed_Ticket_UID INNER JOIN
+                                                    Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id) AS tbl
 GROUP BY Ticket, UID</CommandText>
                     <Parameters />
                   </DbCommand>
@@ -706,17 +712,50 @@ GROUP BY Ticket, UID</CommandText>
               <Mapping SourceColumn="Coxamium" DataSetColumn="Coxamium" />
             </Mappings>
             <Sources>
-              <DbSource ConnectionRef="Seed_DataConnectionString (Web.config)" DbObjectName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN Dept = 71 OR dept = 72 OR Dept = 74 THEN 1 ELSE 0 END AS Clearfield, CASE WHEN Dept = 73 OR Dept = 75 THEN 1 ELSE 0 END AS Coxamium FROM Seed_Ticket_Varieties INNER JOIN Seed_Tickets ON Seed_Ticket_Varieties.Seed_Ticket_UID = Seed_Tickets.UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByCSVTickets" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByCSVTickets" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy" UserSourceName="FillByCSVTickets">
+              <DbSource ConnectionRef="Seed_DataConnectionString (Web.config)" DbObjectName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN EXISTS ( SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75) ) THEN 0 ELSE CASE WHEN Dept IN (71, 72, 74) THEN 1 ELSE 0 END END AS Clearfield, CASE WHEN EXISTS ( SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75) ) THEN 0 ELSE CASE WHEN Dept IN (73, 75) THEN 1 ELSE 0 END END AS Coxamium FROM Seed_Tickets INNER JOIN Seed_Ticket_Varieties ON Seed_Tickets.UID = Seed_Ticket_Varieties.Seed_Ticket_UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByCSVTickets" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByCSVTickets" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy" UserSourceName="FillByCSVTickets">
                 <SelectCommand>
                   <DbCommand CommandType="Text" ModifiedByUser="true">
-                    <CommandText>SELECT        tbl.Ticket, tbl.UID, CONVERT(bit, SUM(tbl.Clearfield)) AS Clearfield, CONVERT(bit, SUM(tbl.Coxamium)) AS Coxamium
-FROM            (SELECT        Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN Dept = 71 OR
-                                                    dept = 72 OR
-                                                    Dept = 74 THEN 1 ELSE 0 END AS Clearfield, CASE WHEN Dept = 73 OR
-                                                    Dept = 75 THEN 1 ELSE 0 END AS Coxamium
-                          FROM            Seed_Ticket_Varieties INNER JOIN
-                                                    Seed_Tickets ON Seed_Ticket_Varieties.Seed_Ticket_UID = Seed_Tickets.UID INNER JOIN
-                                                    Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id) AS tbl INNER JOIN
+                    <CommandText>
+
+SELECT        tbl.Ticket, tbl.UID, CONVERT(bit, SUM(tbl.Clearfield)) AS Clearfield, CONVERT(bit, SUM(tbl.Coxamium)) AS Coxamium
+FROM            (SELECT 
+    Seed_Tickets.Ticket,
+    Seed_Tickets.UID,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 
+            FROM Seed_Ticket_Varieties stv 
+            INNER JOIN Seed_Varieties sv 
+            ON stv.Variety_ID = sv.Item_Id
+            WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID 
+              AND sv.Dept NOT IN (72, 74, 73, 75)
+        ) THEN 0
+        ELSE CASE 
+                WHEN Dept IN (71, 72, 74) THEN 1 
+                ELSE 0 
+             END 
+    END AS Clearfield,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 
+            FROM Seed_Ticket_Varieties stv 
+            INNER JOIN Seed_Varieties sv 
+            ON stv.Variety_ID = sv.Item_Id
+            WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID 
+              AND sv.Dept NOT IN (72, 74, 73, 75)
+        ) THEN 0
+        ELSE CASE 
+                WHEN Dept IN (73, 75) THEN 1 
+                ELSE 0 
+             END 
+    END AS Coxamium
+FROM 
+    Seed_Tickets
+INNER JOIN 
+    Seed_Ticket_Varieties ON Seed_Tickets.UID = Seed_Ticket_Varieties.Seed_Ticket_UID
+INNER JOIN 
+    Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID 
+                   AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id) AS tbl INNER JOIN
                              (SELECT        CONVERT(int, Name) AS Ticket
                                FROM            dbo.splitstring(@Tickets) AS splitstring_1) AS derivedtbl_1 ON tbl.Ticket = derivedtbl_1.Ticket
 GROUP BY tbl.Ticket, tbl.UID</CommandText>
@@ -726,40 +765,106 @@ GROUP BY tbl.Ticket, tbl.UID</CommandText>
                   </DbCommand>
                 </SelectCommand>
               </DbSource>
-              <DbSource ConnectionRef="Seed_DataConnectionString (Web.config)" DbObjectName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN Dept = 71 OR dept = 72 OR Dept = 74 THEN 1 ELSE 0 END AS Clearfield, CASE WHEN Dept = 73 OR Dept = 75 THEN 1 ELSE 0 END AS Coxamium FROM Seed_Ticket_Varieties INNER JOIN Seed_Tickets ON Seed_Ticket_Varieties.Seed_Ticket_UID = Seed_Tickets.UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByTicket" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByTicket" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy1" UserSourceName="FillByTicket">
+              <DbSource ConnectionRef="Seed_DataConnectionString (Web.config)" DbObjectName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN EXISTS ( SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75) ) THEN 0 ELSE CASE WHEN Dept IN (71, 72, 74) THEN 1 ELSE 0 END END AS Clearfield, CASE WHEN EXISTS ( SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75) ) THEN 0 ELSE CASE WHEN Dept IN (73, 75) THEN 1 ELSE 0 END END AS Coxamium FROM Seed_Tickets INNER JOIN Seed_Ticket_Varieties ON Seed_Tickets.UID = Seed_Ticket_Varieties.Seed_Ticket_UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByTicket" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByTicket" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy1" UserSourceName="FillByTicket">
                 <SelectCommand>
                   <DbCommand CommandType="Text" ModifiedByUser="true">
-                    <CommandText>SELECT   Ticket, UID, CONVERT(bit, SUM(Clearfield)) AS Clearfield, CONVERT(bit, SUM(Coxamium)) AS Coxamium
-FROM     (SELECT        Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN Dept = 71 OR
-                                                    dept = 72 OR
-                                                    Dept = 74 THEN 1 ELSE 0 END AS Clearfield, CASE WHEN Dept = 73 OR
-                                                    Dept = 75 THEN 1 ELSE 0 END AS Coxamium
-             FROM      Seed_Ticket_Varieties INNER JOIN
-                           Seed_Tickets ON Seed_Ticket_Varieties.Seed_Ticket_UID = Seed_Tickets.UID INNER JOIN
-                           Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id) AS tbl
+                    <CommandText>
+
+SELECT   Ticket, UID, CONVERT(bit, SUM(Clearfield)) AS Clearfield, CONVERT(bit, SUM(Coxamium)) AS Coxamium
+FROM     (SELECT 
+    Seed_Tickets.Ticket,
+    Seed_Tickets.UID,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 
+            FROM Seed_Ticket_Varieties stv 
+            INNER JOIN Seed_Varieties sv 
+            ON stv.Variety_ID = sv.Item_Id
+            WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID 
+              AND sv.Dept NOT IN (72, 74, 73, 75)
+        ) THEN 0
+        ELSE CASE 
+                WHEN Dept IN (71, 72, 74) THEN 1 
+                ELSE 0 
+             END 
+    END AS Clearfield,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 
+            FROM Seed_Ticket_Varieties stv 
+            INNER JOIN Seed_Varieties sv 
+            ON stv.Variety_ID = sv.Item_Id
+            WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID 
+              AND sv.Dept NOT IN (72, 74, 73, 75)
+        ) THEN 0
+        ELSE CASE 
+                WHEN Dept IN (73, 75) THEN 1 
+                ELSE 0 
+             END 
+    END AS Coxamium
+FROM 
+    Seed_Tickets
+INNER JOIN 
+    Seed_Ticket_Varieties ON Seed_Tickets.UID = Seed_Ticket_Varieties.Seed_Ticket_UID
+INNER JOIN 
+    Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID 
+                   AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id) AS tbl
 GROUP BY Ticket, UID
 HAVING   (Ticket = @Ticket)</CommandText>
                     <Parameters>
-                      <Parameter AllowDbNull="true" AutogeneratedName="Ticket" ColumnName="Ticket" DataSourceName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN Dept = 71 OR dept = 72 OR Dept = 74 THEN 1 ELSE 0 END AS Clearfield, CASE WHEN Dept = 73 OR Dept = 75 THEN 1 ELSE 0 END AS Coxamium FROM Seed_Ticket_Varieties INNER JOIN Seed_Tickets ON Seed_Ticket_Varieties.Seed_Ticket_UID = Seed_Tickets.UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Ticket" Precision="0" Scale="0" Size="4" SourceColumn="Ticket" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="true" AutogeneratedName="Ticket" ColumnName="Ticket" DataSourceName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN EXISTS ( SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75) ) THEN 0 ELSE CASE WHEN Dept IN (71, 72, 74) THEN 1 ELSE 0 END END AS Clearfield, CASE WHEN EXISTS ( SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75) ) THEN 0 ELSE CASE WHEN Dept IN (73, 75) THEN 1 ELSE 0 END END AS Coxamium FROM Seed_Tickets INNER JOIN Seed_Ticket_Varieties ON Seed_Tickets.UID = Seed_Ticket_Varieties.Seed_Ticket_UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Ticket" Precision="0" Scale="0" Size="4" SourceColumn="Ticket" SourceColumnNullMapping="false" SourceVersion="Current" />
                     </Parameters>
                   </DbCommand>
                 </SelectCommand>
               </DbSource>
-              <DbSource ConnectionRef="Seed_DataConnectionString (Web.config)" DbObjectName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN Dept = 71 OR dept = 72 OR Dept = 74 THEN 1 ELSE 0 END AS Clearfield, CASE WHEN Dept = 73 OR Dept = 75 THEN 1 ELSE 0 END AS Coxamium FROM Seed_Ticket_Varieties INNER JOIN Seed_Tickets ON Seed_Ticket_Varieties.Seed_Ticket_UID = Seed_Tickets.UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByUID" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByUID" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy2" UserSourceName="FillByUID">
+              <DbSource ConnectionRef="Seed_DataConnectionString (Web.config)" DbObjectName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN EXISTS ( SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75) ) THEN 0 ELSE CASE WHEN Dept IN (71, 72, 74) THEN 1 ELSE 0 END END AS Clearfield, CASE WHEN EXISTS ( SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75) ) THEN 0 ELSE CASE WHEN Dept IN (73, 75) THEN 1 ELSE 0 END END AS Coxamium FROM Seed_Tickets INNER JOIN Seed_Ticket_Varieties ON Seed_Tickets.UID = Seed_Ticket_Varieties.Seed_Ticket_UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByUID" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByUID" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy2" UserSourceName="FillByUID">
                 <SelectCommand>
                   <DbCommand CommandType="Text" ModifiedByUser="true">
-                    <CommandText>SELECT        Ticket, UID, CONVERT(bit, SUM(Clearfield)) AS Clearfield, CONVERT(bit, SUM(Coxamium)) AS Coxamium
-FROM            (SELECT        Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN Dept = 71 OR
-                                                    dept = 72 OR
-                                                    Dept = 74 THEN 1 ELSE 0 END AS Clearfield, CASE WHEN Dept = 73 OR
-                                                    Dept = 75 THEN 1 ELSE 0 END AS Coxamium
-                          FROM            Seed_Ticket_Varieties INNER JOIN
-                                                    Seed_Tickets ON Seed_Ticket_Varieties.Seed_Ticket_UID = Seed_Tickets.UID INNER JOIN
-                                                    Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id) AS tbl
+                    <CommandText>
+
+SELECT        Ticket, UID, CONVERT(bit, SUM(Clearfield)) AS Clearfield, CONVERT(bit, SUM(Coxamium)) AS Coxamium
+FROM            (SELECT 
+    Seed_Tickets.Ticket,
+    Seed_Tickets.UID,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 
+            FROM Seed_Ticket_Varieties stv 
+            INNER JOIN Seed_Varieties sv 
+            ON stv.Variety_ID = sv.Item_Id
+            WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID 
+              AND sv.Dept NOT IN (72, 74, 73, 75)
+        ) THEN 0
+        ELSE CASE 
+                WHEN Dept IN (71, 72, 74) THEN 1 
+                ELSE 0 
+             END 
+    END AS Clearfield,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 
+            FROM Seed_Ticket_Varieties stv 
+            INNER JOIN Seed_Varieties sv 
+            ON stv.Variety_ID = sv.Item_Id
+            WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID 
+              AND sv.Dept NOT IN (72, 74, 73, 75)
+        ) THEN 0
+        ELSE CASE 
+                WHEN Dept IN (73, 75) THEN 1 
+                ELSE 0 
+             END 
+    END AS Coxamium
+FROM 
+    Seed_Tickets
+INNER JOIN 
+    Seed_Ticket_Varieties ON Seed_Tickets.UID = Seed_Ticket_Varieties.Seed_Ticket_UID
+INNER JOIN 
+    Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID 
+                   AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id) AS tbl
 GROUP BY Ticket, UID
 HAVING        (UID = @UID)</CommandText>
                     <Parameters>
-                      <Parameter AllowDbNull="false" AutogeneratedName="UID" ColumnName="UID" DataSourceName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN Dept = 71 OR dept = 72 OR Dept = 74 THEN 1 ELSE 0 END AS Clearfield, CASE WHEN Dept = 73 OR Dept = 75 THEN 1 ELSE 0 END AS Coxamium FROM Seed_Ticket_Varieties INNER JOIN Seed_Tickets ON Seed_Ticket_Varieties.Seed_Ticket_UID = Seed_Tickets.UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DataTypeServer="uniqueidentifier" DbType="Guid" Direction="Input" ParameterName="@UID" Precision="0" Scale="0" Size="16" SourceColumn="UID" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="UID" ColumnName="UID" DataSourceName="SELECT Seed_Tickets.Ticket, Seed_Tickets.UID, CASE WHEN EXISTS ( SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75) ) THEN 0 ELSE CASE WHEN Dept IN (71, 72, 74) THEN 1 ELSE 0 END END AS Clearfield, CASE WHEN EXISTS ( SELECT 1 FROM Seed_Ticket_Varieties stv INNER JOIN Seed_Varieties sv ON stv.Variety_ID = sv.Item_Id WHERE stv.Seed_Ticket_UID = Seed_Tickets.UID AND sv.Dept NOT IN (72, 74, 73, 75) ) THEN 0 ELSE CASE WHEN Dept IN (73, 75) THEN 1 ELSE 0 END END AS Coxamium FROM Seed_Tickets INNER JOIN Seed_Ticket_Varieties ON Seed_Tickets.UID = Seed_Ticket_Varieties.Seed_Ticket_UID INNER JOIN Seed_Varieties ON Seed_Tickets.Location_ID = Seed_Varieties.Location_ID AND Seed_Ticket_Varieties.Variety_ID = Seed_Varieties.Item_Id" DataTypeServer="uniqueidentifier" DbType="Guid" Direction="Input" ParameterName="@UID" Precision="0" Scale="0" Size="16" SourceColumn="UID" SourceColumnNullMapping="false" SourceVersion="Current" />
                     </Parameters>
                   </DbCommand>
                 </SelectCommand>
@@ -774,7 +879,7 @@ HAVING        (UID = @UID)</CommandText>
   <xs:element name="ReportDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:Generator_DataSetName="ReportDataSet" msprop:Generator_UserDSName="ReportDataSet">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
-        <xs:element name="Ticket_Treatments" msprop:Generator_TableClassName="Ticket_TreatmentsDataTable" msprop:Generator_TableVarName="tableTicket_Treatments" msprop:Generator_RowChangedName="Ticket_TreatmentsRowChanged" msprop:Generator_TablePropName="Ticket_Treatments" msprop:Generator_RowDeletingName="Ticket_TreatmentsRowDeleting" msprop:Generator_RowChangingName="Ticket_TreatmentsRowChanging" msprop:Generator_RowEvHandlerName="Ticket_TreatmentsRowChangeEventHandler" msprop:Generator_RowDeletedName="Ticket_TreatmentsRowDeleted" msprop:Generator_RowClassName="Ticket_TreatmentsRow" msprop:Generator_UserTableName="Ticket_Treatments" msprop:Generator_RowEvArgName="Ticket_TreatmentsRowChangeEvent">
+        <xs:element name="Ticket_Treatments" msprop:Generator_TableClassName="Ticket_TreatmentsDataTable" msprop:Generator_TableVarName="tableTicket_Treatments" msprop:Generator_TablePropName="Ticket_Treatments" msprop:Generator_RowDeletingName="Ticket_TreatmentsRowDeleting" msprop:Generator_RowChangingName="Ticket_TreatmentsRowChanging" msprop:Generator_RowEvHandlerName="Ticket_TreatmentsRowChangeEventHandler" msprop:Generator_RowDeletedName="Ticket_TreatmentsRowDeleted" msprop:Generator_UserTableName="Ticket_Treatments" msprop:Generator_RowChangedName="Ticket_TreatmentsRowChanged" msprop:Generator_RowEvArgName="Ticket_TreatmentsRowChangeEvent" msprop:Generator_RowClassName="Ticket_TreatmentsRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
@@ -799,7 +904,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="Ticket_Varieties" msprop:Generator_TableClassName="Ticket_VarietiesDataTable" msprop:Generator_TableVarName="tableTicket_Varieties" msprop:Generator_RowChangedName="Ticket_VarietiesRowChanged" msprop:Generator_TablePropName="Ticket_Varieties" msprop:Generator_RowDeletingName="Ticket_VarietiesRowDeleting" msprop:Generator_RowChangingName="Ticket_VarietiesRowChanging" msprop:Generator_RowEvHandlerName="Ticket_VarietiesRowChangeEventHandler" msprop:Generator_RowDeletedName="Ticket_VarietiesRowDeleted" msprop:Generator_RowClassName="Ticket_VarietiesRow" msprop:Generator_UserTableName="Ticket_Varieties" msprop:Generator_RowEvArgName="Ticket_VarietiesRowChangeEvent">
+        <xs:element name="Ticket_Varieties" msprop:Generator_TableClassName="Ticket_VarietiesDataTable" msprop:Generator_TableVarName="tableTicket_Varieties" msprop:Generator_TablePropName="Ticket_Varieties" msprop:Generator_RowDeletingName="Ticket_VarietiesRowDeleting" msprop:Generator_RowChangingName="Ticket_VarietiesRowChanging" msprop:Generator_RowEvHandlerName="Ticket_VarietiesRowChangeEventHandler" msprop:Generator_RowDeletedName="Ticket_VarietiesRowDeleted" msprop:Generator_UserTableName="Ticket_Varieties" msprop:Generator_RowChangedName="Ticket_VarietiesRowChanged" msprop:Generator_RowEvArgName="Ticket_VarietiesRowChangeEvent" msprop:Generator_RowClassName="Ticket_VarietiesRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
@@ -839,7 +944,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="Tickets" msprop:Generator_TableClassName="TicketsDataTable" msprop:Generator_TableVarName="tableTickets" msprop:Generator_RowChangedName="TicketsRowChanged" msprop:Generator_TablePropName="Tickets" msprop:Generator_RowDeletingName="TicketsRowDeleting" msprop:Generator_RowChangingName="TicketsRowChanging" msprop:Generator_RowEvHandlerName="TicketsRowChangeEventHandler" msprop:Generator_RowDeletedName="TicketsRowDeleted" msprop:Generator_RowClassName="TicketsRow" msprop:Generator_UserTableName="Tickets" msprop:Generator_RowEvArgName="TicketsRowChangeEvent">
+        <xs:element name="Tickets" msprop:Generator_TableClassName="TicketsDataTable" msprop:Generator_TableVarName="tableTickets" msprop:Generator_TablePropName="Tickets" msprop:Generator_RowDeletingName="TicketsRowDeleting" msprop:Generator_RowChangingName="TicketsRowChanging" msprop:Generator_RowEvHandlerName="TicketsRowChangeEventHandler" msprop:Generator_RowDeletedName="TicketsRowDeleted" msprop:Generator_UserTableName="Tickets" msprop:Generator_RowChangedName="TicketsRowChanged" msprop:Generator_RowEvArgName="TicketsRowChangeEvent" msprop:Generator_RowClassName="TicketsRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
@@ -904,7 +1009,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="Ticket_Weights" msprop:Generator_TableClassName="Ticket_WeightsDataTable" msprop:Generator_TableVarName="tableTicket_Weights" msprop:Generator_RowChangedName="Ticket_WeightsRowChanged" msprop:Generator_TablePropName="Ticket_Weights" msprop:Generator_RowDeletingName="Ticket_WeightsRowDeleting" msprop:Generator_RowChangingName="Ticket_WeightsRowChanging" msprop:Generator_RowEvHandlerName="Ticket_WeightsRowChangeEventHandler" msprop:Generator_RowDeletedName="Ticket_WeightsRowDeleted" msprop:Generator_RowClassName="Ticket_WeightsRow" msprop:Generator_UserTableName="Ticket_Weights" msprop:Generator_RowEvArgName="Ticket_WeightsRowChangeEvent">
+        <xs:element name="Ticket_Weights" msprop:Generator_TableClassName="Ticket_WeightsDataTable" msprop:Generator_TableVarName="tableTicket_Weights" msprop:Generator_TablePropName="Ticket_Weights" msprop:Generator_RowDeletingName="Ticket_WeightsRowDeleting" msprop:Generator_RowChangingName="Ticket_WeightsRowChanging" msprop:Generator_RowEvHandlerName="Ticket_WeightsRowChangeEventHandler" msprop:Generator_RowDeletedName="Ticket_WeightsRowDeleted" msprop:Generator_UserTableName="Ticket_Weights" msprop:Generator_RowChangedName="Ticket_WeightsRowChanged" msprop:Generator_RowEvArgName="Ticket_WeightsRowChangeEvent" msprop:Generator_RowClassName="Ticket_WeightsRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
@@ -918,7 +1023,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="crTicketGTNValues" msprop:Generator_TableClassName="crTicketGTNValuesDataTable" msprop:Generator_TableVarName="tablecrTicketGTNValues" msprop:Generator_RowChangedName="crTicketGTNValuesRowChanged" msprop:Generator_TablePropName="crTicketGTNValues" msprop:Generator_RowDeletingName="crTicketGTNValuesRowDeleting" msprop:Generator_RowChangingName="crTicketGTNValuesRowChanging" msprop:Generator_RowEvHandlerName="crTicketGTNValuesRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketGTNValuesRowDeleted" msprop:Generator_RowClassName="crTicketGTNValuesRow" msprop:Generator_UserTableName="crTicketGTNValues" msprop:Generator_RowEvArgName="crTicketGTNValuesRowChangeEvent">
+        <xs:element name="crTicketGTNValues" msprop:Generator_TableClassName="crTicketGTNValuesDataTable" msprop:Generator_TableVarName="tablecrTicketGTNValues" msprop:Generator_TablePropName="crTicketGTNValues" msprop:Generator_RowDeletingName="crTicketGTNValuesRowDeleting" msprop:Generator_RowChangingName="crTicketGTNValuesRowChanging" msprop:Generator_RowEvHandlerName="crTicketGTNValuesRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketGTNValuesRowDeleted" msprop:Generator_UserTableName="crTicketGTNValues" msprop:Generator_RowChangedName="crTicketGTNValuesRowChanged" msprop:Generator_RowEvArgName="crTicketGTNValuesRowChangeEvent" msprop:Generator_RowClassName="crTicketGTNValuesRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="Seed_Ticket_UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnSeed_Ticket_UID" msprop:Generator_ColumnPropNameInRow="Seed_Ticket_UID" msprop:Generator_ColumnPropNameInTable="Seed_Ticket_UIDColumn" msprop:Generator_UserColumnName="Seed_Ticket_UID" type="xs:string" />
@@ -940,7 +1045,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="crTicketTreatments" msprop:Generator_TableClassName="crTicketTreatmentsDataTable" msprop:Generator_TableVarName="tablecrTicketTreatments" msprop:Generator_RowChangedName="crTicketTreatmentsRowChanged" msprop:Generator_TablePropName="crTicketTreatments" msprop:Generator_RowDeletingName="crTicketTreatmentsRowDeleting" msprop:Generator_RowChangingName="crTicketTreatmentsRowChanging" msprop:Generator_RowEvHandlerName="crTicketTreatmentsRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketTreatmentsRowDeleted" msprop:Generator_RowClassName="crTicketTreatmentsRow" msprop:Generator_UserTableName="crTicketTreatments" msprop:Generator_RowEvArgName="crTicketTreatmentsRowChangeEvent">
+        <xs:element name="crTicketTreatments" msprop:Generator_TableClassName="crTicketTreatmentsDataTable" msprop:Generator_TableVarName="tablecrTicketTreatments" msprop:Generator_TablePropName="crTicketTreatments" msprop:Generator_RowDeletingName="crTicketTreatmentsRowDeleting" msprop:Generator_RowChangingName="crTicketTreatmentsRowChanging" msprop:Generator_RowEvHandlerName="crTicketTreatmentsRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketTreatmentsRowDeleted" msprop:Generator_UserTableName="crTicketTreatments" msprop:Generator_RowChangedName="crTicketTreatmentsRowChanged" msprop:Generator_RowEvArgName="crTicketTreatmentsRowChangeEvent" msprop:Generator_RowClassName="crTicketTreatmentsRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
@@ -966,7 +1071,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="crTicketVarieties" msprop:Generator_TableClassName="crTicketVarietiesDataTable" msprop:Generator_TableVarName="tablecrTicketVarieties" msprop:Generator_RowChangedName="crTicketVarietiesRowChanged" msprop:Generator_TablePropName="crTicketVarieties" msprop:Generator_RowDeletingName="crTicketVarietiesRowDeleting" msprop:Generator_RowChangingName="crTicketVarietiesRowChanging" msprop:Generator_RowEvHandlerName="crTicketVarietiesRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketVarietiesRowDeleted" msprop:Generator_RowClassName="crTicketVarietiesRow" msprop:Generator_UserTableName="crTicketVarieties" msprop:Generator_RowEvArgName="crTicketVarietiesRowChangeEvent">
+        <xs:element name="crTicketVarieties" msprop:Generator_TableClassName="crTicketVarietiesDataTable" msprop:Generator_TableVarName="tablecrTicketVarieties" msprop:Generator_TablePropName="crTicketVarieties" msprop:Generator_RowDeletingName="crTicketVarietiesRowDeleting" msprop:Generator_RowChangingName="crTicketVarietiesRowChanging" msprop:Generator_RowEvHandlerName="crTicketVarietiesRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketVarietiesRowDeleted" msprop:Generator_UserTableName="crTicketVarieties" msprop:Generator_RowChangedName="crTicketVarietiesRowChanged" msprop:Generator_RowEvArgName="crTicketVarietiesRowChangeEvent" msprop:Generator_RowClassName="crTicketVarietiesRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="Class_Description" msprop:Generator_ColumnVarNameInTable="columnClass_Description" msprop:Generator_ColumnPropNameInRow="Class_Description" msprop:Generator_ColumnPropNameInTable="Class_DescriptionColumn" msprop:Generator_UserColumnName="Class_Description" minOccurs="0">
@@ -1004,7 +1109,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="crTicketWeights" msprop:Generator_TableClassName="crTicketWeightsDataTable" msprop:Generator_TableVarName="tablecrTicketWeights" msprop:Generator_RowChangedName="crTicketWeightsRowChanged" msprop:Generator_TablePropName="crTicketWeights" msprop:Generator_RowDeletingName="crTicketWeightsRowDeleting" msprop:Generator_RowChangingName="crTicketWeightsRowChanging" msprop:Generator_RowEvHandlerName="crTicketWeightsRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketWeightsRowDeleted" msprop:Generator_RowClassName="crTicketWeightsRow" msprop:Generator_UserTableName="crTicketWeights" msprop:Generator_RowEvArgName="crTicketWeightsRowChangeEvent">
+        <xs:element name="crTicketWeights" msprop:Generator_TableClassName="crTicketWeightsDataTable" msprop:Generator_TableVarName="tablecrTicketWeights" msprop:Generator_TablePropName="crTicketWeights" msprop:Generator_RowDeletingName="crTicketWeightsRowDeleting" msprop:Generator_RowChangingName="crTicketWeightsRowChanging" msprop:Generator_RowEvHandlerName="crTicketWeightsRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketWeightsRowDeleted" msprop:Generator_UserTableName="crTicketWeights" msprop:Generator_RowChangedName="crTicketWeightsRowChanged" msprop:Generator_RowEvArgName="crTicketWeightsRowChangeEvent" msprop:Generator_RowClassName="crTicketWeightsRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
@@ -1047,7 +1152,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="TicketLocation" msprop:Generator_TableClassName="TicketLocationDataTable" msprop:Generator_TableVarName="tableTicketLocation" msprop:Generator_RowChangedName="TicketLocationRowChanged" msprop:Generator_TablePropName="TicketLocation" msprop:Generator_RowDeletingName="TicketLocationRowDeleting" msprop:Generator_RowChangingName="TicketLocationRowChanging" msprop:Generator_RowEvHandlerName="TicketLocationRowChangeEventHandler" msprop:Generator_RowDeletedName="TicketLocationRowDeleted" msprop:Generator_RowClassName="TicketLocationRow" msprop:Generator_UserTableName="TicketLocation" msprop:Generator_RowEvArgName="TicketLocationRowChangeEvent">
+        <xs:element name="TicketLocation" msprop:Generator_TableClassName="TicketLocationDataTable" msprop:Generator_TableVarName="tableTicketLocation" msprop:Generator_TablePropName="TicketLocation" msprop:Generator_RowDeletingName="TicketLocationRowDeleting" msprop:Generator_RowChangingName="TicketLocationRowChanging" msprop:Generator_RowEvHandlerName="TicketLocationRowChangeEventHandler" msprop:Generator_RowDeletedName="TicketLocationRowDeleted" msprop:Generator_UserTableName="TicketLocation" msprop:Generator_RowChangedName="TicketLocationRowChanged" msprop:Generator_RowEvArgName="TicketLocationRowChangeEvent" msprop:Generator_RowClassName="TicketLocationRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
@@ -1149,7 +1254,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="crTicketTreatment" msprop:Generator_TableClassName="crTicketTreatmentDataTable" msprop:Generator_TableVarName="tablecrTicketTreatment" msprop:Generator_TablePropName="crTicketTreatment" msprop:Generator_RowDeletingName="crTicketTreatmentRowDeleting" msprop:Generator_RowChangingName="crTicketTreatmentRowChanging" msprop:Generator_RowEvHandlerName="crTicketTreatmentRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketTreatmentRowDeleted" msprop:Generator_UserTableName="crTicketTreatment" msprop:Generator_RowChangedName="crTicketTreatmentRowChanged" msprop:Generator_RowEvArgName="crTicketTreatmentRowChangeEvent" msprop:Generator_RowClassName="crTicketTreatmentRow">
+        <xs:element name="crTicketTreatment" msprop:Generator_TableClassName="crTicketTreatmentDataTable" msprop:Generator_TableVarName="tablecrTicketTreatment" msprop:Generator_RowChangedName="crTicketTreatmentRowChanged" msprop:Generator_TablePropName="crTicketTreatment" msprop:Generator_RowDeletingName="crTicketTreatmentRowDeleting" msprop:Generator_RowChangingName="crTicketTreatmentRowChanging" msprop:Generator_RowEvHandlerName="crTicketTreatmentRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketTreatmentRowDeleted" msprop:Generator_RowClassName="crTicketTreatmentRow" msprop:Generator_UserTableName="crTicketTreatment" msprop:Generator_RowEvArgName="crTicketTreatmentRowChangeEvent">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="Seed_Ticket_UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnSeed_Ticket_UID" msprop:Generator_ColumnPropNameInRow="Seed_Ticket_UID" msprop:Generator_ColumnPropNameInTable="Seed_Ticket_UIDColumn" msprop:Generator_UserColumnName="Seed_Ticket_UID" type="xs:string" />
@@ -1166,7 +1271,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="crTicketMisc" msprop:Generator_TableClassName="crTicketMiscDataTable" msprop:Generator_TableVarName="tablecrTicketMisc" msprop:Generator_RowChangedName="crTicketMiscRowChanged" msprop:Generator_TablePropName="crTicketMisc" msprop:Generator_RowDeletingName="crTicketMiscRowDeleting" msprop:Generator_RowChangingName="crTicketMiscRowChanging" msprop:Generator_RowEvHandlerName="crTicketMiscRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketMiscRowDeleted" msprop:Generator_RowClassName="crTicketMiscRow" msprop:Generator_UserTableName="crTicketMisc" msprop:Generator_RowEvArgName="crTicketMiscRowChangeEvent">
+        <xs:element name="crTicketMisc" msprop:Generator_TableClassName="crTicketMiscDataTable" msprop:Generator_TableVarName="tablecrTicketMisc" msprop:Generator_TablePropName="crTicketMisc" msprop:Generator_RowDeletingName="crTicketMiscRowDeleting" msprop:Generator_RowChangingName="crTicketMiscRowChanging" msprop:Generator_RowEvHandlerName="crTicketMiscRowChangeEventHandler" msprop:Generator_RowDeletedName="crTicketMiscRowDeleted" msprop:Generator_UserTableName="crTicketMisc" msprop:Generator_RowChangedName="crTicketMiscRowChanged" msprop:Generator_RowEvArgName="crTicketMiscRowChangeEvent" msprop:Generator_RowClassName="crTicketMiscRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
@@ -1191,7 +1296,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="crLocations" msprop:Generator_TableClassName="crLocationsDataTable" msprop:Generator_TableVarName="tablecrLocations" msprop:Generator_RowChangedName="crLocationsRowChanged" msprop:Generator_TablePropName="crLocations" msprop:Generator_RowDeletingName="crLocationsRowDeleting" msprop:Generator_RowChangingName="crLocationsRowChanging" msprop:Generator_RowEvHandlerName="crLocationsRowChangeEventHandler" msprop:Generator_RowDeletedName="crLocationsRowDeleted" msprop:Generator_RowClassName="crLocationsRow" msprop:Generator_UserTableName="crLocations" msprop:Generator_RowEvArgName="crLocationsRowChangeEvent">
+        <xs:element name="crLocations" msprop:Generator_TableClassName="crLocationsDataTable" msprop:Generator_TableVarName="tablecrLocations" msprop:Generator_TablePropName="crLocations" msprop:Generator_RowDeletingName="crLocationsRowDeleting" msprop:Generator_RowChangingName="crLocationsRowChanging" msprop:Generator_RowEvHandlerName="crLocationsRowChangeEventHandler" msprop:Generator_RowDeletedName="crLocationsRowDeleted" msprop:Generator_UserTableName="crLocations" msprop:Generator_RowChangedName="crLocationsRowChanged" msprop:Generator_RowEvArgName="crLocationsRowChangeEvent" msprop:Generator_RowClassName="crLocationsRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
@@ -1257,7 +1362,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="ClearfieldCoxamiumTickets" msprop:Generator_TableClassName="ClearfieldCoxamiumTicketsDataTable" msprop:Generator_TableVarName="tableClearfieldCoxamiumTickets" msprop:Generator_RowChangedName="ClearfieldCoxamiumTicketsRowChanged" msprop:Generator_TablePropName="ClearfieldCoxamiumTickets" msprop:Generator_RowDeletingName="ClearfieldCoxamiumTicketsRowDeleting" msprop:Generator_RowChangingName="ClearfieldCoxamiumTicketsRowChanging" msprop:Generator_RowEvHandlerName="ClearfieldCoxamiumTicketsRowChangeEventHandler" msprop:Generator_RowDeletedName="ClearfieldCoxamiumTicketsRowDeleted" msprop:Generator_RowClassName="ClearfieldCoxamiumTicketsRow" msprop:Generator_UserTableName="ClearfieldCoxamiumTickets" msprop:Generator_RowEvArgName="ClearfieldCoxamiumTicketsRowChangeEvent">
+        <xs:element name="ClearfieldCoxamiumTickets" msprop:Generator_TableClassName="ClearfieldCoxamiumTicketsDataTable" msprop:Generator_TableVarName="tableClearfieldCoxamiumTickets" msprop:Generator_TablePropName="ClearfieldCoxamiumTickets" msprop:Generator_RowDeletingName="ClearfieldCoxamiumTicketsRowDeleting" msprop:Generator_RowChangingName="ClearfieldCoxamiumTicketsRowChanging" msprop:Generator_RowEvHandlerName="ClearfieldCoxamiumTicketsRowChangeEventHandler" msprop:Generator_RowDeletedName="ClearfieldCoxamiumTicketsRowDeleted" msprop:Generator_UserTableName="ClearfieldCoxamiumTickets" msprop:Generator_RowChangedName="ClearfieldCoxamiumTicketsRowChanged" msprop:Generator_RowEvArgName="ClearfieldCoxamiumTicketsRowChangeEvent" msprop:Generator_RowClassName="ClearfieldCoxamiumTicketsRow">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="Ticket" msprop:Generator_ColumnVarNameInTable="columnTicket" msprop:Generator_ColumnPropNameInRow="Ticket" msprop:Generator_ColumnPropNameInTable="TicketColumn" msprop:Generator_UserColumnName="Ticket" type="xs:int" minOccurs="0" />
@@ -1267,7 +1372,7 @@ HAVING        (UID = @UID)</CommandText>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="WatermarkDt" msprop:Generator_TableClassName="WatermarkDtDataTable" msprop:Generator_TableVarName="tableWatermarkDt" msprop:Generator_TablePropName="WatermarkDt" msprop:Generator_RowDeletingName="WatermarkDtRowDeleting" msprop:Generator_RowChangingName="WatermarkDtRowChanging" msprop:Generator_RowEvHandlerName="WatermarkDtRowChangeEventHandler" msprop:Generator_RowDeletedName="WatermarkDtRowDeleted" msprop:Generator_UserTableName="WatermarkDt" msprop:Generator_RowChangedName="WatermarkDtRowChanged" msprop:Generator_RowEvArgName="WatermarkDtRowChangeEvent" msprop:Generator_RowClassName="WatermarkDtRow">
+        <xs:element name="WatermarkDt" msprop:Generator_TableClassName="WatermarkDtDataTable" msprop:Generator_TableVarName="tableWatermarkDt" msprop:Generator_RowChangedName="WatermarkDtRowChanged" msprop:Generator_TablePropName="WatermarkDt" msprop:Generator_RowDeletingName="WatermarkDtRowDeleting" msprop:Generator_RowChangingName="WatermarkDtRowChanging" msprop:Generator_RowEvHandlerName="WatermarkDtRowChangeEventHandler" msprop:Generator_RowDeletedName="WatermarkDtRowDeleted" msprop:Generator_RowClassName="WatermarkDtRow" msprop:Generator_UserTableName="WatermarkDt" msprop:Generator_RowEvArgName="WatermarkDtRowChangeEvent">
           <xs:complexType>
             <xs:sequence>
               <xs:element name="WaterMark" msprop:Generator_ColumnVarNameInTable="columnWaterMark" msprop:Generator_ColumnPropNameInRow="WaterMark" msprop:Generator_ColumnPropNameInTable="WaterMarkColumn" msprop:Generator_UserColumnName="WaterMark" type="xs:string" minOccurs="0" />

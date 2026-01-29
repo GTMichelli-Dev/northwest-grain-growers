@@ -332,7 +332,7 @@ public class SeedTicketInfo
     {
         SeedTicketInfo.CurrentSeedTicketRow.Ticket_Date = DateTime.Now;
         SeedTicketInfo.CurrentSeedTicketRow.Pending = false;
-       // SeedTicketInfo.CurrentSeedTicketRow.Weighmaster = HttpContext.Current.User.Identity.Name;
+        SeedTicketInfo.CurrentSeedTicketRow.Weighmaster = HttpContext.Current.User.Identity.Name;
         SaveTicket();
         using (SeedTicketDataSetTableAdapters.QueriesTableAdapter Q = new SeedTicketDataSetTableAdapters.QueriesTableAdapter())
         {

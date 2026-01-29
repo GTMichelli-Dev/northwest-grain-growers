@@ -256,21 +256,12 @@ public class Camera
             Retval += "Variety-ID                                   %Load " + System.Environment.NewLine; ;
             Retval += "---------------------------------------------------" + System.Environment.NewLine; ;
             foreach (var item in seedTicketDataset.Seed_Ticket_Varieties )
-            {
-                string Name = $"{item.Custom_Name}-{item.Variety_ID}";
-                string PercentOfLoad = ((int)item.Percent_Of_Load).ToString().PadLeft(3) + "%";
-                try
-                {
+            { 
+                string Name= $"{item.Custom_Name}-{item.Variety_ID}";
+                if (Name.Length > 45) Name = item.Custom_Name.Substring(0, 45);
+                Name = Name.PadRight(45, ' ');
+                string PercentOfLoad = ((int)item.Percent_Of_Load).ToString().PadLeft(3) + "%"; 
 
-                    if (Name.Length > 45) Name = item.Custom_Name;
-                    if (Name.Length > 45) Name = Name.Substring(0, 45);
-                    Name = Name.PadRight(45, ' ');
-
-                }
-                catch
-                {
-
-                }
                 Retval += $"{Name} {PercentOfLoad}" + System.Environment.NewLine;
             }
 
@@ -280,18 +271,9 @@ public class Camera
             foreach (var item in seedTicketDataset.Seed_Ticket_Treatments)
             {
                 string Name = $"{item.Custom_Name}-{item.Treatment_ID }";
-                string Rate = String.Format("{0:N2}", item.Rate).PadLeft(3);
-                try
-                {
-                    if (Name.Length > 45) Name = item.Custom_Name;
-                    if (Name.Length > 45) Name = Name.Substring(0, 45);
-                    Name = Name.PadRight(45, ' ');
-
-                }
-                catch
-                {
-
-                }
+                if (Name.Length > 45) Name = item.Custom_Name.Substring(0, 45);
+                Name = Name.PadRight(45, ' ');
+                string Rate = String.Format("{0:N2}",item.Rate).PadLeft(3) ;
 
                 Retval += $"{Name} {Rate}" + System.Environment.NewLine;
             }

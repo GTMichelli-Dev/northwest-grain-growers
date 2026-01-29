@@ -1,97 +1,64 @@
 ﻿<%@ Page Title="" Language="C#" MasterPageFile="~/Site.master" AutoEventWireup="true" CodeFile="TicketCreator.aspx.cs" Inherits="TicketCreator" %>
 
-<asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="Server">
+<asp:Content ID="Content1" ContentPlaceHolderID="MainContent" Runat="Server">
 
-  <script>
-      function SetPercent(value) {
-          var n = value.toFixed(2);
-          document.getElementById('<%= txtBagCount.ClientID %>').value = n;
-      }
+       <script>
+        function SetPercent(value) {
+            var n = value.toFixed(2);
+            document.getElementById('<%= txtBagCount.ClientID %>').value = n;
 
-      function isNumberKey(evt) {
-          var charCode = (evt.which) ? evt.which : evt.keyCode;
-          if ((charCode > 31 && (charCode < 48 || charCode > 57)) && (charCode != 46)) return false;
-          return true;
-      }
-
-      function promptForCopies(action) {
-          Swal.fire({
-              title: 'Enter number of copies',
-              input: 'number',
-              inputAttributes: {
-                  min: 1,
-                  step: 1
-              },
-              showCancelButton: true,
-              confirmButtonText: 'OK',
-              cancelButtonText: 'Cancel'
-          }).then((result) => {
-              if (result.isConfirmed) {
-                  console.log('action', action);
-                  var copies = result.value;
-                  document.getElementById('NumberOfCopies').value = copies;
-                  if (action === 'save') {
-                      console.log('save');
-                      __doPostBack('<%= btnSave.UniqueID %>', '');
-                } else if (action === 'print') {
-                    console.log('print');
-                    __doPostBack('<%= btnPrint.UniqueID %>', '');
-                } else if (action === 'complete') {
-                    console.log('complete');
-                    __doPostBack('<%= btnComplete.UniqueID %>', '');
                 }
-            }
-        });
-      }
-</script>
+
+                function isNumberKey(evt) {
+                    var charCode = (evt.which) ? evt.which : evt.keyCode;
+                    if ((charCode > 31 && (charCode < 48 || charCode > 57)) && (charCode != 46))
+                        return false;
+                    return true;
+                }
 
 
-    <style>
-        .blinkingdanger {
-            animation: blinkingText .7s infinite;
-        }
-
-        @keyframes blinkingText {
-            0% {
-                color: #dc3545;
-            }
-
-            49% {
-                color: #dc3545;
-            }
-
-            60% {
-                color: transparent;
-            }
-
-            99% {
-                color: transparent;
-            }
-
-            100% {
-                color: #dc3545;
-            }
-        }
 
 
-        .dropdown-right {
-            direction: rtl;
-        }
-    </style>
+    </script>
 
 
+ <style>
+
+     .blinkingdanger{
+    animation:blinkingText .7s infinite;
+}
+@keyframes blinkingText{
+    0%{     color:  #dc3545;    }
+    49%{    color: #dc3545; }
+    60%{    color: transparent; }
+    99%{    color:transparent;  }
+    100%{   color: #dc3545;    }
+}
+
+
+.dropdown-right{
+    
+
+    
+    direction:rtl;
+}
+
+
+ </style>
+ 
 
 
 
 
 
 
+        
     <br />
 
     <h5 class="text-center d-none d-sm-block  col-12 ">
         <asp:Label runat="server" ID="lblHeader"></asp:Label>
     </h5>
-
+     
     <div class="form-row pb-2 ">
         <div class=" col-8   text-sm-center text-md-left ">
             <div class="btn-group-sm ">
@@ -101,7 +68,7 @@
                 <asp:Button runat="server" ID="btnCancel" PostBackUrl="~/Default.aspx" Text="Cancel" Width="100" CssClass="btn btn-sm btn-danger " />
                 <asp:CheckBox ID="ckPending" OnCheckedChanged="ckPending_CheckedChanged" AutoPostBack="true" runat="server" CssClass="btn btn-sm" Text="Pending" />
 
-                <asp:Button runat="server" ID="btnPrint" Text="Reprint" Width="100" OnClick="btnPrint_Click" CssClass="btn btn-sm btn-secondary  " />
+                <asp:Button runat="server" ID="btnPrint" OnClick="btnPrint_Click" Text="Reprint" Width="100" CssClass="btn btn-sm btn-secondary  " />
                 <asp:Button runat="server" ID="btnImage" OnClick="btnImage_Click" Text="Image" Width="100" CssClass="btn btn-sm btn-secondary  " />
                 <asp:Button runat="server" ID="btnDone" PostBackUrl="~/Default.aspx" Text="Done" Width="100" CssClass="btn btn-sm btn-secondary  " />
                 <div class="btn">
@@ -118,32 +85,26 @@
                     </asp:UpdatePanel>
                 </div>
                 <div class="btn">
-                    <asp:DropDownList runat="server" ID="ddNumberOfCopies" AutoPostBack="false" CssClass="form-control-sm ">
-                            <asp:ListItem Value="2">2 Copies</asp:ListItem>
-                            <asp:ListItem Value="1">1 Copy</asp:ListItem>
-                            <asp:ListItem Value="3">3 Copies</asp:ListItem>
-                            <asp:ListItem Value="4">4 Copies</asp:ListItem>
-                        </asp:DropDownList>
                     <asp:DropDownList runat="server" ID="ddPrintDestination" AutoPostBack="true" OnTextChanged="ddPrintDestination_TextChanged" CssClass="form-control-sm ">
                         <asp:ListItem Value="Print To Printer"></asp:ListItem>
                         <asp:ListItem Value="Print To Browser"></asp:ListItem>
                     </asp:DropDownList>
 
-
                 </div>
             </div>
 
         </div>
-
-
+        
+      
     </div>
+    
 
 
-
-    <asp:UpdatePanel runat="server" ID="UP1" UpdateMode="Conditional">
+    <asp:UpdatePanel runat="server" ID="UP1" UpdateMode="Conditional" >
         <ContentTemplate>
 
-       
+
+
             <div class="form-row  font-weight-bold">
                 <div class="col-12 pr-0 pl-0">
                     <asp:LinkButton runat="server" ID="lnkGrower" Width="100%" CssClass="btn btn-light font-weight-bold  " Font-Size="Larger" PostBackUrl="~/PreLoad/SelectGrower.aspx"></asp:LinkButton>
@@ -176,9 +137,9 @@
                     </div>
                     <div class="col-xs-12 col-md-3 col-lg-3  ">
                         <label for="txtWeighmaster">Weighed By</label>
-                        <asp:TextBox runat="server" ID="txtWeighmaster" OnTextChanged="txtWeighmaster_TextChanged" AutoPostBack="true" CssClass=" form-control  input-sm"></asp:TextBox>
+                         <asp:TextBox runat="server" ID="txtWeighmaster" OnTextChanged="txtWeighmaster_TextChanged" AutoPostBack="true" CssClass=" form-control  input-sm"></asp:TextBox>
 
-
+                        
 
                     </div>
                     <div class="col-12 ">
@@ -228,8 +189,8 @@
 
 
                 </div>
-                <div class="form-row">
-                    <asp:Panel runat="server" ID="pnlTruckWeights" HorizontalAlign="Center" ScrollBars="Auto" Width="100%">
+                <div class="form-row" >
+                    <asp:Panel runat="server" ID="pnlTruckWeights"  HorizontalAlign="Center" ScrollBars="Auto" Width="100%">
                         <div class="col col-lg-6 p-0">
                             <asp:Table runat="server" HorizontalAlign="Center" ID="tblTruckWeights" CssClass="table table-bordered table-sm table-hover table-striped">
                                 <asp:TableHeaderRow>
@@ -240,17 +201,17 @@
                                 </asp:TableHeaderRow>
                                 <asp:TableRow>
                                     <asp:TableCell>
-                                        <asp:Label runat="server" CssClass="font-weight-bold " ID="lblTruckTimeIn"></asp:Label>
+                                        <asp:Label runat="server" CssClass="font-weight-bold "  ID="lblTruckTimeIn"></asp:Label>
                                     </asp:TableCell>
                                     <asp:TableCell>
-                                        <asp:LinkButton CssClass="font-weight-bold " runat="server" Font-Size="XX-Large" ID="lblTruckWeightIn" OnClick="lblTruckWeightIn_Click"></asp:LinkButton>
+                                        <asp:LinkButton CssClass="font-weight-bold " runat="server" Font-Size="XX-Large"   ID="lblTruckWeightIn" OnClick="lblTruckWeightIn_Click"></asp:LinkButton>
                                         <asp:LinkButton runat="server" ID="lnkSetTruckWeightIn" CssClass="btn btn-sm btn-secondary" OnClick="lnkSetTruckWeightIn_Click" Text="Set Weight"></asp:LinkButton>
                                     </asp:TableCell>
                                     <asp:TableCell>
                                         <asp:Label runat="server" CssClass="font-weight-bold " ID="lblTruckTimeOut"></asp:Label>
                                     </asp:TableCell>
                                     <asp:TableCell>
-                                        <asp:LinkButton runat="server" CssClass="font-weight-bold " Font-Size="XX-Large" ID="lblTruckWeightOut" OnClick="lblTruckWeightOut_Click"></asp:LinkButton>
+                                        <asp:LinkButton runat="server" CssClass="font-weight-bold "  Font-Size="XX-Large"   ID="lblTruckWeightOut" OnClick="lblTruckWeightOut_Click"></asp:LinkButton>
                                         <asp:LinkButton runat="server" ID="lnkSetTruckOutWeight" CssClass="btn btn-sm btn-secondary " OnClick="lnkSetTruckOutWeight_Click" Text="Set Weight"></asp:LinkButton>
                                     </asp:TableCell>
                                 </asp:TableRow>
@@ -266,25 +227,25 @@
                                 </asp:TableHeaderRow>
                                 <asp:TableRow>
                                     <asp:TableCell>
-                                        <asp:Label runat="server" ID="lblGross"></asp:Label>
+                                        <asp:Label runat="server"  ID="lblGross"></asp:Label>
                                     </asp:TableCell>
                                     <asp:TableCell>
-                                        <asp:Label runat="server" ID="lblTare"></asp:Label>
+                                        <asp:Label runat="server"    ID="lblTare"></asp:Label>
                                     </asp:TableCell>
                                     <asp:TableCell>
-                                        <asp:Label CssClass="font-weight-bold " runat="server" ID="lblNet"></asp:Label>
+                                        <asp:Label CssClass="font-weight-bold "   runat="server" ID="lblNet"></asp:Label>
                                     </asp:TableCell>
                                     <asp:TableCell>
-                                        <asp:Label CssClass="font-weight-bold " runat="server" ID="lblBushels"></asp:Label>
+                                        <asp:Label CssClass="font-weight-bold "   runat="server" ID="lblBushels"></asp:Label>
                                     </asp:TableCell>
                                 </asp:TableRow>
                             </asp:Table>
                         </div>
                     </asp:Panel>
                     <asp:Panel runat="server" ID="pnlToteWeights" HorizontalAlign="Center" Width="100%">
+                     
 
-
-
+                       
                         <div class="col col-lg-6 p-0">
                             <asp:GridView HorizontalAlign="Center" Width="100%" CssClass="table table-bordered table-sm table-hover table-striped  " runat="server" ID="grdTotes" DataKeyNames="UID" AutoGenerateColumns="False">
                                 <Columns>
@@ -544,10 +505,9 @@
             </div>
 
         </ContentTemplate>
-
     </asp:UpdatePanel>
-
+    
 </asp:Content>
-<asp:Content ID="Content2" ContentPlaceHolderID="MainContentFull" runat="Server">
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContentFull" Runat="Server">
 </asp:Content>
 

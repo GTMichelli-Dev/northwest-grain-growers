@@ -1,13 +1,13 @@
 ﻿{
    "CodeGenerationMode": 4,
-   "ContextClassName": "AtDbContext",
+   "ContextClassName": "Seed_DataContext",
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
    "MinimumProductVersion": "2.6.0",
    "ModelNamespace": null,
    "OutputContextPath": null,
-   "OutputPath": "AtModels",
+   "OutputPath": "SeedModels",
    "PreserveCasingWithRegex": true,
    "ProjectRootNamespace": "Agvantage_Transfer",
    "Schemas": null,
@@ -16,7 +16,19 @@
    "T4TemplatePath": null,
    "Tables": [
       {
-         "Name": "[dbo].[AgvantageTransferLog]",
+         "Name": "[dbo].[Item_Location]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Item_Types]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Items]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Seed_Departments]",
          "ObjectType": 0
       }
    ],

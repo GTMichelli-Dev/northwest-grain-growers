@@ -132,7 +132,6 @@ public partial class PreLoad_History : System.Web.UI.Page
                     var newRow = SeedTicketInfo.seedTicketDataSet.Seed_Tickets.NewSeed_TicketsRow();
 
                     newRow.ItemArray = HSeedTicketDataSet.Seed_Tickets[0].ItemArray;
-                    newRow.Returned = false;
 
 
                     newRow.UID = Guid.NewGuid();
