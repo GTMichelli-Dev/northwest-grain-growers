@@ -1,0 +1,112 @@
+﻿/* ============================================================
+   Seed / Upsert: UoM Types + Unit Of Measures
+   - Corrects: OZ(weight) vs FLOZ(volume)
+   - BU is volume (density-based conversion handled elsewhere)
+   - Enforces Code uniqueness
+   - Error handling: THROW
+   ============================================================ */
+
+SET NOCOUNT ON;
+
+BEGIN TRY
+    BEGIN TRAN;
+
+    /* 1) Ensure required UomTypes exist */
+    MERGE system.UomTypes AS tgt
+    USING (VALUES
+        ('Weight'),
+        ('Volume'),
+        ('Count'),
+        ('Service')
+    ) AS src(Name)
+        ON tgt.Name = src.Name
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (Name) VALUES (src.Name);
+
+    /* 2) Upsert UnitOfMeasures */
+    ;WITH src AS
+    (
+        SELECT
+            ut.UomTypeId,
+            v.Code,
+            v.Description,
+            v.ToBaseFactor
+        FROM (VALUES
+            ------------------------------------------------
+            -- WEIGHT (base = LB)
+            ------------------------------------------------
+            ('Weight', 'LB',   'Pound',              CAST(1.0    AS decimal(18,6))),
+            ('Weight', 'OZ',   'Ounce (weight)',     CAST(0.0625 AS decimal(18,6))),
+            ('Weight', 'TON',  'Ton (2000 lb)',      CAST(2000.0 AS decimal(18,6))),
+            ('Weight', 'CWT',  'Hundredweight',      CAST(100.0  AS decimal(18,6))),
+
+            ------------------------------------------------
+            -- VOLUME (base = GAL for liquids; BU is volume for grain)
+            -- NOTE: BU <-> LB is density/test-weight based (NOT fixed)
+            ------------------------------------------------
+            ('Volume', 'GAL',  'Gallon',             CAST(1.0    AS decimal(18,6))),
+            ('Volume', 'FLOZ', 'Fluid Ounce',        CAST(0.0078125 AS decimal(18,9))), -- 1 fl oz = 1/128 gal
+            ('Volume', 'BU',   'Bushel',             CAST(0.0    AS decimal(18,6))),     -- no fixed factor vs GAL
+            -- Optional: if you want a *volume-to-volume* BU<->GAL constant:
+            -- 1 US bushel = 8 gallons (exact by definition)
+            -- ('Volume', 'BU', 'Bushel', CAST(8.0 AS decimal(18,6))) with base=GAL
+
+            ------------------------------------------------
+            -- COUNT
+            ------------------------------------------------
+            ('Count',  'EA',   'Each',               CAST(1.0    AS decimal(18,6))),
+
+            ------------------------------------------------
+            -- SERVICE / TIME / DISTANCE
+            ------------------------------------------------
+            ('Service','HR',   'Hour',               CAST(1.0    AS decimal(18,6))),
+            ('Service','MI',   'Mile',               CAST(1.0    AS decimal(18,6)))
+        ) v(UomTypeName, Code, Description, ToBaseFactor)
+        INNER JOIN system.UomTypes ut
+            ON ut.Name = v.UomTypeName
+    )
+    MERGE system.UnitOfMeasures AS tgt
+    USING src
+        ON tgt.Code = src.Code
+    WHEN MATCHED AND
+    (
+           tgt.UomTypeId              <> src.UomTypeId
+        OR ISNULL(tgt.Description,'') <> ISNULL(src.Description,'')
+        OR ISNULL(tgt.ToBaseFactor,0) <> ISNULL(src.ToBaseFactor,0)
+        OR ISNULL(tgt.Active,0)       <> 1
+    )
+    THEN UPDATE SET
+        tgt.UomTypeId    = src.UomTypeId,
+        tgt.Description  = src.Description,
+        tgt.ToBaseFactor = src.ToBaseFactor,
+        tgt.Active       = 1
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (UomTypeId, Code, Description, ToBaseFactor, Active)
+        VALUES (src.UomTypeId, src.Code, src.Description, src.ToBaseFactor, 1);
+
+    /* 3) Enforce Code uniqueness */
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM sys.indexes
+        WHERE name = 'UX_UnitOfMeasures_Code'
+          AND object_id = OBJECT_ID('system.UnitOfMeasures')
+    )
+    BEGIN
+        CREATE UNIQUE INDEX UX_UnitOfMeasures_Code
+        ON system.UnitOfMeasures(Code);
+    END
+
+    COMMIT TRAN;
+
+    /* Verification */
+    SELECT ut.Name AS UomType, uom.Code, uom.Description, uom.ToBaseFactor, uom.Active
+    FROM system.UnitOfMeasures uom
+    JOIN system.UomTypes ut ON ut.UomTypeId = uom.UomTypeId
+    ORDER BY ut.Name, uom.Code;
+
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRAN;
+    THROW;
+END CATCH;

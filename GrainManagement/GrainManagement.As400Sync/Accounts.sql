@@ -38,7 +38,4 @@ Trim(
  COALESCE(trim(CSMEMO), '') || 
     COALESCE(trim(CSNOT1), '') || 
     COALESCE(trim(CSNOT2), '')) Notes
-
-
-   FROM COMDATA.U4CSTMR;
- 
+FROM COMDATA.U4CSTMR

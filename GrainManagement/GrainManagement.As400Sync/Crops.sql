@@ -1,5 +1,5 @@
-﻿select *
-  
-FROM COMDATA.U5Crops 
+﻿SELECT
+crlcde,crcrop,crcrde
 
-
+FROM COMDATA.U5CROPS
+order by crlcde
