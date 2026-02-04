@@ -1,0 +1,56 @@
+@{
+    ViewData["Title"] = "Warehouse";
+}
+
+<div class="gm-pagehead">
+    <div class="gm-pagehead__title">
+        <span class="gm-pagehead__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
+        <h1>Warehouse</h1>
+    </div>
+    <p class="text-muted">Receiving, transfers, shipping, and inventory.</p>
+</div>
+
+<div class="row g-4 mt-2">
+    <div class="col-12 col-lg-4">
+        <div class="gm-tile">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--grower" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Receive from Grower</h2>
+            </div>
+            <p class="gm-tile__text">Intake a load delivered by a grower.</p>
+            <div class="gm-tile__actions">
+                <a class="btn btn-primary w-100" href="/Warehouse/ReceiveGrower">Start</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="gm-tile">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--transfer" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Receive Transfer</h2>
+            </div>
+            <p class="gm-tile__text">Receive inventory transferred from another elevator/location.</p>
+            <div class="gm-tile__actions">
+                <a class="btn btn-primary w-100" href="/Warehouse/ReceiveTransfer">Start</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="gm-tile">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--ship" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Ship / Load Out</h2>
+            </div>
+            <p class="gm-tile__text">Create an outbound shipment or loadout.</p>
+            <div class="gm-tile__actions">
+                <a class="btn btn-primary w-100" href="/Warehouse/ShipLoad">Start</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4 gm-quicklinks">
+    <a class="gm-link" href="/">Back to Home</a>
+</div>

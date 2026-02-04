@@ -1,0 +1,14 @@
+/* NWGG theme (approx. from nwgrgr.com / NWGG brand) */
+:root {
+  --brand-primary: #2f5d3a;
+  --brand-primary-dark: #24492d;
+  --brand-accent: #c9a23f;
+  --brand-accent-2: #d9c27a;
+
+  --bg: #f5f6f7;
+  --surface: #ffffff;
+  --text: #202124;
+  --muted: #6c757d;
+
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}

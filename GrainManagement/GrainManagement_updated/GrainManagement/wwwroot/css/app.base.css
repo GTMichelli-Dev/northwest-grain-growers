@@ -1,0 +1,124 @@
+/* Shared app styling (customer-agnostic)
+   Customer branding happens via CSS variables in /css/themes/{theme}.css */
+
+:root {
+  --brand-primary: #2f5d3a;
+  --brand-primary-dark: #24492d;
+  --brand-accent: #c9a23f;
+  --brand-accent-2: #d9c27a;
+
+  --bg: #f5f6f7;
+  --surface: #ffffff;
+  --text: #202124;
+  --muted: #6c757d;
+
+  --radius: 12px;
+  --shadow: 0 10px 22px rgba(0,0,0,.08);
+  --shadow-sm: 0 6px 12px rgba(0,0,0,.06);
+
+  --font-sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Navbar */
+.navbar.gm-navbar {
+  background: var(--brand-primary) !important;
+}
+.navbar.gm-navbar .navbar-brand {
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+/* Primary buttons */
+.btn-primary {
+  background-color: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--brand-primary-dark);
+  border-color: var(--brand-primary-dark);
+}
+
+/* Landing hero */
+.gm-hero {
+  background: linear-gradient(0deg, rgba(255,255,255,.0), rgba(255,255,255,.0)),
+              linear-gradient(90deg, var(--brand-primary), var(--brand-accent));
+  border-radius: var(--radius);
+  padding: 24px;
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.gm-hero__title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+.gm-hero__subtitle {
+  margin: 6px 0 0 0;
+  opacity: .92;
+}
+
+/* Tiles */
+.gm-tile {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 18px 16px 18px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.gm-tile__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.gm-tile__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(201,162,63,.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+.gm-tile__title {
+  font-size: 1.25rem;
+  margin: 0;
+  font-weight: 800;
+}
+.gm-tile__text {
+  color: var(--muted);
+  margin: 0 0 14px 0;
+  flex: 1;
+}
+.gm-tile__actions {
+  margin-top: auto;
+}
+
+/* Page head */
+.gm-pagehead h1 {
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+/* Small callout boxes */
+.gm-callout {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+}
+
+/* Quick links */
+.gm-quicklinks { display: flex; gap: 12px; }
+.gm-link { color: var(--brand-primary); text-decoration: none; font-weight: 600; }
+.gm-link:hover { text-decoration: underline; }

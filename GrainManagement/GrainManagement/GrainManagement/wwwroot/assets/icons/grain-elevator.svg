@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Simple grain elevator silhouette (for CSS mask usage) -->
+  <path d="M12 56h40v4H12z"/>
+  <path d="M14 28a8 8 0 0 1 16 0v28H14V28z"/>
+  <path d="M24 24a8 8 0 0 1 16 0v32H24V24z"/>
+  <path d="M34 28a8 8 0 0 1 16 0v28H34V28z"/>
+  <path d="M42 8h14v16H42z"/>
+  <path d="M46 24h6v32h-6z"/>
+  <path d="M42 18L28 30l2.5 3.5L44.5 21Z"/>
+</svg>

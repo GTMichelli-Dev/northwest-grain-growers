@@ -1,0 +1,55 @@
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="gm-hero">
+    <div class="gm-hero__inner">
+        <h1 class="gm-hero__title">Grain Management</h1>
+        <p class="gm-hero__subtitle">Choose an area to get started.</p>
+    </div>
+</div>
+
+<div class="row g-4 mt-2">
+    <div class="col-12 col-lg-4">
+        <div class="gm-tile">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon">🏬</div>
+                <h2 class="gm-tile__title">Warehouse</h2>
+            </div>
+            <p class="gm-tile__text">Receiving from growers, elevator-to-elevator transfers, shipping, and inventory.</p>
+            <div class="gm-tile__actions">
+                <a class="btn btn-primary w-100" href="/Warehouse">Enter Warehouse</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="gm-tile">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon">🌾</div>
+                <h2 class="gm-tile__title">Seed</h2>
+            </div>
+            <p class="gm-tile__text">Seed receiving from growers, transfers between elevators, conditioning, and lots.</p>
+            <div class="gm-tile__actions">
+                <a class="btn btn-primary w-100" href="/Seed">Enter Seed</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="gm-tile">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon">📊</div>
+                <h2 class="gm-tile__title">Reports</h2>
+            </div>
+            <p class="gm-tile__text">Daily totals, history, inventory reports, and management summaries.</p>
+            <div class="gm-tile__actions">
+                <a class="btn btn-primary w-100" href="/Reports">View Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4 gm-quicklinks">
+    <a class="gm-link" href="/Home/Dashboard">Location Summary</a>
+</div>
