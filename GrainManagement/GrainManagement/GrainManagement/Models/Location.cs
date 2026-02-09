@@ -17,6 +17,10 @@ public partial class Location
 
     public bool IsActive { get; set; }
 
+    public bool UseForSeed { get; set; }
+
+    public bool UseForWarehouse { get; set; }
+
     public virtual ICollection<ChemicalLot> ChemicalLots { get; set; } = new List<ChemicalLot>();
 
     public virtual ICollection<CustomerPriceOverride> CustomerPriceOverrides { get; set; } = new List<CustomerPriceOverride>();

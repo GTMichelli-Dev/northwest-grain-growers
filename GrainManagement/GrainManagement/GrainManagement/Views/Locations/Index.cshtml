@@ -1,0 +1,176 @@
+﻿<div id="locationsGrid"></div>
+
+@section Scripts {
+    <script>
+        let districtsCache = null;
+
+        const districtsStore = new DevExpress.data.CustomStore({
+            key: "DistrictId",
+
+            load: function () {
+                if (districtsCache) return districtsCache;
+                districtsCache = $.getJSON("/api/locations/Districts");
+                return districtsCache;
+            },
+
+            byKey: function (key) {
+                const k = Number(key);
+                return (districtsCache ? districtsCache : this.load())
+                    .then(list => list.find(x => x.DistrictId === k));
+            }
+        });
+
+        const locationsStore = DevExpress.data.AspNet.createStore({
+            key: "LocationId",
+            loadUrl: "/api/locations",
+            insertUrl: "/api/locations",
+            updateUrl: "/api/locations"
+        });
+
+        // ✅ PRELOAD districts BEFORE grid init
+        districtsStore.load().done(function () {
+
+            $("#locationsGrid").dxDataGrid({
+                dataSource: locationsStore,
+                keyExpr: "LocationId",
+
+                remoteOperations: {
+                    paging: true,
+                    filtering: false,
+                    sorting: false
+                },
+
+                toolbar: {
+                    items: [
+                        {
+                            location: "after",
+                            template: function () {
+                                return $("<div>").dxTextBox({
+                                    width: 240,
+                                    placeholder: "Search locations...",
+                                    mode: "search",
+                                    onValueChanged: function (e) {
+                                        const grid = $("#locationsGrid").dxDataGrid("instance");
+                                        grid.searchByText(e.value);
+                                    }
+                                });
+                            }
+                        },
+                        {
+                            location: "after",
+                            template: function () {
+                                return $("<div>").css({ display: "flex", alignItems: "center", gap: "8px" })
+                                    .append($("<span>").text("Paging").css({ fontWeight: 600 }))
+                                    .append($("<div>").dxSwitch({
+                                        value: true,
+                                        hint: "Turn paging on/off",
+                                        onValueChanged: function (e) {
+                                            const grid = $("#locationsGrid").dxDataGrid("instance");
+                                            grid.option("paging.enabled", e.value);
+                                            grid.option("pager.visible", e.value);
+                                        }
+                                    }));
+                            }
+                        }
+                    ]
+                },
+
+                showBorders: true,
+                columnAutoWidth: true,
+                rowAlternationEnabled: true,
+                hoverStateEnabled: true,
+
+                searchPanel: { visible: false },
+
+                editing: {
+                    mode: "popup",
+                    allowAdding: true,
+                    allowUpdating: true,
+                    popup: {
+                        title: "Location",
+                        showTitle: true,
+                        width: 520,
+                        height: "auto"
+                    },
+                    form: {
+                        colCount: 1,
+                        labelLocation: "left",
+                        items: [
+                            { dataField: "IsActive", label: { text: "Active" } },
+                            { dataField: "LocationId", label: { text: "ID" }, editorOptions: { readOnly: true } },
+                            { dataField: "Code", label: { text: "Code" } },
+                            { dataField: "Name", label: { text: "Name" } },
+                            {
+                                dataField: "DistrictId",
+                                label: { text: "District" },
+                                editorType: "dxSelectBox",
+                                editorOptions: {
+                                    dataSource: districtsStore,
+                                    valueExpr: "DistrictId",
+                                    displayExpr: "Name",
+                                    searchEnabled: true,
+                                    placeholder: "Select district..."
+                                }
+                            },
+                            { dataField: "UseForSeed", label: { text: "Use For Seed" } },
+                            { dataField: "UseForWarehouse", label: { text: "Use For Warehouse" } }
+                        ]
+                    }
+                },
+
+                columns: [
+                    
+                    {
+                        dataField: "IsActive",
+                        caption: "Active",
+                        width: 100,
+                        cellTemplate: function (cellElement, cellInfo) {
+                            const isActive = cellInfo.value;
+                            cellElement.text(isActive ? "Active" : "Inactive");
+                            if (!isActive) cellElement.css("color", "red");
+                        }
+                    },
+                    { dataField: "LocationId", caption: "ID", width: 90 },
+                    { dataField: "Code", caption: "Code", width: 120 },
+                    { dataField: "Name", caption: "Name" },
+                    {
+                        dataField: "DistrictId",
+                        caption: "District",
+                        lookup: {
+                            dataSource: districtsStore,
+                            valueExpr: "DistrictId",
+                            displayExpr: "Name"
+                        }
+                    },
+                    {
+                        dataField: "UseForSeed",
+                        caption: "Use For Seed",
+                        width: 130,
+                        cellTemplate: function (cellElement, cellInfo) {
+                            const value = cellInfo.value;
+                            cellElement.text(value ? "Yes" : "No");
+                            if (!value) cellElement.css("color", "red");
+                        }
+                    },
+                    {
+                        dataField: "UseForWarehouse",
+                        caption: "Use For Warehouse",
+                        width: 160,
+                        cellTemplate: function (cellElement, cellInfo) {
+                            const value = cellInfo.value;
+                            cellElement.text(value ? "Yes" : "No");
+                            if (!value) cellElement.css("color", "red");
+                        }
+                    },
+                    {
+                        type: "buttons",
+                        width: 60,
+                        buttons: [{ name: "edit", icon: "edit", hint: "Edit location" }]
+                    }
+                ]
+            });
+
+        });
+
+    </script>
+}

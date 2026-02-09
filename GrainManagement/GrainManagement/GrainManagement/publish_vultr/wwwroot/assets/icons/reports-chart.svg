@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Reports / chart icon (for CSS mask usage) -->
+  <path d="M12 52h44v4H12z"/>
+  <path d="M12 12h4v44h-4z"/>
+  <path d="M22 38h8v14h-8z"/>
+  <path d="M34 28h8v24h-8z"/>
+  <path d="M46 20h8v32h-8z"/>
+  <path d="M20 22l10-6 10 5 14-9 2 3-16 11-10-5-9 5z"/>
+</svg>

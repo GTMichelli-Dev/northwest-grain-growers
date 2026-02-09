@@ -518,6 +518,10 @@ public partial class dbContext : DbContext
         {
             entity.ToTable("Locations", "system");
 
+            entity.HasIndex(e => e.Code, "IX_Locations_Code").IsUnique();
+
+            entity.HasIndex(e => e.Name, "IX_Locations_Name").IsUnique();
+
             entity.Property(e => e.LocationId).ValueGeneratedNever();
             entity.Property(e => e.Code)
                 .IsRequired()
@@ -525,6 +529,12 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(200);
+            entity.Property(e => e.UseForSeed)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Locations_UseForSeed");
+            entity.Property(e => e.UseForWarehouse)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Locations_UseForWarehouse");
 
             entity.HasOne(d => d.District).WithMany(p => p.Locations)
                 .HasForeignKey(d => d.DistrictId)
@@ -1318,10 +1328,12 @@ public partial class dbContext : DbContext
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_system_Servers_CreatedAt");
+            entity.Property(e => e.FriendlyName).HasMaxLength(100);
             entity.Property(e => e.ServerName)
                 .IsRequired()
                 .HasMaxLength(128);
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+            entity.Property(e => e.Url).HasMaxLength(100);
         });
 
         modelBuilder.Entity<SplitGroup>(entity =>

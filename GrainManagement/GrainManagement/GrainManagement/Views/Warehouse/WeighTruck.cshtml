@@ -1,0 +1,92 @@
+﻿<h2>WeighTruck</h2>
+
+<video id="cam1" autoplay muted playsinline
+       style="width:100%; max-width: 900px; border: 1px solid #ccc; background:black;"></video>
+<div style="margin: 8px 0;">
+    <button id="fullscreenBtn" class="btn btn-primary" type="button">
+        Full Screen
+    </button>
+</div>
+
+<p id="status" style="font-family:sans-serif; font-size:0.9rem;"></p>
+
+<script>
+    (async () => {
+        const video = document.getElementById("cam1");
+        const status = document.getElementById("status");
+        const btn = document.getElementById("fullscreenBtn");
+        const setStatus = (m) => status.textContent = m;
+
+        btn.addEventListener("click", () => {
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                if (video.requestFullscreen) {
+                    video.requestFullscreen();
+                } else if (video.webkitRequestFullscreen) {
+                    video.webkitRequestFullscreen(); // Safari
+                } else if (video.msRequestFullscreen) {
+                    video.msRequestFullscreen(); // Old Edge
+                }
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        });
+
+
+        try {
+            setStatus("Connecting…");
+
+            const pc = new RTCPeerConnection({ iceServers: [] });
+
+            pc.ontrack = (e) => {
+                video.srcObject = e.streams[0];
+                setStatus("Live");
+            };
+
+            pc.onconnectionstatechange = () =>
+                setStatus("WebRTC: " + pc.connectionState);
+
+            // Video only first
+            pc.addTransceiver("video", { direction: "recvonly" });
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+
+            // nginx proxy endpoint (same-origin over HTTPS)
+            const apiPath = "/rtc/v1/play/";
+
+            // IMPORTANT: match SRS demo expectations
+            const srsApi = "http://144.202.88.133:1985/rtc/v1/play/";
+            const streamUrl = "webrtc://144.202.88.133/live/cam1";
+
+            const resp = await fetch(apiPath, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    api: srsApi,
+                    streamurl: streamUrl,
+                    clientip: null,
+                    tid: Math.random().toString(16).slice(2),
+                    sdp: offer.sdp
+                })
+            });
+
+            const answer = await resp.json();
+
+            if (answer.code !== 0) {
+                console.error("SRS error:", answer);
+                setStatus("SRS error: " + (answer.msg || answer.code));
+                return;
+            }
+
+            await pc.setRemoteDescription({ type: "answer", sdp: answer.sdp });
+            setStatus("Connected");
+        } catch (err) {
+            console.error(err);
+            setStatus("Error: " + err);
+        }
+    })();
+</script>

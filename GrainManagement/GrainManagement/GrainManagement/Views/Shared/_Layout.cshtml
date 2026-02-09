@@ -17,7 +17,7 @@
     <link href="~/assets/branding/@(themeKey)/favicon.ico" rel="shortcut icon" type="image/x-icon" />
 
     @* Uncomment to use the HtmlEditor control *@
-    @* <script src="https://cdn.jsdelivr.net/npm/devextreme-quill@24_1/dist/dx-quill.min.js"></script> *@
+    @* <script src="~/js/devextreme/dx-quill.js"></script> *@
 
     @* Uncomment to use the Gantt control *@
     @*<link href="~/css/devextreme/dx-gantt.css" rel="stylesheet" />*@
@@ -74,8 +74,11 @@
     <nav class="navbar navbar-dark gm-navbar fixed-top navbar-expand-md">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-                <img src="~/assets/branding/@(themeKey)/logo.png" alt="Logo" style="height:34px; width:auto;" />
-                <span>Grain Management</span>
+                <img class="gm-logo" src="~/assets/branding/@(themeKey)/logo.png" alt="Logo" style="height:34px; width:auto;" />
+                <div style="text-align: center; width: 100%;">
+                    <span id="system-info" style="font-size: 0.85rem; color: black;"></span>
+                </div>
+
             </a>
 
             <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar" aria-expanded="false" aria-controls="navbar">
@@ -83,7 +86,7 @@
             </button>
 
             <div id="navbar" class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
+                @* <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
                     <li class="nav-item"><a href="/Warehouse" class="nav-link">Warehouse</a></li>
                     <li class="nav-item"><a href="/Seed" class="nav-link">Seed</a></li>
@@ -99,7 +102,7 @@
                             </li>
                         }
                         }
-                </ul>
+                </ul> *@
                     <div class="d-flex ms-auto">
                         @if (User.Identity.IsAuthenticated)
                         {
@@ -117,10 +120,12 @@
         </div>
     </nav>
 
-    <main class="container" style="margin-top: 1.5rem;">
+    <main class="container-fluid" style="margin-top: 1.5rem;">
+
         @RenderBody()
     </main>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 
 </html>
+<script src="~/js/system-info.js"></script>

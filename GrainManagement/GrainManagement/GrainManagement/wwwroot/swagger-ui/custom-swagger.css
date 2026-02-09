@@ -1,0 +1,22 @@
+.swagger-ui .topbar-wrapper img[alt="Swagger UI logo"] {
+    display: none !important;
+}
+.swagger-ui .topbar-wrapper .link {
+    display: flex !important;
+    align-items: center;
+    background: none !important;
+    height: 60px;
+}
+.swagger-ui .topbar-wrapper .link:before {
+    content: "";
+    display: inline-block;
+    background: url('/images/logo.png') no-repeat center center;
+    background-size: contain;
+    width: 48px;
+    height: 48px;
+    margin-right: 12px;
+}
+.swagger-ui .topbar {
+    background: #1a2a36 !important; /* Example: match your _Layout.cshtml navbar */
+    color: #fff !important;
+}

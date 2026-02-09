@@ -8,8 +8,10 @@ using Microsoft.Extensions.Caching.SqlServer;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models; // <-- Add this using directive
 using GrainManagement.Auth;
-
+using GrainManagement.Hubs;
+using Microsoft.AspNetCore.HttpOverrides;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,6 +27,17 @@ builder.Services
     .EnableTokenAcquisitionToCallDownstreamApi()
     .AddDistributedTokenCaches();
 
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IServerInfoProvider, ServerInfoProvider>();
+
+// SignalR (Warehouse realtime refresh)
+//builder.Services.AddSignalR();
+
+// Warehouse data abstraction (dummy now, real later)
+builder.Services.AddScoped<IWarehouseIntakeDataService, DummyWarehouseIntakeDataService>();
+
+
+
 builder.Services.AddDistributedSqlServerCache(o =>
 {
     o.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -34,6 +47,21 @@ builder.Services.AddDistributedSqlServerCache(o =>
 
 builder.Services.AddScoped<IJsonLog, JsonLog>();
 
+
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.PropertyNamingPolicy = null;
+        o.JsonSerializerOptions.DictionaryKeyPolicy = null;
+    });
+
+// SignalR JSON protocol
+builder.Services.AddSignalR()
+    .AddJsonProtocol(o =>
+    {
+        o.PayloadSerializerOptions.PropertyNamingPolicy = null;
+        o.PayloadSerializerOptions.DictionaryKeyPolicy = null;
+    });
 
 builder.Services.AddAuthorization(options =>
 {
@@ -98,8 +126,33 @@ builder.Services.AddDbContext<dbContext>((serviceProvider, options) =>
         connectionString = configuration.GetConnectionString("AdminConnection");
     }
 
-    options.UseSqlServer(connectionString);
+    options.UseSqlServer(connectionString, sql =>
+    {
+        sql.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null);
+    });
 });
+
+
+//builder.Services.AddDbContext<dbContext>((serviceProvider, options) =>
+//{
+//    var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
+//    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+//    var httpContext = httpContextAccessor.HttpContext;
+
+//    var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+//    var endpoint = httpContext?.GetEndpoint();
+//    var useAdminConn = endpoint?.Metadata.GetMetadata<UseAdminConnectionAttribute>() != null;
+//    if (useAdminConn)
+//    {
+//        connectionString = configuration.GetConnectionString("AdminConnection");
+//    }
+
+//    options.UseSqlServer(connectionString);
+//});
 
 //builder.Services.AddDbContext<dbContext>(
 //      options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -124,14 +177,29 @@ if (!app.Environment.IsDevelopment())
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
+
     app.UseSwaggerUI(c =>
     {
+       
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "GrainManagement API V1");
         c.RoutePrefix = "swagger"; // Swagger UI at /swagger
     });
 }
 
-app.UseHttpsRedirection();
+var fh = new ForwardedHeadersOptions
+{
+    ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost
+};
+
+fh.KnownNetworks.Clear();
+fh.KnownProxies.Clear();
+
+app.UseForwardedHeaders(fh);
+
+//app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -139,12 +207,21 @@ app.UseRouting();
 // Resolve active theme for each request (users cannot override)
 app.UseMiddleware<ThemeMiddleware>();
 
+
+
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// SignalR hubs
+
+app.MapHub<PrintHub>("/hubs/print");
+
+app.MapHub<WarehouseHub>(WarehouseHub.HubRoute);
 
 app.MapRazorPages();
 

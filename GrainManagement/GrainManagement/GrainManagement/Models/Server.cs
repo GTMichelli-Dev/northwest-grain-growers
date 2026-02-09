@@ -11,7 +11,11 @@ public partial class Server
 
     public string ServerName { get; set; }
 
+    public string FriendlyName { get; set; }
+
     public bool IsActive { get; set; }
+
+    public string Url { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
