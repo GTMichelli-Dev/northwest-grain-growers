@@ -25,14 +25,7 @@ Keep `appsettings.json` in the same directory as the executable or `.dll`.
 
 ---
 
-## Runtime Type
 
-### Framework-dependent (.dll)
-File present:
-GMScaleService.dll
-
-Requires:
-/usr/bin/dotnet
 
 ### Self-contained executable
 File present:
@@ -45,33 +38,12 @@ No .NET runtime required.
 ## Create the systemd Service
 
 Create the service file:
-
+```bash
 sudo nano /etc/systemd/system/gmscaleservice.service
-
-### Framework-dependent (.dll)
-
-[Unit]
-Description=GMScaleService
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=admin
-WorkingDirectory=/home/admin/apps/GMScaleService
-ExecStart=/usr/bin/dotnet /home/admin/apps/GMScaleService/GMScaleService.dll
-Restart=always
-RestartSec=3
-Environment=DOTNET_ENVIRONMENT=Production
-UMask=0002
-
-[Install]
-WantedBy=multi-user.target
-
----
+```
 
 ### Self-contained executable
-
+```bash
 [Unit]
 Description=GMScaleService
 After=network-online.target
@@ -88,35 +60,36 @@ RestartSec=3
 [Install]
 WantedBy=multi-user.target
 
-Make executable if needed:
-
+```
+Make executable :
+```bash
 chmod +x /home/admin/apps/GMScaleService/GMScaleService
+```
 
----
 
 ## Enable and Start
-
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable gmscaleservice
 sudo systemctl start gmscaleservice
-
+```
 Check status:
-
+```bash
 sudo systemctl status gmscaleservice -l --no-pager
+```
 
----
 
 ## Logs
 
 Live logs:
-
+``` bash
 sudo journalctl -u gmscaleservice -f
-
+```
 Recent logs:
-
+```bash
 sudo journalctl -u gmscaleservice -n 200 --no-pager
+```
 
----
 
 ## Common Fixes
 
@@ -124,26 +97,26 @@ sudo journalctl -u gmscaleservice -n 200 --no-pager
 - Verify ExecStart path
 - Ensure file exists
 - Check permissions
-
+```bash
 ls -la /home/admin/apps/GMScaleService
+```
 
----
 
 ### USB / Serial devices
 If using scales or USB adapters:
-
+``` bash
 sudo usermod -aG dialout,plugdev admin
-
+```
 Log out and back in after running this.
 
 ---
 
 ## Updating the App
-
+```bash
 sudo systemctl stop gmscaleservice
 sudo cp -a ./publish/* /home/admin/apps/GMScaleService/
 sudo systemctl start gmscaleservice
-
+```
 ---
 
 ## Notes
