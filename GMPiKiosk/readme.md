@@ -112,7 +112,7 @@ Log out and back in after running this.
 ## Updating the App
 ```bash
 sudo systemctl stop gmscaleservice
-sudo cp -a ./publish/* /home/admin/apps/GMScaleService/
+sudo systemctl daemon-reload
 sudo systemctl start gmscaleservice
 ```
 ---
