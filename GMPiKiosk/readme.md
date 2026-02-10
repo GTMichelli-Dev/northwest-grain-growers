@@ -15,13 +15,11 @@ Place the application in a stable directory:
 
 /home/admin/apps/GMScaleService
 
-Example:
-
-sudo mkdir -p /home/admin/apps/GMScaleService
-sudo cp -a /home/admin/Documents/GMScaleService/* /home/admin/apps/GMScaleService/
+Set Permissions:
+```bash
 sudo chown -R admin:admin /home/admin/apps/GMScaleService
-
-Keep `appsettings.json` in the same directory as the executable or `.dll`.
+```
+Keep `appsettings.json` in the same directory as the executable .
 
 ---
 
