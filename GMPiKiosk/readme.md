@@ -61,7 +61,7 @@ WantedBy=multi-user.target
 ```
 Make executable :
 ```bash
-chmod +x /home/admin/apps/GMScaleService
+chmod +x /home/admin/apps/GMScaleKiosk
 ```
 
 
