@@ -50,8 +50,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=admin
-WorkingDirectory=/home/admin/apps/GMScaleService
-ExecStart=/home/admin/apps/GMScaleService/GMScaleService
+WorkingDirectory=/home/admin/apps
+ExecStart=/home/admin/apps/GMScaleKiosk
 Restart=always
 RestartSec=3
 
