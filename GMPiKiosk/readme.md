@@ -37,12 +37,12 @@ No .NET runtime required.
 
 ## Create the systemd Service
 
-Create the service file:
+
 ```bash
 sudo nano /etc/systemd/system/gmscaleservice.service
 ```
 
-### Self-contained executable
+### Edit the service
 ```bash
 [Unit]
 Description=GMScaleService
