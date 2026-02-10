@@ -13,7 +13,7 @@ Tested on:
 
 Place the application in a stable directory:
 
-/home/admin/apps/GMScaleService
+/home/admin/apps/GMScaleKiosk
 
 Set Permissions:
 ```bash
