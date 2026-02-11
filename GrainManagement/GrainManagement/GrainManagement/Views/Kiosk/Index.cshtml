@@ -1,0 +1,59 @@
+﻿@{
+    Layout = null;
+    var themeKey = Context.Items["ThemeKey"]?.ToString() ?? "default";
+}
+
+@{
+    var scaleIdRaw = Context.Request.Query["scaleId"].ToString();
+    var scaleId = int.TryParse(scaleIdRaw, out var sid) ? sid : 0;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kiosk</title>
+
+    <link rel="stylesheet" href="~/css/themes/@(themeKey).css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/pages/kiosk.css" asp-append-version="true" />
+    <link href="~/assets/branding/@(themeKey)/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+</head>
+
+<body>
+    <!-- HEADER -->
+    <div class="header-row">
+        <!-- Centered logo -->
+        <div class="logo-center">
+            <img class="brand-logo"
+                 src="~/assets/branding/@(themeKey)/logo.png"
+                 alt="Brand" />
+        </div>
+
+        <!-- Centered scale / printer name -->
+        <div class="header-center">
+            <div class="header">
+                <div id="scaleName"></div>
+                <div id="printerName"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN SCALE DISPLAY -->
+    <div class="main-container">
+        <div class="weight" id="weight">--</div>
+        <div class="status" id="status"></div>
+    </div>
+
+    <div class="prompt" id="prompt"></div>
+
+    <script>
+        window.GM = window.GM || {};
+        GM.themeKey = "@themeKey";
+        GM.scaleId = @scaleId;
+    </script>
+
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script src="~/js/pages/kiosk.js" asp-append-version="true"></script>
+</body>
+</html>

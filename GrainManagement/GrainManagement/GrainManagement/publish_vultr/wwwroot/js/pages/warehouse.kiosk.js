@@ -16,7 +16,7 @@
             return;
         }
 
-        const url = `/api/printing/device/${encodeURIComponent(deviceId)}/print-ticket/${encodeURIComponent(ticket)}`;
+        const url = `/api/printing/printer/${encodeURIComponent(deviceId)}/print-ticket/${encodeURIComponent(ticket)}`;
 
         btnEl.disabled = true;
             
@@ -117,7 +117,7 @@
 
                 // IMPORTANT: match SRS demo expectations
                 const srsApi = "http://144.202.88.133:1985/rtc/v1/play/";
-                const streamUrl = "webrtc://144.202.88.133/live/cam1";
+                const streamUrl = "webrtc://144.202.88.133/live/1";
 
                 const resp = await fetch(apiPath, {
                     method: "POST",

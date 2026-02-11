@@ -82,7 +82,8 @@ namespace ScaleReaderService.Services
             // Parse motion/status tokens commonly seen in SMA-like outputs:
             // Examples: "ST,GS,   000123 kg", "US,GS,000123", "MOTION", "STABLE"
             bool motion = reply.Contains("US", StringComparison.OrdinalIgnoreCase)
-                       || reply.Contains("UNST", StringComparison.OrdinalIgnoreCase)
+                       || reply.Contains("M", StringComparison.OrdinalIgnoreCase)
+                        || reply.Contains("UNST", StringComparison.OrdinalIgnoreCase)
                        || reply.Contains("MOTION", StringComparison.OrdinalIgnoreCase);
 
             var m = WeightRegex.Matches(reply);
@@ -99,10 +100,13 @@ namespace ScaleReaderService.Services
             }
 
             // Additional failure tokens
-            if (reply.Contains("ERR", StringComparison.OrdinalIgnoreCase))
+            if (reply.Contains("ERR", StringComparison.OrdinalIgnoreCase)
+                || reply.Contains("U", StringComparison.OrdinalIgnoreCase)
+                        || reply.Contains("O", StringComparison.OrdinalIgnoreCase)
+                       || reply.Contains("E", StringComparison.OrdinalIgnoreCase))
                 ok = false;
-
-            return (ok, weight, motion, reply);
+            var status = (!ok) ? "Error" : (motion ? "Motion" : "Ok");
+            return (ok, weight, motion, status);
         }
 
         private byte[] BuildRequestBytes(string s)

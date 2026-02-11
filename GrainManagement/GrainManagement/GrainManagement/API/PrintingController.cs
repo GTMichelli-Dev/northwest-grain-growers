@@ -15,18 +15,24 @@ namespace GrainManagement.Api
             _hub = hub;
         }
 
-        // POST /api/printing/device/kiosk-ml-01/print-ticket/T-100234
-        [HttpPost("device/{deviceId}/print-ticket/{ticket}")]
-        public async Task<IActionResult> PrintTicket([FromRoute] string deviceId, [FromRoute] string ticket)
+        [HttpPost("printer/{printerId}/print-ticket/{ticket}")]
+        public async Task<IActionResult> PrintTicket([FromRoute] string printerId, [FromRoute] string ticket)
         {
-            if (!PrintHub.TryGetConnection(deviceId, out var connId))
-                return NotFound(new { error = "Device not connected", deviceId });
+            if (string.IsNullOrWhiteSpace(printerId))
+                return BadRequest(new { error = "printerId is required" });
 
-            // Minimal payload: Pi will download the PDF by ticket number.
+            if (string.IsNullOrWhiteSpace(ticket))
+                return BadRequest(new { error = "ticket is required" });
+
+            // Look up kiosk connection by printerId
+            if (!PrintHub.TryGetConnection(printerId, out var connId))
+                return NotFound(new { error = "Printer kiosk not connected", printerId });
+
+            // Send print command + printerId (kiosk will verify it matches itself)
             await _hub.Clients.Client(connId)
-                .SendAsync("PrintLoadTicket", new { ticket });
+                .SendAsync("PrintLoadTicket", new { ticket, printerId });
 
-            return Ok(new { sent = true, deviceId, ticket });
+            return Ok(new { sent = true, printerId, ticket });
         }
     }
 }

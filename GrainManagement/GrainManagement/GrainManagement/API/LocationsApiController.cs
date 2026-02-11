@@ -1,12 +1,13 @@
 ﻿using DevExpress.XtraEditors.Filtering;
 using DevExtreme.AspNet.Data;
 using DevExtreme.AspNet.Mvc;
+using GrainManagement.Dtos;
 using GrainManagement.Models;
+using GrainManagement.Services;
 using GrainManagement.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-
 
 [UseAdminConnection]
 [ApiController]
@@ -14,20 +15,25 @@ using Newtonsoft.Json;
 public class LocationsApiController : ControllerBase
 {
     private readonly dbContext _ctx;
+    private readonly ILogger<LocationsApiController> _logger;   
+    private readonly ILocationService _locationService;
 
-    public LocationsApiController(dbContext ctx)
+    public LocationsApiController(dbContext ctx, ILogger<LocationsApiController> logger, ILocationService locationService)
     {
         _ctx = ctx;
+        _logger = logger;
+        _locationService = locationService;
     }
 
     [HttpGet("Districts")]
     public IActionResult Districts()
     {
-        var data = _ctx.LocationDistricts
-               .Select(p => new { DistrictId = p.DistrictId, Name = p.Name })
-               .OrderBy(p => p.Name)
-               .ToList();
 
+       var data=_locationService.GetLocationDistricts().Result.Select(d => new
+        {
+            DistrictId = d.DistrictId,
+            Name = d.Name
+        }).ToList();
         return Ok(data);
     }
 
@@ -58,19 +64,8 @@ public class LocationsApiController : ControllerBase
     [HttpGet("WarehouseLocationsList")]
     public async Task<IActionResult> WarehouseLocationsList()
     {
-        var data = await _ctx.Locations
-            .AsNoTracking()
-            .Include(l => l.District)
-            .Where(l => l.UseForWarehouse == true)
-            .Where(l => l.IsActive == true)
-            .OrderBy(l => l.Name)
-            .Select(l => new
-            {
-                LocationId = l.LocationId,
-                Name = l.Name,
-                District = l.District.Name
-            })
-            .ToListAsync();
+        var data = await _locationService.GetAllAsync();
+  
 
         return Ok(data);
     }

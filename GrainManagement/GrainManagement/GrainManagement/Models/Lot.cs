@@ -15,8 +15,6 @@ public partial class Lot
 
     public int? ProductId { get; set; }
 
-    public int? SplitGroupId { get; set; }
-
     public string LotDescription { get; set; }
 
     public DateTime CreatedAt { get; set; }

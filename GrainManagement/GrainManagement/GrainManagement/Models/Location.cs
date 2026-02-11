@@ -27,6 +27,10 @@ public partial class Location
 
     public virtual LocationDistrict District { get; set; }
 
+    public virtual ICollection<LocationCamera> LocationCameras { get; set; } = new List<LocationCamera>();
+
+    public virtual ICollection<LocationKiosk> LocationKiosks { get; set; } = new List<LocationKiosk>();
+
     public virtual ICollection<PriceList> PriceLists { get; set; } = new List<PriceList>();
 
     public virtual ICollection<ProductLocationPricesLegacy> ProductLocationPricesLegacies { get; set; } = new List<ProductLocationPricesLegacy>();

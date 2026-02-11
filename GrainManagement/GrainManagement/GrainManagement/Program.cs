@@ -29,6 +29,7 @@ builder.Services
 
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IServerInfoProvider, ServerInfoProvider>();
+builder.Services.AddSingleton<IScaleRegistry, ScaleRegistry>();
 
 // SignalR (Warehouse realtime refresh)
 //builder.Services.AddSignalR();
@@ -80,6 +81,15 @@ builder.Services.AddAuthorization(options =>
 // Small DI service to expose role booleans per request
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+
+if (builder.Configuration.GetValue<bool>("UseDemoData"))
+{
+    builder.Services.AddScoped<ILocationService, DemoLocationService>();
+}
+else
+{
+    builder.Services.AddScoped<ILocationService, sqlLocationService>();
+}
 
 
 builder.Services.AddEndpointsApiExplorer();
@@ -218,6 +228,7 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 // SignalR hubs
+app.MapHub<ScaleHub>("/hubs/scale");
 
 app.MapHub<PrintHub>("/hubs/print");
 

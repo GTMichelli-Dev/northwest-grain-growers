@@ -1,0 +1,142 @@
+﻿/* ========== Base ========== */
+body {
+    background-color: white;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* ========== Header / Branding ========== */
+.header-row {
+    position: relative;
+    height: 165px;
+    margin-top: 5px;
+}
+
+/* Logo sits BEHIND text */
+.logo-center {
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1; /* BACK layer */
+    pointer-events: none;
+}
+
+/* Big logo */
+.header-row .logo-center img.brand-logo {
+    width: 150px;
+    height: 150px;
+    max-width: none;
+    max-height: none;
+    object-fit: contain;
+    /* opacity: 0.15;  optional: keeps text readable */
+}
+
+/* Header text ABOVE logo */
+.header-center {
+    position: absolute;
+    top: 135px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    pointer-events: none;
+    z-index: 2; /* FRONT layer */
+}
+
+.header {
+    display: inline-block;
+    font-size: 3em;
+    line-height: 1;
+}
+
+
+/* ========== Main Content ========== */
+.main-container {
+    width: 90vw;
+    max-width: 90vw;
+    margin: 20px auto 0 auto;
+    border: 2px solid #000;
+    box-sizing: border-box;
+    padding: 5px;
+    /* Default (OK, no motion) */
+    background-color: white;
+    color: black;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.weight {
+    text-align: center;
+    font-size: 15em;
+    font-weight: bold;
+    margin-top: 2px;
+    line-height: 1;
+}
+
+.status {
+    margin-top: 0;
+    font-size: 5em;
+    line-height: 1;
+    min-height: 1em;
+    text-align: center;
+}
+
+.prompt {
+    margin-top: 5px;
+    font-size: 8em;
+    line-height: 1;
+    text-align: center;
+}
+
+/* ========== State colors ========== */
+/* Scale NOT OK */
+.main-container.scale-error {
+    background-color: red;
+    color: white;
+}
+
+/* Scale OK + Motion */
+.main-container.scale-motion {
+    background-color: yellow;
+    color: black;
+}
+
+/* SignalR down/stalled */
+.main-container.signalr-error {
+    background-color: red;
+    color: white;
+}
+
+/* ========== Mobile ========== */
+@media (max-width: 600px) {
+    .header-row {
+        height: 140px;
+        margin-top: 5px;
+    }
+
+    .header-center {
+        top: 120px;
+    }
+
+    .header {
+        font-size: 1.5em;
+    }
+
+    .prompt {
+        font-size: 1.5em;
+    }
+
+    .status {
+        font-size: 1em;
+    }
+
+    .weight {
+        font-size: 2em;
+    }
+
+    .header-row .logo-center img.brand-logo {
+        width: 120px;
+        height: 120px;
+    }
+}

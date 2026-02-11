@@ -65,13 +65,14 @@ namespace ScaleReaderService.Services
                 {
                     var (ok, weight, motion, status) = await _smaClient.QueryOnceAsync(scale.IpAddress, scale.Port, ct);
 
-                    var dto = new ScaleDTO
+                    var dto = new ScaleDto
                     {
                         Description = scale.Description,
+                        Id = scale.Id,
                         Motion = motion,
                         Ok = ok,
                         Weight = weight,
-                        Status = ok ? "OK" : status,
+                        Status=status, //Status = ok ? "OK" : status,
                         LastUpdate = DateTime.Now
                     };
 
@@ -97,7 +98,7 @@ namespace ScaleReaderService.Services
             }
         }
 
-        private async Task PostToEndpointAsync(EndpointOptions endpoint, ScaleDTO dto, CancellationToken ct)
+        private async Task PostToEndpointAsync(EndpointOptions endpoint, ScaleDto dto, CancellationToken ct)
         {
             try
             {

@@ -110,6 +110,18 @@ body {
   mask-image: url('/assets/icons/reports-chart.svg');
 }
 
+.gm-icon--scale::before {
+    -webkit-mask-image: url('/assets/icons/scale.svg');
+    mask-image: url('/assets/icons/scale.svg');
+}
+
+.gm-icon--camera::before {
+    -webkit-mask-image: url('/assets/icons/camera.svg');
+    mask-image: url('/assets/icons/camera.svg');
+}
+
+
+
 .gm-icon--settings::before {
   -webkit-mask-image: url('/assets/icons/settings.svg');
   mask-image: url('/assets/icons/settings.svg');
@@ -545,3 +557,67 @@ body:not(.gm-js-ready) #gmWsShell {
     box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.7);
     filter: brightness(1.05);
 }
+
+
+
+
+
+
+
+/*>>>>>>>>>>>>>>>>>>>>>>>>>> Camera layout >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+
+
+/* Camera index width control */
+.gm-camera-container {
+    max-width: 900px; /* looks good on desktop */
+    margin: 0 auto; /* center it */
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* Phones: use full width */
+@media (max-width: 576px) {
+    .gm-camera-container {
+        max-width: none;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+}
+
+
+
+/* Camera view centering */
+.gm-camera-view-container {
+    max-width: 1200px; /* desktop cap */
+    margin: 0 auto; /* center */
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* Video styling */
+.gm-camera-video {
+    width: 100%;
+    display: block;
+    border: 1px solid #ccc;
+    background: black;
+}
+
+/* Status text */
+.gm-camera-status {
+    font-family: sans-serif;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+/* Phones: use full width */
+@media (max-width: 576px) {
+    .gm-camera-view-container {
+        max-width: none;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+}
+
+
+/*>>>>>>>>>>>>>>>>>>>>>>>>>> Camera layout >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/

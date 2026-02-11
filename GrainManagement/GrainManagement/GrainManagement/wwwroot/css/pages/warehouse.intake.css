@@ -1,0 +1,17 @@
+﻿/* Hide the validation badge bubble/icon everywhere */
+.dx-invalid-badge {
+    display: none !important;
+}
+
+/* Optional: also prevent “invalid badge layout” from reserving space */
+.dx-show-invalid-badge {
+    padding-right: 0 !important;
+}
+/* Only inside the weight-sheet panel */
+.gm-ws-panel .dx-invalid-badge {
+    display: none !important;
+}
+
+.gm-ws-panel .dx-texteditor.dx-show-invalid-badge {
+    padding-right: 0 !important;
+}

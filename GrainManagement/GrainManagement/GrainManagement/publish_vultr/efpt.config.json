@@ -227,7 +227,15 @@
          "ObjectType": 0
       },
       {
+         "Name": "[system].[LocationCameras]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[system].[LocationDistricts]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[system].[LocationKiosks]",
          "ObjectType": 0
       },
       {

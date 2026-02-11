@@ -1,0 +1,50 @@
+﻿@model GrainManagement.Controllers.CameraController.CameraDef
+@{
+    ViewData["Title"] = Model.Name;
+    var pop = (ViewData["Pop"] as bool?) ?? false;
+}
+
+@if (!pop)
+{
+    <div class="gm-pagehead gm-pagehead--sticky">
+        <div class="gm-pagehead__left">
+            <div class="gm-pagehead__title">
+                <h2>@Model.Name</h2>
+            </div>
+        </div>
+
+        <div class="gm-pagehead__right">
+            <a class="btn btn-outline-secondary" href="/Camera">Back</a>
+            <a class="btn btn-outline-secondary" target="_blank" rel="noopener"
+               href="/Camera/View/@Model.Id?pop=true">Pop out</a>
+            <button id="fullscreenBtn" class="btn btn-primary" type="button">Full Screen</button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-end gap-2 p-2">
+        <a class="btn btn-outline-secondary" href="/Camera">Back</a>
+        <button id="fullscreenBtn" class="btn btn-primary" type="button">Full Screen</button>
+    </div>
+}
+
+<div class="p-2 gm-camera-view-container">
+    <video id="cam1"
+           autoplay
+           muted
+           playsinline
+           class="gm-camera-video"></video>
+
+    <p id="status" class="gm-camera-status"></p>
+</div>
+
+@section Scripts {
+    <script>
+        window.gmCamera = {
+            streamKey: "@Model.StreamKey"
+        };
+    </script>
+
+    <script src="~/js/pages/camera.view.js" asp-append-version="true"></script>
+}

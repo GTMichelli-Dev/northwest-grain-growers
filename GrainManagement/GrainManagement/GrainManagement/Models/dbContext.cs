@@ -47,7 +47,11 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<Location> Locations { get; set; }
 
+    public virtual DbSet<LocationCamera> LocationCameras { get; set; }
+
     public virtual DbSet<LocationDistrict> LocationDistricts { get; set; }
+
+    public virtual DbSet<LocationKiosk> LocationKiosks { get; set; }
 
     public virtual DbSet<Lot> Lots { get; set; }
 
@@ -542,6 +546,27 @@ public partial class dbContext : DbContext
                 .HasConstraintName("FK_Locations_LocationDistricts");
         });
 
+        modelBuilder.Entity<LocationCamera>(entity =>
+        {
+            entity.HasKey(e => e.CameraId).HasName("PK_Cameras");
+
+            entity.ToTable("LocationCameras", "system");
+
+            entity.HasIndex(e => new { e.Description, e.LocationId }, "IX_Cameras").IsUnique();
+
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.HostedServerUrl)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.HasOne(d => d.Location).WithMany(p => p.LocationCameras)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Cameras_Locations");
+        });
+
         modelBuilder.Entity<LocationDistrict>(entity =>
         {
             entity.HasKey(e => e.DistrictId).HasName("PK_Districts");
@@ -551,6 +576,36 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(200);
+        });
+
+        modelBuilder.Entity<LocationKiosk>(entity =>
+        {
+            entity.HasKey(e => e.KioskId).HasName("PK_Kiosk");
+
+            entity.ToTable("LocationKiosks", "system");
+
+            entity.HasIndex(e => new { e.LocationId, e.Description }, "IX_Kiosk").IsUnique();
+
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.HostedServerUrl)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.KioskType)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasDefaultValue("")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LocationKiosks_KioskType");
+
+            entity.HasOne(d => d.Camera).WithMany(p => p.LocationKiosks)
+                .HasForeignKey(d => d.CameraId)
+                .HasConstraintName("FK_Kiosk_Cameras");
+
+            entity.HasOne(d => d.Location).WithMany(p => p.LocationKiosks)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Kiosk_Locations");
         });
 
         modelBuilder.Entity<Lot>(entity =>
