@@ -42,9 +42,12 @@ else
 @section Scripts {
     <script>
         window.gmCamera = {
+            cameraId: "@Model.Id",
             streamKey: "@Model.StreamKey"
         };
     </script>
 
     <script src="~/js/pages/camera.view.js" asp-append-version="true"></script>
+
+
 }

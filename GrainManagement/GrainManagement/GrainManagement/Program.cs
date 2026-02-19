@@ -246,6 +246,7 @@ app.MapControllerRoute(
 
 // SignalR hubs
 app.MapHub<ScaleHub>("/hubs/scale");
+app.MapHub<CameraControlHub>("/hubs/camera");
 
 app.MapHub<PrintHub>("/hubs/print");
 
