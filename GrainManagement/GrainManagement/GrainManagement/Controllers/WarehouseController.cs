@@ -19,6 +19,7 @@ public class WarehouseController : Controller
             "intake" => PartialView("_WarehouseIntake"),
             "transfer" => PartialView("_WarehouseTransfer"),
             "outbound" => PartialView("_WarehouseOutbound"),
+            "newtruck" => PartialView("_NewIntakeTruck"),
             _ => PartialView("_WarehouseSelectMode")
         };
     }
@@ -76,8 +77,14 @@ public class WarehouseController : Controller
         return ms.ToArray();
     }
 
-  
 
 
-  
+    [HttpGet("NewIntakeTruck")]
+    public IActionResult _NewIntakeTruck()
+    {
+        return PartialView("_NewIntakeTruck");
+    }   
+
+
 }
+

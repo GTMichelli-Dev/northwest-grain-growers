@@ -23,14 +23,15 @@ namespace GrainManagement.API
         private readonly ILogger<SystemApiController> _logger;
         private readonly IServerInfoProvider _serverInfoProvider;
         private readonly IWebHostEnvironment _env;
+        private readonly IDeviceContext _deviceContext;
 
-
-        public SystemApiController(dbContext ctx, ILogger<SystemApiController> logger , IServerInfoProvider serverInfoProvider, IWebHostEnvironment env )
+        public SystemApiController(dbContext ctx, ILogger<SystemApiController> logger , IServerInfoProvider serverInfoProvider, IWebHostEnvironment env, IDeviceContext deviceContext)
         {
             _ctx = ctx;
             _logger = logger;
             _serverInfoProvider = serverInfoProvider;
             _env = env;
+            _deviceContext = deviceContext;
         }
 
 
@@ -58,6 +59,23 @@ namespace GrainManagement.API
             }
             
         }
+
+        [HttpGet("GetDeviceId")]
+        public async Task<IActionResult> GetDeviceId(CancellationToken ct)
+        {
+            try
+            {
+                var deviceId = _deviceContext.DeviceId??"";
+                return Ok(deviceId);
+            }
+            catch
+            {
+                return BadRequest(new { message = "Device Not Configured." });
+            }
+
+        }
+
+        
         public class SystemInfo
         {
             public string ApplicationName { get; set; }

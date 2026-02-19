@@ -1,369 +1,289 @@
-﻿/* warehouse.intake.js */
 (function () {
-    "use strict";
+  "use strict";
 
-    window.gmWarehouseModeInit = window.gmWarehouseModeInit || {};
+  window.gmWarehouseModeInit = window.gmWarehouseModeInit || {};
 
-    // Expose an object: { ensureInitialized, refresh, applySnapshot }
-    window.gmWarehouseModeInit.intake = (function () {
+  window.gmWarehouseModeInit.intake = (function () {
 
-        // ---- DOM selectors (MUST match your cshtml IDs) ----
-        const sel = {
-            trucks: "#gridTrucksInYard",
-            open: "#gridOpenCerts",
-            closed: "#gridClosedCerts",
-            loads: "#gridLoads",
-            form: "#wsDetailForm",
-            certIdLink: "#wsCertIdLink",
-            lot: "#wsLot",
-            net: "#wsNet"
-        };
+    const sel = {
+      trucks: "#gridTrucksInYard",
+      open: "#gridOpenCerts",
+      closed: "#gridClosedCerts",
+      loads: "#gridLoads",
+      form: "#wsDetailForm",
+      certIdLink: "#wsCertIdLink",
+      lot: "#wsLot",
+      net: "#wsNet"
+    };
 
-        let trucksGrid, openGrid, closedGrid, loadsGrid, detailForm;
-        let currentSnapshot = null;
-        let wired = false;
+    let trucksGrid, openGrid, closedGrid, loadsGrid, detailForm;
+    let currentSnapshot = null;
+    let wired = false;
 
-        // ---------- helpers ----------
-        function elExists(selector) {
-            return !!document.querySelector(selector);
+    function elExists(selector) { return !!document.querySelector(selector); }
+    function gridsExistInDom() { return elExists(sel.trucks) && elExists(sel.open) && elExists(sel.closed) && elExists(sel.loads); }
+    function gridsAreInitialized() {
+      return $(sel.trucks).data("dxDataGrid")
+        && $(sel.open).data("dxDataGrid")
+        && $(sel.closed).data("dxDataGrid")
+        && $(sel.loads).data("dxDataGrid");
+    }
+
+    // Support both camelCase and PascalCase payloads
+    function pick(obj, camel, pascal) {
+      if (!obj) return undefined;
+      if (obj[camel] !== undefined) return obj[camel];
+      if (obj[pascal] !== undefined) return obj[pascal];
+      return undefined;
+    }
+
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp("(^| )" + name.replace(".", "\\.") + "=([^;]+)"));
+      return m ? decodeURIComponent(m[2]) : "";
+    }
+
+    function toNumber(v) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function ensureInitialized() {
+      if (!gridsExistInDom()) return false;
+      const btn = document.getElementById("btnNewIntakeTruck");
+      if (btn && !btn.dataset.wired) {
+        btn.addEventListener("click", openNewTruckPartial);
+        btn.dataset.wired = "true";
+      }
+      if (!gridsAreInitialized()) {
+        initGrids();
+        if (!wired) {
+          wireEvents();
+          wired = true;
         }
+      } else {
+        trucksGrid = $(sel.trucks).dxDataGrid("instance");
+        openGrid = $(sel.open).dxDataGrid("instance");
+        closedGrid = $(sel.closed).dxDataGrid("instance");
+        loadsGrid = $(sel.loads).dxDataGrid("instance");
+        detailForm = $(sel.form).dxForm?.("instance") || null;
+      }
 
-        // safely get either camelCase or PascalCase
-        function pick(obj, camel, pascal) {
-            if (!obj) return undefined;
-            if (Object.prototype.hasOwnProperty.call(obj, camel)) return obj[camel];
-            if (Object.prototype.hasOwnProperty.call(obj, pascal)) return obj[pascal];
-            return undefined;
+      return true;
+    }
+
+    function initGrids() {
+      // Trucks In Yard: show Grower (from Customer until DTO changes)
+      $(sel.trucks).dxDataGrid({
+        dataSource: [],
+        keyExpr: "Id",
+        height: 220,
+        showBorders: true,
+        columnAutoWidth: true,
+        rowAlternationEnabled: true,
+        hoverStateEnabled: true,
+        paging: { enabled: false },
+        columns: [
+          { dataField: "Bol", caption: "BOL", width: 90 },
+          { dataField: "Customer", caption: "Grower" },
+          { dataField: "Bin", caption: "Bin" },
+          { dataField: "Moist", caption: "Moist", width: 70 },
+          { dataField: "Protein", caption: "Protein", width: 80 },
+          { dataField: "Carrier", caption: "Carrier" },
+          { dataField: "Crop", caption: "Crop", width: 70 }
+        ]
+      });
+
+      // Open / Closed certs: show Grower (from Customer), Net from DetailsByLot
+      const certGridOptions = {
+        dataSource: [],
+        keyExpr: "Lot",
+        height: 220,
+        showBorders: true,
+        columnAutoWidth: true,
+        rowAlternationEnabled: true,
+        hoverStateEnabled: true,
+        paging: { enabled: false },
+        focusedRowEnabled: true,
+        selection: { mode: "single" },
+        columns: [
+          { dataField: "Lot", caption: "Lot", width: 110 },
+          { dataField: "Customer", caption: "Grower" },
+          { dataField: "Net", caption: "Net", width: 110 }
+        ]
+      };
+
+      $(sel.open).dxDataGrid(certGridOptions);
+      $(sel.closed).dxDataGrid(certGridOptions);
+
+      // Loads: include timestamp + moist + protein + running net + total row
+      $(sel.loads).dxDataGrid({
+        dataSource: [],
+        keyExpr: "_key",
+        height: "100%",
+        showBorders: true,
+        columnAutoWidth: true,
+        rowAlternationEnabled: true,
+        hoverStateEnabled: true,
+        paging: { enabled: false },
+        columns: [
+          {
+            dataField: "WeighedAtUtc",
+            caption: "Time",
+            width: 140,
+            dataType: "date",
+            format: "shortTime"
+          },
+          { dataField: "Bol", caption: "BOL", width: 90 },
+          { dataField: "Bin", caption: "Bin" },
+          { dataField: "Moist", caption: "Moist", width: 70 },
+          { dataField: "Protein", caption: "Protein", width: 80 },
+          { dataField: "Gross", caption: "Gross", width: 90 },
+          { dataField: "Tare", caption: "Tare", width: 90 },
+          { dataField: "Net", caption: "Net", width: 90 },
+          { dataField: "RunningNet", caption: "Run Net", width: 100 }
+        ],
+        onRowPrepared: function (e) {
+          if (e.rowType !== "data") return;
+          if (e.data && e.data.IsSummary) {
+            e.rowElement.css({ "font-weight": "700" });
+          }
         }
+      });
 
-        function toNum(v) {
-            const n = Number(v);
-            return Number.isFinite(n) ? n : 0;
-        }
+      // Weight Certificate detail form: Grower only; Moist + Protein on same line
+      $(sel.form).dxForm({
+        formData: {},
+        colCount: 2,
+        labelLocation: "top",
+        items: [
+          { dataField: "Grower", label: { text: "Grower" }, editorOptions: { readOnly: true } },
+          { dataField: "Carrier", label: { text: "Carrier" }, editorOptions: { readOnly: true } },
 
-        function getCookie(name) {
-            const m = document.cookie.match(new RegExp("(^| )" + name.replace(".", "\\.") + "=([^;]+)"));
-            return m ? decodeURIComponent(m[2]) : "";
-        }
+          { dataField: "Bin", label: { text: "Bin" }, editorOptions: { readOnly: true } },
+          { dataField: "Commodity", label: { text: "Crop" }, editorOptions: { readOnly: true } },
 
-        // normalize Truck row to one consistent shape (PascalCase)
-        function normalizeTruckRow(r) {
-            const Id = pick(r, "id", "Id") ?? pick(r, "truckId", "TruckId") ?? null;
-            const Bol = pick(r, "bol", "Bol") ?? "";
-            const Customer = pick(r, "customer", "Customer") ?? "";
-            const Bin = pick(r, "bin", "Bin") ?? "";
-            const Moist = pick(r, "moist", "Moist") ?? pick(r, "moisture", "Moisture") ?? 0;
-            const Protein = pick(r, "protein", "Protein") ?? 0;
-            const Carrier = pick(r, "carrier", "Carrier") ?? "";
-            const Crop = pick(r, "crop", "Crop") ?? "";
+          // same row: Moist | Protein
+          { dataField: "Moist", label: { text: "Moist" }, editorOptions: { readOnly: true } },
+          { dataField: "Protein", label: { text: "Protein" }, editorOptions: { readOnly: true } }
+        ]
+      });
 
-            // DevExtreme key: prefer Id, else Bol, else stable JSON string
-            const _key = (Id != null ? String(Id) : (Bol ? "BOL:" + String(Bol) : JSON.stringify(r)));
+      trucksGrid = $(sel.trucks).dxDataGrid("instance");
+      openGrid = $(sel.open).dxDataGrid("instance");
+      closedGrid = $(sel.closed).dxDataGrid("instance");
+      loadsGrid = $(sel.loads).dxDataGrid("instance");
+      detailForm = $(sel.form).dxForm("instance");
+    }
 
-            return { _key, Id, Bol, Customer, Bin, Moist: toNum(Moist), Protein: toNum(Protein), Carrier, Crop };
-        }
+    function wireEvents() {
+      openGrid?.on("selectionChanged", function (e) {
+        const lot = e.selectedRowKeys?.[0] ?? 0;
+        showWeightSheet(lot);
+      });
 
-        // normalize Cert row
-        function normalizeCertRow(r, detailsByLot) {
-            const Lot = pick(r, "lot", "Lot") ?? "";
-            const Customer = pick(r, "customer", "Customer") ?? "";
 
-            const d = Lot && detailsByLot ? detailsByLot[Lot] : null;
-            const Net =
-                pick(r, "net", "Net") ??
-                (d ? (pick(d, "net", "Net") ?? 0) : 0);
 
-            return { Lot, Customer, Net: toNum(Net) };
-        }
 
-        // normalize Details row for the form
-        function normalizeDetailsRow(d) {
-            if (!d) return null;
+      closedGrid?.on("selectionChanged", function (e) {
+        const lot = e.selectedRowKeys?.[0] ?? 0;
+        showWeightSheet(lot);
+      });
+    }
 
-            return {
-                Lot: pick(d, "lot", "Lot") ?? "",
-                Customer: pick(d, "customer", "Customer") ?? "",
-                Carrier: pick(d, "carrier", "Carrier") ?? "",
-                Bin: pick(d, "bin", "Bin") ?? "",
-                Crop: pick(d, "crop", "Crop") ?? "",
-                Grower: pick(d, "grower", "Grower") ?? "",
-                WeightCertificateId: pick(d, "weightCertificateId", "WeightCertificateId") ?? null,
-                Net: toNum(pick(d, "net", "Net") ?? 0),
-                Moist: toNum(pick(d, "moist", "Moist") ?? pick(d, "moisture", "Moisture") ?? 0),
-                Protein: toNum(pick(d, "protein", "Protein") ?? 0)
-            };
-        }
+  
+   async function openNewTruckPartial() {
+     if (window.gmWarehouse?.initMode) {
+       await window.gmWarehouse.initMode("newtruck");
+     }
+   }
 
-        // normalize Load row
-        function normalizeLoadRow(r) {
-            const LoadId = pick(r, "loadId", "LoadId") ?? null;
-            const Id = pick(r, "id", "Id") ?? null;
-            const Bol = pick(r, "bol", "Bol") ?? "";
-            const Gross = pick(r, "gross", "Gross") ?? 0;
-            const Tare = pick(r, "tare", "Tare") ?? 0;
-            const Net = pick(r, "net", "Net") ?? (toNum(Gross) - toNum(Tare));
 
-            // key preference: LoadId, Id, Bol, fallback
-            const _key =
-                (LoadId != null ? "LOAD:" + String(LoadId) :
-                    (Id != null ? "ID:" + String(Id) :
-                        (Bol ? "BOL:" + String(Bol) : JSON.stringify(r))));
 
-            return {
-                _key,
-                LoadId,
-                Id,
-                Bol,
-                Gross: toNum(Gross),
-                Tare: toNum(Tare),
-                Net: toNum(Net)
-            };
-        }
 
-        function normalizeSnapshot(snapshot) {
-            const trucksRaw = pick(snapshot, "trucksInYard", "TrucksInYard") || [];
-            const openRaw = pick(snapshot, "openCerts", "OpenCerts") || [];
-            const closedRaw = pick(snapshot, "closedCerts", "ClosedCerts") || [];
 
-            const detailsByLotRaw = pick(snapshot, "detailsByLot", "DetailsByLot") || {};
-            const loadsByLotRaw = pick(snapshot, "loadsByLot", "LoadsByLot") || {};
 
-            // normalize dictionaries to PascalCase Details + Loads
-            const detailsByLot = {};
-            Object.keys(detailsByLotRaw || {}).forEach(lot => {
-                detailsByLot[lot] = normalizeDetailsRow(detailsByLotRaw[lot]);
-            });
+    function applySnapshot(snapshot) {
+      currentSnapshot = snapshot || null;
+      if (!snapshot) return;
 
-            const loadsByLot = {};
-            Object.keys(loadsByLotRaw || {}).forEach(lot => {
-                const arr = loadsByLotRaw[lot] || [];
-                loadsByLot[lot] = arr.map(normalizeLoadRow);
-            });
+      const trucks = pick(snapshot, "trucksInYard", "TrucksInYard") || [];
+      const open = pick(snapshot, "openCerts", "OpenCerts") || [];
+      const closed = pick(snapshot, "closedCerts", "ClosedCerts") || [];
+      const detailsByLot = pick(snapshot, "detailsByLot", "DetailsByLot") || {};
 
-            const trucks = (trucksRaw || []).map(normalizeTruckRow);
-            const open = (openRaw || []).map(r => normalizeCertRow(r, detailsByLot));
-            const closed = (closedRaw || []).map(r => normalizeCertRow(r, detailsByLot));
+      // Add Net onto cert rows from details
+      const withNet = (arr) => (arr || []).map(c => {
+        const lot = pick(c, "lot", "Lot");
+        const d = detailsByLot[lot];
+        return { ...c, Net: d ? pick(d, "net", "Net") : 0 };
+      });
 
-            return { trucks, open, closed, detailsByLot, loadsByLot };
-        }
+      trucksGrid?.option("dataSource", trucks);
+      openGrid?.option("dataSource", withNet(open));
+      closedGrid?.option("dataSource", withNet(closed));
 
-        // ---------- init ----------
-        function ensureInitialized() {
-            if (wired) return true;
+      // default selection: first open lot
+      const firstLot = open?.length ? pick(open[0], "lot", "Lot") : 0;
+      if (firstLot) {
+        openGrid.selectRows([firstLot], false);
+        openGrid.option("focusedRowKey", firstLot);
+      }
 
-            // if we're not on the intake partial, don't do anything
-            if (!elExists(sel.trucks) || !elExists(sel.open) || !elExists(sel.closed) || !elExists(sel.loads)) {
-                return false;
-            }
+      showWeightSheet(firstLot || 0);
+    }
 
-            initGrids();
-            wireEvents();
-            wired = true;
-            return true;
-        }
+    function showWeightSheet(lot) {
+      const snap = currentSnapshot;
+      if (!snap) return;
 
-        function initGrids() {
-            // Trucks grid
-            $(sel.trucks).dxDataGrid({
-                dataSource: [],
-                keyExpr: "_key",
-                height: 220,
-                showBorders: true,
-                columnAutoWidth: true,
-                rowAlternationEnabled: true,
-                hoverStateEnabled: true,
-                paging: { enabled: false },
-                columns: [
-                    { dataField: "Bol", caption: "BOL", width: 90 },
-                    { dataField: "Customer", caption: "Customer" },
-                    { dataField: "Bin", caption: "Bin" },
-                    { dataField: "Moist", caption: "Moist", width: 70 },
-                    { dataField: "Protein", caption: "Protein", width: 80 },
-                    { dataField: "Carrier", caption: "Carrier" },
-                    { dataField: "Crop", caption: "Crop", width: 70 }
-                ]
-            });
+      const detailsByLot = pick(snap, "detailsByLot", "DetailsByLot") || {};
+      const loadsByLot = pick(snap, "loadsByLot", "LoadsByLot") || {};
 
-            // Open certs
-            $(sel.open).dxDataGrid({
-                dataSource: [],
-                keyExpr: "Lot",
-                height: 220,
-                showBorders: true,
-                columnAutoWidth: true,
-                rowAlternationEnabled: true,
-                hoverStateEnabled: true,
-                paging: { enabled: false },
-                focusedRowEnabled: true,
-                selection: { mode: "single" },
-                columns: [
-                    { dataField: "Lot", caption: "Lot", width: 90 },
-                    { dataField: "Customer", caption: "Customer" },
-                    { dataField: "Net", caption: "Net", width: 90 }
-                ]
-            });
+      const d = lot ? detailsByLot[lot] : null;
+      const loadsRaw = lot ? (loadsByLot[lot] || []) : [];
 
-            // Closed certs
-            $(sel.closed).dxDataGrid({
-                dataSource: [],
-                keyExpr: "Lot",
-                height: 220,
-                showBorders: true,
-                columnAutoWidth: true,
-                rowAlternationEnabled: true,
-                hoverStateEnabled: true,
-                paging: { enabled: false },
-                focusedRowEnabled: true,
-                selection: { mode: "single" },
-                columns: [
-                    { dataField: "Lot", caption: "Lot", width: 90 },
-                    { dataField: "Customer", caption: "Customer" },
-                    { dataField: "Net", caption: "Net", width: 90 }
-                ]
-            });
+      // Ensure loads have a stable _key (Bol + time + idx)
+      const loads = (loadsRaw || []).map((l, idx) => {
+        const bol = pick(l, "bol", "Bol") || 0;
+        const t = pick(l, "weighedAtUtc", "WeighedAtUtc") || pick(l, "timestampUtc", "TimestampUtc") || null;
+        return { _key: `${bol}|${t || ""}|${idx}`, ...l };
+      });
 
-            // Loads grid
-            $(sel.loads).dxDataGrid({
-                dataSource: [],
-                keyExpr: "_key",
-                height: "100%",
-                showBorders: true,
-                columnAutoWidth: true,
-                rowAlternationEnabled: true,
-                hoverStateEnabled: true,
-                paging: { enabled: false },
-                columns: [
-                    { dataField: "Bol", caption: "BOL", width: 90 },
-                    { dataField: "Gross", caption: "Gross", width: 90 },
-                    { dataField: "Tare", caption: "Tare", width: 90 },
-                    { dataField: "Net", caption: "Net", width: 90 }
-                ]
-            });
+      document.querySelector(sel.lot).textContent = lot ? String(lot) : "----";
+      document.querySelector(sel.net).textContent = d ? String(pick(d, "net", "Net") ?? 0) : "0";
+      document.querySelector(sel.certIdLink).textContent = d && pick(d, "weightCertificateId", "WeightCertificateId") ? `#${pick(d, "weightCertificateId", "WeightCertificateId")}` : "#----";
 
-            // Optional: form
-            if (elExists(sel.form) && $(sel.form).dxForm) {
-                $(sel.form).dxForm({
-                    validationGroup: null,
-                    formData: {},
-                    colCount: 2,
-                    labelLocation: "top",
-                    items: [
-                        { dataField: "Customer", label: { text: "Customer" }, editorOptions: { readOnly: true } },
-                        { dataField: "Carrier", label: { text: "Carrier" }, editorOptions: { readOnly: true } },
-                        { dataField: "Bin", label: { text: "Bin" }, editorOptions: { readOnly: true } },
-                        { dataField: "Crop", label: { text: "Crop" }, editorOptions: { readOnly: true } },
-                        { dataField: "Grower", label: { text: "Grower" }, editorOptions: { readOnly: true } },
-                        { dataField: "Moist", label: { text: "Moist" }, editorOptions: { readOnly: true } },
-                        { dataField: "Protein", label: { text: "Protein" }, editorOptions: { readOnly: true } }
-                    ]
-                });
-            }
+      detailForm?.option("formData", d || {});
+      loadsGrid?.option("dataSource", loads);
+    }
 
-            // Grab instances
-            trucksGrid = $(sel.trucks).dxDataGrid("instance");
-            openGrid = $(sel.open).dxDataGrid("instance");
-            closedGrid = $(sel.closed).dxDataGrid("instance");
-            loadsGrid = $(sel.loads).dxDataGrid("instance");
-            detailForm = $(sel.form).dxForm?.("instance") || null;
-        }
+    async function refresh() {
+      if (!ensureInitialized()) return;
 
-        function wireEvents() {
-            // selecting an open lot updates the right side
-            openGrid?.on("selectionChanged", function (e) {
-                const lot = e.selectedRowKeys?.[0] ?? null;
-                showWeightSheet(lot || 0);
-            });
+      // SignalR (if available)
+      if (window.gmWarehouseSignalR?.requestIntakeSnapshot) {
+        await window.gmWarehouseSignalR.requestIntakeSnapshot();
+        return;
+      }
 
-            // selecting a closed lot also updates the right side
-            closedGrid?.on("selectionChanged", function (e) {
-                const lot = e.selectedRowKeys?.[0] ?? null;
-                showWeightSheet(lot || 0);
-            });
-        }
+      // HTTP fallback
+      const locStr = getCookie("GM.SelectedWarehouseLocationId");
+      const locationId = parseInt(locStr, 10) || 0;
+      if (locationId < 1) return;
 
-        // ---------- snapshot application ----------
-        function applySnapshot(snapshot) {
-            currentSnapshot = snapshot || null;
-            if (!snapshot) return;
+      const resp = await fetch(`/api/warehouse/intake/snapshot?locationId=${locationId}`, {
+        headers: { "Accept": "application/json" }
+      });
 
-            const n = normalizeSnapshot(snapshot);
+      if (!resp.ok) throw new Error("Snapshot fetch failed: " + resp.status);
+      const snapshot = await resp.json();
+      applySnapshot(snapshot);
+    }
 
-            trucksGrid?.option("dataSource", n.trucks);
-            openGrid?.option("dataSource", n.open);
-            closedGrid?.option("dataSource", n.closed);
-
-            // select first open cert by default
-            const firstLot = n.open.length ? n.open[0].Lot : null;
-            if (firstLot) {
-                openGrid.selectRows([firstLot], false);
-                openGrid.option("focusedRowKey", firstLot);
-                showWeightSheet(firstLot);
-            } else {
-                showWeightSheet(0);
-            }
-        }
-
-        function showWeightSheet(lot) {
-            const snap = currentSnapshot;
-            if (!snap) {
-                // clear UI
-                if (document.querySelector(sel.lot)) document.querySelector(sel.lot).textContent = "----";
-                if (document.querySelector(sel.net)) document.querySelector(sel.net).textContent = "0";
-                if (document.querySelector(sel.certIdLink)) document.querySelector(sel.certIdLink).textContent = "#----";
-                detailForm?.option("formData", {});
-                loadsGrid?.option("dataSource", []);
-                return;
-            }
-
-            const n = normalizeSnapshot(snap);
-
-            const lotKey = (lot && lot !== 0) ? String(lot) : "";
-            const d = lotKey ? n.detailsByLot?.[lotKey] : null;
-            const loads = lotKey ? (n.loadsByLot?.[lotKey] || []) : [];
-
-            if (document.querySelector(sel.lot)) document.querySelector(sel.lot).textContent = lotKey || "----";
-            if (document.querySelector(sel.net)) document.querySelector(sel.net).textContent = String(d?.Net ?? 0);
-
-            if (document.querySelector(sel.certIdLink)) {
-                const id = d?.WeightCertificateId;
-                document.querySelector(sel.certIdLink).textContent = id ? `#${id}` : "#----";
-            }
-
-            detailForm?.option("formData", d || {});
-            loadsGrid?.option("dataSource", loads);
-        }
-
-        // ---------- refresh ----------
-        async function refresh() {
-            if (!ensureInitialized()) return;
-
-            // Preferred: SignalR (if present)
-            if (window.gmWarehouseSignalR?.requestIntakeSnapshot) {
-                await window.gmWarehouseSignalR.requestIntakeSnapshot();
-                return;
-            }
-
-            // Fallback: HTTP snapshot
-            const locStr = getCookie("GM.SelectedWarehouseLocationId");
-            const locationId = parseInt(locStr, 10) || 0;
-            if (locationId < 1) return;
-
-            const resp = await fetch(`/api/warehouse/intake/snapshot?locationId=${locationId}`, {
-                headers: { "Accept": "application/json" }
-            });
-
-            if (!resp.ok) throw new Error("Snapshot fetch failed: " + resp.status);
-            const snapshot = await resp.json();
-            applySnapshot(snapshot);
-        }
-
-        // ---------- public API ----------
-        return {
-            ensureInitialized,
-            refresh,
-            applySnapshot
-        };
-
-    })();
-
+    return {
+      ensureInitialized,
+      refresh,
+      applySnapshot
+    };
+  })();
 })();

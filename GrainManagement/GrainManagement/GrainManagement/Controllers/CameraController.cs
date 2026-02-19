@@ -19,8 +19,13 @@ namespace GrainManagement.Controllers
         {
             
 
-            new("1", "Kiosk", "1"),
-            new("2", "Scale", "2"),
+            new("1", "Clancy Kiosk", "1",1),
+            new("2", "Clancy", "2",1),
+            new("3", "Bol", "3",1),
+            new("4", "Clean Scale", "4",2),
+            new("5", "Treat Scale", "5",3),
+
+
             // add more here
         };
 
@@ -40,6 +45,6 @@ namespace GrainManagement.Controllers
             return View("View", cam);
         }
 
-        public record CameraDef(string Id, string Name, string StreamKey);
+        public record CameraDef(string Id, string Name, string StreamKey,int ScaleId);
     }
 }

@@ -81,6 +81,7 @@ builder.Services.AddAuthorization(options =>
 // Small DI service to expose role booleans per request
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddScoped<IDeviceContext, DeviceContext>();
 
 if (builder.Configuration.GetValue<bool>("UseDemoData"))
 {
@@ -90,6 +91,7 @@ else
 {
     builder.Services.AddScoped<ILocationService, sqlLocationService>();
 }
+
 
 
 builder.Services.AddEndpointsApiExplorer();
@@ -169,6 +171,7 @@ builder.Services.AddDbContext<dbContext>((serviceProvider, options) =>
 
 // MVC + Microsoft Identity UI (for login/logout endpoints)
 builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
+builder.Services.AddControllers();
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(o => o.JsonSerializerOptions.PropertyNamingPolicy = null);
 
@@ -178,6 +181,20 @@ builder.Services.AddTransient<IClaimsTransformation, GroupClaimsTransformation>(
 
 
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    var deviceId = context.Request.Headers["X-Device-Id"].FirstOrDefault()
+                   ?? context.Connection.RemoteIpAddress?.ToString();
+
+    if (!string.IsNullOrEmpty(deviceId))
+    {
+        context.Items["DeviceId"] = deviceId;
+    }
+
+    await next();
+});
+
 
 if (!app.Environment.IsDevelopment())
 {

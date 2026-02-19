@@ -11,7 +11,21 @@
     <div class="col-6 gm-ws-col">
 
         <div class="gm-ws-panel">
-            <div class="p-1"><h6 class="mb-1">Trucks In Yard</h6></div>
+            <div class="gm-ws-panel__hdr">
+                <div class="d-flex align-items-center gap-2">
+                    
+
+                    <div class="gm-ws-panel__title">
+                        Trucks In Yard
+                    </div>
+
+                    <button type="button"
+                            class="btn btn-sm btn-primary"
+                            id="btnNewIntakeTruck">
+                        New Truck
+                    </button>
+                </div>
+            </div>
             <div class="gm-ws-panel__body p-1">
                 <div id="gridTrucksInYard" class="gm-gridHost"></div>
             </div>
@@ -61,5 +75,11 @@
     </div>
 
 </div>
+<div id="newIntakeTruckModalHost"></div>
 
-<link href="~/css/pages/warehouse.intake.css" rel="stylesheet" />
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/pages/warehouse.intake.css"
+          asp-append-version="true" />
+}
+

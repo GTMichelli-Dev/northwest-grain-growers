@@ -11,20 +11,22 @@
         shell: "gmWsShell"
     };
 
-    const modePartials = {
-        intake: "/Warehouse/ModePartial?mode=intake",
-        transfer: "/Warehouse/ModePartial?mode=transfer",
-        outbound: "/Warehouse/ModePartial?mode=outbound",
-        kiosk: "/Warehouse/KioskCamera" 
-    };
+  const modePartials = {
+    intake: "/Warehouse/ModePartial?mode=intake",
+    transfer: "/Warehouse/ModePartial?mode=transfer",
+    outbound: "/Warehouse/ModePartial?mode=outbound",
+    kiosk: "/Warehouse/KioskCamera",
+    newtruck: "/Warehouse/ModePartial?mode=newtruck"
+};
 
-    // If you want to dynamically load JS per mode:
-    const modeScripts = {
-        intake: "/js/pages/warehouse.intake.js",
-        transfer: "/js/pages/warehouse.transfer.js",
-        outbound: "/js/pages/warehouse.outbound.js",
-        kiosk: "/js/pages/warehouse.kiosk.js"
-    };
+const modeScripts = {
+    intake: "/js/pages/warehouse.intake.js",
+    transfer: "/js/pages/warehouse.transfer.js",
+    outbound: "/js/pages/warehouse.outbound.js",
+    kiosk: "/js/pages/warehouse.kiosk.js",
+    newtruck: "/js/pages/warehouse.newtruck.js"
+};
+
 
     function getCookie(name) {
         const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
@@ -64,21 +66,41 @@
         shell.innerHTML = await resp.text();
     }
 
-    function loadScriptOnce(url) {
-        return new Promise((resolve, reject) => {
-            // already loaded?
-            if ([...document.scripts].some(s => s.src && s.src.includes(url))) return resolve();
+   function loadScriptOnce(url) {
+     return new Promise((resolve, reject) => {
 
-            const s = document.createElement("script");
-            s.src = url;
-            s.async = true;
-            s.onload = () => resolve();
-            s.onerror = () => reject(new Error("Failed to load " + url));
-            document.body.appendChild(s);
-        });
+        const base = new URL(url, location.origin).href;
+
+        const isDev =
+            location.hostname === "localhost" ||
+            location.hostname === "127.0.0.1";
+
+        const finalUrl = isDev
+            ? base + (base.includes("?") ? "&" : "?") + "v=" + Date.now()
+            : base;
+
+        // In prod, prevent duplicate loading
+        if (!isDev &&
+            [...document.scripts].some(s => s.src === base)) {
+            return resolve();
+        }
+        else
+        {
+            console.log(`Loading script: ${finalUrl}`);
+        }
+
+        const s = document.createElement("script");
+        s.src = finalUrl;
+        s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error("Failed to load " + url));
+        document.body.appendChild(s);
+      });
     }
 
+
     async function initMode(mode) {
+        
 
         if (activeMode === mode) {
             const mod = window.gmWarehouseModeInit?.[mode];
@@ -102,7 +124,14 @@
         show(ids.noMode, false);
 
         setActiveModeButton(mode);
-        setCookie(cookieMode, mode, 365);
+        // Do not persist transient modes
+        const persistable = (mode !== "newtruck");
+        if (persistable) {
+          setCookie(cookieMode, mode, 365);
+        } else {
+          // Optional: force cookie back to intake while viewing transient mode
+          setCookie(cookieMode, "intake", 365);
+        }
 
         // hide shell while loading
         show(ids.shell, false);
@@ -113,8 +142,14 @@
         show(ids.shell, true);
 
         window.gmWarehouseModeInit = window.gmWarehouseModeInit || {};
+        window.gmWarehouseModeInit = window.gmWarehouseModeInit || {};
+        const alreadyLoaded = !!window.gmWarehouseModeInit?.[mode];
+
         const jsUrl = modeScripts[mode];
-        if (jsUrl) await loadScriptOnce(jsUrl);
+        if (jsUrl && !alreadyLoaded) {
+          await loadScriptOnce(jsUrl);
+        }
+
 
         const mod = window.gmWarehouseModeInit[mode];
 
@@ -127,6 +162,9 @@
         }
         activeMode = mode;
     }
+
+    window.gmWarehouse = window.gmWarehouse || {};
+    window.gmWarehouse.initMode = initMode;
 
 
     function wireButtons() {

@@ -1,0 +1,62 @@
+﻿@{
+    ViewData["Title"] = "Select Load Type";
+}
+<div class="gm-loadType">
+    <div class="gm-loadType__stack">
+
+        <div class="gm-loadType__header">
+            <div class="gm-loadType__title">Select Load Type</div>
+            <div class="gm-loadType__subtitle">Choose the right workflow for this load</div>
+        </div>
+
+        <div class="gm-loadType__grid">
+            <!-- Grower Delivery -->
+            <a class="gm-loadType__btn gm-loadType__btn--grower" href="/Warehouse/ReceivingGrower">
+                <div class="gm-loadType__icon gm-icon gm-icon--delivery" aria-hidden="true"></div>
+                <div class="gm-loadType__text">
+                    <div class="gm-loadType__label">Grower Delivery</div>
+                    <div class="gm-loadType__hint">Inbound from a grower</div>
+                </div>
+            </a>
+
+            <!-- Transfer In (flip) -->
+            <a class="gm-loadType__btn gm-loadType__btn--transferIn" href="/Warehouse/TransferIn">
+                <div class="gm-loadType__icon gm-icon gm-icon--transfer gm-icon--flip" aria-hidden="true"></div>
+                <div class="gm-loadType__text">
+                    <div class="gm-loadType__label">Transfer In</div>
+                    <div class="gm-loadType__hint">Inbound from another location</div>
+                </div>
+            </a>
+
+            <!-- Customer Shipment -->
+            <a class="gm-loadType__btn gm-loadType__btn--customer" href="/Warehouse/ShippingCustomer">
+                <div class="gm-loadType__icon gm-icon gm-icon--shipment" aria-hidden="true"></div>
+                <div class="gm-loadType__text">
+                    <div class="gm-loadType__label">Customer Shipment</div>
+                    <div class="gm-loadType__hint">Outbound to a customer</div>
+                </div>
+            </a>
+
+            <!-- Transfer Out -->
+            <a class="gm-loadType__btn gm-loadType__btn--transferOut" href="/Warehouse/TransferOut">
+                <div class="gm-loadType__icon gm-icon gm-icon--transfer" aria-hidden="true"></div>
+                <div class="gm-loadType__text">
+                    <div class="gm-loadType__label">Transfer Out</div>
+                    <div class="gm-loadType__hint">Outbound to another location</div>
+                </div>
+            </a>
+
+
+            <!-- Cancel Button -->
+            <a class="gm-loadType__btn gm-loadType__cancel"
+               asp-controller="Home"
+               asp-action="Index">
+                <div class="gm-loadType__icon gm-icon gm-icon--cancel"></div>
+                <div class="gm-loadType__text">
+                    <div class="gm-loadType__label">Cancel</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+</div>

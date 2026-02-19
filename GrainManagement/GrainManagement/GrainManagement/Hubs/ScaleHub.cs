@@ -1,4 +1,5 @@
-﻿using GrainManagement.Dtos.Scales;
+﻿
+using GrainManagement.Dtos.Scales;
 using Microsoft.AspNetCore.SignalR;
 
 namespace GrainManagement.Hubs;

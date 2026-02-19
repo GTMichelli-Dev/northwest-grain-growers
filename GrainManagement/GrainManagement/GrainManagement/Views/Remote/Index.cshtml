@@ -1,0 +1,24 @@
+﻿@model IEnumerable<GrainManagement.Controllers.RemoteController.RemoteDef>
+@{
+    ViewData["Title"] = "Remote Access";
+}
+
+<div class="gm-pagehead gm-pagehead--sticky">
+    <div class="gm-pagehead__left">
+        <div class="gm-pagehead__title">
+            <span class="gm-pagehead__icon gm-icon gm-icon--remote" aria-hidden="true"></span>
+            <h2>Remote Connections</h2>
+        </div>
+    </div>
+</div>
+
+<div class="pt-3 gm-remote-container">
+    <div class="list-group w-100" style="max-width:500px;">
+        @foreach (var rem in Model)
+        {
+            <div class="list-group-item d-flex justify-content-center align-items-center">
+                <a class="btn btn-primary w-100" href="@rem.Url" target="_blank" rel="noopener">@rem.Name</a>
+            </div>
+        }
+    </div>
+</div>

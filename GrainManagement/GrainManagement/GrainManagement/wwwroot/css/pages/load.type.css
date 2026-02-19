@@ -1,0 +1,176 @@
+﻿/* =========================================================
+   Load Type Page – GrainManagement
+   Uses mask-based gm-icon system (icons.css)
+   ========================================================= */
+
+.gm-loadType {
+    padding: 40px 16px;
+}
+
+
+/* Centers the whole stack on the page */
+.gm-loadType__stack {
+    width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+/* ---------------------------------------------------------
+   Header
+   --------------------------------------------------------- */
+
+.gm-loadType__header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.gm-loadType__title {
+    font-weight: 900;
+    font-size: 1.4rem;
+    line-height: 1.1;
+}
+
+.gm-loadType__subtitle {
+    margin-top: 4px;
+    opacity: .75;
+    font-weight: 700;
+}
+
+.gm-loadType {
+    padding: 40px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* horizontal center */
+}
+
+
+
+
+/* ---------------------------------------------------------
+   Grid Layout
+   --------------------------------------------------------- */
+
+.gm-loadType__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+
+
+@media (max-width: 900px) {
+    .gm-loadType__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---------------------------------------------------------
+   Buttons
+   --------------------------------------------------------- */
+
+.gm-loadType__btn {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    padding: 16px 20px;
+    border-radius: 16px;
+    border: 2px solid rgba(0,0,0,.18);
+    text-decoration: none;
+    background: #fff;
+    color: inherit;
+    box-shadow: 0 6px 18px rgba(0,0,0,.06);
+    transition: transform .08s ease, box-shadow .08s ease, border-color .08s ease;
+}
+
+
+
+    .gm-loadType__btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(0,0,0,.10);
+        border-color: rgba(0,0,0,.28);
+    }
+
+/* ---------------------------------------------------------
+   Icon Tile (mask-based – no <img>)
+   --------------------------------------------------------- */
+
+.gm-loadType__icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+    border: 2px solid rgba(0,0,0,.12);
+    flex: 0 0 auto;
+    position: relative;
+    display: block;
+    background: var(--gm-icon-bg, rgba(0,0,0,.06));
+    color: var(--brand-primary); 
+}
+
+
+/* ---------------------------------------------------------
+   Text
+   --------------------------------------------------------- */
+
+.gm-loadType__text {
+    display: flex;
+    flex-direction: column;
+}
+
+.gm-loadType__label {
+    font-weight: 900;
+    font-size: 1.15rem;
+    line-height: 1.1;
+}
+
+.gm-loadType__hint {
+    margin-top: 4px;
+    font-weight: 700;
+    opacity: .72;
+}
+
+/* ---------------------------------------------------------
+   Semantic Color Variants
+   Background tile color + icon color
+   --------------------------------------------------------- */
+
+/* Grower Delivery */
+.gm-loadType__btn--grower .gm-loadType__icon {
+    background: rgba(0, 140, 255, .14);
+    color: var(--brand-primary); /* theme aware */
+}
+
+/* Transfer In */
+.gm-loadType__btn--transferIn .gm-loadType__icon {
+    background: rgba(22, 163, 74, .16);
+    color: var(--brand-primary);
+}
+
+/* Customer Shipment */
+.gm-loadType__btn--customer .gm-loadType__icon {
+    background: rgba(255, 150, 0, .16);
+    color: var(--brand-primary);
+}
+
+/* Transfer Out */
+.gm-loadType__btn--transferOut .gm-loadType__icon {
+    background: rgba(147, 51, 234, .16);
+    color: var(--brand-primary);
+}
+
+
+/* ---------------------------------------------------------
+   Cancel Button
+   --------------------------------------------------------- */
+
+/* Cancel button spacing */
+.gm-loadType__cancel {
+    margin-top: 28px; /* slight separation */
+}
+
+    /* Cancel icon tile only */
+    .gm-loadType__cancel .gm-loadType__icon {
+        background: rgba(255, 0, 0, .12);
+        color: #c62828; /* strong red */
+    }
