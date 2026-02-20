@@ -1,6 +1,7 @@
 using GrainManagement.Dtos.Warehouse;
-using Microsoft.AspNetCore.Mvc;
 using GrainManagement.Reporting;
+using GrainManagement.Services.Warehouse;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace GrainManagement.Controllers;
@@ -8,8 +9,20 @@ namespace GrainManagement.Controllers;
 [Route("Warehouse")]
 public class WarehouseController : Controller
 {
+    private readonly IWarehouseDashboardService _dash;
+
+    public WarehouseController(IWarehouseDashboardService dash)
+    {
+        _dash = dash;
+    }
+
     [HttpGet("")]
-    public IActionResult Index() => View();
+    public IActionResult Index()
+    {
+        // If you already track selected LocationId in cookie, pass it here.
+        var vm = _dash.GetDashboard(locationId: null);
+        return View(vm);
+    }
 
     [HttpGet("ModePartial")]
     public IActionResult ModePartial(string mode)

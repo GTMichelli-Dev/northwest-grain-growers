@@ -1,47 +1,107 @@
-﻿@{
-    ViewData["Title"] = "Warehouse";
+﻿@model GrainManagement.Models.DTO.Warehouse.WarehouseDashboardVm
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Warehouse Dashboard";
+
+    var jsonOpts = new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    // Serialize server model lists into JS data sources
+    var yardJson = JsonSerializer.Serialize(Model.TrucksInYard, jsonOpts);
+    var intakeJson = JsonSerializer.Serialize(Model.IntakeWeightSheets, jsonOpts);
+    var transferJson = JsonSerializer.Serialize(Model.TransferWeightSheets, jsonOpts);
+    var outboundJson = JsonSerializer.Serialize(Model.OutboundLoads, jsonOpts);
 }
 
+<link rel="stylesheet" href="~/css/pages/warehouse.dashboard.dx.css" asp-append-version="true" />
+
+
 <div class="gm-pagehead gm-pagehead--sticky">
-    <div class="gm-pagehead__left">
         <div class="gm-pagehead__title">
             <span class="gm-pagehead__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
             <h2>Warehouse</h2>
         </div>
+  
+
+    <div class="gm-wdActions">
+        <button type="button"
+                class="btn btn-outline-secondary btn-sm"
+                id="gmWdToggleAll"
+                data-state="expand">
+            Expand All
+        </button>
     </div>
 
-    <!-- ✅ NEW: Mode buttons between title and location -->
-    <div class="gm-pagehead__modes" role="group" aria-label="Warehouse load type">
-        <button type="button" class="gm-modebtn" data-mode="intake">Intake</button>
-        <button type="button" class="gm-modebtn" data-mode="transfer">Transfer</button>
-        <button type="button" class="gm-modebtn" data-mode="outbound">Outbound</button>
-      @*   <button type="button" class="gm-modebtn" data-mode="kiosk">Kiosk</button> *@
-       
-    </div>
+</div>
+<div class="gm-wd" id="gmWarehouseDashboard"
+     data-yard='@Html.Raw(yardJson)'
+     data-intake='@Html.Raw(intakeJson)'
+     data-transfer='@Html.Raw(transferJson)'
+     data-outbound='@Html.Raw(outboundJson)'>
 
-    <div class="gm-pagehead__right gm__Location">
-        <label class="gm-loc-label" for="gmLocationSelect">Location</label>
-        <select id="gmLocationSelect" class="form-select gm-loc-select" style="min-width: 340px;">
-            <option value="">Loading…</option>
-        </select>
-    </div>
+    <!-- Yard -->
+    <section class="gm-wdSec gm-wdSec--open" data-sec="yard">
+        <button type="button" class="gm-wdHdr gm-wdHdr--yard" data-acc-btn>
+            <div class="gm-wdHdr__left">
+                <span class="gm-wdHdr__dot"></span>
+                <div class="gm-wdHdr__title">Trucks In Yard (Not Completed)</div>
+                <div class="gm-wdHdr__count">@Model.TrucksInYard.Count</div>
+            </div>
+            <div class="gm-wdHdr__right"><span class="gm-wdHdr__chev">▾</span></div>
+        </button>
+        <div class="gm-wdSec__body" data-acc-body>
+            <div class="gm-wdGrid" id="grid-yard"></div>
+        </div>
+    </section>
+
+    <!-- Intake -->
+    <section class="gm-wdSec gm-wdSec--open" data-sec="intake">
+        <button type="button" class="gm-wdHdr gm-wdHdr--intake" data-acc-btn>
+            <div class="gm-wdHdr__left">
+                <span class="gm-wdHdr__dot"></span>
+                <div class="gm-wdHdr__title">Intake Weight Sheets</div>
+                <div class="gm-wdHdr__count">@Model.IntakeWeightSheets.Count</div>
+            </div>
+            <div class="gm-wdHdr__right"><span class="gm-wdHdr__chev">▾</span></div>
+        </button>
+        <div class="gm-wdSec__body" data-acc-body>
+            <div class="gm-wdGrid" id="grid-intake"></div>
+        </div>
+    </section>
+
+    <!-- Transfer -->
+    <section class="gm-wdSec gm-wdSec--open" data-sec="transfer">
+        <button type="button" class="gm-wdHdr gm-wdHdr--transfer" data-acc-btn>
+            <div class="gm-wdHdr__left">
+                <span class="gm-wdHdr__dot"></span>
+                <div class="gm-wdHdr__title">Transfers</div>
+                <div class="gm-wdHdr__count">@Model.TransferWeightSheets.Count</div>
+            </div>
+            <div class="gm-wdHdr__right"><span class="gm-wdHdr__chev">▾</span></div>
+        </button>
+        <div class="gm-wdSec__body" data-acc-body>
+            <div class="gm-wdGrid" id="grid-transfer"></div>
+        </div>
+    </section>
+
+    <!-- Outbound -->
+    <section class="gm-wdSec gm-wdSec--open" data-sec="outbound">
+        <button type="button" class="gm-wdHdr gm-wdHdr--outbound" data-acc-btn>
+            <div class="gm-wdHdr__left">
+                <span class="gm-wdHdr__dot"></span>
+                <div class="gm-wdHdr__title">Outbound Loads</div>
+                <div class="gm-wdHdr__count">@Model.OutboundLoads.Count</div>
+            </div>
+            <div class="gm-wdHdr__right"><span class="gm-wdHdr__chev">▾</span></div>
+        </button>
+        <div class="gm-wdSec__body" data-acc-body>
+            <div class="gm-wdGrid" id="grid-outbound"></div>
+        </div>
+    </section>
 </div>
 
-<div id="gmNoLocationSet" class="pt-3" style="display:none;">
-    <h3 class="text-danger mb-0">Select Location To Continue</h3>
-</div>
-
-<!-- ✅ NEW: Default prompt when location is set but no mode chosen -->
-<div id="gmNoModeSet" class="pt-3" style="display:none;">
-    <h3 class="text-danger mb-0">Please select a load type</h3>
-</div>
-
-<!-- ✅ Shell that will receive partial HTML -->
-<div id="gmWsShell" style="display:none;"></div>
-
-@section Scripts {
-    <script src="~/lib/signalr/signalr.min.js"></script>
-    <script src="~/js/pages/warehouse.signalr.js" asp-append-version="true"></script>
-    <script src="~/js/pages/warehouse.location.js" asp-append-version="true"></script>
-    <script src="~/js/pages/warehouse.index.js" asp-append-version="true"></script>
-}
+            
+<script src="~/js/pages/warehouse.dashboard.dx.js" asp-append-version="true"></script>

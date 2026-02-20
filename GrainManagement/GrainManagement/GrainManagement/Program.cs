@@ -12,6 +12,7 @@ using Microsoft.OpenApi.Models; // <-- Add this using directive
 using GrainManagement.Auth;
 using GrainManagement.Hubs;
 using Microsoft.AspNetCore.HttpOverrides;
+using GrainManagement.Services.Warehouse;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,7 +31,7 @@ builder.Services
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IServerInfoProvider, ServerInfoProvider>();
 builder.Services.AddSingleton<IScaleRegistry, ScaleRegistry>();
-
+builder.Services.AddScoped<IWarehouseDashboardService, DummyWarehouseDashboardService>();
 // SignalR (Warehouse realtime refresh)
 //builder.Services.AddSignalR();
 
