@@ -5,3 +5,5 @@
 # 1 Images stored on the server 
 
 _Currently in the demo I am storing them in vultr Not dure where they will be in the future_ 
+
+[This the setup for the linux server](https://github.com/TotalScaleService/KioskCam/blob/main/Store_Images_On_Linux.md)
