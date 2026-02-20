@@ -42,7 +42,7 @@ _Currently in the demo I am storing them in vultr Not dure where they will be in
 
   BEFORE
   ```bash
-      app.UseStaticFiles(new StaticFileOptions { ... });
+    app.UseStaticFiles(new StaticFileOptions { ... });
   ```
 
   And before:
