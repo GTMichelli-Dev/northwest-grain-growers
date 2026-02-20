@@ -35,6 +35,54 @@ _Currently in the demo I am storing them in vultr Not dure where they will be in
 
    ```
 
+   Make sure this comes:
+  ```bash
+    app.UseStaticFiles();  // default wwwroot
+  ```
+
+  BEFORE
+  ```bash
+      app.UseStaticFiles(new StaticFileOptions { ... });
+  ```
+
+  And before:
+  ```bash
+     app.UseRouting();
+  ```
+🏗 Why This Is Better for GrainManagement
+
+This gives you:
+
+Dev path
+
+Production path
+
+Future CDN support
+
+No code changes per environment
+
+For example:
+
+
+appsettings.Development.json
+```json
+{
+  "TicketImages": {
+    "PhysicalPath": "C:\\Temp\\images",
+    "RequestPath": "/ticket-images"
+  }
+}
+```
+appsettings.Production.json
+
+```json
+{
+  "TicketImages": {
+    "PhysicalPath": "/var/grainmanagement/ticket-images",
+    "RequestPath": "/ticket-images"
+  }
+}
+```
    Redeploy the site [Here is an example for vultr](https://github.com/TotalScaleService/tss.scaledata.net/blob/main/README.md)
 
    
