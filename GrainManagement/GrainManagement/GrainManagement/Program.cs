@@ -13,6 +13,7 @@ using GrainManagement.Auth;
 using GrainManagement.Hubs;
 using Microsoft.AspNetCore.HttpOverrides;
 using GrainManagement.Services.Warehouse;
+using Microsoft.Extensions.FileProviders;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -179,7 +180,11 @@ builder.Services.AddControllersWithViews()
 // HttpClient for downstream API/Graph calls
 builder.Services.AddHttpClient();
 builder.Services.AddTransient<IClaimsTransformation, GroupClaimsTransformation>();
-
+// Load appdevelopmentsettings.json only in Development
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddJsonFile("appdevelopmentsettings.json", optional: true, reloadOnChange: true);
+}
 
 var app = builder.Build();
 
@@ -229,6 +234,19 @@ app.UseForwardedHeaders(fh);
 
 //app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+  
+     
+var ticketPath = builder.Configuration["TicketImages:PhysicalPath"];
+var requestPath = builder.Configuration["TicketImages:RequestPath"];
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(ticketPath),
+    RequestPath = requestPath
+});
+
+
 
 app.UseRouting();
 
