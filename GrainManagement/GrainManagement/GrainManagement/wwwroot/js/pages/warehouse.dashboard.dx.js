@@ -68,6 +68,59 @@
         });
     }
 
+
+    // ===========================
+    // Print (same pattern as warehouse.kiosk.js)
+    // ===========================
+
+    async function printTicket(btnEl, ticket) {
+        const deviceId = btnEl?.dataset?.deviceId;
+
+        // if (!deviceId) {
+        //  alert("Print device not set (data-device-id missing).");
+        //return;
+        //}
+
+        //if (!ticket) {
+        //alert("No ticket number available to print.");
+        //return;
+        //}
+
+        const url = `/api/printing/printer/1/print-ticket/123456`;
+
+        btnEl.disabled = true;
+
+        try {
+            const resp = await fetch(url, { method: "POST" });
+
+            if (!resp.ok) {
+                const text = await resp.text();
+                throw new Error(text || resp.statusText);
+            }
+
+            console.log("Print request sent:", { deviceId, ticket });
+            alert(`Print sent for ticket ${ticket}`);
+        }
+        catch (err) {
+            console.error("Print failed", err);
+            alert(`Failed to send print request.\n${err?.message || err}`);
+        }
+        finally {
+            btnEl.disabled = false;
+        }
+    }
+
+    // Wire up the print button on DOMContentLoaded
+    document.addEventListener("DOMContentLoaded", function () {
+        const printBtn = document.getElementById("btnPrintTicket");
+        if (printBtn) {
+            printBtn.addEventListener("click", function () {
+                const ticket = this.dataset.ticket;
+                printTicket(this, ticket);
+            });
+        }
+    });
+
     function updateToggleButtonState(root) {
         const btn = document.getElementById("gmWdToggleAll");
         if (!btn) return;
