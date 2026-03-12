@@ -19,6 +19,10 @@
    "T4TemplatePath": null,
    "Tables": [
       {
+         "Name": "[account].[AccountItemFilters]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[account].[Accounts]",
          "ObjectType": 0
       },
@@ -71,6 +75,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[Inventory].[InventoryTransactions]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[Inventory].[LabResults]",
          "ObjectType": 0
       },
@@ -91,7 +99,19 @@
          "ObjectType": 0
       },
       {
+         "Name": "[Inventory].[LotSplitGroups]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[Inventory].[LotTraits]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[Inventory].[TransactionAttributes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[Inventory].[TransactionAttributeTypes]",
          "ObjectType": 0
       },
       {
@@ -227,7 +247,11 @@
          "ObjectType": 0
       },
       {
-         "Name": "[system].[LocationCameras]",
+         "Name": "[system].[Counties]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[system].[LocationCounties]",
          "ObjectType": 0
       },
       {
@@ -235,7 +259,7 @@
          "ObjectType": 0
       },
       {
-         "Name": "[system].[LocationKiosks]",
+         "Name": "[system].[LocationItemFilter]",
          "ObjectType": 0
       },
       {
@@ -244,6 +268,10 @@
       },
       {
          "Name": "[system].[Servers]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[system].[States]",
          "ObjectType": 0
       },
       {
@@ -331,6 +359,10 @@
          "ObjectType": 2
       },
       {
+         "Name": "[Inventory].[fn_HasPrimaryAccount]",
+         "ObjectType": 2
+      },
+      {
          "Name": "[Inventory].[NextContainerLotLayersId]",
          "ObjectType": 2
       },
@@ -347,11 +379,11 @@
          "ObjectType": 2
       },
       {
-         "Name": "[Inventory].[NextLotLabsId]",
+         "Name": "[Inventory].[NextLotId]",
          "ObjectType": 2
       },
       {
-         "Name": "[Inventory].[NextLotsId]",
+         "Name": "[Inventory].[NextLotLabsId]",
          "ObjectType": 2
       },
       {

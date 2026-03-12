@@ -19,6 +19,8 @@ public partial class SplitGroup
 
     public bool UseForReceive { get; set; }
 
+    public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
+
     public virtual Account PrimaryAccount { get; set; }
 
     public virtual ICollection<SplitGroupPercent> SplitGroupPercents { get; set; } = new List<SplitGroupPercent>();

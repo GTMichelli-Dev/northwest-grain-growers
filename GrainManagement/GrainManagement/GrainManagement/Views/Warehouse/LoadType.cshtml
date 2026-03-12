@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Select Load Type";
 }
 <div class="gm-loadType">
@@ -11,7 +11,7 @@
 
         <div class="gm-loadType__grid">
             <!-- Grower Delivery -->
-            <a class="gm-loadType__btn gm-loadType__btn--grower" href="/Warehouse/ReceivingGrower">
+            <a class="gm-loadType__btn gm-loadType__btn--grower" href="/GrowerDelivery/Index">
                 <div class="gm-loadType__icon gm-icon gm-icon--delivery" aria-hidden="true"></div>
                 <div class="gm-loadType__text">
                     <div class="gm-loadType__label">Grower Delivery</div>
@@ -46,10 +46,9 @@
                 </div>
             </a>
 
-
             <!-- Cancel Button -->
             <a class="gm-loadType__btn gm-loadType__cancel"
-               asp-controller="Home"
+               asp-controller="Warehouse"
                asp-action="Index">
                 <div class="gm-loadType__icon gm-icon gm-icon--cancel"></div>
                 <div class="gm-loadType__text">

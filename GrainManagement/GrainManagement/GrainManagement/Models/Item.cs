@@ -21,9 +21,17 @@ public partial class Item
 
     public Guid? LastSeenSyncRunId { get; set; }
 
+    public virtual ICollection<AccountItemFilter> AccountItemFilters { get; set; } = new List<AccountItemFilter>();
+
     public virtual ICollection<CustomerPriceOverride> CustomerPriceOverrides { get; set; } = new List<CustomerPriceOverride>();
+
+    public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
 
     public virtual ICollection<ItemTrait> ItemTraits { get; set; } = new List<ItemTrait>();
 
+    public virtual ICollection<LocationItemFilter> LocationItemFilters { get; set; } = new List<LocationItemFilter>();
+
     public virtual ICollection<PriceListLine> PriceListLines { get; set; } = new List<PriceListLine>();
+
+    public virtual Product Product { get; set; }
 }

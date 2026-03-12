@@ -5,17 +5,19 @@ using System.Collections.Generic;
 
 namespace GrainManagement.Models;
 
-public partial class LocationCamera
+public partial class AccountItemFilter
 {
-    public int CameraId { get; set; }
+    public Guid Id { get; set; }
+
+    public long ItemId { get; set; }
+
+    public long AccountId { get; set; }
 
     public int LocationId { get; set; }
 
-    public string Description { get; set; }
+    public virtual Account Account { get; set; }
 
-    public string HostedServerUrl { get; set; }
+    public virtual Item Item { get; set; }
 
     public virtual Location Location { get; set; }
-
-    public virtual ICollection<LocationKiosk> LocationKiosks { get; set; } = new List<LocationKiosk>();
 }

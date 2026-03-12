@@ -21,15 +21,21 @@ public partial class Location
 
     public bool UseForWarehouse { get; set; }
 
+    public virtual ICollection<AccountItemFilter> AccountItemFilters { get; set; } = new List<AccountItemFilter>();
+
     public virtual ICollection<ChemicalLot> ChemicalLots { get; set; } = new List<ChemicalLot>();
 
     public virtual ICollection<CustomerPriceOverride> CustomerPriceOverrides { get; set; } = new List<CustomerPriceOverride>();
 
     public virtual LocationDistrict District { get; set; }
 
-    public virtual ICollection<LocationCamera> LocationCameras { get; set; } = new List<LocationCamera>();
+    public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
 
-    public virtual ICollection<LocationKiosk> LocationKiosks { get; set; } = new List<LocationKiosk>();
+    public virtual ICollection<LocationCounty> LocationCounties { get; set; } = new List<LocationCounty>();
+
+    public virtual ICollection<LocationItemFilter> LocationItemFilters { get; set; } = new List<LocationItemFilter>();
+
+    public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
 
     public virtual ICollection<PriceList> PriceLists { get; set; } = new List<PriceList>();
 

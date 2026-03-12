@@ -1,6 +1,12 @@
-﻿<div id="locationsGrid"></div>
+<link rel="stylesheet" href="~/css/pages/locations.css" asp-append-version="true" />
+
+<div id="locationsGrid"></div>
+
+<!-- ── LocationCounties popup ──────────────────────────────────────── -->
+<div id="lcPopup"></div>
 
 @section Scripts {
+    <script src="~/js/pages/locations.counties.js" asp-append-version="true"></script>
     <script>
         let districtsCache = null;
 
@@ -119,7 +125,7 @@
                 },
 
                 columns: [
-                    
+
                     {
                         dataField: "IsActive",
                         caption: "Active",
@@ -136,6 +142,7 @@
                     {
                         dataField: "DistrictId",
                         caption: "District",
+                        width: 100,
                         lookup: {
                             dataSource: districtsStore,
                             valueExpr: "DistrictId",
@@ -160,6 +167,27 @@
                             const value = cellInfo.value;
                             cellElement.text(value ? "Yes" : "No");
                             if (!value) cellElement.css("color", "red");
+                        }
+                    },
+                    {
+                        caption: "",
+                        minWidth: 200,
+                        allowSorting: false,
+                        allowFiltering: false,
+                        cellTemplate: function (cellElement, cellInfo) {
+                            $("<div>").dxButton({
+                                text: "Counties",
+                                icon: "map",
+                                stylingMode: "outlined",
+                                type: "default",
+                                hint: "Manage counties for this location",
+                                onClick: function () {
+                                    LocationCounties.open(
+                                        cellInfo.data.LocationId,
+                                        cellInfo.data.Name
+                                    );
+                                }
+                            }).appendTo(cellElement);
                         }
                     },
                     {

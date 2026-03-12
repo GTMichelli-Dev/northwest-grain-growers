@@ -14,7 +14,8 @@ namespace GrainManagement.Controllers
     public class HomeController : Controller
     {
 
-        [Authorize]
+        // TEMP: disabled for local testing
+        //[Authorize]
         public IActionResult WhoAmI()
         {
             var claims = User.Claims

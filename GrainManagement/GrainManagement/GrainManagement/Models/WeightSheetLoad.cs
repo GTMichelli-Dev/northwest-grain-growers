@@ -7,37 +7,13 @@ namespace GrainManagement.Models;
 
 public partial class WeightSheetLoad
 {
-    public long Id { get; set; }
+    public Guid Id { get; set; }
 
-    public Guid RowGuid { get; set; }
+    public Guid InventoryTransactionId { get; set; }
 
     public Guid WeightSheetUid { get; set; }
 
-    public byte LoadNumber { get; set; }
-
-    public long? SourceContainerId { get; set; }
-
-    public long? DestinationContainerId { get; set; }
-
-    public decimal? GrossLb { get; set; }
-
-    public decimal? TareLb { get; set; }
-
-    public decimal NetLb { get; set; }
-
-    public decimal? Protein { get; set; }
-
-    public decimal? Moisture { get; set; }
-
-    public DateTime CreatedAt { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
-
-    public virtual Container DestinationContainer { get; set; }
-
-    public virtual Container SourceContainer { get; set; }
-
-    public virtual ICollection<WeightSheetLoadLotAllocation> WeightSheetLoadLotAllocations { get; set; } = new List<WeightSheetLoadLotAllocation>();
+    public virtual InventoryTransaction InventoryTransaction { get; set; }
 
     public virtual WeightSheet WeightSheetU { get; set; }
 }

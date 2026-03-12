@@ -23,7 +23,21 @@ public partial class Lot
 
     public DateTime? UpdatedAt { get; set; }
 
+    public int? SplitGroupId { get; set; }
+
+    public int? LocationId { get; set; }
+
+    public string LotLabel { get; set; }
+
+    public string Notes { get; set; }
+
+    public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+
+    public virtual Location Location { get; set; }
+
     public virtual ICollection<LotPriceOverride> LotPriceOverrides { get; set; } = new List<LotPriceOverride>();
+
+    public virtual LotSplitGroup LotSplitGroup { get; set; }
 
     public virtual ICollection<LotTrait> LotTraits { get; set; } = new List<LotTrait>();
 
@@ -32,6 +46,8 @@ public partial class Lot
     public virtual ICollection<SalesInvoiceLineItemLot> SalesInvoiceLineItemLots { get; set; } = new List<SalesInvoiceLineItemLot>();
 
     public virtual ICollection<SeedTreatmentApplication> SeedTreatmentApplications { get; set; } = new List<SeedTreatmentApplication>();
+
+    public virtual SplitGroup SplitGroup { get; set; }
 
     public virtual ICollection<WeightSheetLoadLotAllocation> WeightSheetLoadLotAllocations { get; set; } = new List<WeightSheetLoadLotAllocation>();
 

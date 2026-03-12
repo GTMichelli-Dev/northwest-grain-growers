@@ -9,8 +9,9 @@ using static System.Net.WebRequestMethods;
 
 namespace GrainManagement
 {
-    [Authorize]
-    [AuthorizeForScopes(Scopes = new[] { "Group.Read.All" })]
+    // TEMP: disabled for local testing — re-enable before deploy!
+    //[Authorize]
+    //[AuthorizeForScopes(Scopes = new[] { "Group.Read.All" })]
     public class AdminController : Controller
     {
 
@@ -43,7 +44,29 @@ namespace GrainManagement
             return View();
         }
 
+        // GET: Admin/StateCounties
+        public IActionResult StateCounties()
+        {
+            if (!_me.IsAdmin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
 
-       
+            return View();
+        }
+
+        // GET: Admin/AccountItemFilters
+        public IActionResult AccountItemFilters()
+        {
+            if (!_me.IsAdmin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View();
+        }
+
+
+
     }
 }

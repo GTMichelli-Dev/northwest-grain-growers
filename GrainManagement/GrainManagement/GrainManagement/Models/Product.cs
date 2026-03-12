@@ -35,6 +35,10 @@ public partial class Product
 
     public virtual ICollection<CustomerPriceOverride> CustomerPriceOverrides { get; set; } = new List<CustomerPriceOverride>();
 
+    public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+
+    public virtual ICollection<Item> Items { get; set; } = new List<Item>();
+
     public virtual ICollection<PriceListLine> PriceListLines { get; set; } = new List<PriceListLine>();
 
     public virtual ICollection<ProductAllowedTrait> ProductAllowedTraits { get; set; } = new List<ProductAllowedTrait>();

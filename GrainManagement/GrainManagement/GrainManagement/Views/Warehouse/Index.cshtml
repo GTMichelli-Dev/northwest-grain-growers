@@ -1,8 +1,11 @@
-﻿@model GrainManagement.Models.DTO.Warehouse.WarehouseDashboardVm
+@model GrainManagement.Models.DTO.Warehouse.WarehouseDashboardVm
 @using System.Text.Json
 
 @{
     ViewData["Title"] = "Warehouse Dashboard";
+
+    // Resolve selected location from query string
+    int? selectedLocationId = int.TryParse(Context.Request.Query["locationId"], out var lid) ? lid : (int?)null;
 
     var jsonOpts = new JsonSerializerOptions
     {
@@ -10,45 +13,60 @@
     };
 
     // Serialize server model lists into JS data sources
-    var yardJson = JsonSerializer.Serialize(Model.TrucksInYard, jsonOpts);
-    var intakeJson = JsonSerializer.Serialize(Model.IntakeWeightSheets, jsonOpts);
-    var transferJson = JsonSerializer.Serialize(Model.TransferWeightSheets, jsonOpts);
-    var outboundJson = JsonSerializer.Serialize(Model.OutboundLoads, jsonOpts);
+    var yardJson     = JsonSerializer.Serialize(Model.TrucksInYard,          jsonOpts);
+    var intakeJson   = JsonSerializer.Serialize(Model.IntakeWeightSheets,    jsonOpts);
+    var transferJson = JsonSerializer.Serialize(Model.TransferWeightSheets,  jsonOpts);
+    var outboundJson = JsonSerializer.Serialize(Model.OutboundLoads,         jsonOpts);
 }
 
 <link rel="stylesheet" href="~/css/pages/warehouse.dashboard.dx.css" asp-append-version="true" />
 
-
-<button type="button"
-        class="btn btn-primary"
-        id="btnPrintTicket"
-        data-ticket="123456"
-        data-device-id="1">
-    Print Ticket To Kiosk
-</button>
+<!-- Early redirect: if localStorage has a saved location but the URL doesn't, navigate immediately -->
+<script>
+    (function () {
+        var params = new URLSearchParams(window.location.search);
+        if (!params.has('locationId')) {
+            var saved = parseInt(localStorage.getItem('gm_location_id') || '0', 10);
+            if (saved) { window.location.replace('/Warehouse?locationId=' + saved); }
+        }
+    }());
+</script>
 
 <div class="gm-pagehead gm-pagehead--sticky">
-        <div class="gm-pagehead__title">
-            <span class="gm-pagehead__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
-            <h2>Warehouse</h2>
+    <div class="gm-pagehead__title">
+        <span class="gm-pagehead__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
+        <div class="gm-wdTitleGroup">
+            <span class="gm-wdTitlePrefix">Warehouse —</span>
+            <div id="wdLocation" class="gm-wd-location-pick"></div>
         </div>
-  
+    </div>
 
     <div class="gm-wdActions">
-        <button type="button"
+        <a href="/Warehouse/LoadType" class="btn btn-primary btn-sm">New Load</a>
+        <a href="/GrowerDelivery/WeightSheetLots" class="btn btn-outline-secondary btn-sm">Lots</a>
+        @* <button type="button"
                 class="btn btn-outline-secondary btn-sm"
                 id="gmWdToggleAll"
                 data-state="expand">
             Expand All
-        </button>
+        </button> *@
     </div>
-
 </div>
+
+<!-- Shown when no location is selected -->
+<div id="gmWdNoLocation" class="gm-wd-nolocation" @(selectedLocationId.HasValue ? "hidden" : "")>
+    <span class="gm-icon gm-icon--warehouse" aria-hidden="true"></span>
+    <p>Select a location above to view the warehouse dashboard.</p>
+</div>
+
+<!-- Dashboard grids — hidden until a location is selected -->
 <div class="gm-wd" id="gmWarehouseDashboard"
+     data-selected-location="@(selectedLocationId ?? 0)"
      data-yard='@Html.Raw(yardJson)'
      data-intake='@Html.Raw(intakeJson)'
      data-transfer='@Html.Raw(transferJson)'
-     data-outbound='@Html.Raw(outboundJson)'>
+     data-outbound='@Html.Raw(outboundJson)'
+     @(selectedLocationId.HasValue ? "" : "hidden")>
 
     <!-- Yard -->
     <section class="gm-wdSec gm-wdSec--open" data-sec="yard">
@@ -111,5 +129,4 @@
     </section>
 </div>
 
-            
 <script src="~/js/pages/warehouse.dashboard.dx.js" asp-append-version="true"></script>

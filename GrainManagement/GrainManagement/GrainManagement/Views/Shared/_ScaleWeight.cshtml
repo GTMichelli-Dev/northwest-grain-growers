@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="~/css/pages/scale.weight.partial.css" asp-append-version="true" />
+
+<div class="gm-scaleWeight" id="gmScaleWeight">
+
+    <!-- Source buttons – populated by JS -->
+    <div class="gm-scaleWeight__sources" id="gwSwSources">
+        <span class="gm-scaleWeight__loading">Loading scales…</span>
+    </div>
+
+    <!-- No selection prompt -->
+    <div class="gm-scaleWeight__prompt" id="gwSwPrompt">Select a scale or use Manual</div>
+
+    <!-- Live scale readout -->
+    <div class="gm-scaleWeight__live" id="gwSwLive" hidden>
+        <div class="gm-scaleWeight__liveWeight" id="gwSwLiveWeight">-- lbs</div>
+        <div class="gm-scaleWeight__liveStatus" id="gwSwLiveStatus" data-ok="" data-motion=""></div>
+    </div>
+
+    <!-- Manual entry -->
+    <div class="gm-scaleWeight__manual" id="gwSwManual" hidden>
+        <div class="input-group gm-scaleWeight__inputGroup">
+            <input type="number"
+                   id="gwSwManualInput"
+                   class="form-control"
+                   min="0"
+                   step="1"
+                   placeholder="0"
+                   inputmode="numeric" />
+            <span class="input-group-text">lbs</span>
+        </div>
+    </div>
+
+    <!-- Hidden fields for form consumption -->
+    <input type="hidden" id="gwSwValue" name="Weight" />
+    <input type="hidden" id="gwSwSourceType" name="WeightSource" />
+
+</div>
+
+<script src="~/lib/signalr/signalr.min.js"></script>
+<script src="~/js/pages/scale.weight.partial.js" asp-append-version="true"></script>

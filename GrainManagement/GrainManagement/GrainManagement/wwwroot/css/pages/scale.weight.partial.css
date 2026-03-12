@@ -1,0 +1,139 @@
+/* =========================================================
+   _ScaleWeight Partial
+   ========================================================= */
+
+.gm-scaleWeight {
+    margin: 0 auto 8px;
+    text-align: center;
+}
+
+/* ---------------------------------------------------------
+   Source selector buttons
+   --------------------------------------------------------- */
+
+.gm-scaleWeight__sources {
+    display: inline-grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.gm-sw-sourceBtn {
+    padding: 5px 16px;
+    border-radius: 8px;
+    border: 2px solid rgba(0,0,0,.20);
+    background: #fff;
+    font-weight: 800;
+    font-size: 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+    line-height: 1.2;
+    transition: border-color .1s ease, background .1s ease, color .1s ease, transform .08s ease;
+}
+
+    .gm-sw-sourceBtn:hover {
+        border-color: var(--brand-primary, #0d6efd);
+        transform: translateY(-1px);
+    }
+
+    .gm-sw-sourceBtn--active {
+        border-color: var(--brand-primary, #0d6efd);
+        background: var(--brand-primary, #0d6efd);
+        color: #fff;
+    }
+
+    .gm-sw-sourceBtn--active:hover {
+        transform: none;
+    }
+
+/* ---------------------------------------------------------
+   No-selection prompt
+   --------------------------------------------------------- */
+
+.gm-scaleWeight__prompt {
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: #c62828;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+/* ---------------------------------------------------------
+   Live scale readout
+   --------------------------------------------------------- */
+
+.gm-scaleWeight__live {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid rgba(0,0,0,.08);
+    padding: 4px 14px;
+    margin: 0 auto;
+    max-width: 220px;
+}
+
+.gm-scaleWeight__liveWeight {
+    font-size: 1.5rem;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: -.01em;
+    white-space: nowrap;
+}
+
+.gm-scaleWeight__liveStatus {
+    font-weight: 800;
+    font-size: 0.8rem;
+    line-height: 1;
+}
+
+    .gm-scaleWeight__liveStatus[data-ok="0"]                       { color: #c62828; }
+    .gm-scaleWeight__liveStatus[data-ok="1"][data-motion="1"]      { color: #e65100; }
+    .gm-scaleWeight__liveStatus[data-ok="1"][data-motion="0"]      { color: #2e7d32; }
+
+/* ---------------------------------------------------------
+   Manual entry
+   --------------------------------------------------------- */
+
+.gm-scaleWeight__manual {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+}
+
+.gm-scaleWeight__inputGroup {
+    justify-content: center;
+    max-width: 220px;
+    width: 100%;
+}
+
+    .gm-scaleWeight__inputGroup input[type=number] {
+        font-size: 1.5rem;
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        border-radius: 8px 0 0 8px !important;
+        padding: 3px 8px;
+        line-height: 1;
+    }
+
+    .gm-scaleWeight__inputGroup .input-group-text {
+        font-size: 1.1rem;
+        font-weight: 800;
+        border-radius: 0 8px 8px 0 !important;
+        padding: 3px 10px;
+    }
+
+/* ---------------------------------------------------------
+   Loading placeholder
+   --------------------------------------------------------- */
+
+.gm-scaleWeight__loading {
+    font-style: italic;
+    opacity: .65;
+    font-size: 0.9rem;
+}

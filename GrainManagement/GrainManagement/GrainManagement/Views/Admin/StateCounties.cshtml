@@ -1,0 +1,40 @@
+@{
+    ViewData["Title"] = "States & Counties";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/admin.statecounties.css" asp-append-version="true" />
+}
+
+<div class="gm-pagehead">
+    <div class="gm-pagehead__title">
+        <span class="gm-pagehead__icon gm-icon gm-icon--us-map" aria-hidden="true"></span>
+        <h1>States &amp; Counties</h1>
+    </div>
+    <p class="text-muted">Edit state and county abbreviations. Select a state to view its counties.</p>
+</div>
+
+@* Alert banner *@
+<div id="scAlert" hidden role="alert"></div>
+
+@* ── States grid ─────────────────────────────────────────────────────────── *@
+<div class="gm-sc-card">
+    <a href="@Url.Action("Index", "Admin")" class="btn btn-outline-secondary btn-sm gm-sc-back-btn">
+        <i class="dx-icon dx-icon-arrowleft"></i> Back to Admin
+    </a>
+    <div class="gm-sc-card__title">States</div>
+    <div id="scStatesGrid"></div>
+</div>
+
+@* ── Counties grid ───────────────────────────────────────────────────────── *@
+<div class="gm-sc-card" id="scCountiesCard" hidden>
+    <div class="gm-sc-card__title">
+        Counties for <span id="scStateName" class="gm-sc-state-label"></span>
+        <span id="scCountyCount" class="gm-sc-count"></span>
+    </div>
+    <div id="scCountiesGrid"></div>
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/admin.statecounties.js" asp-append-version="true"></script>
+}

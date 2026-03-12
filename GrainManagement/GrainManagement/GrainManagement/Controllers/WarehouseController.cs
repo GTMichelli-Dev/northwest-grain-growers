@@ -17,10 +17,9 @@ public class WarehouseController : Controller
     }
 
     [HttpGet("")]
-    public IActionResult Index()
+    public IActionResult Index([FromQuery] int? locationId)
     {
-        // If you already track selected LocationId in cookie, pass it here.
-        var vm = _dash.GetDashboard(locationId: null);
+        var vm = _dash.GetDashboard(locationId: locationId);
         return View(vm);
     }
 
@@ -91,6 +90,9 @@ public class WarehouseController : Controller
     }
 
 
+
+    [HttpGet("LoadType")]
+    public IActionResult LoadType() => View();
 
     [HttpGet("NewIntakeTruck")]
     public IActionResult _NewIntakeTruck()

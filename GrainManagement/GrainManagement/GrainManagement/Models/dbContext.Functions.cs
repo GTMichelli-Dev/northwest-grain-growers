@@ -29,6 +29,12 @@ namespace GrainManagement.Models
         public async Task<long?> DistributedIdSeedAsync()
             => await Database.SqlQueryRaw<long?>("select Value = [system].[DistributedIdSeed]()").SingleAsync();
 
+        [DbFunction("fn_HasPrimaryAccount", "Inventory")]
+        public static bool? fn_HasPrimaryAccount(long? LotId)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
         [DbFunction("LocationID", "system")]
         public static int? LocationID()
         {
@@ -83,6 +89,15 @@ namespace GrainManagement.Models
         public async Task<long?> NextLabResultsIdAsync()
             => await Database.SqlQueryRaw<long?>("select Value = [Inventory].[NextLabResultsId]()").SingleAsync();
 
+        [DbFunction("NextLotId", "Inventory")]
+        public static long? NextLotId()
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
+        public async Task<long?> NextLotIdAsync()
+            => await Database.SqlQueryRaw<long?>("select Value = [Inventory].[NextLotId]()").SingleAsync();
+
         [DbFunction("NextLotLabsId", "Inventory")]
         public static long? NextLotLabsId()
         {
@@ -91,15 +106,6 @@ namespace GrainManagement.Models
 
         public async Task<long?> NextLotLabsIdAsync()
             => await Database.SqlQueryRaw<long?>("select Value = [Inventory].[NextLotLabsId]()").SingleAsync();
-
-        [DbFunction("NextLotsId", "Inventory")]
-        public static long? NextLotsId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextLotsIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [Inventory].[NextLotsId]()").SingleAsync();
 
         [DbFunction("NextPaymentsId", "sale")]
         public static long? NextPaymentsId()

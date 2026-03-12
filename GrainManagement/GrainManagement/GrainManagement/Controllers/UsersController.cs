@@ -9,8 +9,9 @@ using static System.Net.WebRequestMethods;
 
 namespace GrainManagement
 {
-    [Authorize]
-    [AuthorizeForScopes(Scopes = new[] { "Group.Read.All" })]
+    // TEMP: disabled for local testing
+    //[Authorize]
+    //[AuthorizeForScopes(Scopes = new[] { "Group.Read.All" })]
     public class UsersController : Controller
     {
 

@@ -1,0 +1,256 @@
+@{
+    ViewData["Title"] = "Grower Delivery";
+}
+
+<link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
+
+@await Html.PartialAsync("_ScaleWeight")
+
+<div class="gm-pagehead gm-pagehead--sticky">
+    <div class="gm-pagehead__title">
+        <span class="gm-pagehead__icon gm-icon gm-icon--delivery" aria-hidden="true"></span>
+        <div class="gm-gd-title-group">
+            <span class="gm-gd-title-prefix">Grower Delivery For</span>
+            <div id="gdLocation" class="gm-gd-location-pick"></div>
+        </div>
+    </div>
+    <div class="gm-pagehead__right">
+        <a class="btn btn-outline-secondary btn-sm" href="/Warehouse/LoadType">Cancel</a>
+    </div>
+</div>
+
+<div class="gm-gd">
+
+    <div id="gmGdAlert" class="alert" role="alert" hidden></div>
+
+    @await Html.PartialAsync("_WeightSheets")
+    @await Html.PartialAsync("_NewWeightSheet")
+
+    <form id="gmGdForm" novalidate>
+        <input type="hidden" id="gdLocationId"    name="LocationId" />
+        <input type="hidden" id="gdWeightSheetUid" name="WeightSheetUid" />
+
+        <!-- ── New Lot Modal (outside gated body so Bootstrap can show it) ── -->
+        <div class="modal fade" id="gdNewLotModal" tabindex="-1"
+             aria-labelledby="gdNewLotModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="gdNewLotModalLabel">Create New Lot</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <div class="form-label fw-bold text-muted small">Product</div>
+                            <div id="gdNewLotProductName" class="fw-bold">—</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="gdNewLotDesc">
+                                Lot Description <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="gdNewLotDesc"
+                                   maxlength="200" placeholder="e.g. 2025 Winter Wheat Bin 1" />
+                        </div>
+                        <div id="gdNewLotError" class="text-danger small mt-1" hidden></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary"
+                                data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary"
+                                id="gdNewLotSave">Create Lot</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Form body — hidden until a location is selected ────────── -->
+        <div id="gdFormBody" hidden>
+
+            <!-- ── Section 1: Delivery Details ──────────────────────── -->
+            <div class="gm-gd-section">
+                <div class="gm-gd-section__title">Delivery Details</div>
+                <div class="gm-gd-fields gm-gd-fields--2col">
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdAccount">Grower Account <span class="text-danger">*</span></label>
+                        <div id="gdAccount"></div>
+                        <input type="hidden" id="gdAccountId" name="AccountId" />
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdProduct">Product <span class="text-danger">*</span></label>
+                        <div id="gdProduct"></div>
+                        <input type="hidden" id="gdProductId" name="ProductId" />
+                    </div>
+
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <label class="form-label">Lot <span class="text-danger">*</span></label>
+                        <div class="gm-gd-lot-row">
+                            <div id="gdLot" class="gm-gd-lot-select"></div>
+                            <button type="button" class="btn btn-outline-primary gm-gd-lot-new"
+                                    id="gdNewLotBtn" disabled title="Select a product first">
+                                + New Lot
+                            </button>
+                        </div>
+                        <input type="hidden" id="gdLotId" name="LotId" />
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdSplitGroup">Split Group</label>
+                        <div id="gdSplitGroup"></div>
+                        <input type="hidden" id="gdSplitGroupId" name="SplitGroupId" />
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── Section 2: Weight Capture ──────────────────────────── -->
+            <div class="gm-gd-section">
+                <div class="gm-gd-section__title">Weights</div>
+
+                <div class="gm-gd-weight">
+
+                    <!-- Gross -->
+                    <div class="gm-gd-weight__row" id="gdGrossRow">
+                        <div class="gm-gd-weight__meta">
+                            <div class="gm-gd-weight__label">Gross</div>
+                            <div class="gm-gd-weight__time" id="gdGrossTime">—</div>
+                        </div>
+                        <div class="gm-gd-weight__value" id="gdGrossDisplay">— lbs</div>
+                        <button type="button" class="btn btn-outline-primary gm-gd-weight__capture" id="gdCaptureGross">
+                            Capture Gross
+                        </button>
+                        <input type="hidden" id="gdStartQty" name="StartQty" />
+                        <input type="hidden" id="gdStartedAt" name="StartedAt" />
+                    </div>
+
+                    <!-- Tare -->
+                    <div class="gm-gd-weight__row" id="gdTareRow">
+                        <div class="gm-gd-weight__meta">
+                            <div class="gm-gd-weight__label">Tare</div>
+                            <div class="gm-gd-weight__time" id="gdTareTime">—</div>
+                        </div>
+                        <div class="gm-gd-weight__value" id="gdTareDisplay">— lbs</div>
+                        <button type="button" class="btn btn-outline-secondary gm-gd-weight__capture" id="gdCaptureTare" disabled>
+                            Capture Tare
+                        </button>
+                        <input type="hidden" id="gdEndQty" name="EndQty" />
+                        <input type="hidden" id="gdCompletedAt" name="CompletedAt" />
+                    </div>
+
+                    <!-- Net -->
+                    <div class="gm-gd-weight__row gm-gd-weight__row--net">
+                        <div class="gm-gd-weight__meta">
+                            <div class="gm-gd-weight__label">Net</div>
+                        </div>
+                        <div class="gm-gd-weight__value gm-gd-weight__value--net" id="gdNetDisplay">— lbs</div>
+                        <div class="gm-gd-weight__capture"></div><!-- spacer -->
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── Section 3: Grain Quality ───────────────────────────── -->
+            <div class="gm-gd-section">
+                <div class="gm-gd-section__title">Grain Quality</div>
+                <div class="gm-gd-fields gm-gd-fields--3col">
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdMoisture">Moisture (%)</label>
+                        <input type="number" class="form-control" id="gdMoisture" name="Moisture"
+                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdProtein">Protein (%)</label>
+                        <input type="number" class="form-control" id="gdProtein" name="Protein"
+                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdTestWeight">Test Weight (lbs/bu)</label>
+                        <input type="number" class="form-control" id="gdTestWeight" name="TestWeight"
+                               min="0" step="0.1" placeholder="0.0" inputmode="decimal" />
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdDockage">Dockage (%)</label>
+                        <input type="number" class="form-control" id="gdDockage" name="Dockage"
+                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdGrade">Grade</label>
+                        <input type="text" class="form-control" id="gdGrade" name="Grade"
+                               maxlength="50" placeholder="e.g. US #2" />
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdForeignMatter">Foreign Matter (%)</label>
+                        <input type="number" class="form-control" id="gdForeignMatter" name="ForeignMatter"
+                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdSplits">Splits (%)</label>
+                        <input type="number" class="form-control" id="gdSplits" name="Splits"
+                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdDamaged">Damaged (%)</label>
+                        <input type="number" class="form-control" id="gdDamaged" name="Damaged"
+                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdOil">Oil (%)</label>
+                        <input type="number" class="form-control" id="gdOil" name="Oil"
+                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdStarch">Starch (%)</label>
+                        <input type="number" class="form-control" id="gdStarch" name="Starch"
+                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── Section 4: Container & Notes ──────────────────────── -->
+            <div class="gm-gd-section">
+                <div class="gm-gd-section__title">Additional Info</div>
+                <div class="gm-gd-fields gm-gd-fields--2col">
+
+                    <div class="gm-gd-field">
+                        <label class="form-label" for="gdContainer">Destination Container</label>
+                        <div id="gdContainer"></div>
+                        <input type="hidden" id="gdContainerId" name="ToContainerId" />
+                    </div>
+
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <label class="form-label" for="gdNotes">Notes</label>
+                        <textarea class="form-control" id="gdNotes" name="Notes"
+                                  rows="3" maxlength="1000" placeholder="Optional delivery notes…"></textarea>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── Submit ─────────────────────────────────────────────── -->
+            <div class="gm-gd-actions">
+                <button type="submit" class="btn btn-primary btn-lg" id="gmGdSubmit">
+                    Save Delivery
+                </button>
+            </div>
+
+        </div><!-- /#gdFormBody -->
+
+    </form>
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/grower.delivery.js" asp-append-version="true"></script>
+}

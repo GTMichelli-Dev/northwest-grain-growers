@@ -1,6 +1,48 @@
 ﻿(function () {
     "use strict";
 
+    const LOCATION_STORAGE_KEY = 'gm_location_id';
+
+    // Returns the integer locationId from the current URL's ?locationId= param, or null.
+    function getQueryLocationId() {
+        const params = new URLSearchParams(window.location.search);
+        const v = parseInt(params.get('locationId') || '0', 10);
+        return v || null;
+    }
+
+    // Initialise the location SelectBox in the pagehead.
+    // On change: persist to localStorage and reload the page with ?locationId=X.
+    async function initLocationPicker() {
+        const currentId = getQueryLocationId();
+
+        let locations = [];
+        try {
+            locations = await $.getJSON('/api/locations/WarehouseLocationsList');
+        } catch (ex) {
+            console.warn('[WarehouseDashboard] Location prefetch failed', ex);
+        }
+
+        $('#wdLocation').dxSelectBox({
+            dataSource:   locations,
+            valueExpr:    'LocationId',
+            displayExpr:  function (item) { return item ? item.Name + ' \u2013 ' + item.LocationId : ''; },
+            searchEnabled: true,
+            placeholder:  'Select location\u2026',
+            width:        'auto',
+            value:        currentId,
+            onValueChanged: function (e) {
+                const newId = e.value || null;
+                if (newId) {
+                    localStorage.setItem(LOCATION_STORAGE_KEY, String(newId));
+                    window.location.href = '/Warehouse?locationId=' + newId;
+                } else {
+                    localStorage.removeItem(LOCATION_STORAGE_KEY);
+                    window.location.href = '/Warehouse';
+                }
+            }
+        });
+    }
+
     function parseJsonAttr(el, name) {
         const raw = el.getAttribute(name);
         if (!raw) return [];
@@ -251,8 +293,11 @@
     }
 
     function init() {
+        // Location picker always initialises (even when dashboard is hidden)
+        initLocationPicker();
+
         const root = document.getElementById("gmWarehouseDashboard");
-        if (!root) return;
+        if (!root || root.hidden) return;  // no location selected — skip grid init
 
         wireAccordion(root);
 

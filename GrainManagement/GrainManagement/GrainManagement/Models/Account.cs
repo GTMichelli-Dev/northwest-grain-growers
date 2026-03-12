@@ -73,6 +73,8 @@ public partial class Account
 
     public Guid? LastSeenSyncRunId { get; set; }
 
+    public virtual ICollection<AccountItemFilter> AccountItemFilters { get; set; } = new List<AccountItemFilter>();
+
     public virtual ICollection<CustomerPriceOverride> CustomerPriceOverrides { get; set; } = new List<CustomerPriceOverride>();
 
     public virtual ICollection<LotPriceOverride> LotPriceOverrides { get; set; } = new List<LotPriceOverride>();

@@ -14,6 +14,9 @@ using GrainManagement.Hubs;
 using Microsoft.AspNetCore.HttpOverrides;
 using GrainManagement.Services.Warehouse;
 using Microsoft.Extensions.FileProviders;
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text.Json;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,7 +29,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
-    .EnableTokenAcquisitionToCallDownstreamApi()
+    .EnableTokenAcquisitionToCallDownstreamApi(new[] { "Group.Read.All" })
     .AddDistributedTokenCaches();
 
 builder.Services.AddMemoryCache();
@@ -121,6 +124,79 @@ builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.Authentic
         context.Response.Redirect("/Home/Index");
         context.HandleResponse();
         return Task.CompletedTask;
+    };
+
+    // ── Fetch Azure AD group memberships on sign-in ──────────────────────
+    // Groups are added to the ClaimsPrincipal BEFORE the auth cookie is
+    // created, so they persist across all subsequent requests.  This avoids
+    // the race / cache-miss issue where IClaimsTransformation's Graph call
+    // fails silently and the user appears to have no roles.
+    var previousOnTokenValidated = options.Events.OnTokenValidated;
+    options.Events.OnTokenValidated = async context =>
+    {
+        // Run existing (MSAL) handler first — it stores the tokens in cache
+        if (previousOnTokenValidated != null)
+            await previousOnTokenValidated(context);
+
+        // If groups already came in the ID token, nothing to do
+        if (context.Principal?.HasClaim(c => c.Type == "groups") == true)
+            return;
+
+        try
+        {
+            var tokenAcq = context.HttpContext.RequestServices
+                .GetRequiredService<ITokenAcquisition>();
+            var httpFactory = context.HttpContext.RequestServices
+                .GetRequiredService<IHttpClientFactory>();
+            var logger = context.HttpContext.RequestServices
+                .GetService<ILogger<GroupClaimsTransformation>>();
+
+            var token = await tokenAcq.GetAccessTokenForUserAsync(
+                new[] { "Group.Read.All" },
+                user: context.Principal);
+
+            var client = httpFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            var ids = new List<string>();
+            string? next = "https://graph.microsoft.com/v1.0/me/transitiveMemberOf/microsoft.graph.group?$select=id";
+
+            while (!string.IsNullOrEmpty(next))
+            {
+                var json = await client.GetStringAsync(next);
+                using var doc = JsonDocument.Parse(json);
+
+                if (doc.RootElement.TryGetProperty("value", out var value))
+                    foreach (var item in value.EnumerateArray())
+                        if (item.TryGetProperty("id", out var idProp))
+                            ids.Add(idProp.GetString()!);
+
+                next = doc.RootElement.TryGetProperty("@odata.nextLink", out var nl)
+                    ? nl.GetString()
+                    : null;
+            }
+
+            if (context.Principal?.Identity is ClaimsIdentity id && ids.Count > 0)
+            {
+                foreach (var gid in ids.Distinct(StringComparer.OrdinalIgnoreCase))
+                    id.AddClaim(new Claim("groups", gid));
+            }
+
+            logger?.LogInformation(
+                "OnTokenValidated: added {Count} group claims for {User}",
+                ids.Count,
+                context.Principal?.FindFirst("preferred_username")?.Value);
+        }
+        catch (Exception ex)
+        {
+            var logger = context.HttpContext.RequestServices
+                .GetService<ILogger<GroupClaimsTransformation>>();
+            logger?.LogWarning(ex,
+                "OnTokenValidated: failed to fetch groups for {User} — " +
+                "GroupClaimsTransformation will retry on each request",
+                context.Principal?.FindFirst("preferred_username")?.Value);
+        }
     };
 });
 
@@ -256,7 +332,8 @@ app.UseMiddleware<ThemeMiddleware>();
 
 
 
-app.UseAuthentication();
+// TEMP: authentication disabled for local testing — re-enable before deploy!
+//app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

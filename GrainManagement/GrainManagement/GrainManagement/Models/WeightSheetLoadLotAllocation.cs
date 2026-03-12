@@ -22,6 +22,4 @@ public partial class WeightSheetLoadLotAllocation
     public DateTime? UpdatedAt { get; set; }
 
     public virtual Lot Lot { get; set; }
-
-    public virtual WeightSheetLoad WeightSheetLoad { get; set; }
 }

@@ -94,20 +94,7 @@
     </div>
 
 
-@* Role-based tiles *@
-    @if (CurrentUser.IsAuthenticated)
-
-    {
-
-
-
-        if (CurrentUser.IsAdmin)
-
-
-
-        {
-
-
+@* Role-based tiles — TEMP: checks disabled for local testing. Re-enable before deploy! *@
 
             <div class="col-12 col-lg-4">
                 <div class="gm-tile">
@@ -117,27 +104,10 @@
                     </div>
                     <p class="gm-tile__text">Account, Product, User Setup</p>
                     <div class="gm-tile__actions">
-                        <a class="btn btn-primary w-100" href="/Admin">Enter Admin</a>
+                        <a class="btn btn-primary w-100" href="/Admin">Admin</a>
                     </div>
                 </div>
             </div>
-
-            
-           
-        }
-
-        <!-- Manager Functions card -->
-
-
-
-
-        if (CurrentUser.IsManager || (CurrentUser.IsAdmin))
-
-
-
-        {
-
-
 
             <div class="col-12 col-lg-4">
                 <div class="gm-tile">
@@ -147,13 +117,10 @@
                     </div>
                     <p class="gm-tile__text">Editing,</p>
                     <div class="gm-tile__actions">
-                        <a class="btn btn-primary w-100" href="/Reports">Enter Manager</a>
+                        <a class="btn btn-primary w-100" href="/Reports">Manager</a>
                     </div>
                 </div>
             </div>
-        }
-
-    }
 </div>
 
 <div class="mt-4 gm-quicklinks">

@@ -1,0 +1,75 @@
+@{
+    ViewData["Title"] = "Account Item Filters";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/admin.accountitemfilters.css" asp-append-version="true" />
+}
+
+
+
+<div class="gm-pagehead">
+    <div class="gm-pagehead__title">
+        <span class="gm-pagehead__icon gm-icon gm-icon--filter" aria-hidden="true"></span>
+        <h1>Account Item Filters</h1>
+    </div>
+    <p class="text-muted">Restrict which warehouse items each account can access. Select an account and an item, then click Add Filter.</p>
+</div>
+
+@* Alert banner *@
+<div id="aifAlert" hidden role="alert"></div>
+
+@* ── Filter / Add panel ────────────────────────────────────────────────────── *@
+<div class="gm-aif-card">
+    @* ── Back button ───────────────────────────────────────────────────────────── *@
+    <a href="@Url.Action("Index", "Admin")" class="btn btn-outline-secondary btn-sm gm-aif-back-btn">
+        <i class="dx-icon dx-icon-arrowleft"></i> Back to Admin
+    </a>
+    <div class="gm-aif-card__title">Filter &amp; Add</div>
+
+    <div class="gm-aif-filter-row">
+        @* Account picker — first *@
+        <div class="gm-aif-field">
+            <label class="form-label" for="aifAccount">Account</label>
+            <div id="aifAccount"></div>
+        </div>
+
+        @* Item picker — all warehouse items *@
+        <div class="gm-aif-field">
+            <label class="form-label" for="aifItem">Item</label>
+            <div id="aifItem"></div>
+        </div>
+
+        @* Location picker *@
+        <div class="gm-aif-field">
+            <label class="form-label" for="aifLocation">Location</label>
+            <div id="aifLocation"></div>
+        </div>
+
+        @* Action buttons *@
+        <div class="gm-aif-field gm-aif-field--actions">
+            <button type="button" id="aifAddBtn" class="btn btn-success" disabled>
+                Add Filter
+            </button>
+            <button type="button" id="aifClearBtn" class="btn btn-outline-secondary">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <div id="aifAddError" class="text-danger small mt-2" hidden></div>
+</div>
+
+@* ── Results list ─────────────────────────────────────────────────────────── *@
+<div class="gm-aif-card " id="aifResultsCard">
+    <div class="gm-aif-card__title">
+        Current Filters
+        <span id="aifCount" class="gm-aif-count"></span>
+    </div>
+
+    <div id="aifList"></div>
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/admin.accountitemfilters.js" asp-append-version="true"></script>
+}

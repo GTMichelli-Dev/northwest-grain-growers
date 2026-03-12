@@ -28,8 +28,4 @@ public partial class Container
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
-
-    public virtual ICollection<WeightSheetLoad> WeightSheetLoadDestinationContainers { get; set; } = new List<WeightSheetLoad>();
-
-    public virtual ICollection<WeightSheetLoad> WeightSheetLoadSourceContainers { get; set; } = new List<WeightSheetLoad>();
 }

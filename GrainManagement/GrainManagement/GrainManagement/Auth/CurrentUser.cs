@@ -52,9 +52,10 @@ public sealed class CurrentUser : ICurrentUser
     public IEnumerable<string> GroupIds =>
        _user.FindAll("groups").Select(c => c.Value);
 
-    public bool IsAdmin => GroupIds.Contains(_adminId, StringComparer.OrdinalIgnoreCase);
-    public bool IsManager => GroupIds.Contains(_managerId, StringComparer.OrdinalIgnoreCase);
-    public bool IsUser => GroupIds.Contains(_userId, StringComparer.OrdinalIgnoreCase);
+    // TEMP: grant all roles when not authenticated (local testing) — re-enable before deploy!
+    public bool IsAdmin => !IsAuthenticated || GroupIds.Contains(_adminId, StringComparer.OrdinalIgnoreCase);
+    public bool IsManager => !IsAuthenticated || GroupIds.Contains(_managerId, StringComparer.OrdinalIgnoreCase);
+    public bool IsUser => !IsAuthenticated || GroupIds.Contains(_userId, StringComparer.OrdinalIgnoreCase);
 
    
 }

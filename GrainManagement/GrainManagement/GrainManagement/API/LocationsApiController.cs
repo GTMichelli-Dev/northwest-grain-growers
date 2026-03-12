@@ -195,4 +195,87 @@ public class LocationsApiController : ControllerBase
 
         return Ok(new { entity.LocationId });
     }
+
+    // ── LocationCounties CRUD ────────────────────────────────────────────
+
+    /// <summary>GET /api/locations/{locationId}/Counties</summary>
+    [HttpGet("{locationId}/Counties")]
+    public async Task<IActionResult> GetLocationCounties(int locationId, CancellationToken ct)
+    {
+        var rows = await _ctx.LocationCounties
+            .AsNoTracking()
+            .Where(lc => lc.LocationId == locationId)
+            .Include(lc => lc.County)
+                .ThenInclude(c => c.State)
+            .OrderBy(lc => lc.County.State.State1)
+                .ThenBy(lc => lc.County.County1)
+            .Select(lc => new
+            {
+                lc.Id,
+                lc.LocationId,
+                lc.CountyId,
+                StateAbv   = lc.County.State.StateAbv,
+                StateName  = lc.County.State.State1,
+                CountyName = lc.County.County1,
+            })
+            .ToListAsync(ct);
+
+        return Ok(rows);
+    }
+
+    /// <summary>POST /api/locations/{locationId}/Counties</summary>
+    [HttpPost("{locationId}/Counties")]
+    public async Task<IActionResult> AddLocationCounty(
+        int locationId, [FromBody] AddLocationCountyDto dto, CancellationToken ct)
+    {
+        if (dto == null || dto.CountyId <= 0)
+            return BadRequest(new { message = "CountyId is required." });
+
+        var locationExists = await _ctx.Locations.AnyAsync(l => l.LocationId == locationId, ct);
+        if (!locationExists)
+            return NotFound(new { message = "Location not found." });
+
+        var countyExists = await _ctx.Counties.AnyAsync(c => c.Id == dto.CountyId, ct);
+        if (!countyExists)
+            return NotFound(new { message = "County not found." });
+
+        var duplicate = await _ctx.LocationCounties
+            .AnyAsync(lc => lc.LocationId == locationId && lc.CountyId == dto.CountyId, ct);
+        if (duplicate)
+            return Conflict(new { message = "This county is already assigned to the location." });
+
+        var entity = new LocationCounty
+        {
+            LocationId = locationId,
+            CountyId   = dto.CountyId
+        };
+
+        _ctx.LocationCounties.Add(entity);
+        await _ctx.SaveChangesAsync(ct);
+
+        return Ok(new { entity.Id });
+    }
+
+    /// <summary>DELETE /api/locations/{locationId}/Counties/{id}</summary>
+    [HttpDelete("{locationId}/Counties/{id}")]
+    public async Task<IActionResult> DeleteLocationCounty(
+        int locationId, int id, CancellationToken ct)
+    {
+        var entity = await _ctx.LocationCounties
+            .FirstOrDefaultAsync(lc => lc.Id == id && lc.LocationId == locationId, ct);
+
+        if (entity == null)
+            return NotFound(new { message = "Location-county mapping not found." });
+
+        _ctx.LocationCounties.Remove(entity);
+        await _ctx.SaveChangesAsync(ct);
+
+        return Ok();
+    }
+}
+
+/// <summary>DTO for adding a county to a location.</summary>
+public class AddLocationCountyDto
+{
+    public int CountyId { get; set; }
 }

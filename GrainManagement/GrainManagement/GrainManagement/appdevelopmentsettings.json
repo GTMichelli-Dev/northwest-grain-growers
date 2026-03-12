@@ -19,13 +19,13 @@
     "UserGroupId": "5a33901a-9551-48b8-9c8b-af85aeb31581"
   },
   "Branding": {
-    "ThemeKey": "default",
+    "ThemeKey": "nwgg",
     "AllowedThemes": [ "default", "nwgg" ]
   },
   "AllowedHosts": "*",
   "ConnectionStrings": {
-    "DefaultConnection": "Data Source=tcp:tssdemodb.database.windows.net,1433;Initial Catalog=GrainManagement;Persist Security Info=False;User ID=tsssa;Password=Scale_Us3r;Pooling=False;MultipleActiveResultSets=False;Connect Timeout=30;Encrypt=True;TrustServerCertificate=False;Command Timeout=30",
-    "AdminConnection": "Data Source=tcp:tssdemodb.database.windows.net,1433;Initial Catalog=GrainManagement;Persist Security Info=False;User ID=tsssa;Password=Scale_Us3r;Pooling=False;MultipleActiveResultSets=False;Connect Timeout=30;Encrypt=True;TrustServerCertificate=False;Command Timeout=30"
+    "DefaultConnection": "Data Source=./;Initial Catalog=GrainManagement;Persist Security Info=False;User ID=sa;Password=Scale_Us3r;Pooling=False;MultipleActiveResultSets=False;Connect Timeout=30;Encrypt=False;TrustServerCertificate=True;Command Timeout=30",
+    "AdminConnection": "Data Source=./;Initial Catalog=GrainManagement;Persist Security Info=False;User ID=sa;Password=Scale_Us3r;Pooling=False;MultipleActiveResultSets=False;Connect Timeout=30;Encrypt=False;TrustServerCertificate=True;Command Timeout=30"
   },
   "TicketImages": {
     "PhysicalPath": "C:\\Images",

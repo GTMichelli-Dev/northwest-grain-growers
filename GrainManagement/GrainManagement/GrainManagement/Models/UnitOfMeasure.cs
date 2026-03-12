@@ -27,11 +27,15 @@ public partial class UnitOfMeasure
 
     public virtual ICollection<ChemicalTransaction> ChemicalTransactions { get; set; } = new List<ChemicalTransaction>();
 
+    public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+
     public virtual ICollection<PriceListLine> PriceListLines { get; set; } = new List<PriceListLine>();
 
     public virtual ICollection<SeedTreatmentApplication> SeedTreatmentApplicationChemicalUsedUoms { get; set; } = new List<SeedTreatmentApplication>();
 
     public virtual ICollection<SeedTreatmentApplication> SeedTreatmentApplicationSeedTreatedUoms { get; set; } = new List<SeedTreatmentApplication>();
+
+    public virtual ICollection<TransactionAttributeType> TransactionAttributeTypes { get; set; } = new List<TransactionAttributeType>();
 
     public virtual UomType UomType { get; set; }
 }
