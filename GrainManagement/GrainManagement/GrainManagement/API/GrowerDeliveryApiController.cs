@@ -224,6 +224,26 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         return Ok(groups);
     }
 
+    // GET /api/GrowerDelivery/SplitGroupLookup?splitGroupId=
+    // Returns basic info for a single split group by ID (must be active).
+    [HttpGet("SplitGroupLookup")]
+    public async Task<IActionResult> SplitGroupLookup([FromQuery] int splitGroupId, CancellationToken ct)
+    {
+        if (splitGroupId <= 0)
+            return BadRequest(new { message = "splitGroupId is required." });
+
+        var sg = await _ctx.SplitGroups
+            .AsNoTracking()
+            .Where(s => s.SplitGroupId == splitGroupId && s.IsActive)
+            .Select(s => new { s.SplitGroupId, s.SplitGroupDescription, s.PrimaryAccountId })
+            .FirstOrDefaultAsync(ct);
+
+        if (sg is null)
+            return NotFound(new { message = "Split group not found or inactive." });
+
+        return Ok(sg);
+    }
+
     // GET /api/GrowerDelivery/WeightSheetLots?locationId=
     // Returns ALL weight sheet lots (open + closed) at the location — management view.
     [HttpGet("WeightSheetLots")]
@@ -250,7 +270,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 AccountName           = l.SplitGroup != null
                     ? _ctx.Accounts
                           .Where(a => a.AccountId == l.SplitGroup.PrimaryAccountId)
-                          .Select(a => a.EntityName)
+                          .Select(a => a.LookupName)
                           .FirstOrDefault()
                     : null,
                 l.ItemId,
@@ -259,8 +279,9 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                     : null,
                 l.Notes,
                 HasClosedWeightSheet  = l.WeightSheets.Any(ws => ws.ClosedAt != null),
-                State  = l.LotTraits.Where(t => t.TraitTypeId == 15).Select(t => t.Trait.TraitCode).FirstOrDefault(),
-                County = l.LotTraits.Where(t => t.TraitTypeId == 16).Select(t => t.Trait.TraitCode).FirstOrDefault(),
+                State    = l.LotTraits.Where(t => t.TraitTypeId == 15).Select(t => t.Trait.TraitCode).FirstOrDefault(),
+                County   = l.LotTraits.Where(t => t.TraitTypeId == 16).Select(t => t.Trait.TraitCode).FirstOrDefault(),
+                Landlord = l.LotTraits.Where(t => t.TraitTypeId == 18).Select(t => t.Trait.TraitCode).FirstOrDefault(),
             })
             .ToListAsync(ct);
 
@@ -389,27 +410,49 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             // Insert State trait (TraitTypeId=15) if provided
             if (!string.IsNullOrWhiteSpace(dto.State))
             {
-                var stateTrait = await _ctx.Traits.AsNoTracking()
+                var stateTrait = await _ctx.Traits
                     .FirstOrDefaultAsync(t => t.TraitTypeId == 15 && t.TraitCode == dto.State.Trim(), ct);
-                if (stateTrait != null)
+                if (stateTrait == null)
                 {
-                    await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
-                        INSERT INTO [Inventory].[LotTraits] (LotId, TraitId, TraitTypeId, IsExclusive, CreatedAt)
-                        VALUES ({lot.Id}, {stateTrait.TraitId}, {15}, 1, {now})", ct);
+                    stateTrait = new Trait { TraitCode = dto.State.Trim(), TraitTypeId = 15, Description = dto.State.Trim(), IsActive = true, CreatedAt = now };
+                    _ctx.Traits.Add(stateTrait);
+                    await _ctx.SaveChangesAsync(ct);
                 }
+                await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                    INSERT INTO [Inventory].[LotTraits] (LotId, TraitId, TraitTypeId, IsExclusive, CreatedAt)
+                    VALUES ({lot.Id}, {stateTrait.TraitId}, {15}, 1, {now})", ct);
             }
 
             // Insert County trait (TraitTypeId=16) if provided
             if (!string.IsNullOrWhiteSpace(dto.County))
             {
-                var countyTrait = await _ctx.Traits.AsNoTracking()
+                var countyTrait = await _ctx.Traits
                     .FirstOrDefaultAsync(t => t.TraitTypeId == 16 && t.TraitCode == dto.County.Trim(), ct);
-                if (countyTrait != null)
+                if (countyTrait == null)
                 {
-                    await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
-                        INSERT INTO [Inventory].[LotTraits] (LotId, TraitId, TraitTypeId, IsExclusive, CreatedAt)
-                        VALUES ({lot.Id}, {countyTrait.TraitId}, {16}, 1, {now})", ct);
+                    countyTrait = new Trait { TraitCode = dto.County.Trim(), TraitTypeId = 16, Description = dto.County.Trim(), IsActive = true, CreatedAt = now };
+                    _ctx.Traits.Add(countyTrait);
+                    await _ctx.SaveChangesAsync(ct);
                 }
+                await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                    INSERT INTO [Inventory].[LotTraits] (LotId, TraitId, TraitTypeId, IsExclusive, CreatedAt)
+                    VALUES ({lot.Id}, {countyTrait.TraitId}, {16}, 1, {now})", ct);
+            }
+
+            // Insert Landlord trait (TraitTypeId=18) if provided
+            if (!string.IsNullOrWhiteSpace(dto.Landlord))
+            {
+                var landlordTrait = await _ctx.Traits
+                    .FirstOrDefaultAsync(t => t.TraitTypeId == 18 && t.TraitCode == dto.Landlord.Trim(), ct);
+                if (landlordTrait == null)
+                {
+                    landlordTrait = new Trait { TraitCode = dto.Landlord.Trim(), TraitTypeId = 18, Description = dto.Landlord.Trim(), IsActive = true, CreatedAt = now };
+                    _ctx.Traits.Add(landlordTrait);
+                    await _ctx.SaveChangesAsync(ct);
+                }
+                await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                    INSERT INTO [Inventory].[LotTraits] (LotId, TraitId, TraitTypeId, IsExclusive, CreatedAt)
+                    VALUES ({lot.Id}, {landlordTrait.TraitId}, {18}, 1, {now})", ct);
             }
 
             foreach (var p in sg.SplitGroupPercents)
@@ -448,7 +491,9 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             .AsNoTracking()
             .AnyAsync(ws => ws.LotId == id && ws.ClosedAt != null, ct);
 
-        bool notesOnly = !lot.IsOpen || hasClosedWs;
+        // Allow full edit if created today, even when closed
+        bool createdToday = lot.CreatedAt.Date == DateTime.UtcNow.Date;
+        bool notesOnly = (!lot.IsOpen || hasClosedWs) && !createdToday;
 
         var now = DateTime.UtcNow;
 
@@ -489,6 +534,9 @@ public sealed class GrowerDeliveryApiController : ControllerBase
 
             // Upsert County trait (TraitTypeId=16)
             await UpsertLotTrait(id, 16, dto.County?.Trim(), now, ct);
+
+            // Upsert Landlord trait (TraitTypeId=18)
+            await UpsertLotTrait(id, 18, dto.Landlord?.Trim(), now, ct);
         }
 
         return Ok(new { id, notesOnly });
@@ -540,8 +588,23 @@ public sealed class GrowerDeliveryApiController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(traitCode)) return;
 
-        var trait = await _ctx.Traits.AsNoTracking()
+        var trait = await _ctx.Traits
             .FirstOrDefaultAsync(t => t.TraitTypeId == traitTypeId && t.TraitCode == traitCode, ct);
+
+        // Auto-create the trait if it doesn't exist (for State/County/Landlord)
+        if (trait == null && (traitTypeId == 15 || traitTypeId == 16 || traitTypeId == 18))
+        {
+            trait = new Trait
+            {
+                TraitCode = traitCode,
+                TraitTypeId = traitTypeId,
+                Description = traitCode,
+                IsActive = true,
+                CreatedAt = now,
+            };
+            _ctx.Traits.Add(trait);
+            await _ctx.SaveChangesAsync(ct);
+        }
 
         if (trait == null) return;
 

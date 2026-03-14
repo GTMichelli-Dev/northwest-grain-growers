@@ -8,4 +8,5 @@ public sealed class CreateWeightSheetLotDto
     public string Notes     { get; set; }
     public string State     { get; set; }
     public string County    { get; set; }
+    public string Landlord  { get; set; }
 }

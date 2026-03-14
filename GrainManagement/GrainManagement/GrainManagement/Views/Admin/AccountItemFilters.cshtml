@@ -11,14 +11,14 @@
 <div class="gm-pagehead">
     <div class="gm-pagehead__title">
         <span class="gm-pagehead__icon gm-icon gm-icon--filter" aria-hidden="true"></span>
-        <h1>Account Item Filters</h1>
+        <h1 class="gm-tile__title" style="font-size:20px">Account Item Filters</h1>
     </div>
-    <p class="text-muted">Restrict which warehouse items each account can access. Select an account and an item, then click Add Filter.</p>
+
 </div>
 
 @* Alert banner *@
 <div id="aifAlert" hidden role="alert"></div>
-
+<p class="text-muted text-center">The filters below only allow the grower in the list to bring in the item for the selected location</p>
 @* ── Filter / Add panel ────────────────────────────────────────────────────── *@
 <div class="gm-aif-card">
     @* ── Back button ───────────────────────────────────────────────────────────── *@
@@ -42,7 +42,7 @@
 
         @* Location picker *@
         <div class="gm-aif-field">
-            <label class="form-label" for="aifLocation">Location</label>
+            <label class="form-label" for="aifLocation">Licensed Location</label>
             <div id="aifLocation"></div>
         </div>
 

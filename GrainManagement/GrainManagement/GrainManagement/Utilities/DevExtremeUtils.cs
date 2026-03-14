@@ -23,21 +23,54 @@ namespace GrainManagement.Utilities
                     list[i] = null;
             }
 
-            // Binary filter must be: [field, operator, value]
-            if (list.Count == 2 &&
-                list[0] is string &&
-                list[1] is string)
+            // Binary filter: [field, operator, value]
+            // Drop clauses where the field name is empty/whitespace
+            if (list.Count >= 2 && list[0] is string fieldName)
             {
-                list.Add(null);
+                if (string.IsNullOrWhiteSpace(fieldName))
+                    return null;
+
+                if (list.Count == 2 && list[1] is string)
+                    list.Add(null);
+
+                // This is a leaf binary filter — no further recursion needed
+                return list;
             }
 
-            // Recurse nested filters
+            // Compound filter: [[clause], "and"/"or", [clause], ...]
+            // Recursively sanitize nested IList clauses, collect valid ones
+            var validClauses = new System.Collections.Generic.List<object>();
+            string? lastOp = null;
+
             for (int i = 0; i < list.Count; i++)
             {
-                list[i] = SanitizeFilter(list[i]);
+                if (list[i] is string op && (op == "and" || op == "or" || op == "!"))
+                {
+                    lastOp = op;
+                    continue;
+                }
+
+                if (list[i] is IList subFilter)
+                {
+                    var sanitized = SanitizeFilter(subFilter);
+                    if (sanitized != null)
+                    {
+                        if (validClauses.Count > 0 && lastOp != null)
+                            validClauses.Add(lastOp);
+                        validClauses.Add(sanitized);
+                    }
+                }
+                lastOp = null;
             }
 
-            return list;
+            if (validClauses.Count == 0)
+                return null;
+
+            // Unwrap single remaining clause
+            if (validClauses.Count == 1 && validClauses[0] is IList inner)
+                return inner;
+
+            return new System.Collections.ArrayList(validClauses);
         }
 
         public static void NormalizeLoadOptions(DataSourceLoadOptions options)
@@ -54,6 +87,7 @@ namespace GrainManagement.Utilities
             // Re-check in case Sanitize converted JsonElement null -> null and now it's effectively [null]
             if (IsNullOrEmptyFilter(options.Filter))
                 options.Filter = null;
+
         }
 
         private static bool IsNullOrEmptyFilter(IList? list)

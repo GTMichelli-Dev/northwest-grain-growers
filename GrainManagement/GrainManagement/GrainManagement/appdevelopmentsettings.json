@@ -30,7 +30,5 @@
   "TicketImages": {
     "PhysicalPath": "C:\\Images",
     "RequestPath": "/ticket-images"
-  },
-  "UseDemoData": true
-
+  }
 }

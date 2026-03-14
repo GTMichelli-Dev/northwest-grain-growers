@@ -88,14 +88,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<IDeviceContext, DeviceContext>();
 
-if (builder.Configuration.GetValue<bool>("UseDemoData"))
-{
-    builder.Services.AddScoped<ILocationService, DemoLocationService>();
-}
-else
-{
-    builder.Services.AddScoped<ILocationService, sqlLocationService>();
-}
+builder.Services.AddScoped<ILocationService, sqlLocationService>();
 
 
 
@@ -348,5 +341,15 @@ app.MapHub<PrintHub>("/hubs/print");
 app.MapHub<WarehouseHub>(WarehouseHub.HubRoute);
 
 app.MapRazorPages();
+
+// ── Warm-up: force EF Core model compilation + first DB connection at startup ──
+// CanConnect() only tests the raw ADO.NET connection; a real LINQ query forces
+// EF to compile the full model (entity mappings, relationships, etc.) which is
+// the actual source of the cold-start lag.
+using (var scope = app.Services.CreateScope())
+{
+    var ctx = scope.ServiceProvider.GetRequiredService<dbContext>();
+    _ = ctx.Locations.AsNoTracking().Select(l => l.LocationId).FirstOrDefault();
+}
 
 app.Run();

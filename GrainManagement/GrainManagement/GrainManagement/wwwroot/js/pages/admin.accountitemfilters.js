@@ -181,7 +181,7 @@
             columns: [
                 { dataField: 'AccountName',        caption: 'Account', sortOrder: 'asc', sortIndex: 0 },
                 { dataField: 'ItemDescription',    caption: 'Item' },
-                { dataField: 'LocationName',       caption: 'Location' },
+                { dataField: 'LocationName',       caption: 'Licensed Location' },
                 {
                     type:  'buttons',
                     width: 90,
@@ -241,10 +241,16 @@
                     showAlert('Filter added successfully.', 'success');
                 }
 
-                // Reset account picker so the user can add another account to the same item
-                const accountInst = $(SEL.account).dxSelectBox('instance');
-                if (accountInst) { accountInst.reset(); }
-                _selectedAccountId = null;
+                // Reset all pickers after successful add
+                const itemInst     = $(SEL.item).dxSelectBox('instance');
+                const accountInst  = $(SEL.account).dxSelectBox('instance');
+                const locationInst = $(SEL.location).dxSelectBox('instance');
+                if (itemInst)     { itemInst.reset(); }
+                if (accountInst)  { accountInst.reset(); }
+                if (locationInst) { locationInst.reset(); }
+                _selectedItemId      = null;
+                _selectedAccountId   = null;
+                _selectedLocationId  = null;
 
                 refreshList();
 

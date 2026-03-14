@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Admin";
 }
 
@@ -6,106 +6,73 @@
 <div class="gm-pagehead">
     <div class="gm-pagehead__title">
         <span class="gm-pagehead__icon gm-icon gm-icon--admin" aria-hidden="true"></span>
-        <h1>Administration</h1>
+        <h1 class="gm-tile__title" style="font-size:20px">Administration</h1>
     </div>
-    <p class="text-muted">Account, Product, User Setup</p>
 </div>
 
 <div class="row g-4 mt-2">
+    <div class="col-12">
+        <a href="/" class="btn btn-outline-secondary btn-sm">
+            <i class="dx-icon dx-icon-arrowleft"></i> Back to Home
+        </a>
+    </div>
     <div class="col-12 col-lg-4">
-        <div class="gm-tile">
+        <a class="gm-tile gm-tile--link" href="/Users">
             <div class="gm-tile__header">
                 <div class="gm-tile__icon gm-icon gm-icon--user" aria-hidden="true"></div>
                 <h2 class="gm-tile__title">Users</h2>
             </div>
             <p class="gm-tile__text">User Management.</p>
-            <div class="gm-tile__actions">
-                <a class="btn btn-primary w-100" href="/Users">Start</a>
-            </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-12 col-lg-4">
-        <div class="gm-tile">
+        <a class="gm-tile gm-tile--link" href="/Accounts">
             <div class="gm-tile__header">
                 <div class="gm-tile__icon gm-icon gm-icon--accounts" aria-hidden="true"></div>
                 <h2 class="gm-tile__title">Accounts</h2>
             </div>
-            <p class="gm-tile__text">Producer, Landloard, Vendor Accounts.</p>
-            <div class="gm-tile__actions">
-                <a class="btn btn-primary w-100" href="/Accounts">Start</a>
-            </div>
-        </div>
+            <p class="gm-tile__text">Producer, Landlord, Vendor Accounts.</p>
+        </a>
     </div>
 
     <div class="col-12 col-lg-4">
-        <div class="gm-tile">
+        <a class="gm-tile gm-tile--link" href="/Items">
             <div class="gm-tile__header">
                 <div class="gm-tile__icon gm-icon gm-icon--products" aria-hidden="true"></div>
-                <h2 class="gm-tile__title">Products</h2>
+                <h2 class="gm-tile__title">Items</h2>
             </div>
-            <p class="gm-tile__text">Seed,Grain,Chemicals, Services, Misc.</p>
-            <div class="gm-tile__actions">
-                <a class="btn btn-primary w-100" href="/Warehouse/ShipLoad">Start</a>
-            </div>
-        </div>
+            <p class="gm-tile__text">Seed, Grain, Chemicals, Services, Misc.</p>
+        </a>
     </div>
 
-        <div class="col-12 col-lg-4">
-        <div class="gm-tile">
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link" href="/Locations">
             <div class="gm-tile__header">
                 <div class="gm-tile__icon gm-icon gm-icon--locations" aria-hidden="true"></div>
                 <h2 class="gm-tile__title">Locations</h2>
             </div>
             <p class="gm-tile__text">Locations</p>
-            <div class="gm-tile__actions">
-                <a class="btn btn-primary w-100" href="/Locations">Start</a>
-            </div>
-        </div>
+        </a>
     </div>
 
-     <div class="col-12 col-lg-4">
-                <div class="gm-tile">
-                    <div class="gm-tile__header">
-                        <div class="gm-tile__icon gm-icon gm-icon--settings" aria-hidden="true"></div>
-                        <h2 class="gm-tile__title">System Settings</h2>
-                    </div>
-                    <p class="gm-tile__text">Settings for this server</p>
-                    <div class="gm-tile__actions">
-                        <a class="btn btn-primary w-100" href="/Admin">Enter Settings</a>
-                    </div>
-                </div>
-            </div>
-
     <div class="col-12 col-lg-4">
-        <div class="gm-tile">
+        <a class="gm-tile gm-tile--link" href="/Admin">
             <div class="gm-tile__header">
-                <div class="gm-tile__icon gm-icon gm-icon--filter" aria-hidden="true"></div>
-                <h2 class="gm-tile__title">Account Item Filters</h2>
+                <div class="gm-tile__icon gm-icon gm-icon--settings" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">System Settings</h2>
             </div>
-            <p class="gm-tile__text">Restrict which items each account can access, filtered by product and item.</p>
-            <div class="gm-tile__actions">
-                <a class="btn btn-primary w-100" href="/Admin/AccountItemFilters">Manage Filters</a>
-            </div>
-        </div>
+            <p class="gm-tile__text">Settings for this server</p>
+        </a>
     </div>
 
     <div class="col-12 col-lg-4">
-        <div class="gm-tile">
+        <a class="gm-tile gm-tile--link" href="/Admin/StateCounties">
             <div class="gm-tile__header">
                 <div class="gm-tile__icon gm-icon gm-icon--us-map" aria-hidden="true"></div>
                 <h2 class="gm-tile__title">States &amp; Counties</h2>
             </div>
             <p class="gm-tile__text">Edit state and county abbreviations.</p>
-            <div class="gm-tile__actions">
-                <a class="btn btn-primary w-100" href="/Admin/StateCounties">Manage</a>
-            </div>
-        </div>
+        </a>
     </div>
 </div>
-
-<div class="mt-4 gm-quicklinks">
-    <a class="gm-link" href="/">Back to Home</a>
-</div>
-
-

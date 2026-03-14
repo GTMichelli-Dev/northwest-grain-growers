@@ -1,0 +1,272 @@
+@{
+    ViewData["Title"] = "Accounts";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/accounts.css" asp-append-version="true" />
+}
+
+<div class="gm-pagehead">
+    <div class="gm-pagehead__title">
+        <span class="gm-pagehead__icon gm-icon gm-icon--accounts" aria-hidden="true"></span>
+        <h1 class="gm-tile__title" style="font-size:20px">Accounts</h1>
+    </div>
+</div>
+
+<div class="gm-accounts-card">
+    <a href="@Url.Action("Index", "Admin")" class="btn btn-outline-secondary btn-sm gm-accounts-back-btn">
+        <i class="dx-icon dx-icon-arrowleft"></i> Back to Admin
+    </a>
+
+    <div id="accountsGrid"></div>
+</div>
+
+<!-- Split Groups popup -->
+<div id="splitGroupsPopup"></div>
+
+@section Scripts {
+    <script>
+        var _splitFilter = "";
+        var _search = "";
+
+        const accountsStore = DevExpress.data.AspNet.createStore({
+            key: "AccountId",
+            loadUrl: "/api/accounts",
+            onBeforeSend: function (method, ajaxOptions) {
+                if (_splitFilter) {
+                    ajaxOptions.data.splitFilter = _splitFilter;
+                }
+                if (_search) {
+                    ajaxOptions.data.search = _search;
+                }
+            }
+        });
+
+        $("#accountsGrid").dxDataGrid({
+            dataSource: accountsStore,
+            keyExpr: "AccountId",
+
+            remoteOperations: {
+                paging: true,
+                filtering: true,
+                sorting: true
+            },
+
+            toolbar: {
+                items: [
+                    {
+                        location: "after",
+                        template: function () {
+                            var $wrap = $("<div>").css({ display: "flex", alignItems: "center", gap: "10px" });
+                            $("<div>").dxButton({
+                                text: "Account Item Filters",
+                                icon: "filter",
+                                stylingMode: "outlined",
+                                type: "default",
+                                onClick: function () {
+                                    window.location.href = "/Admin/AccountItemFilters";
+                                }
+                            }).appendTo($wrap);
+                            $("<div>").dxTextBox({
+                                width: 260,
+                                placeholder: "Search accounts...",
+                                mode: "search",
+                                onValueChanged: function (e) {
+                                    _search = e.value || "";
+                                    var grid = $("#accountsGrid").dxDataGrid("instance");
+                                    grid.refresh();
+                                }
+                            }).appendTo($wrap);
+                            return $wrap;
+                        }
+                    },
+                    {
+                        location: "after",
+                        template: function () {
+                            return $("<div>").css({ display: "flex", alignItems: "center", gap: "8px" })
+                                .append($("<span>").text("Split Groups").css({ fontWeight: 600 }))
+                                .append($("<div id='splitGroupFilter'>").dxSelectBox({
+                                    items: [
+                                        { value: "all", text: "All" },
+                                        { value: "none", text: "No Split Groups" },
+                                        { value: "has", text: "Has Split Groups" }
+                                    ],
+                                    valueExpr: "value",
+                                    displayExpr: "text",
+                                    value: "all",
+                                    width: 170,
+                                    onValueChanged: function (e) {
+                                        _splitFilter = (e.value === "all") ? "" : e.value;
+                                        var grid = $("#accountsGrid").dxDataGrid("instance");
+                                        grid.refresh();
+                                    }
+                                }));
+                        }
+                    }
+                ]
+            },
+
+            showBorders: true,
+            columnAutoWidth: true,
+            wordWrapEnabled: true,
+            rowAlternationEnabled: true,
+            hoverStateEnabled: true,
+
+            searchPanel: { visible: false },
+
+            paging: { pageSize: 20 },
+            pager: {
+                showPageSizeSelector: true,
+                allowedPageSizes: [10, 20, 50, 100],
+                showInfo: true
+            },
+
+            filterRow: { visible: true },
+
+            columns: [
+                {
+                    dataField: "IsActive",
+                    caption: "Active",
+                    width: 75,
+                    allowSearch: false,
+                    cellTemplate: function (cellElement, cellInfo) {
+                        var isActive = cellInfo.value;
+                        cellElement.text(isActive ? "Active" : "Inactive");
+                        if (!isActive) cellElement.css("color", "red");
+                    }
+                },
+                { dataField: "AccountId", caption: "ID", width: 70, allowSearch: false },
+                { dataField: "As400AccountId", caption: "AS400 ID", width: 90, allowSearch: false },
+                { dataField: "LookupName", caption: "Lookup Name", minWidth: 200 },
+                {
+                    dataField: "IsSeedProducer",
+                    caption: "Seed Producer",
+                    allowSearch: false,
+                    cellTemplate: function (el, info) { el.text(info.value ? "Yes" : "No"); }
+                },
+                {
+                    dataField: "IsWholesale",
+                    caption: "Wholesale",
+                    width: 90,
+                    allowSearch: false,
+                    cellTemplate: function (el, info) { el.text(info.value ? "Yes" : "No"); }
+                },
+                { dataField: "Phone1", caption: "Phone", width: 120 },
+                { dataField: "Email", caption: "Email", width: 180 },
+                {
+                    dataField: "SplitGroupCount",
+                    caption: "Split Groups",
+                    width: 160,
+                    allowSearch: false,
+                    allowFiltering: false,
+                    cellTemplate: function (cellElement, cellInfo) {
+                        var count = cellInfo.value || 0;
+                        if (count === 0) {
+                            $("<span>").addClass("sg-no-groups-label").text("No Split Groups").appendTo(cellElement);
+                        } else {
+                            $("<div>").dxButton({
+                                text: "Split Groups (" + count + ")",
+                                icon: "group",
+                                width: 150,
+                                stylingMode: "outlined",
+                                type: "default",
+                                hint: "View split groups for this account",
+                                onClick: function () {
+                                    openSplitGroups(cellInfo.data.AccountId, cellInfo.data.LookupName);
+                                }
+                            }).appendTo(cellElement);
+                        }
+                    }
+                }
+            ]
+        });
+
+        // ── Split Groups popup ─────────────────────────────────────────
+        function openSplitGroups(accountId, accountName) {
+            var popup = $("#splitGroupsPopup").dxPopup({
+                title: "Split Groups — " + (accountName || "Account " + accountId),
+                showTitle: true,
+                width: 850,
+                height: "auto",
+                maxHeight: "80vh",
+                showCloseButton: true,
+                visible: true,
+                contentTemplate: function (content) {
+                    var $loading = $("<div>").text("Loading...").css({ padding: "20px", textAlign: "center" });
+                    content.append($loading);
+
+                    $.getJSON("/api/accounts/" + accountId + "/SplitGroups")
+                        .done(function (groups) {
+                            content.empty();
+
+                            if (!groups || groups.length === 0) {
+                                content.append(
+                                    $("<div>").css({ padding: "30px", textAlign: "center", color: "#999" })
+                                        .text("No split groups for this account.")
+                                );
+                                return;
+                            }
+
+                            var $container = $("<div>").css({ padding: "10px" });
+
+                            groups.forEach(function (sg) {
+                                var $card = $("<div>").addClass("sg-card");
+
+                                var statusText = sg.IsActive ? "Active" : "Inactive";
+                                var statusClass = sg.IsActive ? "sg-status--active" : "sg-status--inactive";
+
+                                var $header = $("<div>").addClass("sg-card__header")
+                                    .append($("<span>").addClass("sg-card__title").text(sg.SplitGroupDescription || "(No Description)"))
+                                    .append($("<span>").addClass("sg-status " + statusClass).text(statusText));
+
+                                var $tags = $("<div>").addClass("sg-card__tags");
+                                if (sg.UseForReceive) $tags.append($("<span>").addClass("sg-tag sg-tag--receive").text("Receive"));
+                                if (sg.UseForSales) $tags.append($("<span>").addClass("sg-tag sg-tag--sales").text("Sales"));
+
+                                $card.append($header);
+                                if (sg.UseForReceive || sg.UseForSales) $card.append($tags);
+
+                                if (sg.Percents && sg.Percents.length > 0) {
+                                    var $table = $("<table>").addClass("sg-percents-table");
+                                    $table.append(
+                                        $("<thead>").append(
+                                            $("<tr>")
+                                                .append($("<th>").text("Account"))
+                                                .append($("<th>").text("Account ID"))
+                                                .append($("<th>").text("Split %"))
+                                        )
+                                    );
+                                    var $tbody = $("<tbody>");
+                                    sg.Percents.forEach(function (p) {
+                                        $tbody.append(
+                                            $("<tr>")
+                                                .append($("<td>").text(p.AccountName || "—"))
+                                                .append($("<td>").text(p.AccountId))
+                                                .append($("<td>").text(p.SplitPercent.toFixed(2) + "%"))
+                                        );
+                                    });
+                                    $table.append($tbody);
+                                    $card.append($table);
+                                } else {
+                                    $card.append(
+                                        $("<div>").css({ color: "#999", fontStyle: "italic", marginTop: "6px" })
+                                            .text("No split percentages defined.")
+                                    );
+                                }
+
+                                $container.append($card);
+                            });
+
+                            content.append($container);
+                        })
+                        .fail(function () {
+                            content.empty().append(
+                                $("<div>").css({ padding: "20px", textAlign: "center", color: "red" })
+                                    .text("Failed to load split groups.")
+                            );
+                        });
+                }
+            }).dxPopup("instance");
+        }
+    </script>
+}

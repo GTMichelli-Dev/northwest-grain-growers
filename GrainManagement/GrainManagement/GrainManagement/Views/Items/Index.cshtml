@@ -1,0 +1,252 @@
+@{
+    ViewData["Title"] = "Items";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/items.css" asp-append-version="true" />
+}
+
+<div class="gm-pagehead">
+    <div class="gm-pagehead__title">
+        <span class="gm-pagehead__icon gm-icon gm-icon--products" aria-hidden="true"></span>
+        <h1 class="gm-tile__title" style="font-size:20px">Items</h1>
+    </div>
+</div>
+
+<div class="gm-items-card">
+    <a href="@Url.Action("Index", "Admin")" class="btn btn-outline-secondary btn-sm gm-items-back-btn">
+        <i class="dx-icon dx-icon-arrowleft"></i> Back to Admin
+    </a>
+
+    <div id="itemsGrid"></div>
+</div>
+
+<!-- Traits popup -->
+<div id="traitsPopup"></div>
+
+@section Scripts {
+    <script>
+        var _search = "";
+
+        const itemsStore = DevExpress.data.AspNet.createStore({
+            key: "ItemId",
+            loadUrl: "/api/items",
+            onBeforeSend: function (method, ajaxOptions) {
+                if (_search) {
+                    ajaxOptions.data.search = _search;
+                }
+            }
+        });
+
+        $.getJSON("/api/items/lookups").done(function (lookups) {
+            $("#itemsGrid").dxDataGrid({
+                dataSource: itemsStore,
+                keyExpr: "ItemId",
+
+                remoteOperations: {
+                    paging: true,
+                    filtering: true,
+                    sorting: true
+                },
+
+                toolbar: {
+                    items: [
+                        {
+                            location: "after",
+                            template: function () {
+                                var $wrap = $("<div>").css({ display: "flex", alignItems: "center", gap: "10px" });
+                                $("<div>").dxButton({
+                                    text: "Account Item Filters",
+                                    icon: "filter",
+                                    stylingMode: "outlined",
+                                    type: "default",
+                                    onClick: function () {
+                                        window.location.href = "/Admin/AccountItemFilters";
+                                    }
+                                }).appendTo($wrap);
+                                $("<div>").dxTextBox({
+                                    width: 300,
+                                    placeholder: "Search items or products...",
+                                    mode: "search",
+                                    onValueChanged: function (e) {
+                                        _search = e.value || "";
+                                        var grid = $("#itemsGrid").dxDataGrid("instance");
+                                        grid.refresh();
+                                    }
+                                }).appendTo($wrap);
+                                return $wrap;
+                            }
+                        }
+                    ]
+                },
+
+                showBorders: true,
+                columnAutoWidth: true,
+                wordWrapEnabled: true,
+                rowAlternationEnabled: true,
+                hoverStateEnabled: true,
+
+                searchPanel: { visible: false },
+
+                paging: { pageSize: 20 },
+                pager: {
+                    showPageSizeSelector: true,
+                    allowedPageSizes: [10, 20, 50, 100],
+                    showInfo: true
+                },
+
+                filterRow: { visible: true },
+
+                columns: [
+                    {
+                        dataField: "IsActive",
+                        caption: "Active",
+                        width: 75,
+                        allowSearch: false,
+                        cellTemplate: function (cellElement, cellInfo) {
+                            var isActive = cellInfo.value;
+                            cellElement.text(isActive ? "Active" : "Inactive");
+                            if (!isActive) cellElement.css("color", "red");
+                        }
+                    },
+                    { dataField: "ItemId", caption: "ID", width: 70, allowSearch: false },
+                    { dataField: "Description", caption: "Item", minWidth: 200 },
+                    {
+                        dataField: "ProductDescription",
+                        caption: "Product",
+                        minWidth: 160,
+                        lookup: {
+                            dataSource: lookups.Products,
+                            valueExpr: "this",
+                            displayExpr: "this"
+                        }
+                    },
+                    {
+                        dataField: "CategoryDescription",
+                        caption: "Category",
+                        minWidth: 100,
+                        lookup: {
+                            dataSource: lookups.Categories,
+                            valueExpr: "this",
+                            displayExpr: "this"
+                        }
+                    },
+                    {
+                        dataField: "SystemUsage",
+                        caption: "System Usage",
+                        width: 140,
+                        lookup: {
+                            dataSource: lookups.SystemUsages,
+                            valueExpr: "this",
+                            displayExpr: "this"
+                        }
+                    },
+                    {
+                        dataField: "OtherTraitCount",
+                        caption: "Traits",
+                        width: 150,
+                        allowSearch: false,
+                        allowFiltering: false,
+                        cellTemplate: function (cellElement, cellInfo) {
+                            var otherCount = cellInfo.value || 0;
+                            if (otherCount === 0) {
+                                $("<span>").addClass("it-no-traits-label").text("No Traits").appendTo(cellElement);
+                            } else {
+                                $("<div>").dxButton({
+                                    text: "Traits (" + otherCount + ")",
+                                    icon: "tags",
+                                    width: 130,
+                                    stylingMode: "outlined",
+                                    type: "default",
+                                    hint: "View traits for this item",
+                                    onClick: function () {
+                                        openTraits(cellInfo.data.ItemId, cellInfo.data.Description);
+                                    }
+                                }).appendTo(cellElement);
+                            }
+                        }
+                    }
+                ]
+            });
+        });
+
+        // ── Traits popup ─────────────────────────────────────────
+        function openTraits(itemId, itemName) {
+            var popup = $("#traitsPopup").dxPopup({
+                title: "Traits — " + (itemName || "Item " + itemId),
+                showTitle: true,
+                width: 700,
+                height: "auto",
+                maxHeight: "80vh",
+                showCloseButton: true,
+                visible: true,
+                contentTemplate: function (content) {
+                    var $loading = $("<div>").text("Loading...").css({ padding: "20px", textAlign: "center" });
+                    content.append($loading);
+
+                    $.getJSON("/api/items/" + itemId + "/Traits")
+                        .done(function (traits) {
+                            content.empty();
+
+                            if (!traits || traits.length === 0) {
+                                content.append(
+                                    $("<div>").css({ padding: "30px", textAlign: "center", color: "#999" })
+                                        .text("No traits for this item.")
+                                );
+                                return;
+                            }
+
+                            // Group by TraitType
+                            var grouped = {};
+                            traits.forEach(function (t) {
+                                var key = t.TraitTypeDescription || "(Unknown)";
+                                if (!grouped[key]) grouped[key] = [];
+                                grouped[key].push(t);
+                            });
+
+                            var $container = $("<div>").css({ padding: "10px" });
+
+                            Object.keys(grouped).sort().forEach(function (typeName) {
+                                var $card = $("<div>").addClass("it-card");
+
+                                var $header = $("<div>").addClass("it-card__header")
+                                    .append($("<span>").addClass("it-card__title").text(typeName))
+                                    .append($("<span>").addClass("it-trait-count-badge").text(grouped[typeName].length));
+
+                                $card.append($header);
+
+                                var $table = $("<table>").addClass("it-traits-table");
+                                $table.append(
+                                    $("<thead>").append(
+                                        $("<tr>")
+                                            .append($("<th>").text("Code"))
+                                            .append($("<th>").text("Description"))
+                                    )
+                                );
+                                var $tbody = $("<tbody>");
+                                grouped[typeName].forEach(function (t) {
+                                    $tbody.append(
+                                        $("<tr>")
+                                            .append($("<td>").text(t.TraitCode || "—"))
+                                            .append($("<td>").text(t.TraitDescription || "—"))
+                                    );
+                                });
+                                $table.append($tbody);
+                                $card.append($table);
+
+                                $container.append($card);
+                            });
+
+                            content.append($container);
+                        })
+                        .fail(function () {
+                            content.empty().append(
+                                $("<div>").css({ padding: "20px", textAlign: "center", color: "red" })
+                                    .text("Failed to load traits.")
+                            );
+                        });
+                }
+            }).dxPopup("instance");
+        }
+    </script>
+}

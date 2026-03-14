@@ -4,7 +4,7 @@
    ========================================================= */
 
 .gm-gd {
-    max-width: 860px;
+    max-width: 1060px;
     margin: 0 auto;
     padding: 16px 0 40px;
     display: flex;
@@ -135,6 +135,17 @@
     color: var(--muted, #6c757d);
 }
 
+.gm-wsl-card__landlord {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #6a4c93;
+}
+
+.gm-wsl-card__location {
+    font-size: 0.78rem;
+    color: var(--muted, #6c757d);
+}
+
 .gm-wsl-card__notes {
     font-size: 0.8rem;
     color: var(--muted, #6c757d);
@@ -174,13 +185,17 @@
 }
 
 .gm-wsl-card__actions {
-    flex: 0 0 80px;
+    flex: 0 0 auto;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    gap: 4px;
+    align-items: stretch;
 }
 
 .gm-wsl-card__actions .btn {
-    width: 80px;
+    width: 90px;
+    white-space: nowrap;
+    text-align: center;
 }
 
 .gm-wsl-row--closed {
@@ -189,7 +204,7 @@
 
 /* ── Filter toolbar ──────────────────────────────────────────── */
 
-.gm-wsl-filters {
+.gm-wsl-toolbar {
     display: flex;
     gap: 10px;
     align-items: center;
@@ -197,17 +212,44 @@
     flex-wrap: wrap;
 }
 
-.gm-wsl-filters input[type="text"] {
+.gm-wsl-toolbar input[type="text"] {
     flex: 1 1 180px;
     min-width: 140px;
 }
 
-.gm-wsl-filters input[type="date"] {
+.gm-wsl-toolbar input[type="date"] {
     flex: 0 0 160px;
 }
 
-.gm-wsl-filters select {
+.gm-wsl-toolbar select {
     flex: 0 0 110px;
+}
+
+/* ── Grid action buttons ──────────────────────────────────────── */
+
+.gm-wsl-grid-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.gm-wsl-grid-actions .btn {
+    flex: 1 1 0;
+    white-space: nowrap;
+    min-width: 0;
+    text-align: center;
+}
+
+.gm-wsl-grid-notes {
+    font-style: italic;
+    color: var(--muted, #6c757d);
+}
+
+/* ── Full-width lot list panel ──────────────────────────────── */
+
+.gm-gd--wide {
+    max-width: none;
+    padding-left: 20px;
+    padding-right: 20px;
 }
 
 /* ── Inline edit mode ────────────────────────────────────────── */

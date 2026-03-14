@@ -22,30 +22,32 @@
     <div id="wslAlert" class="alert" role="alert" hidden></div>
 
     <!-- ── Lot list ──────────────────────────────────────────────────────── -->
-    <div id="wslListPanel" hidden>
+    <div id="wslListPanel" class="gm-wsl-wide" hidden>
         <div class="gm-gd-section">
 
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <div class="gm-gd-section__title" style="margin-bottom:0">Lots at This Location</div>
                 <button type="button" class="btn btn-sm btn-primary" id="wslNewBtn">
-                    + New Weight Sheet Lot
+                    + New Lot
                 </button>
             </div>
 
-            <div class="gm-wsl-filters" id="wslFilters">
-                <input type="text" class="form-control form-control-sm" id="wslFilterDesc"
-                       placeholder="Search description…" />
+            <div class="gm-wsl-toolbar" id="wslToolbar">
+                <input type="text" class="form-control form-control-sm" id="wslSearch"
+                       placeholder="Search all fields…" />
                 <input type="date" class="form-control form-control-sm" id="wslFilterDate" />
                 <select class="form-select form-select-sm" id="wslFilterStatus">
                     <option value="all">All</option>
                     <option value="open" selected>Open</option>
                     <option value="closed">Closed</option>
                 </select>
+                <div style="display:flex;align-items:center;gap:8px;flex:0 0 auto;">
+                    <span style="font-weight:600;font-size:0.85rem;">Paging</span>
+                    <div id="wslPagingSwitch"></div>
+                </div>
             </div>
 
-            <div id="wslList">
-                <!-- populated by JS -->
-            </div>
+            <div id="wslLotsGrid"></div>
 
         </div>
     </div>
@@ -55,7 +57,7 @@
         <div class="gm-gd-section">
 
             <div class="d-flex align-items-center justify-content-between mb-3">
-                <div class="gm-gd-section__title" style="margin-bottom:0">New Weight Sheet Lot</div>
+                <div class="gm-gd-section__title" style="margin-bottom:0" id="wslPanelTitle">New Weight Sheet Lot</div>
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="wslCancelCreateBtn">
                     ← Back
                 </button>
@@ -63,14 +65,23 @@
 
             <div class="gm-gd-fields gm-gd-fields--2col">
 
-                <div class="gm-gd-field">
-                    <label class="form-label">Item <span class="text-danger">*</span></label>
-                    <div id="wslItem"></div>
-                </div>
-
-                <div class="gm-gd-field">
-                    <label class="form-label">Account <span class="text-danger">*</span></label>
-                    <div id="wslAccount"></div>
+                <div class="gm-gd-field gm-gd-field--full">
+                    <div style="display:grid;grid-template-columns:0.6fr 110px 1fr;gap:8px;">
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label class="form-label">Item <span class="text-danger">*</span></label>
+                            <div id="wslItem"></div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label class="form-label">SG#</label>
+                            <input type="text" class="form-control" id="wslSgShortcut"
+                                   placeholder="Split #" style="text-align:center;height:34px;padding:6px 8px;font-size:14px;" />
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label class="form-label">Account <span class="text-danger">*</span></label>
+                            <div id="wslAccount"></div>
+                        </div>
+                    </div>
+                    <div id="wslSgError" class="text-danger small mt-1" hidden></div>
                 </div>
 
                 <div class="gm-gd-field gm-gd-field--full">
@@ -92,6 +103,12 @@
                     <label class="form-label">Lot Description</label>
                     <input type="text" class="form-control" id="wslLotDesc"
                            readonly placeholder="Auto-filled from split group" />
+                </div>
+
+                <div class="gm-gd-field gm-gd-field--full">
+                    <label class="form-label">Landlord</label>
+                    <input type="text" class="form-control" id="wslLandlord"
+                           placeholder="Optional landlord…" />
                 </div>
 
                 <div class="gm-gd-field gm-gd-field--full">

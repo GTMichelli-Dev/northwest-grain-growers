@@ -65,9 +65,10 @@ public class LocationsApiController : ControllerBase
     public async Task<IActionResult> WarehouseLocationsList()
     {
         var data = await _locationService.GetAllAsync();
-  
+        // sqlLocationService already filters UseForWarehouse + IsActive at the DB level
+        var sorted = data.OrderBy(l => l.Name).ToList();
 
-        return Ok(data);
+        return Ok(sorted);
     }
 
     [HttpGet("SeedLocationsList")]
@@ -272,10 +273,112 @@ public class LocationsApiController : ControllerBase
 
         return Ok();
     }
+
+    // ── LocationItemFilters CRUD ───────────────────────────────────────────
+
+    /// <summary>GET /api/locations/AllItemFilters — all filters grouped by LocationId</summary>
+    [HttpGet("AllItemFilters")]
+    public async Task<IActionResult> GetAllItemFilters(CancellationToken ct)
+    {
+        var rows = await _ctx.LocationItemFilters
+            .AsNoTracking()
+            .Include(li => li.Item)
+            .OrderBy(li => li.Item.Description)
+            .Select(li => new
+            {
+                li.LocationId,
+                ItemName = li.Item.Description,
+            })
+            .ToListAsync(ct);
+
+        // Group by LocationId → { LocationId: [itemName, ...] }
+        var grouped = rows
+            .GroupBy(r => r.LocationId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.ItemName).ToList());
+
+        return Ok(grouped);
+    }
+
+    /// <summary>GET /api/locations/{locationId}/Items</summary>
+    [HttpGet("{locationId}/Items")]
+    public async Task<IActionResult> GetLocationItems(int locationId, CancellationToken ct)
+    {
+        var rows = await _ctx.LocationItemFilters
+            .AsNoTracking()
+            .Where(li => li.LocationId == locationId)
+            .Include(li => li.Item)
+            .OrderBy(li => li.Item.Description)
+            .Select(li => new
+            {
+                li.Id,
+                li.LocationId,
+                li.ItemId,
+                ItemName = li.Item.Description,
+            })
+            .ToListAsync(ct);
+
+        return Ok(rows);
+    }
+
+    /// <summary>POST /api/locations/{locationId}/Items</summary>
+    [HttpPost("{locationId}/Items")]
+    public async Task<IActionResult> AddLocationItem(
+        int locationId, [FromBody] AddLocationItemDto dto, CancellationToken ct)
+    {
+        if (dto == null || dto.ItemId <= 0)
+            return BadRequest(new { message = "ItemId is required." });
+
+        var locationExists = await _ctx.Locations.AnyAsync(l => l.LocationId == locationId, ct);
+        if (!locationExists)
+            return NotFound(new { message = "Location not found." });
+
+        var itemExists = await _ctx.Items.AnyAsync(i => i.ItemId == dto.ItemId, ct);
+        if (!itemExists)
+            return NotFound(new { message = "Item not found." });
+
+        var duplicate = await _ctx.LocationItemFilters
+            .AnyAsync(li => li.LocationId == locationId && li.ItemId == dto.ItemId, ct);
+        if (duplicate)
+            return Conflict(new { message = "This item is already assigned to the location." });
+
+        var entity = new LocationItemFilter
+        {
+            LocationId = locationId,
+            ItemId     = dto.ItemId
+        };
+
+        _ctx.LocationItemFilters.Add(entity);
+        await _ctx.SaveChangesAsync(ct);
+
+        return Ok(new { entity.Id });
+    }
+
+    /// <summary>DELETE /api/locations/{locationId}/Items/{id}</summary>
+    [HttpDelete("{locationId}/Items/{id}")]
+    public async Task<IActionResult> DeleteLocationItem(
+        int locationId, Guid id, CancellationToken ct)
+    {
+        var entity = await _ctx.LocationItemFilters
+            .FirstOrDefaultAsync(li => li.Id == id && li.LocationId == locationId, ct);
+
+        if (entity == null)
+            return NotFound(new { message = "Location-item mapping not found." });
+
+        _ctx.LocationItemFilters.Remove(entity);
+        await _ctx.SaveChangesAsync(ct);
+
+        return Ok();
+    }
 }
 
 /// <summary>DTO for adding a county to a location.</summary>
 public class AddLocationCountyDto
 {
     public int CountyId { get; set; }
+}
+
+/// <summary>DTO for adding an item to a location.</summary>
+public class AddLocationItemDto
+{
+    public long ItemId { get; set; }
 }

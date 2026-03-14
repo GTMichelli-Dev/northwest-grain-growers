@@ -77,6 +77,10 @@ CREATE TABLE #Src
 
             foreach (var r in rows)
             {
+                if (r.SplitGroupId == 3133330)
+                {
+                    Console.WriteLine("Found It");
+                }
                 var desc = string.IsNullOrWhiteSpace(r.Description) ? "" : r.Description.Trim();
                 table.Rows.Add(
                     r.SplitGroupId,   // AS400 LandlordSplitId becomes SQL SplitGroupId
@@ -142,7 +146,6 @@ WHERE SqlAccountId IS NOT NULL;
 -- Reject bad groups (hard delete in SQL + remove from this batch)
 -- Rules
             --1) Total SplitPercent per SplitGroupId must equal 100.0000000(within tolerance)
-            --  2) Must have more than 1 row in SplitGroupPercents(no single - row groups)
             --------------------------------------------------------------------------------
 IF OBJECT_ID('tempdb..#BadGroups') IS NOT NULL DROP TABLE #BadGroups;
 
@@ -152,8 +155,7 @@ INTO #BadGroups
 FROM #ValidRows v
 GROUP BY v.SplitGroupId
 HAVING
-    COUNT(*) <= 1
-    OR ABS(SUM(v.SplitPercent) -CAST(100.0 AS decimal(18, 7))) > CAST(0.00001 AS decimal(18, 7));
+    ABS(SUM(v.SplitPercent) -CAST(100.0 AS decimal(18, 7))) > CAST(0.00001 AS decimal(18, 7));
 
             --Hard delete invalid groups in SQL(FK - safe)
 DELETE sp

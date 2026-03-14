@@ -32,6 +32,7 @@ public sealed class AccountItemFiltersApiController : ControllerBase
     {
         var query = _ctx.AccountItemFilters
             .AsNoTracking()
+            .Where(f => f.Location.UseForWarehouse == true)
             .AsQueryable();
 
         if (productId.HasValue)

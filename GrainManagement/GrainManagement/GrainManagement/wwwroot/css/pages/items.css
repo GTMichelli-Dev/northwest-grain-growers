@@ -1,0 +1,76 @@
+/* ── Page layout ──────────────────────────────────────────── */
+.gm-items-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+
+.gm-items-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 14px;
+}
+
+/* ── No traits label ─────────────────────────────────────── */
+.it-no-traits-label {
+    color: #6c757d;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* ── Trait cards in popup ─────────────────────────────────── */
+.it-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    background: #fafafa;
+}
+
+.it-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.it-card__title {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.it-trait-count-badge {
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    background: #cce5ff;
+    color: #004085;
+}
+
+/* ── Traits table ─────────────────────────────────────────── */
+.it-traits-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 0.9rem;
+}
+
+.it-traits-table th {
+    text-align: left;
+    padding: 6px 10px;
+    background: #e9ecef;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+}
+
+.it-traits-table td {
+    padding: 5px 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.it-traits-table tr:last-child td {
+    border-bottom: none;
+}

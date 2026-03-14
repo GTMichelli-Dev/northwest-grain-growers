@@ -1,22 +1,8 @@
-@model GrainManagement.Models.DTO.Warehouse.WarehouseDashboardVm
-@using System.Text.Json
-
 @{
     ViewData["Title"] = "Warehouse Dashboard";
 
     // Resolve selected location from query string
     int? selectedLocationId = int.TryParse(Context.Request.Query["locationId"], out var lid) ? lid : (int?)null;
-
-    var jsonOpts = new JsonSerializerOptions
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
-    // Serialize server model lists into JS data sources
-    var yardJson     = JsonSerializer.Serialize(Model.TrucksInYard,          jsonOpts);
-    var intakeJson   = JsonSerializer.Serialize(Model.IntakeWeightSheets,    jsonOpts);
-    var transferJson = JsonSerializer.Serialize(Model.TransferWeightSheets,  jsonOpts);
-    var outboundJson = JsonSerializer.Serialize(Model.OutboundLoads,         jsonOpts);
 }
 
 <link rel="stylesheet" href="~/css/pages/warehouse.dashboard.dx.css" asp-append-version="true" />
@@ -41,16 +27,7 @@
         </div>
     </div>
 
-    <div class="gm-wdActions">
-        <a href="/Warehouse/LoadType" class="btn btn-primary btn-sm">New Load</a>
-        <a href="/GrowerDelivery/WeightSheetLots" class="btn btn-outline-secondary btn-sm">Lots</a>
-        @* <button type="button"
-                class="btn btn-outline-secondary btn-sm"
-                id="gmWdToggleAll"
-                data-state="expand">
-            Expand All
-        </button> *@
-    </div>
+    <div class="gm-wdActions" id="wdActions"></div>
 </div>
 
 <!-- Shown when no location is selected -->
@@ -59,74 +36,6 @@
     <p>Select a location above to view the warehouse dashboard.</p>
 </div>
 
-<!-- Dashboard grids — hidden until a location is selected -->
-<div class="gm-wd" id="gmWarehouseDashboard"
-     data-selected-location="@(selectedLocationId ?? 0)"
-     data-yard='@Html.Raw(yardJson)'
-     data-intake='@Html.Raw(intakeJson)'
-     data-transfer='@Html.Raw(transferJson)'
-     data-outbound='@Html.Raw(outboundJson)'
-     @(selectedLocationId.HasValue ? "" : "hidden")>
 
-    <!-- Yard -->
-    <section class="gm-wdSec gm-wdSec--open" data-sec="yard">
-        <button type="button" class="gm-wdHdr gm-wdHdr--yard" data-acc-btn>
-            <div class="gm-wdHdr__left">
-                <span class="gm-wdHdr__dot"></span>
-                <div class="gm-wdHdr__title">Trucks In Yard (Not Completed)</div>
-                <div class="gm-wdHdr__count">@Model.TrucksInYard.Count</div>
-            </div>
-            <div class="gm-wdHdr__right"><span class="gm-wdHdr__chev">▾</span></div>
-        </button>
-        <div class="gm-wdSec__body" data-acc-body>
-            <div class="gm-wdGrid" id="grid-yard"></div>
-        </div>
-    </section>
-
-    <!-- Intake -->
-    <section class="gm-wdSec gm-wdSec--open" data-sec="intake">
-        <button type="button" class="gm-wdHdr gm-wdHdr--intake" data-acc-btn>
-            <div class="gm-wdHdr__left">
-                <span class="gm-wdHdr__dot"></span>
-                <div class="gm-wdHdr__title">Intake Weight Sheets</div>
-                <div class="gm-wdHdr__count">@Model.IntakeWeightSheets.Count</div>
-            </div>
-            <div class="gm-wdHdr__right"><span class="gm-wdHdr__chev">▾</span></div>
-        </button>
-        <div class="gm-wdSec__body" data-acc-body>
-            <div class="gm-wdGrid" id="grid-intake"></div>
-        </div>
-    </section>
-
-    <!-- Transfer -->
-    <section class="gm-wdSec gm-wdSec--open" data-sec="transfer">
-        <button type="button" class="gm-wdHdr gm-wdHdr--transfer" data-acc-btn>
-            <div class="gm-wdHdr__left">
-                <span class="gm-wdHdr__dot"></span>
-                <div class="gm-wdHdr__title">Transfers</div>
-                <div class="gm-wdHdr__count">@Model.TransferWeightSheets.Count</div>
-            </div>
-            <div class="gm-wdHdr__right"><span class="gm-wdHdr__chev">▾</span></div>
-        </button>
-        <div class="gm-wdSec__body" data-acc-body>
-            <div class="gm-wdGrid" id="grid-transfer"></div>
-        </div>
-    </section>
-
-    <!-- Outbound -->
-    <section class="gm-wdSec gm-wdSec--open" data-sec="outbound">
-        <button type="button" class="gm-wdHdr gm-wdHdr--outbound" data-acc-btn>
-            <div class="gm-wdHdr__left">
-                <span class="gm-wdHdr__dot"></span>
-                <div class="gm-wdHdr__title">Outbound Loads</div>
-                <div class="gm-wdHdr__count">@Model.OutboundLoads.Count</div>
-            </div>
-            <div class="gm-wdHdr__right"><span class="gm-wdHdr__chev">▾</span></div>
-        </button>
-        <div class="gm-wdSec__body" data-acc-body>
-            <div class="gm-wdGrid" id="grid-outbound"></div>
-        </div>
-    </section>
-</div>
 
 <script src="~/js/pages/warehouse.dashboard.dx.js" asp-append-version="true"></script>
