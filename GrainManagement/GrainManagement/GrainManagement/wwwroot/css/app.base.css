@@ -514,3 +514,88 @@ body {
     transform: translateY(0);
     opacity: 1;
 }
+
+/* ── Module Badges ────────────────────────────────────── */
+.gm-module-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #fff;
+    vertical-align: middle;
+}
+
+.gm-module--warehouse { background-color: #d4a017; }
+.gm-module--seed      { background-color: #2e7d32; }
+.gm-module--admin     { background-color: #1565c0; }
+.gm-module--dashboard { background-color: #757575; }
+
+/* ── Module Bar (full-width indicator at top of module pages) ── */
+.gm-module-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin: 0 -12px 1rem -12px;
+    border-radius: 0;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.1em;
+}
+
+.gm-module-bar__icon {
+    width: 32px;
+    height: 32px;
+    display: inline-block;
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.gm-module-bar__icon.gm-icon::before {
+    inset: 3px;
+    background-color: #fff;
+}
+
+.gm-module-bar--warehouse { background-color: #d4a017; }
+.gm-module-bar--seed      { background-color: #2e7d32; }
+.gm-module-bar--admin     { background-color: #1565c0; }
+.gm-module-bar--system    { background-color: #757575; }
+.gm-module-bar--reports   { background-color: #5e548e; }
+.gm-module-bar--remote    { background-color: #00838f; }
+
+.gm-module-bar__label {
+    margin: 0;
+}
+
+a.gm-module-bar--link {
+    text-decoration: none;
+    color: #fff;
+    transition: opacity 0.15s;
+}
+a.gm-module-bar--link:hover {
+    color: #fff;
+    opacity: 0.88;
+}
+.gm-module-bar__arrow {
+    font-size: 1.25rem;
+}
+
+/* ── Location Selector (navbar) ──────────────────────── */
+.gm-location-select {
+    min-width: 200px;
+    max-width: 300px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+}
+
+/* Tile module accents */
+.gm-tile--warehouse { border-left: 6px solid #d4a017; }
+.gm-tile--seed      { border-left: 6px solid #2e7d32; }
+.gm-tile--admin     { border-left: 6px solid #1565c0; }
+.gm-tile--system    { border-left: 6px solid #757575; }
+.gm-tile--reports   { border-left: 6px solid #5e548e; }
+.gm-tile--remote    { border-left: 6px solid #00838f; }

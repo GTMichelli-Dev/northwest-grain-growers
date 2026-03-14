@@ -8,12 +8,13 @@
 
 
 
-<div class="gm-pagehead">
-    <div class="gm-pagehead__title">
-        <span class="gm-pagehead__icon gm-icon gm-icon--filter" aria-hidden="true"></span>
-        <h1 class="gm-tile__title" style="font-size:20px">Account Item Filters</h1>
-    </div>
+<a href="javascript:history.back()" class="gm-module-bar gm-module-bar--admin gm-module-bar--link" title="Back">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--filter" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">ACCOUNT ITEM FILTERS</span>
+</a>
 
+<div class="gm-pagehead gm-pagehead--sticky">
 </div>
 
 @* Alert banner *@
@@ -21,10 +22,6 @@
 <p class="text-muted text-center">The filters below only allow the grower in the list to bring in the item for the selected location</p>
 @* ── Filter / Add panel ────────────────────────────────────────────────────── *@
 <div class="gm-aif-card">
-    @* ── Back button ───────────────────────────────────────────────────────────── *@
-    <a href="@Url.Action("Index", "Admin")" class="btn btn-outline-secondary btn-sm gm-aif-back-btn">
-        <i class="dx-icon dx-icon-arrowleft"></i> Back to Admin
-    </a>
     <div class="gm-aif-card__title">Filter &amp; Add</div>
 
     <div class="gm-aif-filter-row">

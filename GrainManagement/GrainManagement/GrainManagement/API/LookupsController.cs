@@ -34,6 +34,40 @@ namespace GrainManagement.API
             return Ok(data);
         }
 
+        // GET /api/Lookups/ProducerAccountsForItem?itemId=&locationId=
+        // Returns producer accounts allowed to bring in the specified item at the given location.
+        // If the item+location has ANY AccountItemFilter rows, only those accounts are allowed.
+        // If no filter rows exist for the item+location, all producer accounts are allowed.
+        [HttpGet("ProducerAccountsForItem")]
+        public async Task<IActionResult> ProducerAccountsForItem(
+            [FromQuery] long itemId,
+            [FromQuery] int locationId,
+            CancellationToken ct)
+        {
+            // Check if any filters exist for this item at this location
+            var allowedAccountIds = await _ctx.AccountItemFilters
+                .AsNoTracking()
+                .Where(f => f.LocationId == locationId && f.ItemId == itemId)
+                .Select(f => f.AccountId)
+                .Distinct()
+                .ToListAsync(ct);
+
+            // If filters exist, only return those accounts; otherwise return all
+            var query = _ctx.Accounts
+                .AsNoTracking()
+                .Where(a => a.IsProducer == true);
+
+            if (allowedAccountIds.Count > 0)
+                query = query.Where(a => allowedAccountIds.Contains(a.AccountId));
+
+            var data = await query
+                .OrderBy(a => a.EntityName)
+                .Select(a => new { a.AccountId, Name = a.LookupName + " (" + a.As400AccountId + ")" })
+                .ToListAsync(ct);
+
+            return Ok(data);
+        }
+
         // GET /api/Lookups/WarehouseItems
         // Active, visible grain products (CropId required), ordered by description descending.
         [HttpGet("WarehouseItems")]

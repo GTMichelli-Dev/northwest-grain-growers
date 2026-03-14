@@ -1,3 +1,5 @@
+@inject ILocationContext LocationCtx
+@inject SystemInfoSnapshot SystemInfo
 @{
     var themeKey = Context.Items["ThemeKey"]?.ToString() ?? "default";
 }
@@ -47,47 +49,39 @@
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center gap-2" href="/">
                 <img class="gm-logo" src="~/assets/branding/@(themeKey)/logo.png" alt="Logo" style="height:34px; width:auto;" />
-                <div style="text-align: center; width: 100%;">
-                    <span id="system-info" style="font-size: 0.85rem; color: black;"></span>
-                </div>
-
             </a>
+
+            <a href="/" class="btn btn-outline-light btn-sm me-2">Home</a>
+
+            <!-- Location Selector -->
+            <div class="d-flex align-items-center me-3">
+                <select id="gm-location-select" class="form-select form-select-sm gm-location-select">
+                    <option value="">-- Select Location --</option>
+                </select>
+            </div>
+
+            <div style="text-align: center;">
+                <span id="system-info" style="font-size: 0.85rem; color: white;">@SystemInfo.ToDisplayString()</span>
+            </div>
 
             <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar" aria-expanded="false" aria-controls="navbar">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div id="navbar" class="collapse navbar-collapse">
-                @* <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
-                    <li class="nav-item"><a href="/Warehouse" class="nav-link">Warehouse</a></li>
-                    <li class="nav-item"><a href="/Seed" class="nav-link">Seed</a></li>
-                    <li class="nav-item"><a href="/Reports" class="nav-link">Reports</a></li>
-                     @if (User.Identity.IsAuthenticated)
-                        {
-                        
-                        @inject ICurrentUser CurrentUser
-                        if (CurrentUser.IsManager || CurrentUser.IsAdmin)
-                        {
-                            <li class="nav-item">
-                                <a asp-controller="Admin" asp-action="Index" class="nav-link">Admin</a>
-                            </li>
-                        }
-                        }
-                </ul> *@
-                    <div class="d-flex ms-auto">
-                        @if (User.Identity.IsAuthenticated)
-                        {
-                            <span class="navbar-text text-light me-2">
-                                @User.Identity.Name
-                            </span>
-                            <a asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignOut" class="btn btn-outline-light">Logout</a>
-                        }
-                        else
-                        {
-                            <a asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignIn" class="btn btn-outline-light">Login</a>
-                        }
-                    </div>
+                <div class="d-flex ms-auto align-items-center">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <span class="navbar-text text-light me-2">
+                            @User.Identity.Name
+                        </span>
+                        <a asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignOut" class="btn btn-outline-light btn-sm">Logout</a>
+                    }
+                    else
+                    {
+                        <a asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignIn" class="btn btn-outline-light btn-sm">Login</a>
+                    }
+                </div>
             </div>
         </div>
     </nav>
@@ -139,7 +133,7 @@
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
-    <script src="~/js/system-info.js"></script>
+    <script src="~/js/location-selector.js" asp-append-version="true"></script>
 </body>
 
 </html>

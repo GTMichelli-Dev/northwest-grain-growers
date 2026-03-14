@@ -6,11 +6,13 @@
     <link rel="stylesheet" href="~/css/pages/admin.statecounties.css" asp-append-version="true" />
 }
 
-<div class="gm-pagehead">
-    <div class="gm-pagehead__title">
-        <span class="gm-pagehead__icon gm-icon gm-icon--us-map" aria-hidden="true"></span>
-        <h1 class="gm-tile__title" style="font-size:20px">States &amp; Counties</h1>
-    </div>
+<a href="@Url.Action("Index", "Admin")" class="gm-module-bar gm-module-bar--admin gm-module-bar--link" title="Back to Admin">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--us-map" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">STATES & COUNTIES</span>
+</a>
+
+<div class="gm-pagehead gm-pagehead--sticky">
 </div>
 
 @* Alert banner *@
@@ -18,9 +20,6 @@
 
 @* ── States grid ─────────────────────────────────────────────────────────── *@
 <div class="gm-sc-card">
-    <a href="@Url.Action("Index", "Admin")" class="btn btn-outline-secondary btn-sm gm-sc-back-btn">
-        <i class="dx-icon dx-icon-arrowleft"></i> Back to Admin
-    </a>
     <div class="gm-sc-card__title">States</div>
     <div id="scStatesGrid"></div>
 </div>

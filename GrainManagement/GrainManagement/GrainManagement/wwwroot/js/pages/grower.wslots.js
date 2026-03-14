@@ -68,47 +68,48 @@
         wireFilters();
     });
 
-    // ── Location picker ───────────────────────────────────────────────────────
+    // ── Location (reads from navbar selector) ──────────────────────────────────
+
+    function setLocationId(id) {
+        if (id !== currentLocationId) {
+            currentLocationId = id;
+            _locationCountiesData = null;
+            _locationCountiesLocationId = null;
+            _locationItemFiltersCache = null;
+            _locationItemFiltersLocationId = null;
+        }
+    }
 
     async function initLocation() {
-        const savedId = parseInt(localStorage.getItem(LOCATION_STORAGE_KEY) || '0', 10) || null;
+        var dropdown = document.getElementById('gm-location-select');
 
-        let locations = [];
-        try {
-            locations = await $.getJSON('/api/locations/WarehouseLocationsList');
-        } catch (ex) {
-            console.warn('[WeightSheetLots] Location prefetch failed', ex);
-        }
-
-        $('#wslLocation').dxSelectBox({
-            dataSource:   locations,
-            valueExpr:    'LocationId',
-            displayExpr:  function (item) { return item ? item.Name + ' \u2013 ' + item.LocationId : ''; },
-            searchEnabled: true,
-            placeholder:  'Select location\u2026',
-            width:        'auto',
-            value:        savedId,
-            onValueChanged: function (e) {
-                currentLocationId = e.value || null;
-                _locationCountiesData = null;       // invalidate so next create re-fetches
-                _locationCountiesLocationId = null;
-                _locationItemFiltersCache = null;    // invalidate item filters
-                _locationItemFiltersLocationId = null;
-                if (currentLocationId) {
-                    localStorage.setItem(LOCATION_STORAGE_KEY, String(currentLocationId));
+        // Listen for navbar location changes (the page reloads on change,
+        // but handle in-page changes just in case).
+        if (dropdown) {
+            dropdown.addEventListener('change', function () {
+                var id = parseInt(dropdown.value, 10) || null;
+                setLocationId(id);
+                if (id) {
                     showListPanel();
                     refreshLots();
                 } else {
-                    localStorage.removeItem(LOCATION_STORAGE_KEY);
                     hidePanels();
                 }
-            }
-        });
+            });
+        }
 
-        if (savedId) {
-            currentLocationId = savedId;
-            showListPanel();
-            refreshLots();
+        // Fetch the current location from the session API (the navbar
+        // dropdown is populated asynchronously so its value isn't ready yet).
+        try {
+            var resp = await fetch('/api/LocationContextApi/current');
+            var current = await resp.json();
+            if (current.HasLocation && current.LocationId) {
+                setLocationId(current.LocationId);
+                showListPanel();
+                refreshLots();
+            }
+        } catch (ex) {
+            console.warn('[WeightSheetLots] Could not read current location', ex);
         }
     }
 
@@ -706,17 +707,33 @@
             minSearchLength:     0,
             placeholder:         'Select item\u2026',
             showClearButton:     true,
-            onValueChanged: function (e) {
+            onValueChanged: async function (e) {
                 if (_populating) return;
                 var acctInst = $(SEL.account).dxSelectBox('instance');
                 var sgInst   = $(SEL.splitGroup).dxSelectBox('instance');
                 if (e.value) {
-                    // Enable account picker and SG# shortcut
-                    if (acctInst) acctInst.option('disabled', false);
+                    // Filter accounts by item + location, then enable picker
+                    var accounts = _accountsCache || [];
+                    if (acctInst) {
+                        acctInst.reset();
+                        if (currentLocationId) {
+                            try {
+                                accounts = await $.getJSON('/api/Lookups/ProducerAccountsForItem?itemId=' + e.value + '&locationId=' + currentLocationId);
+                            } catch (ex) {
+                                console.warn('[WeightSheetLots] Filtered accounts load failed', ex);
+                            }
+                        }
+                        acctInst.option('dataSource', accounts);
+                        acctInst.option('disabled', false);
+                        // Auto-select if only one account, then auto-cascade to split groups
+                        if (accounts.length === 1) {
+                            acctInst.option('value', accounts[0].AccountId);
+                        }
+                    }
                     $(SEL.sgShortcut).prop('disabled', false);
                 } else {
                     // Clear and disable account + split group + SG#
-                    if (acctInst) { acctInst.reset(); acctInst.option('disabled', true); }
+                    if (acctInst) { acctInst.reset(); acctInst.option('dataSource', _accountsCache || []); acctInst.option('disabled', true); }
                     if (sgInst)   { sgInst.reset(); sgInst.option('dataSource', []); sgInst.option('disabled', true); }
                     $(SEL.sgShortcut).val('').prop('disabled', true);
                     $(SEL.sgError).prop('hidden', true).text('');
@@ -871,16 +888,22 @@
 
     function wireButtons() {
 
-        $(SEL.newBtn).on('click', async function () {
-            _editingLotId    = null;
-            _editingFullEdit = false;
-            $(SEL.panelTitle).text('New Weight Sheet Lot');
-            $(SEL.saveBtn).text('Create Lot');
-            $(SEL.landlord).prop('disabled', false);
-            $(SEL.listPanel).prop('hidden', true);
-            $(SEL.createPanel).prop('hidden', false);
-            $('.gm-gd').removeClass('gm-gd--wide');
-            await resetCreateForm();
+        $(SEL.newBtn).dxButton({
+            text: "New Lot",
+            icon: "add",
+            stylingMode: "outlined",
+            type: "default",
+            onClick: async function () {
+                _editingLotId    = null;
+                _editingFullEdit = false;
+                $(SEL.panelTitle).text('New Weight Sheet Lot');
+                $(SEL.saveBtn).text('Create Lot');
+                $(SEL.landlord).prop('disabled', false);
+                $(SEL.listPanel).prop('hidden', true);
+                $(SEL.createPanel).prop('hidden', false);
+                $('.gm-gd').removeClass('gm-gd--wide');
+                await resetCreateForm();
+            }
         });
 
         $(SEL.cancelCreateBtn).on('click', function () {
@@ -1096,20 +1119,36 @@
         await loadLocationCounties();
         applyStateCountyConstraints();
 
-        // Auto-cascade: if only one item, select it → enable account → if only one account, select it → load split groups (which auto-selects if one)
+        // Auto-cascade: if only one item, select it → filter accounts → if only one account, select it → load split groups
         if (itemSource.length === 1 && itemInst) {
-            itemInst.option('value', itemSource[0].ItemId);
-            // Enable account picker and SG# shortcut (same as onValueChanged logic)
-            if (acctInst) acctInst.option('disabled', false);
-            $(SEL.sgShortcut).prop('disabled', false);
-            updateLotDescription();
+            _populating = true;
+            try {
+                var selectedItemId = itemSource[0].ItemId;
+                itemInst.option('value', selectedItemId);
+                $(SEL.sgShortcut).prop('disabled', false);
+                updateLotDescription();
 
-            // Check if only one account — auto-select it
-            var accounts = _accountsCache || [];
-            if (accounts.length === 1 && acctInst) {
-                acctInst.option('value', accounts[0].AccountId);
-                // loadSplitGroups already auto-selects if only one group
-                await loadSplitGroups(accounts[0].AccountId);
+                // Filter accounts by item + location
+                var accounts = _accountsCache || [];
+                if (currentLocationId) {
+                    try {
+                        accounts = await $.getJSON('/api/Lookups/ProducerAccountsForItem?itemId=' + selectedItemId + '&locationId=' + currentLocationId);
+                    } catch (ex) {
+                        console.warn('[WeightSheetLots] Filtered accounts load failed in auto-cascade', ex);
+                    }
+                }
+                if (acctInst) {
+                    acctInst.option('dataSource', accounts);
+                    acctInst.option('disabled', false);
+                }
+
+                // Check if only one account — auto-select it
+                if (accounts.length === 1 && acctInst) {
+                    acctInst.option('value', accounts[0].AccountId);
+                    await loadSplitGroups(accounts[0].AccountId);
+                }
+            } finally {
+                _populating = false;
             }
         }
     }

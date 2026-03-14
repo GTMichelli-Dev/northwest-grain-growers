@@ -33,8 +33,10 @@ builder.Services
     .AddDistributedTokenCaches();
 
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ILocationContext, LocationContext>();
 builder.Services.AddScoped<IServerInfoProvider, ServerInfoProvider>();
 builder.Services.AddSingleton<IScaleRegistry, ScaleRegistry>();
+builder.Services.AddSingleton<SystemInfoSnapshot>();
 builder.Services.AddScoped<IWarehouseDashboardService, DummyWarehouseDashboardService>();
 // SignalR (Warehouse realtime refresh)
 //builder.Services.AddSignalR();
@@ -352,4 +354,8 @@ using (var scope = app.Services.CreateScope())
     _ = ctx.Locations.AsNoTracking().Select(l => l.LocationId).FirstOrDefault();
 }
 
-app.Run();
+// Build system info string once at startup (assembly info + server friendly name)
+var systemInfo = app.Services.GetRequiredService<SystemInfoSnapshot>();
+await systemInfo.EnsureServerInfoLoadedAsync();
+
+await app.RunAsync();

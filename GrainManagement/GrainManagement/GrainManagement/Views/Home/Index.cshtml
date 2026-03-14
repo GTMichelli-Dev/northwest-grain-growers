@@ -2,38 +2,52 @@
     ViewData["Title"] = "Home";
 }
 @inject ICurrentUser CurrentUser
-
+@inject ILocationContext LocationCtx
 
 <div class="gm-hero">
     <div class="gm-hero__inner">
         <h1 class="gm-hero__title">Grain Management</h1>
-        <p class="gm-hero__subtitle">Choose an area to get started.</p>
+        @if (LocationCtx.HasLocation)
+        {
+            <p class="gm-hero__subtitle">@LocationCtx.LocationName</p>
+        }
+        else
+        {
+            <p class="gm-hero__subtitle">Select a location above to get started.</p>
+        }
     </div>
 </div>
 
 <div class="row g-4 mt-2">
-    <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link" href="/Warehouse">
-            <div class="gm-tile__header">
-                <div class="gm-tile__icon gm-icon gm-icon--warehouse" aria-hidden="true"></div>
-                <h2 class="gm-tile__title">Warehouse</h2>
-            </div>
-            <p class="gm-tile__text">Receiving from growers, elevator-to-elevator transfers, shipping, and inventory.</p>
-        </a>
-    </div>
+
+    @if (!LocationCtx.HasLocation || LocationCtx.CanDoWarehouse)
+    {
+        <div class="col-12 col-lg-4">
+            <a class="gm-tile gm-tile--link gm-tile--warehouse" href="/Warehouse">
+                <div class="gm-tile__header">
+                    <div class="gm-tile__icon gm-icon gm-icon--warehouse" aria-hidden="true"></div>
+                    <h2 class="gm-tile__title">Warehouse</h2>
+                </div>
+                <p class="gm-tile__text">Receiving from growers, elevator-to-elevator transfers, shipping, and inventory.</p>
+            </a>
+        </div>
+    }
+
+    @if (!LocationCtx.HasLocation || LocationCtx.CanDoSeed)
+    {
+        <div class="col-12 col-lg-4">
+            <a class="gm-tile gm-tile--link gm-tile--seed" href="/Seed">
+                <div class="gm-tile__header">
+                    <div class="gm-tile__icon gm-icon gm-icon--seed" aria-hidden="true"></div>
+                    <h2 class="gm-tile__title">Seed</h2>
+                </div>
+                <p class="gm-tile__text">Receiving from growers, elevator-to-elevator transfers, shipping, and inventory.</p>
+            </a>
+        </div>
+    }
 
     <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link" href="/Seed">
-            <div class="gm-tile__header">
-                <div class="gm-tile__icon gm-icon gm-icon--seed" aria-hidden="true"></div>
-                <h2 class="gm-tile__title">Seed</h2>
-            </div>
-            <p class="gm-tile__text">Receiving from growers, elevator-to-elevator transfers, shipping, and inventory.</p>
-        </a>
-    </div>
-
-    <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link" href="/Reports">
+        <a class="gm-tile gm-tile--link gm-tile--reports" href="/Reports">
             <div class="gm-tile__header">
                 <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
                 <h2 class="gm-tile__title">Reports</h2>
@@ -43,27 +57,17 @@
     </div>
 
     <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link" href="/Camera">
+        <a class="gm-tile gm-tile--link gm-tile--system" href="/System">
             <div class="gm-tile__header">
-                <div class="gm-tile__icon gm-icon gm-icon--camera" aria-hidden="true"></div>
-                <h2 class="gm-tile__title">Cameras</h2>
+                <div class="gm-tile__icon gm-icon gm-icon--settings" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">System</h2>
             </div>
-            <p class="gm-tile__text">Cameras accessible by the system</p>
+            <p class="gm-tile__text">Cameras, scales, and hardware configuration</p>
         </a>
     </div>
 
     <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link" href="/Scales">
-            <div class="gm-tile__header">
-                <div class="gm-tile__icon gm-icon gm-icon--scale" aria-hidden="true"></div>
-                <h2 class="gm-tile__title">Scales</h2>
-            </div>
-            <p class="gm-tile__text">Scales accessible to the system</p>
-        </a>
-    </div>
-
-    <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link" href="/Remote">
+        <a class="gm-tile gm-tile--link gm-tile--remote" href="/Remote">
             <div class="gm-tile__header">
                 <div class="gm-tile__icon gm-icon gm-icon--remote" aria-hidden="true"></div>
                 <h2 class="gm-tile__title">Remote</h2>
@@ -72,10 +76,8 @@
         </a>
     </div>
 
-@* Role-based tiles — TEMP: checks disabled for local testing. Re-enable before deploy! *@
-
     <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link" href="/Admin">
+        <a class="gm-tile gm-tile--link gm-tile--admin" href="/Admin">
             <div class="gm-tile__header">
                 <div class="gm-tile__icon gm-icon gm-icon--admin" aria-hidden="true"></div>
                 <h2 class="gm-tile__title">Administrator</h2>

@@ -1,15 +1,13 @@
 <link rel="stylesheet" href="~/css/pages/locations.css" asp-append-version="true" />
 
-<div class="gm-pagehead">
-    <div class="gm-pagehead__title">
-        <span class="gm-pagehead__icon gm-icon gm-icon--locations" aria-hidden="true"></span>
-        <h1 class="gm-tile__title" style="font-size:20px">Locations</h1>
-    </div>
-</div>
-
-<a href="@Url.Action("Index", "Admin")" class="btn btn-outline-secondary btn-sm gm-locations-back-btn">
-    <i class="dx-icon dx-icon-arrowleft"></i> Back to Admin
+<a href="@Url.Action("Index", "Admin")" class="gm-module-bar gm-module-bar--admin gm-module-bar--link" title="Back to Admin">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--locations" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">LOCATIONS</span>
 </a>
+
+<div class="gm-pagehead gm-pagehead--sticky">
+</div>
 
 <div id="locationsGrid"></div>
 
@@ -158,7 +156,7 @@
                     },
                     { dataField: "LocationId", caption: "ID", width: 60 },
                     { dataField: "Code", caption: "Code", minWidth: 230 },
-                    { dataField: "Name", caption: "Name", minWidth: 230 },
+                    { dataField: "Name", caption: "Name", minWidth: 230, sortOrder: "asc" },
                     {
                         dataField: "DistrictId",
                         caption: "District",

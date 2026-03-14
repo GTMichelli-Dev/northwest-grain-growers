@@ -4,17 +4,13 @@
 
 <link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
 
+<a href="/Warehouse" class="gm-module-bar gm-module-bar--warehouse gm-module-bar--link" title="Back to Warehouse">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">WAREHOUSE LOTS</span>
+</a>
+
 <div class="gm-pagehead gm-pagehead--sticky">
-    <div class="gm-pagehead__title">
-        <span class="gm-pagehead__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
-        <div class="gm-gd-title-group">
-            <span class="gm-gd-title-prefix">Weight Sheet Lots —</span>
-            <div id="wslLocation" class="gm-gd-location-pick"></div>
-        </div>
-    </div>
-    <div class="gm-pagehead__right">
-        <a class="btn btn-outline-secondary btn-sm" href="/Warehouse">← Warehouse</a>
-    </div>
 </div>
 
 <div class="gm-gd">
@@ -27,9 +23,7 @@
 
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <div class="gm-gd-section__title" style="margin-bottom:0">Lots at This Location</div>
-                <button type="button" class="btn btn-sm btn-primary" id="wslNewBtn">
-                    + New Lot
-                </button>
+                <div id="wslNewBtn"></div>
             </div>
 
             <div class="gm-wsl-toolbar" id="wslToolbar">
@@ -58,9 +52,6 @@
 
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <div class="gm-gd-section__title" style="margin-bottom:0" id="wslPanelTitle">New Weight Sheet Lot</div>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="wslCancelCreateBtn">
-                    ← Back
-                </button>
             </div>
 
             <div class="gm-gd-fields gm-gd-fields--2col">
