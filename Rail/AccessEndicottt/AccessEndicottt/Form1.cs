@@ -1,12 +1,15 @@
 using System;
 using System.Data;
-using System.Data.OleDb; // Ensure this namespace is included
+using System.Data.OleDb;
+using System.IO;
 using System.Windows.Forms;
 
 namespace AccessEndicottt
 {
     public partial class Form1 : Form
     {
+        private const string LastPathFileName = "lastpath.txt";
+
         public Form1()
         {
             InitializeComponent();
@@ -14,11 +17,39 @@ namespace AccessEndicottt
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            string databasePath = @"C:\Junk\IS Bulkweigh.mdb";
+            if (File.Exists(LastPathFileName))
+            {
+                textBoxPath.Text = File.ReadAllText(LastPathFileName);
+            }
+
+            LoadTables();
+        }
+
+        private void buttonBrowse_Click(object sender, EventArgs e)
+        {
+            using OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "Access Database Files (*.mdb)|*.mdb|All Files (*.*)|*.*"
+            };
+
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                textBoxPath.Text = openFileDialog.FileName;
+                File.WriteAllText(LastPathFileName, openFileDialog.FileName);
+                LoadTables();
+            }
+        }
+
+        private void LoadTables()
+        {
+            string databasePath = textBoxPath.Text;
+            if (string.IsNullOrEmpty(databasePath) || !File.Exists(databasePath))
+            {
+                MessageBox.Show("Please select a valid database file.");
+                return;
+            }
+
             string connectionString = $"Provider=Microsoft.Jet.OLEDB.4.0;Data Source={databasePath};";
-
-
-            //string connectionString = $"Provider=Microsoft.Jet.OLEDB.4.0;Data Source={databasePath};";
 
             using var connection = new OleDbConnection(connectionString);
             try
@@ -26,6 +57,7 @@ namespace AccessEndicottt
                 connection.Open();
 
                 DataTable schema = connection.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, null);
+                comboBoxTables.Items.Clear();
                 foreach (DataRow row in schema.Rows)
                 {
                     string tableName = row["TABLE_NAME"]?.ToString();
@@ -48,10 +80,8 @@ namespace AccessEndicottt
                 string selectedTable = comboBoxTables.SelectedItem.ToString();
                 string query = $"SELECT * FROM [{selectedTable}]";
 
-                string databasePath = @"C:\Junk\IS Bulkweigh.mdb";
+                string databasePath = textBoxPath.Text;
                 string connectionString = $"Provider=Microsoft.Jet.OLEDB.4.0;Data Source={databasePath};";
-
-
 
                 using var connection = new OleDbConnection(connectionString);
                 using var adapter = new OleDbDataAdapter(query, connection);
@@ -70,7 +100,18 @@ namespace AccessEndicottt
         private void dataGridView_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
             e.Cancel = true;
+        }
 
+        private void textBoxPath_TextChanged(object sender, EventArgs e)
+        {
+
+
+        }
+
+        private void textBoxPath_Validating(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            File.WriteAllText(LastPathFileName, textBoxPath.Text);
+            LoadTables();
         }
     }
 }

@@ -1,0 +1,896 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Water_Pump_Control" TargetType="AddOnInstructionDefinition" TargetClass="Standard" TargetRevision="1.0 " TargetLastEdited="2025-08-28T16:34:31.794Z" ContainsContext="true" ExportDate="Thu Aug 28 10:42:51 2025" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Context" Name="NWGG_Treater_Dayton">
+<DataTypes Use="Context">
+<DataType Name="Analog_Gallon_Values" Family="NoFamily" Class="User">
+<Description>
+<![CDATA[Data for the water]]>
+</Description>
+<Members>
+<Member Name="Raw_Counts" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Zero_Counts" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Span_Value" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Span_Counts" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Current_Gallons" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Current_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Target_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="GPM" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZAnalog_Gal8" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Cal_Zero" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZAnalog_Gal8" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Cal_Span" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZAnalog_Gal8" BitNumber="1" ExternalAccess="Read/Write"/>
+<Member Name="Cal_Error" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZAnalog_Gal8" BitNumber="2" ExternalAccess="Read/Write"/>
+</Members>
+</DataType>
+<DataType Name="Scale_Data" Family="NoFamily" Class="User">
+<Members>
+<Member Name="RawWeight" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Raw Weight Of The Scale]]>
+</Description>
+</Member>
+<Member Name="Lbs_Gal" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The amount of pounds per Gallon]]>
+</Description>
+</Member>
+<Member Name="Lbs" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Tank_Capacity" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZScale_Data4" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Zero_Requested" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZScale_Data4" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Adding_Weight" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZScale_Data4" BitNumber="1" ExternalAccess="Read/Write"/>
+<Member Name="Current_Gals" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Current Gallons In Tank]]>
+</Description>
+</Member>
+<Member Name="Warning_Gal" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Warn When Below This Amount]]>
+</Description>
+</Member>
+<Member Name="Min_Gals" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Stop When Below This Amount]]>
+</Description>
+</Member>
+<Member Name="Min_Start_Gals" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Minimum Amount To Start]]>
+</Description>
+</Member>
+<Member Name="Percent_Tank_Full" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="DisplayIdx" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZScale_Data13" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Min_Start_Accept" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZScale_Data13" BitNumber="0" ExternalAccess="Read/Write"/>
+</Members>
+</DataType>
+<DataType Name="Treater_Product" Family="NoFamily" Class="User">
+<Description>
+<![CDATA[The Product Used by the Treater Pumps]]>
+</Description>
+<Members>
+<Member Name="Description" DataType="STRING" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Name Of Product]]>
+</Description>
+</Member>
+<Member Name="Cal_Factor" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="New_Product" DataType="STRING" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Name Of New Product]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pr3" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Edit_Product" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr3" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="New_Cal_Factor" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pr6" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Accept_New" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr6" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[accept the new product values]]>
+</Description>
+</Member>
+<Member Name="Cancel_New" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr6" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Cancel changing the product]]>
+</Description>
+</Member>
+<Member Name="Cal_Actual" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Actual Value Use For Fine Tuning Cal]]>
+</Description>
+</Member>
+<Member Name="Cal_Indicated" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Indicated Value Use For Fine Tuning]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pr11" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Apply_Adjustment" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr11" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Apply The Fine Tuning Adjustments]]>
+</Description>
+</Member>
+<Member Name="Fine_Tune" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pr11" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Display The Fine Tune Screen]]>
+</Description>
+</Member>
+<Member Name="Product_List_IDX" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Product List Index]]>
+</Description>
+</Member>
+</Members>
+</DataType>
+<DataType Name="Treater_Pump" Family="NoFamily" Class="User">
+<Members>
+<Member Name="Description" DataType="STRING" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Pump Description]]>
+</Description>
+</Member>
+<Member Name="Product" DataType="Treater_Product" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Product being dispensed]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pu2" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Start_Pump" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu2" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Bit To Start The Pump]]>
+</Description>
+</Member>
+<Member Name="Manual_Start_Pump" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu2" BitNumber="1" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Manual Start Pump]]>
+</Description>
+</Member>
+<Member Name="Faulted" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu2" BitNumber="2" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[True if Pump Is Faulted]]>
+</Description>
+</Member>
+<Member Name="Clear_Faults" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu2" BitNumber="3" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Bit To Reset Pump]]>
+</Description>
+</Member>
+<Member Name="Active_Treatment" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu2" BitNumber="4" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Currently Used In Batch]]>
+</Description>
+</Member>
+<Member Name="Speed" DataType="DINT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Current Pump Frequency]]>
+</Description>
+</Member>
+<Member Name="Target_Oz_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The pounds/ min called For]]>
+</Description>
+</Member>
+<Member Name="Speed_Factor" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Cofecient to multlply the Pump Speed by to get the RPM]]>
+</Description>
+</Member>
+<Member Name="Current_Speed" DataType="DINT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Current Pump Speed]]>
+</Description>
+</Member>
+<Member Name="Current_Oz_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Current Rate Pump Is Running]]>
+</Description>
+</Member>
+<Member Name="Current_RPM" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Current RPM]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pu14" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Start_Pump_Reverse" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu14" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Start The Pump In Reverse]]>
+</Description>
+</Member>
+<Member Name="Calculate_Delay" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[Delay in Milliseconds Before Checking Rate]]>
+</Description>
+</Member>
+<Member Name="ZZZZZZZZZZTreater_Pu17" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Require_Water_Flush" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu17" BitNumber="0" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[A Water Flush Is Required after Turning Off]]>
+</Description>
+</Member>
+<Member Name="TreaterScale" DataType="Scale_Data" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Rate_Error_Code" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pu21" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Pump_Error" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu21" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Purge_Forward" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu21" BitNumber="1" ExternalAccess="Read/Write"/>
+<Member Name="Purge_Reverse" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu21" BitNumber="2" ExternalAccess="Read/Write"/>
+<Member Name="Request_Auto" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu21" BitNumber="3" ExternalAccess="Read/Write"/>
+<Member Name="Speed_Percent" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="SpeedLimitPercent" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="SpeedLimitResetPercent" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pu29" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Over_Speed_Limit" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu29" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Purge_Percent" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Over_Speed_Time_Out" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="PID_Activate_Delay" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pu34" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Below_Min_Start_Gals" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu34" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Below_Min_Gals" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu34" BitNumber="1" ExternalAccess="Read/Write"/>
+<Member Name="Below_Warning_Gals" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu34" BitNumber="2" ExternalAccess="Read/Write"/>
+<Member Name="Status_Msg" DataType="STRING" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pu39" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="ShowStatus" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu39" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="NotReady" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu39" BitNumber="1" ExternalAccess="Read/Write"/>
+<Member Name="NotInUse" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu39" BitNumber="2" ExternalAccess="Read/Write"/>
+<Member Name="Use_Analog" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu39" BitNumber="3" ExternalAccess="Read/Write"/>
+<Member Name="Factored_Target_Oz_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Target Oz Rate Factored 1=1 cwt]]>
+</Description>
+</Member>
+<Member Name="Factored_Current_Oz_Rate" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write">
+<Description>
+<![CDATA[The Currennt Oz Rate Factored 1=1 cwt]]>
+</Description>
+</Member>
+<Member Name="Over_Speed_Reset_Time" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="Limp_Mode_Speed_Percent" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pu48" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Auto_Tune" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu48" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Ack_Over_Speed" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu48" BitNumber="1" ExternalAccess="Read/Write"/>
+<Member Name="PID" DataType="PID" Dimension="0" Radix="NullType" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZTreater_Pu52" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Soft_Start" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZTreater_Pu52" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Soft_Start_Speed" DataType="INT" Dimension="0" Radix="Decimal" Hidden="false" ExternalAccess="Read/Write"/>
+</Members>
+<Dependencies>
+<Dependency Type="DataType" Name="Treater_Product"/>
+<Dependency Type="DataType" Name="Scale_Data"/>
+</Dependencies>
+</DataType>
+</DataTypes>
+<AddOnInstructionDefinitions Use="Context">
+<AddOnInstructionDefinition Name="Analog_Rate" Class="Standard" Revision="1.0" ExecutePrescan="false" ExecutePostscan="false" ExecuteEnableInFalse="false" CreatedDate="2017-03-28T13:10:33.864Z" CreatedBy="MIDWAY-NUC\Administrator" EditedDate="2025-08-22T13:58:14.230Z" EditedBy="DESKTOP-02F8BPT\tech" SoftwareRevision="v35.00"
+>
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Input - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Output - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="Grain_Flow_CWT" TagType="Base" DataType="REAL" Usage="Input" Radix="Float" Required="true" Visible="true" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0.00000000e+000]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Values" TagType="Base" DataType="Analog_Gallon_Values" Usage="InOut" Required="true" Visible="true" Constant="false">
+<Description>
+<![CDATA[Stored Values]]>
+</Description>
+</Parameter>
+<Parameter Name="Analog_Raw_Counts" TagType="Base" DataType="REAL" Usage="Input" Radix="Float" Required="true" Visible="true" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Values From CT]]>
+</Description>
+<DefaultData Format="L5K">
+<![CDATA[0.00000000e+000]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Treater_Pump" TagType="Base" DataType="Treater_Pump" Usage="InOut" Required="true" Visible="true" Constant="false"/>
+</Parameters>
+<LocalTags/>
+<Routines>
+<Routine Name="Logic" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text>
+<![CDATA[MOV(Analog_Raw_Counts,Values.Raw_Counts);]]>
+</Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Text>
+<![CDATA[XIC(Values.Cal_Zero)OTU(Values.Cal_Zero)MOV(Values.Raw_Counts,Values.Zero_Counts);]]>
+</Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Text>
+<![CDATA[XIC(Values.Cal_Span)OTU(Values.Cal_Span)GRT(Values.Raw_Counts,Values.Zero_Counts)GRT(Values.Span_Value,0)MOV(Values.Raw_Counts,Values.Span_Counts);]]>
+</Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Text>
+<![CDATA[GRT(Values.Span_Value,0)GRT(Values.Span_Value,0)CPT(Values.GPM,Values.Span_Value * ((Values.Raw_Counts - Values.Zero_Counts) / (Values.Span_Counts - Values.Zero_Counts)));]]>
+</Text>
+</Rung>
+<Rung Number="4" Type="N">
+<Text>
+<![CDATA[LEQ(Values.Span_Value,0)LEQ(Values.Span_Value,0)MOV(0,Values.GPM)OTE(Values.Cal_Error);]]>
+</Text>
+</Rung>
+<Rung Number="5" Type="N">
+<Text>
+<![CDATA[CPT(Treater_Pump.Current_Oz_Rate,Values.GPM*128);]]>
+</Text>
+</Rung>
+<Rung Number="6" Type="N">
+<Text>
+<![CDATA[CPT(Treater_Pump.Factored_Current_Oz_Rate,Treater_Pump.Current_Oz_Rate/Grain_Flow_CWT);]]>
+</Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+<Dependencies>
+<Dependency Type="DataType" Name="Treater_Pump"/>
+<Dependency Type="DataType" Name="Analog_Gallon_Values"/>
+</Dependencies>
+</AddOnInstructionDefinition>
+<AddOnInstructionDefinition Name="Pump_Motor_Control" Class="Standard" Revision="1.0" ExecutePrescan="false" ExecutePostscan="false" ExecuteEnableInFalse="false" CreatedDate="2017-03-28T13:10:33.864Z" CreatedBy="MIDWAY-NUC\Administrator" EditedDate="2025-08-28T16:41:16.187Z" EditedBy="DESKTOP-02F8BPT\tech" SoftwareRevision="v35.00"
+>
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Input - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Output - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="Pump_Drive_Out" TagType="Base" DataType="AB:PowerFlex525V_EENET_Drive:O:0" Usage="InOut" Required="true" Visible="true" Constant="false">
+<Description>
+<![CDATA[Pump Output]]>
+</Description>
+</Parameter>
+<Parameter Name="Pump_Drive_In" TagType="Base" DataType="AB:PowerFlex525V_EENET_Drive:I:0" Usage="InOut" Required="true" Visible="true" Constant="false">
+<Description>
+<![CDATA[Pump Input]]>
+</Description>
+</Parameter>
+<Parameter Name="Treater_Pump" TagType="Base" DataType="Treater_Pump" Usage="InOut" Required="true" Visible="true" Constant="false">
+<Comments>
+<Comment Operand=".CURRENT_OZ_RATE">
+<![CDATA[This is the rate adjusted for the Current flow of grain reflected by the muiltliplier]]>
+</Comment>
+</Comments>
+</Parameter>
+<Parameter Name="Grain_Flow_CWT" TagType="Base" DataType="REAL" Usage="Input" Radix="Float" Required="true" Visible="true" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0.00000000e+000]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Pump_Reversed" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="true" Visible="true" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Start_Treating" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="true" Visible="true" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+</Parameters>
+<LocalTags>
+<LocalTag Name="OverSpeedLimit" DataType="DINT" Radix="Decimal" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="DINT" Radix="Decimal" Value="0"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="tmrOverSpeed" DataType="TIMER" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[[0,0,0]]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<Structure DataType="TIMER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="EN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="TT" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+</Structure>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="PumpTreatingOn" DataType="BOOL" Radix="Decimal" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="tmrPIDDelay" DataType="TIMER" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[[0,0,0]]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<Structure DataType="TIMER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="EN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="TT" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+</Structure>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="tmrOverSpeedReset" DataType="TIMER" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[[0,0,0]]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<Structure DataType="TIMER">
+<DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/>
+<DataValueMember Name="EN" DataType="BOOL" Value="0"/>
+<DataValueMember Name="TT" DataType="BOOL" Value="0"/>
+<DataValueMember Name="DN" DataType="BOOL" Value="0"/>
+</Structure>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="Reset_New_Product" DataType="BOOL" Radix="Decimal" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="Empty_String" DataType="STRING" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00']]]>
+</DefaultData>
+<DefaultData Format="String" Length="0">
+<![CDATA['']]>
+</DefaultData>
+</LocalTag>
+</LocalTags>
+<Routines>
+<Routine Name="Logic" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text>
+<![CDATA[XIC(Start_Treating)OTU(Treater_Pump.Manual_Start_Pump)OTE(Treater_Pump.Start_Pump);]]>
+</Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Comment>
+<![CDATA[All The Pump Logic]]>
+</Comment>
+<Text>
+<![CDATA[XIC(Treater_Pump.Start_Pump)OTU(Treater_Pump.Start_Pump_Reverse);]]>
+</Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Text>
+<![CDATA[XIC(Treater_Pump.Start_Pump)XIO(Treater_Pump.Faulted)XIO(Treater_Pump.Purge_Forward)XIO(Treater_Pump.Purge_Reverse)OTE(PumpTreatingOn);]]>
+</Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Comment>
+<![CDATA[Default The PID Loop
+]]>
+</Comment>
+<Text>
+<![CDATA[EQU(Treater_Pump.PID.KP,0)MOV(0.65,Treater_Pump.PID.KP);]]>
+</Text>
+</Rung>
+<Rung Number="4" Type="N">
+<Text>
+<![CDATA[EQU(Treater_Pump.PID.KI,0)MOV(0.1,Treater_Pump.PID.KI);]]>
+</Text>
+</Rung>
+<Rung Number="5" Type="N">
+<Text>
+<![CDATA[EQU(Treater_Pump.PID.MAXS,0)MOV(500,Treater_Pump.PID.MAXS);]]>
+</Text>
+</Rung>
+<Rung Number="6" Type="N">
+<Text>
+<![CDATA[EQU(Treater_Pump.PID.MAXO,0)MOV(100,Treater_Pump.PID.MAXO);]]>
+</Text>
+</Rung>
+<Rung Number="7" Type="N">
+<Text>
+<![CDATA[EQU(Treater_Pump.PID.UPD,0)MOV(0.001,Treater_Pump.PID.UPD);]]>
+</Text>
+</Rung>
+<Rung Number="8" Type="N">
+<Text>
+<![CDATA[EQU(Treater_Pump.PID.MAXI,0)MOV(500,Treater_Pump.PID.MAXI);]]>
+</Text>
+</Rung>
+<Rung Number="9" Type="N">
+<Text>
+<![CDATA[EQU(Treater_Pump.PID.MAXTIE,0)MOV(9000,Treater_Pump.PID.MAXTIE);]]>
+</Text>
+</Rung>
+<Rung Number="10" Type="N">
+<Text>
+<![CDATA[EQU(Treater_Pump.PID.MAXCV,0)MOV(9000,Treater_Pump.PID.MAXCV);]]>
+</Text>
+</Rung>
+<Rung Number="11" Type="N">
+<Text>
+<![CDATA[EQU(Treater_Pump.PID.DB,0)MOV(2,Treater_Pump.PID.DB);]]>
+</Text>
+</Rung>
+<Rung Number="12" Type="N">
+<Text>
+<![CDATA[EQU(Treater_Pump.PID_Activate_Delay,0)MOV(5000,Treater_Pump.PID_Activate_Delay);]]>
+</Text>
+</Rung>
+<Rung Number="13" Type="N">
+<Text>
+<![CDATA[MOV(Treater_Pump.PID_Activate_Delay,tmrPIDDelay.PRE);]]>
+</Text>
+</Rung>
+<Rung Number="14" Type="N">
+<Text>
+<![CDATA[CPT(Treater_Pump.Speed_Percent,(Treater_Pump.Speed/Treater_Pump.PID.MAXCV)*100);]]>
+</Text>
+</Rung>
+<Rung Number="15" Type="N">
+<Text>
+<![CDATA[LEQ(Treater_Pump.PID_Activate_Delay,0)MOV(500,Treater_Pump.PID_Activate_Delay);]]>
+</Text>
+</Rung>
+<Rung Number="16" Type="N">
+<Text>
+<![CDATA[MOV(Treater_Pump.PID_Activate_Delay,tmrPIDDelay.PRE);]]>
+</Text>
+</Rung>
+<Rung Number="17" Type="N">
+<Text>
+<![CDATA[XIC(Treater_Pump.Start_Pump)XIO(Treater_Pump.TreaterScale.Adding_Weight)XIO(Treater_Pump.Faulted)XIO(Treater_Pump.Purge_Forward)XIO(Treater_Pump.Purge_Reverse)GRT(Treater_Pump.PID.SP,0)TON(tmrPIDDelay,?,?);]]>
+</Text>
+</Rung>
+<Rung Number="18" Type="N">
+<Text>
+<![CDATA[EQU(Grain_Flow_CWT,0)MOV(1,Grain_Flow_CWT);]]>
+</Text>
+</Rung>
+<Rung Number="19" Type="N">
+<Text>
+<![CDATA[CPT(Treater_Pump.Factored_Target_Oz_Rate,Treater_Pump.Target_Oz_Rate*Grain_Flow_CWT);]]>
+</Text>
+</Rung>
+<Rung Number="20" Type="N">
+<Text>
+<![CDATA[MOV(Treater_Pump.Factored_Target_Oz_Rate,Treater_Pump.PID.SP);]]>
+</Text>
+</Rung>
+<Rung Number="21" Type="N">
+<Text>
+<![CDATA[XIC(tmrPIDDelay.DN)XIO(Treater_Pump.Over_Speed_Limit)XIC(Treater_Pump.Auto_Tune)PID(Treater_Pump.PID,Treater_Pump.Current_Oz_Rate,0,Treater_Pump.Speed,0,0,0);]]>
+</Text>
+</Rung>
+<Rung Number="22" Type="N">
+<Text>
+<![CDATA[[[XIC(Treater_Pump.Start_Pump) ,XIC(Treater_Pump.Manual_Start_Pump) ] XIO(Pump_Reversed) ,XIC(Treater_Pump.Purge_Forward) XIO(Pump_Reversed) ,XIC(Treater_Pump.Purge_Reverse) XIC(Pump_Reversed) ,XIC(Pump_Reversed) XIC(Treater_Pump.Start_Pump_Reverse) ]OTE(Pump_Drive_Out.Forward);]]>
+</Text>
+</Rung>
+<Rung Number="23" Type="N">
+<Text>
+<![CDATA[[[XIC(Treater_Pump.Start_Pump) ,XIC(Treater_Pump.Manual_Start_Pump) ] XIC(Pump_Reversed) ,XIC(Treater_Pump.Purge_Forward) XIC(Pump_Reversed) ,XIC(Treater_Pump.Purge_Reverse) XIO(Pump_Reversed) ,XIO(Pump_Reversed) XIC(Treater_Pump.Start_Pump_Reverse) ]OTE(Pump_Drive_Out.Reverse);]]>
+</Text>
+</Rung>
+<Rung Number="24" Type="N">
+<Text>
+<![CDATA[XIO(Treater_Pump.Faulted)[XIC(Treater_Pump.Start_Pump) ,XIC(Treater_Pump.Manual_Start_Pump) ,XIC(Treater_Pump.Purge_Forward) ,XIC(Treater_Pump.Purge_Reverse) ]OTE(Pump_Drive_Out.Start);]]>
+</Text>
+</Rung>
+<Rung Number="25" Type="N">
+<Text>
+<![CDATA[[XIO(Treater_Pump.Start_Pump) XIO(Treater_Pump.Manual_Start_Pump) XIO(Treater_Pump.Start_Pump_Reverse) XIO(Treater_Pump.Purge_Forward) XIO(Treater_Pump.Purge_Reverse) ,XIO(Treater_Pump.Purge_Forward) XIO(Treater_Pump.Purge_Reverse) XIO(Treater_Pump.Manual_Start_Pump) XIC(Treater_Pump.Below_Min_Gals) ,XIC(Treater_Pump.Faulted) ]OTE(Pump_Drive_Out.Stop);]]>
+</Text>
+</Rung>
+<Rung Number="26" Type="N">
+<Text>
+<![CDATA[XIC(Treater_Pump.Product.Accept_New)[COP(Treater_Pump.Product.New_Product,Treater_Pump.Product.Description,1) ,OTU(Treater_Pump.Product.Edit_Product) OTU(Treater_Pump.Product.Accept_New) ];]]>
+</Text>
+</Rung>
+<Rung Number="27" Type="N">
+<Text>
+<![CDATA[XIC(Treater_Pump.Product.Cancel_New)OTU(Treater_Pump.Product.Edit_Product)OTU(Treater_Pump.Product.Cancel_New);]]>
+</Text>
+</Rung>
+<Rung Number="28" Type="N">
+<Comment>
+<![CDATA[Clear Fault In Drive]]>
+</Comment>
+<Text>
+<![CDATA[XIC(Treater_Pump.Clear_Faults)OTU(Treater_Pump.Over_Speed_Limit)OTE(Pump_Drive_Out.ClearFaults);]]>
+</Text>
+</Rung>
+<Rung Number="29" Type="N">
+<Text>
+<![CDATA[XIO(Pump_Drive_In.Faulted)OTU(Treater_Pump.Clear_Faults);]]>
+</Text>
+</Rung>
+<Rung Number="30" Type="N">
+<Comment>
+<![CDATA[Output showing pump is faulted]]>
+</Comment>
+<Text>
+<![CDATA[XIC(Pump_Drive_In.Faulted)OTE(Treater_Pump.Faulted);]]>
+</Text>
+</Rung>
+<Rung Number="31" Type="N">
+<Comment>
+<![CDATA[Set Drive Speed]]>
+</Comment>
+<Text>
+<![CDATA[XIO(Treater_Pump.Purge_Forward)XIO(Treater_Pump.Purge_Reverse)MOV(Treater_Pump.Speed,Pump_Drive_Out.FreqCommand);]]>
+</Text>
+</Rung>
+<Rung Number="32" Type="N">
+<Text>
+<![CDATA[LEQ(Treater_Pump.Purge_Percent,0)MOV(0.5,Treater_Pump.Purge_Percent);]]>
+</Text>
+</Rung>
+<Rung Number="33" Type="N">
+<Comment>
+<![CDATA[Set Drive Speed]]>
+</Comment>
+<Text>
+<![CDATA[[XIC(Treater_Pump.Purge_Forward) ,XIC(Treater_Pump.Purge_Reverse) ]CPT(Pump_Drive_Out.FreqCommand,9000*Treater_Pump.Purge_Percent);]]>
+</Text>
+</Rung>
+<Rung Number="34" Type="N">
+<Comment>
+<![CDATA[Current Speed Of Pump from 0 to 9000]]>
+</Comment>
+<Text>
+<![CDATA[MOV(Pump_Drive_In.OutputFreq,Treater_Pump.Current_Speed);]]>
+</Text>
+</Rung>
+<Rung Number="35" Type="N">
+<Comment>
+<![CDATA[To get the rpm of the motor we need to have a speed factor to multliply the freq drive frequency by.
+If the pump speed factor is 0 then we will use a default value]]>
+</Comment>
+<Text>
+<![CDATA[CMP(Treater_Pump.Speed_Factor=0)MOV(0.066,Treater_Pump.Speed_Factor);]]>
+</Text>
+</Rung>
+<Rung Number="36" Type="N">
+<Comment>
+<![CDATA[Set the Pumps RPM]]>
+</Comment>
+<Text>
+<![CDATA[MUL(Treater_Pump.Current_Speed,Treater_Pump.Speed_Factor,Treater_Pump.Current_RPM);]]>
+</Text>
+</Rung>
+<Rung Number="37" Type="N">
+<Text>
+<![CDATA[LEQ(Treater_Pump.SpeedLimitPercent,0)MOV(0.7,Treater_Pump.SpeedLimitPercent);]]>
+</Text>
+</Rung>
+<Rung Number="38" Type="N">
+<Text>
+<![CDATA[CPT(OverSpeedLimit,9000*Treater_Pump.SpeedLimitPercent);]]>
+</Text>
+</Rung>
+<Rung Number="39" Type="N">
+<Text>
+<![CDATA[LEQ(Treater_Pump.Over_Speed_Time_Out,0)MOV(5000,Treater_Pump.Over_Speed_Time_Out);]]>
+</Text>
+</Rung>
+<Rung Number="40" Type="N">
+<Text>
+<![CDATA[LEQ(Treater_Pump.Over_Speed_Reset_Time,0)MOV(5000,Treater_Pump.Over_Speed_Reset_Time);]]>
+</Text>
+</Rung>
+<Rung Number="41" Type="N">
+<Text>
+<![CDATA[[LEQ(Treater_Pump.Limp_Mode_Speed_Percent,0) ,GEQ(Treater_Pump.Limp_Mode_Speed_Percent,0.99) ]MOV(0.3,Treater_Pump.Limp_Mode_Speed_Percent);]]>
+</Text>
+</Rung>
+<Rung Number="42" Type="N">
+<Text>
+<![CDATA[MOV(Treater_Pump.Over_Speed_Time_Out,tmrOverSpeedReset.PRE)MOV(Treater_Pump.Over_Speed_Time_Out,tmrOverSpeed.PRE);]]>
+</Text>
+</Rung>
+<Rung Number="43" Type="N">
+<Text>
+<![CDATA[GEQ(Treater_Pump.Speed,OverSpeedLimit)XIO(Treater_Pump.Manual_Start_Pump)XIO(Treater_Pump.Purge_Forward)XIO(Treater_Pump.Purge_Reverse)XIC(Treater_Pump.Start_Pump)XIO(Treater_Pump.Ack_Over_Speed)TON(tmrOverSpeed,?,?);]]>
+</Text>
+</Rung>
+<Rung Number="44" Type="N">
+<Text>
+<![CDATA[XIC(tmrOverSpeed.DN)CPT(Pump_Drive_Out.FreqCommand,Treater_Pump.Limp_Mode_Speed_Percent*9000)OTL(Treater_Pump.Over_Speed_Limit);]]>
+</Text>
+</Rung>
+<Rung Number="45" Type="N">
+<Text>
+<![CDATA[XIC(Treater_Pump.Ack_Over_Speed)OTU(Treater_Pump.Ack_Over_Speed);]]>
+</Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+<Dependencies>
+<Dependency Type="DataType" Name="Treater_Pump"/>
+</Dependencies>
+</AddOnInstructionDefinition>
+<AddOnInstructionDefinition Use="Target" Name="Water_Pump_Control" Class="Standard" Revision="1.0" ExecutePrescan="false" ExecutePostscan="false" ExecuteEnableInFalse="false" CreatedDate="2017-03-28T13:10:33.864Z" CreatedBy="MIDWAY-NUC\Administrator" EditedDate="2025-08-28T16:34:31.794Z" EditedBy="DESKTOP-02F8BPT\tech"
+ SoftwareRevision="v35.00" TrackingGroups="16#0000_0002">
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Input - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Radix="Decimal" Required="false" Visible="false" ExternalAccess="Read Only">
+<Description>
+<![CDATA[Enable Output - System Defined Parameter]]>
+</Description>
+</Parameter>
+<Parameter Name="Pump_Drive_Out" TagType="Base" DataType="AB:PowerFlex525V_EENET_Drive:O:0" Usage="InOut" Required="true" Visible="true" Constant="false">
+<Description>
+<![CDATA[Pump Output]]>
+</Description>
+</Parameter>
+<Parameter Name="Pump_Drive_In" TagType="Base" DataType="AB:PowerFlex525V_EENET_Drive:I:0" Usage="InOut" Required="true" Visible="true" Constant="false">
+<Description>
+<![CDATA[Pump Input]]>
+</Description>
+</Parameter>
+<Parameter Name="Treater_Pump" TagType="Base" DataType="Treater_Pump" Usage="InOut" Required="true" Visible="true" Constant="false">
+<Comments>
+<Comment Operand=".CURRENT_OZ_RATE">
+<![CDATA[This is the rate adjusted for the Current flow of grain reflected by the muiltliplier]]>
+</Comment>
+</Comments>
+</Parameter>
+<Parameter Name="Grain_Flow_CWT" TagType="Base" DataType="REAL" Usage="Input" Radix="Float" Required="true" Visible="true" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[0.00000000e+000]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="REAL" Radix="Float" Value="0.0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Pump_Reversed" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="true" Visible="true" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+<Parameter Name="Values" TagType="Base" DataType="Analog_Gallon_Values" Usage="InOut" Required="true" Visible="true" Constant="false">
+<Description>
+<![CDATA[Stored Values]]>
+</Description>
+</Parameter>
+<Parameter Name="Analog_Raw_Counts" TagType="Base" DataType="REAL" Usage="InOut" Radix="Float" Required="true" Visible="true" Constant="false"/>
+<Parameter Name="Start_Treating" TagType="Base" DataType="BOOL" Usage="Input" Radix="Decimal" Required="true" Visible="true" ExternalAccess="Read Only">
+<DefaultData Format="L5K">
+<![CDATA[0]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<DataValue DataType="BOOL" Radix="Decimal" Value="0"/>
+</DefaultData>
+</Parameter>
+</Parameters>
+<LocalTags>
+<LocalTag Name="Empty_String" DataType="STRING" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00']]]>
+</DefaultData>
+<DefaultData Format="String" Length="0">
+<![CDATA['']]>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="PMC" DataType="Pump_Motor_Control" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[[1,0.00000000e+000,0,[0,0,0],[0,0,0],[0,0,0],[0,'$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00$00']]]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<Structure DataType="Pump_Motor_Control">
+<DataValueMember Name="EnableIn" DataType="BOOL" Value="1"/>
+<DataValueMember Name="EnableOut" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Grain_Flow_CWT" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Pump_Reversed" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Start_Treating" DataType="BOOL" Value="0"/>
+</Structure>
+</DefaultData>
+</LocalTag>
+<LocalTag Name="AnalogRate" DataType="Analog_Rate" ExternalAccess="None">
+<DefaultData Format="L5K">
+<![CDATA[[1,0.00000000e+000,0.00000000e+000]]]>
+</DefaultData>
+<DefaultData Format="Decorated">
+<Structure DataType="Analog_Rate">
+<DataValueMember Name="EnableIn" DataType="BOOL" Value="1"/>
+<DataValueMember Name="EnableOut" DataType="BOOL" Value="0"/>
+<DataValueMember Name="Grain_Flow_CWT" DataType="REAL" Radix="Float" Value="0.0"/>
+<DataValueMember Name="Analog_Raw_Counts" DataType="REAL" Radix="Float" Value="0.0"/>
+</Structure>
+</DefaultData>
+</LocalTag>
+</LocalTags>
+<Routines>
+<Routine Name="Logic" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text>
+<![CDATA[Analog_Rate(AnalogRate,Grain_Flow_CWT,Values,Analog_Raw_Counts,Treater_Pump);]]>
+</Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Text>
+<![CDATA[Pump_Motor_Control(PMC,Pump_Drive_Out,Pump_Drive_In,Treater_Pump,Grain_Flow_CWT,Pump_Reversed,Start_Treating);]]>
+</Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Text>
+<![CDATA[XIC(Pump_Drive_In.Faulted)OTL(Treater_Pump.ShowStatus)MOV('Pump VFD Fault',Treater_Pump.Status_Msg);]]>
+</Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Text>
+<![CDATA[XIO(Pump_Drive_In.Faulted)OTU(Treater_Pump.ShowStatus)MOV('',Treater_Pump.Status_Msg);]]>
+</Text>
+</Rung>
+<Rung Number="4" Type="N">
+<Text>
+<![CDATA[XIC(Treater_Pump.Active_Treatment)XIC(Treater_Pump.Faulted)OTE(Treater_Pump.NotReady);]]>
+</Text>
+</Rung>
+<Rung Number="5" Type="N">
+<Text>
+<![CDATA[XIC(Pump_Drive_In.Faulted)OTL(Treater_Pump.ShowStatus)MOV('Pump VFD Fault',Treater_Pump.Status_Msg);]]>
+</Text>
+</Rung>
+<Rung Number="6" Type="N">
+<Text>
+<![CDATA[XIO(Pump_Drive_In.Faulted)OTU(Treater_Pump.ShowStatus)MOV('',Treater_Pump.Status_Msg);]]>
+</Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+<Dependencies>
+<Dependency Type="AddOnInstructionDefinition" Name="Analog_Rate"/>
+<Dependency Type="AddOnInstructionDefinition" Name="Pump_Motor_Control"/>
+<Dependency Type="DataType" Name="Treater_Pump"/>
+<Dependency Type="DataType" Name="Analog_Gallon_Values"/>
+</Dependencies>
+</AddOnInstructionDefinition>
+</AddOnInstructionDefinitions>
+</Controller>
+</RSLogix5000Content>
