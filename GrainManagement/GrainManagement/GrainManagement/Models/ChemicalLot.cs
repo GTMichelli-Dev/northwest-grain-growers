@@ -9,35 +9,21 @@ public partial class ChemicalLot
 {
     public long ChemicalLotId { get; set; }
 
-    public Guid RowGuid { get; set; }
+    public long As400Id { get; set; }
 
-    public int ProductId { get; set; }
-
-    public string VendorLotNumber { get; set; }
+    public int BaseId { get; set; }
 
     public int LocationId { get; set; }
 
-    public int UomId { get; set; }
-
-    public decimal QtyOnHand { get; set; }
-
-    public DateTime ReceivedAt { get; set; }
-
-    public DateOnly? ExpirationDate { get; set; }
-
-    public bool IsActive { get; set; }
+    public int ServerId { get; set; }
 
     public DateTime CreatedAt { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
 
     public virtual ICollection<ChemicalTransaction> ChemicalTransactions { get; set; } = new List<ChemicalTransaction>();
 
     public virtual Location Location { get; set; }
 
-    public virtual Product Product { get; set; }
-
     public virtual ICollection<SeedTreatmentApplication> SeedTreatmentApplications { get; set; } = new List<SeedTreatmentApplication>();
 
-    public virtual UnitOfMeasure Uom { get; set; }
+    public virtual Server Server { get; set; }
 }

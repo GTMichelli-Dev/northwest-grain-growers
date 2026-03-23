@@ -13,6 +13,104 @@
 }
 
 /* ---------------------------------------------------------
+   Delivery Loads – Weight Sheet header
+   --------------------------------------------------------- */
+
+.gm-dl-header {
+    background: #fff;
+    border-radius: var(--radius, 12px);
+    box-shadow: var(--shadow-sm, 0 6px 12px rgba(0,0,0,.06));
+    padding: 16px 20px;
+}
+
+.gm-dl-header__title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.gm-dl-header__label {
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted, #6c757d);
+}
+
+.gm-dl-header__wsid {
+    font-weight: 900;
+    font-size: 1.25rem;
+    letter-spacing: .04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--body-color, #212529);
+}
+
+.gm-dl-header__details {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.gm-dl-header__detail {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.gm-dl-header__detail-label {
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--muted, #6c757d);
+}
+
+.gm-dl-header__detail-value {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--body-color, #212529);
+}
+
+.gm-dl-header__detail-value--comment {
+    font-style: italic;
+    color: var(--muted, #6c757d);
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gm-dl-header__detail--comment {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.gm-dl-header__edit-btn {
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    line-height: 1;
+    border-radius: 4px;
+}
+
+.gm-dl-header__edit-btn .dx-icon {
+    font-size: 14px;
+}
+
+@media (max-width: 640px) {
+    .gm-dl-header__details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .gm-dl-header__detail-value--comment {
+        max-width: none;
+    }
+}
+
+/* ---------------------------------------------------------
    Title group — "Grower Delivery For [SelectBox]" inline
    --------------------------------------------------------- */
 

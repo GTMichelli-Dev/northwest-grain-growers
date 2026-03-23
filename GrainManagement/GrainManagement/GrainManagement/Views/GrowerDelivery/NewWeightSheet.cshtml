@@ -1,0 +1,259 @@
+@{
+    ViewData["Title"] = "New Weight Sheet";
+}
+
+<link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
+
+<a href="/Warehouse/LoadType" class="gm-module-bar gm-module-bar--warehouse gm-module-bar--link" title="Back to New WeightSheet">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">NEW WEIGHT SHEET</span>
+</a>
+
+<div class="gm-pagehead gm-pagehead--sticky"></div>
+
+<div class="gm-gd">
+
+    <div id="nwsAlert" class="alert" role="alert" hidden></div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- STEP 1 — Select or Create a Lot                                    -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <div id="nwsStep1">
+
+        <!-- ── Lot list ────────────────────────────────────────────────── -->
+        <div id="nwsLotListPanel" class="gm-wsl-wide" hidden>
+            <div class="gm-gd-section">
+
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="gm-gd-section__title" style="margin-bottom:0">Select a Lot</div>
+                    <div id="nwsNewLotBtn"></div>
+                </div>
+
+                <div class="gm-wsl-toolbar" id="nwsToolbar">
+                    <input type="text" class="form-control form-control-sm" id="nwsSearch"
+                           placeholder="Search lots…" />
+                </div>
+
+                <div id="nwsLotsGrid"></div>
+
+            </div>
+        </div>
+
+        <!-- ── Create lot form ─────────────────────────────────────────── -->
+        <div id="nwsCreateLotPanel" hidden>
+            <div class="gm-gd-section">
+
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="gm-gd-section__title" style="margin-bottom:0" id="nwsLotPanelTitle">New Weight Sheet Lot</div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="nwsCancelCreateLotBtn">
+                        &larr; Back to Lots
+                    </button>
+                </div>
+
+                <div class="gm-gd-fields gm-gd-fields--2col">
+
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <div style="display:grid;grid-template-columns:0.6fr 110px 1fr;gap:8px;">
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <label class="form-label">Item <span class="text-danger">*</span></label>
+                                <div id="nwsItem"></div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <label class="form-label">SG#</label>
+                                <input type="text" class="form-control" id="nwsSgShortcut"
+                                       placeholder="Split #" style="text-align:center;height:34px;padding:6px 8px;font-size:14px;" />
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <label class="form-label">Account <span class="text-danger">*</span></label>
+                                <div id="nwsAccount"></div>
+                            </div>
+                        </div>
+                        <div id="nwsSgError" class="text-danger small mt-1" hidden></div>
+                    </div>
+
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <label class="form-label">Split Group <span class="text-danger">*</span></label>
+                        <div id="nwsSplitGroup"></div>
+                        <div id="nwsSplitGroupWarning" class="text-danger small mt-1" hidden>No split group set up for this account.</div>
+                    </div>
+
+                    <div class="gm-gd-field">
+                        <label class="form-label">State <span class="text-danger">*</span></label>
+                        <div id="nwsState"></div>
+                    </div>
+                    <div class="gm-gd-field">
+                        <label class="form-label">County <span class="text-danger">*</span></label>
+                        <div id="nwsCounty"></div>
+                    </div>
+
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <label class="form-label">Lot Description</label>
+                        <input type="text" class="form-control" id="nwsLotDesc"
+                               readonly placeholder="Auto-filled from split group" />
+                    </div>
+
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <label class="form-label">Landlord</label>
+                        <input type="text" class="form-control" id="nwsLandlord"
+                               placeholder="Optional landlord…" />
+                    </div>
+
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" id="nwsNotes" rows="2"
+                                  placeholder="Optional notes…"></textarea>
+                    </div>
+
+                </div>
+
+                <div id="nwsCreateLotError" class="text-danger small mt-2" hidden></div>
+
+                <div class="mt-3">
+                    <button type="button" class="btn btn-primary" id="nwsSaveLotBtn">
+                        Create Lot
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- STEP 2 — BOL Type & Hauler Selection                               -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <div id="nwsStep2" hidden>
+        <div class="gm-gd-section">
+
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="gm-gd-section__title" style="margin-bottom:0">BOL &amp; Hauling</div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="nwsBackToLots">
+                    &larr; Back to Lot Selection
+                </button>
+            </div>
+
+            <div id="nwsSelectedLotInfo" class="mb-3 p-3 border rounded bg-light">
+                <div class="fw-bold mb-2">Selected Lot</div>
+                <div class="gm-gd-fields gm-gd-fields--2col" style="gap:6px 16px;">
+                    <div class="gm-gd-field">
+                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Lot ID</label>
+                        <div id="nwsConfirmLotId" class="fw-semibold"></div>
+                    </div>
+                    <div class="gm-gd-field">
+                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Item</label>
+                        <div id="nwsConfirmItem"></div>
+                    </div>
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Lot Description</label>
+                        <div id="nwsConfirmLotDesc" class="fw-semibold"></div>
+                    </div>
+                    <div class="gm-gd-field">
+                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Account</label>
+                        <div id="nwsConfirmAccount"></div>
+                    </div>
+                    <div class="gm-gd-field">
+                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Split Group</label>
+                        <div id="nwsConfirmSplitGroup"></div>
+                    </div>
+                    <div class="gm-gd-field">
+                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">State</label>
+                        <div id="nwsConfirmState"></div>
+                    </div>
+                    <div class="gm-gd-field">
+                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">County</label>
+                        <div id="nwsConfirmCounty"></div>
+                    </div>
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Landlord</label>
+                        <div id="nwsConfirmLandlord"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── BOL Type (required, highly visible) ── -->
+            <div class="nws-bol-section p-3 mb-3 border border-2 border-warning rounded bg-warning bg-opacity-10">
+                <label class="form-label fw-bold fs-5 text-dark">
+                    What is the BOL Type? <span class="text-danger">*</span>
+                </label>
+                <div style="max-width:360px;" class="mt-2">
+                    <div id="nwsBolType"></div>
+                </div>
+                <div id="nwsBolTypeHint" class="text-muted small mt-1" hidden></div>
+
+                <!-- ── Hauler + Miles (shown for A / F) ── -->
+                <div id="nwsHaulerMilesDetails" class="mt-3" hidden>
+                    <div class="gm-gd-fields gm-gd-fields--2col">
+                        <div class="gm-gd-field">
+                            <label class="form-label">Hauler <span class="text-danger">*</span></label>
+                            <div id="nwsHauler"></div>
+                        </div>
+                        <div class="gm-gd-field">
+                            <label class="form-label">Miles <span class="text-danger">*</span></label>
+                            <div id="nwsMiles"></div>
+                        </div>
+                        <div class="gm-gd-field gm-gd-field--full" id="nwsCalcRateGroup" hidden>
+                            <label class="form-label">Calculated Rate</label>
+                            <input type="text" class="form-control" id="nwsCalcRate" readonly />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Custom: Hauler + Rate Description + Rate ── -->
+                <div id="nwsCustomDetails" class="mt-3" hidden>
+                    <div class="gm-gd-fields gm-gd-fields--2col">
+                        <div class="gm-gd-field">
+                            <label class="form-label">Hauler <span class="text-danger">*</span></label>
+                            <div id="nwsCustomHaulerSelect"></div>
+                        </div>
+                        <div class="gm-gd-field">
+                            <label class="form-label">Rate Description <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nwsCustomRateDesc"
+                                   placeholder="Describe the custom rate…" />
+                        </div>
+                        <div class="gm-gd-field">
+                            <label class="form-label">Rate <span class="text-danger">*</span></label>
+                            <div id="nwsCustomRate"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="nwsHaulerError" class="text-danger fw-bold mt-2" hidden></div>
+            </div>
+
+            <div class="mt-3">
+                <button type="button" class="btn btn-primary btn-lg" id="nwsCreateWsBtn" disabled>
+                    Create Weight Sheet
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- STEP 3 — Success / Created Weight Sheet                            -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <div id="nwsStep3" hidden>
+        <div class="gm-gd-section">
+
+            <div class="gm-gd-section__title">Weight Sheet Created</div>
+
+            <div id="nwsSuccessInfo" class="alert alert-success"></div>
+
+            <div class="mt-3 d-flex gap-2">
+                <a id="nwsAddLoadBtn" class="btn btn-primary" href="#">
+                    Add New Load
+                </a>
+                <a class="btn btn-outline-secondary" href="/Warehouse">
+                    Back to Warehouse
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/grower.newws.js" asp-append-version="true"></script>
+}

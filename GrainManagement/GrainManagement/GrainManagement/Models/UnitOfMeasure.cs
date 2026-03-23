@@ -23,11 +23,9 @@ public partial class UnitOfMeasure
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual ICollection<ChemicalLot> ChemicalLots { get; set; } = new List<ChemicalLot>();
-
     public virtual ICollection<ChemicalTransaction> ChemicalTransactions { get; set; } = new List<ChemicalTransaction>();
 
-    public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetails { get; set; } = new List<InventoryTransactionDetail>();
 
     public virtual ICollection<PriceListLine> PriceListLines { get; set; } = new List<PriceListLine>();
 

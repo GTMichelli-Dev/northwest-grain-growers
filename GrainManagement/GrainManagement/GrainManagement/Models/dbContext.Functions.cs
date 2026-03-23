@@ -29,6 +29,18 @@ namespace GrainManagement.Models
         public async Task<long?> DistributedIdSeedAsync()
             => await Database.SqlQueryRaw<long?>("select Value = [system].[DistributedIdSeed]()").SingleAsync();
 
+        [DbFunction("fn_BuildAs400Id", "system")]
+        public static long? fn_BuildAs400Id(int? ServerId, int? BaseId)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
+        [DbFunction("fn_BuildSmartId", "system")]
+        public static long? fn_BuildSmartId(int? ServerId, int? LocationId, int? BaseId)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
         [DbFunction("fn_HasPrimaryAccount", "Inventory")]
         public static bool? fn_HasPrimaryAccount(long? LotId)
         {
@@ -53,33 +65,6 @@ namespace GrainManagement.Models
         public async Task<long?> NextContainerLotLayersIdAsync()
             => await Database.SqlQueryRaw<long?>("select Value = [Inventory].[NextContainerLotLayersId]()").SingleAsync();
 
-        [DbFunction("NextContainersId", "container")]
-        public static long? NextContainersId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextContainersIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [container].[NextContainersId]()").SingleAsync();
-
-        [DbFunction("NextInventoryEventsId", "Inventory")]
-        public static long? NextInventoryEventsId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextInventoryEventsIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [Inventory].[NextInventoryEventsId]()").SingleAsync();
-
-        [DbFunction("NextInventoryMovementsId", "Inventory")]
-        public static long? NextInventoryMovementsId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextInventoryMovementsIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [Inventory].[NextInventoryMovementsId]()").SingleAsync();
-
         [DbFunction("NextLabResultsId", "Inventory")]
         public static long? NextLabResultsId()
         {
@@ -88,15 +73,6 @@ namespace GrainManagement.Models
 
         public async Task<long?> NextLabResultsIdAsync()
             => await Database.SqlQueryRaw<long?>("select Value = [Inventory].[NextLabResultsId]()").SingleAsync();
-
-        [DbFunction("NextLotId", "Inventory")]
-        public static long? NextLotId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextLotIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [Inventory].[NextLotId]()").SingleAsync();
 
         [DbFunction("NextLotLabsId", "Inventory")]
         public static long? NextLotLabsId()
@@ -116,24 +92,6 @@ namespace GrainManagement.Models
         public async Task<long?> NextPaymentsIdAsync()
             => await Database.SqlQueryRaw<long?>("select Value = [sale].[NextPaymentsId]()").SingleAsync();
 
-        [DbFunction("NextPurchaseOrderLineItemsId", "purchase")]
-        public static long? NextPurchaseOrderLineItemsId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextPurchaseOrderLineItemsIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [purchase].[NextPurchaseOrderLineItemsId]()").SingleAsync();
-
-        [DbFunction("NextPurchaseOrdersId", "purchase")]
-        public static long? NextPurchaseOrdersId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextPurchaseOrdersIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [purchase].[NextPurchaseOrdersId]()").SingleAsync();
-
         [DbFunction("NextReceivedGradesId", "seed")]
         public static long? NextReceivedGradesId()
         {
@@ -143,69 +101,6 @@ namespace GrainManagement.Models
         public async Task<long?> NextReceivedGradesIdAsync()
             => await Database.SqlQueryRaw<long?>("select Value = [seed].[NextReceivedGradesId]()").SingleAsync();
 
-        [DbFunction("NextReceivedInventoryItemsId", "purchase")]
-        public static long? NextReceivedInventoryItemsId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextReceivedInventoryItemsIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [purchase].[NextReceivedInventoryItemsId]()").SingleAsync();
-
-        [DbFunction("NextReceivedInventoryPurchaseOrderLineItemsId", "purchase")]
-        public static long? NextReceivedInventoryPurchaseOrderLineItemsId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextReceivedInventoryPurchaseOrderLineItemsIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [purchase].[NextReceivedInventoryPurchaseOrderLineItemsId]()").SingleAsync();
-
-        [DbFunction("NextSalesInvoiceLineItemLotsId", "sale")]
-        public static long? NextSalesInvoiceLineItemLotsId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextSalesInvoiceLineItemLotsIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [sale].[NextSalesInvoiceLineItemLotsId]()").SingleAsync();
-
-        [DbFunction("NextSalesInvoiceLineItemsId", "sale")]
-        public static long? NextSalesInvoiceLineItemsId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextSalesInvoiceLineItemsIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [sale].[NextSalesInvoiceLineItemsId]()").SingleAsync();
-
-        [DbFunction("NextSalesInvoicesId", "sale")]
-        public static long? NextSalesInvoicesId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextSalesInvoicesIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [sale].[NextSalesInvoicesId]()").SingleAsync();
-
-        [DbFunction("NextSalesOrderLineItemsId", "sale")]
-        public static long? NextSalesOrderLineItemsId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextSalesOrderLineItemsIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [sale].[NextSalesOrderLineItemsId]()").SingleAsync();
-
-        [DbFunction("NextSalesOrdersId", "sale")]
-        public static long? NextSalesOrdersId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextSalesOrdersIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [sale].[NextSalesOrdersId]()").SingleAsync();
-
         [DbFunction("NextTrucksId", "account")]
         public static long? NextTrucksId()
         {
@@ -214,33 +109,6 @@ namespace GrainManagement.Models
 
         public async Task<long?> NextTrucksIdAsync()
             => await Database.SqlQueryRaw<long?>("select Value = [account].[NextTrucksId]()").SingleAsync();
-
-        [DbFunction("NextWeightSheetId", "purchase")]
-        public static long? NextWeightSheetId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextWeightSheetIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [purchase].[NextWeightSheetId]()").SingleAsync();
-
-        [DbFunction("NextWeightSheetLoadLotAllocationsId", "purchase")]
-        public static long? NextWeightSheetLoadLotAllocationsId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextWeightSheetLoadLotAllocationsIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [purchase].[NextWeightSheetLoadLotAllocationsId]()").SingleAsync();
-
-        [DbFunction("NextWeightSheetLoadsId", "purchase")]
-        public static long? NextWeightSheetLoadsId()
-        {
-            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
-        }
-
-        public async Task<long?> NextWeightSheetLoadsIdAsync()
-            => await Database.SqlQueryRaw<long?>("select Value = [purchase].[NextWeightSheetLoadsId]()").SingleAsync();
 
         [DbFunction("ServerID", "system")]
         public static int? ServerID()

@@ -20,4 +20,22 @@ public partial class Server
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual ICollection<ChemicalLot> ChemicalLots { get; set; } = new List<ChemicalLot>();
+
+    public virtual ICollection<Container> Containers { get; set; } = new List<Container>();
+
+    public virtual ICollection<InventoryEvent> InventoryEvents { get; set; } = new List<InventoryEvent>();
+
+    public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
+
+    public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+
+    public virtual ICollection<LabResult> LabResults { get; set; } = new List<LabResult>();
+
+    public virtual ICollection<LotLab> LotLabs { get; set; } = new List<LotLab>();
+
+    public virtual ICollection<LotPriceOverride> LotPriceOverrides { get; set; } = new List<LotPriceOverride>();
+
+    public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
 }

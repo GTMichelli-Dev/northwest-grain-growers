@@ -39,10 +39,6 @@ public partial class ReceivedInventoryItem
 
     public virtual Location Location { get; set; }
 
-    public virtual Lot Lot { get; set; }
-
-    public virtual PurchaseOrderLineItem PurchaseOrderLineItem { get; set; }
-
     public virtual ICollection<ReceivedGrade> ReceivedGrades { get; set; } = new List<ReceivedGrade>();
 
     public virtual ICollection<ReceivedInventoryPurchaseOrderLineItem> ReceivedInventoryPurchaseOrderLineItems { get; set; } = new List<ReceivedInventoryPurchaseOrderLineItem>();

@@ -18,4 +18,6 @@ public partial class ContainerType
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual ICollection<Container> Containers { get; set; } = new List<Container>();
 }

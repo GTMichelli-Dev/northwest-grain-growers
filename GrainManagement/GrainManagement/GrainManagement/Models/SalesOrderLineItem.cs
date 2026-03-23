@@ -7,29 +7,9 @@ namespace GrainManagement.Models;
 
 public partial class SalesOrderLineItem
 {
-    public long Id { get; set; }
-
-    public Guid RowGuid { get; set; }
+    public long SalesOrderLineItemId { get; set; }
 
     public long SalesOrderId { get; set; }
 
-    public long? ItemId { get; set; }
-
-    public int? ProductId { get; set; }
-
-    public decimal QtyLb { get; set; }
-
-    public decimal? QuotedUnitPrice { get; set; }
-
-    public decimal? BlendPercent { get; set; }
-
-    public string Notes { get; set; }
-
     public DateTime CreatedAt { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
-
-    public virtual ICollection<SalesInvoiceLineItem> SalesInvoiceLineItems { get; set; } = new List<SalesInvoiceLineItem>();
-
-    public virtual SalesOrder SalesOrder { get; set; }
 }

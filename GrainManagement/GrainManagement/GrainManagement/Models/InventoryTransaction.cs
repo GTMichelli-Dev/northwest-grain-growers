@@ -7,81 +7,21 @@ namespace GrainManagement.Models;
 
 public partial class InventoryTransaction
 {
-    public Guid Id { get; set; }
+    public long TransactionId { get; set; }
 
-    public long LotId { get; set; }
-
-    public int ProductId { get; set; }
-
-    public long? ItemId { get; set; }
-
-    public string TxnType { get; set; }
-
-    public short Direction { get; set; }
-
-    public int UomId { get; set; }
-
-    public int? StartScaleId { get; set; }
-
-    public string StartScaleDescription { get; set; }
-
-    public decimal? StartQty { get; set; }
-
-    public int? EndScaleId { get; set; }
-
-    public string EndScaleDescription { get; set; }
-
-    public decimal? EndQty { get; set; }
-
-    public decimal? DirectQty { get; set; }
-
-    public decimal? NetQty { get; set; }
-
-    public DateTime? StartedAt { get; set; }
-
-    public DateTime? CompletedAt { get; set; }
-
-    public int? DurationMinutes { get; set; }
+    public long BaseId { get; set; }
 
     public int LocationId { get; set; }
 
-    public long? FromContainerId { get; set; }
-
-    public long? ToContainerId { get; set; }
-
-    public long? AccountId { get; set; }
-
-    public int? SplitGroupId { get; set; }
-
-    public string RefType { get; set; }
-
-    public Guid? RefId { get; set; }
-
-    public DateTime TxnAt { get; set; }
+    public int ServerId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
+    public virtual ChemicalTransaction ChemicalTransaction { get; set; }
 
-    public int? CreatedByUserId { get; set; }
-
-    public string Notes { get; set; }
-
-    public bool IsVoided { get; set; }
-
-    public string VoidReason { get; set; }
-
-    public virtual Item Item { get; set; }
+    public virtual InventoryTransactionDetail InventoryTransactionDetail { get; set; }
 
     public virtual Location Location { get; set; }
 
-    public virtual Lot Lot { get; set; }
-
-    public virtual Product Product { get; set; }
-
-    public virtual ICollection<TransactionAttribute> TransactionAttributes { get; set; } = new List<TransactionAttribute>();
-
-    public virtual UnitOfMeasure Uom { get; set; }
-
-    public virtual ICollection<WeightSheetLoad> WeightSheetLoads { get; set; } = new List<WeightSheetLoad>();
+    public virtual Server Server { get; set; }
 }

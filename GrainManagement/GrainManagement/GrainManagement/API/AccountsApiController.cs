@@ -87,8 +87,8 @@ public class AccountsApiController : ControllerBase
                     .Select(p => new
                     {
                         p.Id,
-                        p.AccountId,
-                        AccountName = p.Account.EntityName,
+                        p.Account.As400AccountId,
+                        AccountName = p.Account.LookupName,
                         p.SplitPercent
                     }).ToList()
             })

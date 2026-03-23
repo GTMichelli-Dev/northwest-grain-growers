@@ -1,55 +1,24 @@
 (function () {
     "use strict";
 
-    const LOCATION_STORAGE_KEY = 'gm_location_id';
     const BTN_WIDTH = 175;
 
-    // Returns the integer locationId from the current URL's ?locationId= param, or null.
-    function getQueryLocationId() {
-        const params = new URLSearchParams(window.location.search);
-        const v = parseInt(params.get('locationId') || '0', 10);
-        return v || null;
+    function formatId(id) {
+        var s = String(id);
+        if (s.length < 7) return s;
+        return s.substring(0, 3) + "-" + s.substring(3, 6) + "-" + s.substring(6);
     }
 
-    // Initialise the location SelectBox in the pagehead.
-    // On change: persist to localStorage and reload the page with ?locationId=X.
-    async function initLocationPicker() {
-        const currentId = getQueryLocationId();
-
-        let locations = [];
-        try {
-            locations = await $.getJSON('/api/locations/WarehouseLocationsList');
-        } catch (ex) {
-            console.warn('[WarehouseDashboard] Location prefetch failed', ex);
-        }
-
-        $('#wdLocation').dxSelectBox({
-            dataSource:   locations,
-            valueExpr:    'LocationId',
-            displayExpr:  function (item) { return item ? item.Name + ' \u2013 ' + item.LocationId : ''; },
-            searchEnabled: true,
-            placeholder:  'Select location\u2026',
-            width:        'auto',
-            value:        currentId,
-            onValueChanged: function (e) {
-                const newId = e.value || null;
-                if (newId) {
-                    localStorage.setItem(LOCATION_STORAGE_KEY, String(newId));
-                    window.location.href = '/Warehouse?locationId=' + newId;
-                } else {
-                    localStorage.removeItem(LOCATION_STORAGE_KEY);
-                    window.location.href = '/Warehouse';
-                }
-            }
-        });
+    function getLocationId() {
+        var el = document.getElementById("gmWdContent");
+        return el ? parseInt(el.dataset.locationId, 10) || 0 : 0;
     }
 
     function initActionButtons() {
         var $actions = $("#wdActions");
 
         var buttons = [
-            { text: "New Load",         icon: "add",     href: "/Warehouse/LoadType" },
-            { text: "New Weight Sheet", icon: "doc",     href: "/Warehouse/WeightSheet" },
+            { text: "New Weight Sheet", icon: "doc",     href: "/Warehouse/LoadType" },
             { text: "End Of Day",       icon: "check",   href: "/Warehouse/EndOfDay" },
             { text: "Lots",             icon: "folder",  href: "/GrowerDelivery/WeightSheetLots" }
         ];
@@ -68,8 +37,126 @@
         });
     }
 
+    function initOpenWeightSheetsGrid(locationId) {
+        $("#wdOpenWsGrid").dxDataGrid({
+            dataSource: {
+                store: {
+                    type: "array",
+                    key: "WeightSheetId",
+                    data: []
+                }
+            },
+            showBorders: true,
+            showRowLines: true,
+            columnAutoWidth: true,
+            wordWrapEnabled: true,
+            noDataText: "No open weight sheets",
+            paging: { enabled: false },
+            sorting: { mode: "single" },
+            columns: [
+                {
+                    dataField: "WeightSheetId",
+                    caption: "WS #",
+                    alignment: "center",
+                    sortOrder: "desc",
+                    calculateCellValue: function (row) {
+                        return formatId(row.WeightSheetId);
+                    }
+                },
+                {
+                    dataField: "WeightSheetType",
+                    caption: "Type",
+                    width: 80
+                },
+                {
+                    dataField: "ItemDescription",
+                    caption: "Item"
+                },
+                {
+                    dataField: "SplitGroupDescription",
+                    caption: "Split Group"
+                },
+                {
+                    dataField: "AccountName",
+                    caption: "Account"
+                },
+                {
+                    dataField: "LotDescription",
+                    caption: "Lot",
+                    visible: false
+                },
+                {
+                    dataField: "LoadCount",
+                    caption: "Loads",
+                    width: 60,
+                    alignment: "center"
+                },
+                {
+                    dataField: "HaulerName",
+                    caption: "Hauler",
+                    calculateCellValue: function (row) {
+                        return row.HaulerName || "Grower";
+                    }
+                },
+                {
+                    dataField: "CustomRateDescription",
+                    caption: "Rate Type",
+                    calculateCellValue: function (row) {
+                        return row.CustomRateDescription || row.RateType || "";
+                    }
+                },
+                {
+                    dataField: "CreationDate",
+                    caption: "Created",
+                    width: 95,
+                    alignment: "center"
+                }
+            ],
+            onRowClick: function (e) {
+                if (e.rowType === "data") {
+                    window.location.href = "/GrowerDelivery/WeightSheetDeliveryLoads?wsId=" + e.data.WeightSheetId;
+                }
+            },
+            onRowPrepared: function (e) {
+                if (e.rowType === "data") {
+                    e.rowElement.css("cursor", "pointer");
+
+                    var type = (e.data.WeightSheetType || "").toLowerCase();
+                    var isAlt = e.rowIndex % 2 === 1;
+
+                    if (type === "delivery") {
+                        e.rowElement.addClass("gm-ws-row--delivery");
+                        if (isAlt) e.rowElement.addClass("gm-ws-row--alt");
+                    } else if (type === "transfer") {
+                        e.rowElement.addClass("gm-ws-row--transfer");
+                        if (isAlt) e.rowElement.addClass("gm-ws-row--alt");
+                    }
+                }
+            }
+        });
+
+        if (locationId > 0) {
+            loadOpenWeightSheets(locationId);
+        }
+    }
+
+    function loadOpenWeightSheets(locationId) {
+        $.getJSON("/api/GrowerDelivery/OpenWeightSheets?locationId=" + locationId)
+            .done(function (data) {
+                var grid = $("#wdOpenWsGrid").dxDataGrid("instance");
+                if (grid) {
+                    grid.option("dataSource", data);
+                }
+            })
+            .fail(function () {
+                console.error("Failed to load open weight sheets");
+            });
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
-        initLocationPicker();
         initActionButtons();
+
+        var locationId = getLocationId();
+        initOpenWeightSheetsGrid(locationId);
     });
 })();

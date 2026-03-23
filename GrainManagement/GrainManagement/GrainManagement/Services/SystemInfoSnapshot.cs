@@ -11,6 +11,7 @@ public sealed class SystemInfoSnapshot
     public string ApplicationName { get; }
     public string Version { get; }
     public string BuildDate { get; }
+    public int? ServerId { get; private set; }
     public string? ServerFriendlyName { get; private set; }
 
     private readonly IServiceProvider _sp;
@@ -45,6 +46,7 @@ public sealed class SystemInfoSnapshot
             using var scope = _sp.CreateScope();
             var provider = scope.ServiceProvider.GetRequiredService<IServerInfoProvider>();
             var server = await provider.GetAsync(ct);
+            ServerId = server.ServerId;
             ServerFriendlyName = server.FriendlyName;
         }
         catch
@@ -59,6 +61,9 @@ public sealed class SystemInfoSnapshot
 
     public string ToDisplayString()
     {
-        return $"{ApplicationName} · v{Version} · {BuildDate} · {ServerFriendlyName ?? "Loading..."}";
+        var serverLabel = ServerId.HasValue
+            ? $"{ServerFriendlyName} (SID:{ServerId})"
+            : "Loading...";
+        return $"{ApplicationName} · v{Version} · {BuildDate} · {serverLabel}";
     }
 }

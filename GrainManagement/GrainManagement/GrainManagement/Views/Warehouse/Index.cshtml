@@ -1,22 +1,9 @@
+@inject GrainManagement.Services.ILocationContext LocationContext
 @{
     ViewData["Title"] = "Warehouse Dashboard";
-
-    // Resolve selected location from query string
-    int? selectedLocationId = int.TryParse(Context.Request.Query["locationId"], out var lid) ? lid : (int?)null;
 }
 
 <link rel="stylesheet" href="~/css/pages/warehouse.dashboard.dx.css" asp-append-version="true" />
-
-<!-- Early redirect: if localStorage has a saved location but the URL doesn't, navigate immediately -->
-<script>
-    (function () {
-        var params = new URLSearchParams(window.location.search);
-        if (!params.has('locationId')) {
-            var saved = parseInt(localStorage.getItem('gm_location_id') || '0', 10);
-            if (saved) { window.location.replace('/Warehouse?locationId=' + saved); }
-        }
-    }());
-</script>
 
 <div class="gm-module-bar gm-module-bar--warehouse">
     <span class="gm-module-bar__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
@@ -28,11 +15,17 @@
 </div>
 
 <!-- Shown when no location is selected -->
-<div id="gmWdNoLocation" class="gm-wd-nolocation" @(selectedLocationId.HasValue ? "hidden" : "")>
+<div id="gmWdNoLocation" class="gm-wd-nolocation" @(LocationContext.HasLocation ? "hidden" : "")>
     <span class="gm-icon gm-icon--warehouse" aria-hidden="true"></span>
     <p>Select a location above to view the warehouse dashboard.</p>
 </div>
 
-
+<!-- Dashboard content: open weight sheets grid -->
+<div id="gmWdContent" class="gm-wd-content" data-location-id="@(LocationContext.HasLocation ? LocationContext.LocationId : 0)" @(LocationContext.HasLocation ? "" : "hidden")>
+    <div class="gm-wd-panel">
+        <div class="gm-wd-panel__title">Open Weight Sheets</div>
+        <div id="wdOpenWsGrid"></div>
+    </div>
+</div>
 
 <script src="~/js/pages/warehouse.dashboard.dx.js" asp-append-version="true"></script>

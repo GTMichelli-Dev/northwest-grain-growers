@@ -19,6 +19,8 @@ public partial class SplitGroup
 
     public bool UseForReceive { get; set; }
 
+    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetails { get; set; } = new List<InventoryTransactionDetail>();
+
     public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
 
     public virtual Account PrimaryAccount { get; set; }

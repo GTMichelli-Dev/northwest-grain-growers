@@ -7,9 +7,7 @@ namespace GrainManagement.Models;
 
 public partial class ContainerLotLayer
 {
-    public long Id { get; set; }
-
-    public Guid RowGuid { get; set; }
+    public Guid ContainerLotLayerUid { get; set; }
 
     public long ContainerId { get; set; }
 
@@ -30,4 +28,10 @@ public partial class ContainerLotLayer
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual Container Container { get; set; }
+
+    public virtual Lot Lot { get; set; }
+
+    public virtual InventoryMovement SourceInventoryMovement { get; set; }
 }

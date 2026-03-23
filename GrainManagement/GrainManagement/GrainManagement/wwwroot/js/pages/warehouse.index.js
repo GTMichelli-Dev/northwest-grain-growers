@@ -2,7 +2,6 @@
     "use strict";
     let activeMode = null;
 
-    const cookieLocation = "GM.SelectedWarehouseLocationId";
     const cookieMode = "GM.WarehouseMode";
 
     const ids = {
@@ -29,16 +28,8 @@ const modeScripts = {
 };
 
     
-    function getCookie(name) {
-        const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
-        return m ? decodeURIComponent(m[2]) : null;
-    }
-
-    function setCookie(name, value, days) {
-        const d = new Date();
-        d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
-        document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
-    }
+    function getCookie(name) { return GM.getCookie(name); }
+    function setCookie(name, value, days) { GM.setCookie(name, value, days); }
 
 
     function show(id, yes) {
@@ -53,7 +44,7 @@ const modeScripts = {
     }
 
     function hasLocation() {
-        return !!getCookie(cookieLocation);
+        return !!GM.getLocationId();
     }
 
     async function loadPartial(mode) {

@@ -1,0 +1,30 @@
+@{
+    ViewData["Title"] = "Fuel Surcharge";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/admin.hauling.css" asp-append-version="true" />
+}
+
+<a href="@Url.Action("Hauling", "Admin")" class="gm-module-bar gm-module-bar--admin gm-module-bar--link" title="Back to Hauling">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--hauling" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">FUEL SURCHARGE</span>
+</a>
+
+<div id="fsAlert" hidden role="alert"></div>
+
+<div class="gm-haul-card gm-haulers-card--half">
+    <div class="gm-haul-toolbar">
+        <label>District:</label>
+        <div id="fsDistrictFilter" style="width:220px"></div>
+        <label style="margin-left:16px">Bulk Value:</label>
+        <div id="fsBulkValue" style="width:130px"></div>
+        <div id="fsBulkApply"></div>
+    </div>
+    <div id="fuelSurchargeGrid"></div>
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/admin.fuelsurcharge.js" asp-append-version="true"></script>
+}

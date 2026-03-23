@@ -1,0 +1,217 @@
+@{
+    ViewData["Title"] = "Weight Sheet Details";
+}
+
+<link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
+
+<a href="/Warehouse" class="gm-module-bar gm-module-bar--warehouse gm-module-bar--link" title="Back to Warehouse">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">WEIGHT SHEET DETAILS</span>
+</a>
+
+<div class="gm-pagehead gm-pagehead--sticky">
+</div>
+
+<div class="gm-gd">
+
+    <div id="dlAlert" class="alert" role="alert" hidden></div>
+
+    <!-- ── Weight sheet details header ────────────────────────────────────── -->
+    <div id="dlWsHeader" class="gm-dl-header" hidden>
+        <div class="gm-dl-header__title">
+            <span class="gm-dl-header__label">Weight Sheet</span>
+            <span class="gm-dl-header__wsid" id="dlWsIdFormatted"></span>
+        </div>
+        <!-- Row 1 — Lot # & Crop -->
+        <div class="gm-dl-header__details">
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Lot #</span>
+                <span class="gm-dl-header__detail-value" id="dlWsLotNumber">—</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm gm-dl-header__edit-btn" id="dlEditLotBtn" title="Reassign Lot">
+                    <i class="dx-icon dx-icon-edit"></i>
+                </button>
+                <a id="dlEditLotLink" href="#" class="btn btn-outline-info btn-sm gm-dl-header__edit-btn" title="Edit Lot Properties" hidden>
+                    <i class="dx-icon dx-icon-preferences"></i>
+                </a>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Crop</span>
+                <span class="gm-dl-header__detail-value" id="dlWsCrop">—</span>
+            </div>
+        </div>
+        <!-- Row 2 — Account & Split -->
+        <div class="gm-dl-header__details" style="margin-top:8px;">
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Primary Account</span>
+                <span class="gm-dl-header__detail-value" id="dlWsAccount">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Split</span>
+                <span class="gm-dl-header__detail-value" id="dlWsSplit">—</span>
+            </div>
+        </div>
+        <!-- Row 2 — Hauler & Rate Type -->
+        <div class="gm-dl-header__details" style="margin-top:8px;">
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Hauler</span>
+                <span class="gm-dl-header__detail-value" id="dlWsHauler">—</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm gm-dl-header__edit-btn" id="dlEditHaulerBtn" title="Edit Hauler">
+                    <i class="dx-icon dx-icon-edit"></i>
+                </button>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Rate Type</span>
+                <span class="gm-dl-header__detail-value" id="dlWsRateType">—</span>
+            </div>
+        </div>
+        <!-- Row 4 — Comment (editable, full width) -->
+        <div style="margin-top:10px;">
+            <span class="gm-dl-header__detail-label">Comment</span>
+            <div class="d-flex align-items-start gap-2 mt-1">
+                <textarea class="form-control form-control-sm" id="dlWsComment" rows="2"
+                          placeholder="Add a comment…"
+                          style="font-size:0.85rem;resize:vertical;"></textarea>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="dlSaveCommentBtn"
+                        title="Save Comment" style="display:none;white-space:nowrap;">
+                    <i class="dx-icon dx-icon-save"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Loads grid ──────────────────────────────────────────────────────── -->
+    <div id="dlListPanel" hidden>
+        <div class="gm-gd-section">
+
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="gm-gd-section__title" style="margin-bottom:0">Weight Sheet Loads</div>
+                <div>
+                    <a class="btn btn-primary btn-sm" id="dlNewLoadBtn" href="/GrowerDelivery/Index">
+                        <i class="dx-icon dx-icon-add"></i> New Load
+                    </a>
+                </div>
+            </div>
+
+            <div id="dlLoadsGrid"></div>
+
+        </div>
+    </div>
+
+    <!-- ── Attribute edit popup ────────────────────────────────────────────── -->
+    <div class="modal fade" id="dlAttrModal" tabindex="-1" aria-labelledby="dlAttrModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dlAttrModalLabel">Edit Quality</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="dlAttrTxnId" />
+
+                    <div class="mb-3">
+                        <label class="form-label" id="dlAttr1Label">Attribute 1</label>
+                        <input type="number" class="form-control" id="dlAttr1Value"
+                               min="0.01" step="0.01" placeholder="0.00" inputmode="decimal" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" id="dlAttr2Label">Attribute 2</label>
+                        <input type="number" class="form-control" id="dlAttr2Value"
+                               min="0.01" step="0.01" placeholder="0.00" inputmode="decimal" />
+                    </div>
+
+                    <div id="dlAttrError" class="text-danger small" hidden></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="dlAttrSaveBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Edit Hauler popup ───────────────────────────────────────────────── -->
+    <div class="modal fade" id="dlHaulerModal" tabindex="-1" aria-labelledby="dlHaulerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dlHaulerModalLabel">Edit Hauler</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Hauler</label>
+                        <div id="dlHaulerSelect"></div>
+                    </div>
+                    <div id="dlHaulerError" class="text-danger small" hidden></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="dlHaulerSaveBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Reassign Lot popup ──────────────────────────────────────────────── -->
+    <div class="modal fade" id="dlLotModal" tabindex="-1" aria-labelledby="dlLotModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dlLotModalLabel">Reassign Lot</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning mb-3" style="font-size:0.875rem;">
+                        <i class="dx-icon dx-icon-warning" style="margin-right:4px;"></i>
+                        <strong>Warning:</strong> Changing the lot will affect <strong>all loads</strong> on this weight sheet.
+                    </div>
+
+                    <!-- Current lot info bar -->
+                    <div class="d-flex align-items-center justify-content-between mb-3 p-2 bg-light rounded" id="dlLotCurrentBar">
+                        <div style="font-size:0.85rem;">
+                            <span class="text-muted">Current lot:</span>
+                            <strong id="dlLotCurrentLotNum">—</strong>
+                            <span class="text-muted ms-2" id="dlLotCurrentCrop"></span>
+                            <span class="text-muted ms-2" id="dlLotCurrentSplit"></span>
+                            <span class="text-muted ms-2" id="dlLotCurrentAccount"></span>
+                        </div>
+                    </div>
+
+                    <!-- Available lots label + New Lot button -->
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="fw-semibold" style="font-size:0.9rem;">Available Lots</div>
+                        <a class="btn btn-outline-primary btn-sm" id="dlNewLotBtn"
+                           href="/GrowerDelivery/WeightSheetLots">
+                            <i class="dx-icon dx-icon-add"></i> New Lot
+                        </a>
+                    </div>
+
+                    <div id="dlLotGrid"></div>
+
+                    <div class="mt-3 d-flex align-items-end gap-3">
+                        <div>
+                            <label class="form-label mb-1">PIN <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="dlLotPin"
+                                   inputmode="numeric" maxlength="10" placeholder="Enter PIN"
+                                   autocomplete="off" data-lpignore="true" data-1p-ignore="true"
+                                   data-form-type="other"
+                                   style="max-width:160px; -webkit-text-security:disc;" />
+                        </div>
+                        <div id="dlLotError" class="text-danger small" hidden></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="dlLotSaveBtn" disabled>Reassign Lot</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/grower.deliveryloads.js" asp-append-version="true"></script>
+}

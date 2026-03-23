@@ -7,7 +7,7 @@ namespace GrainManagement.Models;
 
 public partial class LotTrait
 {
-    public long LotTraitId { get; set; }
+    public Guid LotTraitUid { get; set; }
 
     public long LotId { get; set; }
 

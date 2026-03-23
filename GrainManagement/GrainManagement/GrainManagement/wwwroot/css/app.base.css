@@ -215,6 +215,11 @@ body {
     mask-image: url('/assets/icons/us-map.svg');
 }
 
+.gm-icon--hauling::before {
+    -webkit-mask-image: url('/assets/icons/ship-truck.svg');
+    mask-image: url('/assets/icons/ship-truck.svg');
+}
+
 /* Make the tiles easier to hit on touchscreens */
 .gm-tile {
     padding: 22px 20px 18px 20px;
@@ -232,8 +237,8 @@ body {
 }
 
 .gm-tile--link:hover {
-    border-color: var(--brand-primary, #2f5d3a);
-    box-shadow: 0 0 12px rgba(47,93,58,.35);
+    border-color: var(--tile-accent, var(--brand-primary, #2f5d3a));
+    box-shadow: 0 0 12px var(--tile-accent-glow, rgba(47,93,58,.35));
     color: inherit;
     text-decoration: none;
 }
@@ -593,9 +598,55 @@ a.gm-module-bar--link:hover {
 }
 
 /* Tile module accents */
-.gm-tile--warehouse { border-left: 6px solid #d4a017; }
-.gm-tile--seed      { border-left: 6px solid #2e7d32; }
-.gm-tile--admin     { border-left: 6px solid #1565c0; }
-.gm-tile--system    { border-left: 6px solid #757575; }
-.gm-tile--reports   { border-left: 6px solid #5e548e; }
-.gm-tile--remote    { border-left: 6px solid #00838f; }
+.gm-tile--warehouse { border-left: 6px solid #d4a017; --tile-accent: #d4a017; --tile-accent-glow: rgba(212,160,23,.35); }
+.gm-tile--seed      { border-left: 6px solid #2e7d32; --tile-accent: #2e7d32; --tile-accent-glow: rgba(46,125,50,.35); }
+.gm-tile--admin     { border-left: 6px solid #1565c0; --tile-accent: #1565c0; --tile-accent-glow: rgba(21,101,192,.35); }
+.gm-tile--system    { border-left: 6px solid #757575; --tile-accent: #757575; --tile-accent-glow: rgba(117,117,117,.35); }
+.gm-tile--reports   { border-left: 6px solid #5e548e; --tile-accent: #5e548e; --tile-accent-glow: rgba(94,84,142,.35); }
+.gm-tile--remote    { border-left: 6px solid #00838f; --tile-accent: #00838f; --tile-accent-glow: rgba(0,131,143,.35); }
+
+/* ── PIN Popup Overlay ─────────────────────────────────── */
+.gm-pin-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.gm-pin-dialog {
+    background: #fff;
+    border-radius: var(--radius, 12px);
+    box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    padding: 28px 32px 24px;
+    min-width: 320px;
+    max-width: 400px;
+    text-align: center;
+}
+
+.gm-pin-dialog h5 {
+    margin: 0 0 16px;
+    font-weight: 700;
+}
+
+.gm-pin-dialog .form-control {
+    text-align: center;
+    font-size: 1.4rem;
+    letter-spacing: .3em;
+    margin-bottom: 16px;
+}
+
+.gm-pin-dialog .gm-pin-error {
+    color: #dc3545;
+    font-size: .85rem;
+    margin-bottom: 12px;
+    min-height: 1.2em;
+}
+
+.gm-pin-dialog .gm-pin-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}

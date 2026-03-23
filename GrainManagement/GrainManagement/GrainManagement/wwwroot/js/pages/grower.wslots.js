@@ -1,6 +1,15 @@
 (function () {
     'use strict';
 
+    // ── Helpers ─────────────────────────────────────────────────────────────
+
+    // Formats a numeric LotId like 604063000001 as "604-063-000001"
+    function formatLotId(id) {
+        var s = String(id);
+        if (s.length < 7) return s;
+        return s.substring(0, 3) + '-' + s.substring(3, 6) + '-' + s.substring(6);
+    }
+
     // ── Selectors ────────────────────────────────────────────────────────────
 
     const SEL = {
@@ -29,8 +38,6 @@
         sgError:         '#wslSgError',
     };
 
-    const LOCATION_STORAGE_KEY = 'gm_location_id';
-
     // ── State ────────────────────────────────────────────────────────────────
 
     let currentLocationId   = null;
@@ -51,13 +58,35 @@
     // Edit mode — when non-null, the form is in edit mode for this lot
     let _editingLotId   = null;
     let _editingFullEdit = false;
+    let _editingOriginal = null; // snapshot of original values for dirty-check
 
     // Suppress cascading resets while populating edit form
     let _populating = false;
 
+    // Deep-link params (from WeightSheetDeliveryLoads "Edit Lot Properties" / "New Lot" links)
+    let _deepLinkEditLotId = null;
+    let _deepLinkReturnTo  = null;
+    let _deepLinkWsId      = null;
+    let _deepLinkCreateNew = false;
+
     // ── Init ─────────────────────────────────────────────────────────────────
 
     $(function () {
+        // Parse deep-link query params
+        var urlParams = new URLSearchParams(window.location.search);
+        _deepLinkEditLotId = parseInt(urlParams.get('editLotId'), 10) || null;
+        _deepLinkReturnTo  = urlParams.get('returnTo') || null;
+        _deepLinkWsId      = parseInt(urlParams.get('wsId'), 10) || null;
+        _deepLinkCreateNew = urlParams.get('createNew') === 'true';
+
+        // Redirect banner back to weight sheet if coming from delivery loads
+        if (_deepLinkReturnTo === 'deliveryLoads' && _deepLinkWsId) {
+            var wsUrl = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _deepLinkWsId;
+            var $bar = $('.gm-module-bar');
+            $bar.attr('href', wsUrl).attr('title', 'Back to Weight Sheet');
+            $bar.find('.gm-module-bar__label').text('BACK TO WEIGHT SHEET');
+        }
+
         initLocation();
         initLotsGrid();
         initItemPicker();
@@ -213,7 +242,7 @@
     function initLotsGrid() {
         $(SEL.lotsGrid).dxDataGrid({
             dataSource: [],
-            keyExpr: 'Id',
+            keyExpr: 'LotId',
             showBorders: true,
             showRowLines: true,
             rowAlternationEnabled: true,
@@ -249,11 +278,16 @@
                     },
                 },
                 {
-                    dataField: 'Id',
+                    dataField: 'LotId',
                     caption: 'Lot ID',
-                    width: 100,
                     sortOrder: 'desc',
                     sortIndex: 0,
+                    customizeText: function (cellInfo) { return formatLotId(cellInfo.value); },
+                },
+                {
+                    dataField: 'As400Id',
+                    caption: 'Agvantage Id',
+                    width: 110,
                 },
                 {
                     dataField: 'SplitGroupId',
@@ -267,10 +301,18 @@
                 {
                     dataField: 'ItemDescription',
                     caption: 'Item',
+                    calculateCellValue: function (rowData) {
+                        if (!rowData.ItemDescription) return '';
+                        return rowData.ItemDescription + (rowData.ItemId ? ' (' + rowData.ItemId + ')' : '');
+                    },
                 },
                 {
                     dataField: 'AccountName',
                     caption: 'Primary',
+                    calculateCellValue: function (rowData) {
+                        if (!rowData.AccountName) return '';
+                        return rowData.AccountName + (rowData.AccountAs400Id ? ' (' + rowData.AccountAs400Id + ')' : '');
+                    },
                 },
                 {
                     dataField: 'Landlord',
@@ -323,7 +365,7 @@
                             .addClass('btn btn-sm ' + (isOpen ? 'btn-outline-danger' : 'btn-outline-success'))
                             .text(isOpen ? 'Close' : 'Re-open')
                             .on('click', function () {
-                                toggleLot(lot.Id, isOpen ? 'close' : 'open');
+                                toggleLot(lot.LotId, isOpen ? 'close' : 'open');
                             })
                             .appendTo($wrap);
 
@@ -358,11 +400,38 @@
         grid.endCustomLoading();
 
         applyGridFilters();
+
+        // Deep-link: auto-open lot in edit mode if editLotId was in the URL
+        if (_deepLinkEditLotId) {
+            var targetLot = findLotById(_deepLinkEditLotId);
+            if (targetLot) {
+                var isOpen     = targetLot.IsOpen;
+                var hasClosedWs = targetLot.HasClosedWeightSheets;
+                var createdToday = targetLot.CreatedAt && targetLot.CreatedAt.substring(0, 10) === new Date().toISOString().substring(0, 10);
+                var canFullEdit = (isOpen && !hasClosedWs) || createdToday;
+                enterEditMode(targetLot, canFullEdit);
+            }
+            _deepLinkEditLotId = null; // only auto-open once
+        }
+
+        // Deep-link: auto-open create form if createNew=true was in the URL
+        if (_deepLinkCreateNew) {
+            _editingLotId    = null;
+            _editingFullEdit = false;
+            $(SEL.panelTitle).text('New Weight Sheet Lot');
+            $(SEL.saveBtn).text('Create Lot');
+            $(SEL.landlord).prop('disabled', false);
+            $(SEL.listPanel).prop('hidden', true);
+            $(SEL.createPanel).prop('hidden', false);
+            $('.gm-gd').removeClass('gm-gd--wide');
+            await resetCreateForm();
+            _deepLinkCreateNew = false; // only auto-open once
+        }
     }
 
     function findLotById(id) {
         for (var i = 0; i < _lotsCache.length; i++) {
-            if (_lotsCache[i].Id === id) return _lotsCache[i];
+            if (_lotsCache[i].LotId === id) return _lotsCache[i];
         }
         return null;
     }
@@ -370,8 +439,16 @@
     // ── Edit mode (reuses the create panel) ──────────────────────────────────
 
     async function enterEditMode(lot, fullEdit) {
-        _editingLotId    = lot.Id;
+        _editingLotId    = lot.LotId;
         _editingFullEdit = fullEdit;
+        _editingOriginal = {
+            Notes:          lot.Notes || null,
+            LotDescription: lot.LotDescription || null,
+            ItemId:         lot.ItemId || null,
+            State:          lot.State || null,
+            County:         lot.County || null,
+            Landlord:       lot.Landlord || null,
+        };
 
         // Show the create panel, hide the list
         $(SEL.listPanel).prop('hidden', true);
@@ -379,7 +456,7 @@
         $('.gm-gd').removeClass('gm-gd--wide');
 
         // Update title and button text
-        $(SEL.panelTitle).text('Edit Lot ' + lot.Id);
+        $(SEL.panelTitle).text('Edit Lot ' + formatLotId(lot.LotId));
         $(SEL.saveBtn).text('Save');
 
         // Clear error
@@ -549,6 +626,7 @@
     function exitEditMode() {
         _editingLotId    = null;
         _editingFullEdit = false;
+        _editingOriginal = null;
 
         // Restore panel title and button text
         $(SEL.panelTitle).text('New Weight Sheet Lot');
@@ -907,6 +985,11 @@
         });
 
         $(SEL.cancelCreateBtn).on('click', function () {
+            // If deep-linked from delivery loads, redirect back to weight sheet
+            if (_deepLinkReturnTo === 'deliveryLoads' && _deepLinkWsId) {
+                window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _deepLinkWsId;
+                return;
+            }
             exitEditMode();
         });
 
@@ -1021,6 +1104,49 @@
                 return;
             }
 
+            var result = await resp.json();
+            console.log('[wslots] Lot created:', result, 'returnTo:', _deepLinkReturnTo, 'wsId:', _deepLinkWsId);
+
+            // If creating from delivery loads, prompt for PIN and reassign the lot to the weight sheet
+            if (_deepLinkReturnTo === 'deliveryLoads' && _deepLinkWsId && result.LotId) {
+                console.log('[wslots] Prompting for PIN to assign lot', result.LotId, 'to WS', _deepLinkWsId);
+                var pin = await promptForPin();
+                console.log('[wslots] PIN result:', pin);
+                if (pin === null) {
+                    // User cancelled PIN — lot was created but not assigned, go back to weight sheet
+                    window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _deepLinkWsId;
+                    return;
+                }
+                // Reassign lot to weight sheet
+                btn.text('Assigning\u2026');
+                try {
+                    console.log('[wslots] PATCHing WS', _deepLinkWsId, 'with LotId:', result.LotId, 'Pin:', pin);
+                    var patchBody = JSON.stringify({ LotId: result.LotId, Pin: pin });
+                    console.log('[wslots] PATCH body:', patchBody);
+                    var patchResp = await fetch('/api/GrowerDelivery/WeightSheet/' + _deepLinkWsId, {
+                        method:  'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    patchBody,
+                    });
+                    console.log('[wslots] PATCH response status:', patchResp.status);
+                    var patchRespBody = await patchResp.clone().text();
+                    console.log('[wslots] PATCH response body:', patchRespBody);
+                    if (!patchResp.ok) {
+                        var patchDetail = await tryParseError(patchResp);
+                        console.error('[wslots] PATCH failed:', patchDetail);
+                        $(SEL.createError).text('Lot created but reassign failed: ' + patchDetail).prop('hidden', false);
+                        return;
+                    }
+                } catch (patchEx) {
+                    console.error('[wslots] PATCH exception:', patchEx);
+                    $(SEL.createError).text('Lot created but reassign failed: ' + patchEx.message).prop('hidden', false);
+                    return;
+                }
+                console.log('[wslots] PATCH succeeded, redirecting to delivery loads');
+                window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _deepLinkWsId;
+                return;
+            }
+
             exitEditMode();
             refreshLots();
             showAlert('Weight sheet lot created.', 'success');
@@ -1048,6 +1174,36 @@
             body.Landlord = ($(SEL.landlord).val() || '').trim() || null;
         }
 
+        // Check if anything actually changed — if not, just return to the list
+        if (_editingOriginal) {
+            var orig = _editingOriginal;
+            var dirty = (body.Notes || null) !== (orig.Notes || null);
+            if (_editingFullEdit && !dirty) {
+                dirty = (body.LotDescription || null) !== (orig.LotDescription || null)
+                     || (body.ItemId || null) !== (orig.ItemId || null)
+                     || (body.State || null) !== (orig.State || null)
+                     || (body.County || null) !== (orig.County || null)
+                     || (body.Landlord || null) !== (orig.Landlord || null);
+            }
+            if (!dirty) {
+                exitEditMode();
+                showAlert('No changes detected.', 'info');
+                return;
+            }
+        }
+
+        // Show PIN popup and wait for user input
+        var pin = await promptForPin();
+        if (pin === null) {
+            // If deep-linked from delivery loads, redirect back to weight sheet
+            if (_deepLinkReturnTo === 'deliveryLoads' && _deepLinkWsId) {
+                window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _deepLinkWsId;
+            }
+            return;
+        }
+
+        body.Pin = pin;
+
         var btn = $(SEL.saveBtn);
         btn.prop('disabled', true).text('Saving\u2026');
         $(SEL.createError).prop('hidden', true);
@@ -1065,6 +1221,11 @@
                 return;
             }
 
+            // If deep-linked from delivery loads, redirect back to weight sheet
+            if (_deepLinkReturnTo === 'deliveryLoads' && _deepLinkWsId) {
+                window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _deepLinkWsId;
+                return;
+            }
             exitEditMode();
             showAlert('Lot updated.', 'success');
             await refreshLots();
@@ -1073,6 +1234,56 @@
         } finally {
             btn.prop('disabled', false).text('Save');
         }
+    }
+
+    // ── PIN prompt popup ────────────────────────────────────────────────────
+
+    function promptForPin() {
+        return new Promise(function (resolve) {
+            var $overlay = $('<div class="gm-pin-overlay"></div>');
+            var $dialog  = $(
+                '<div class="gm-pin-dialog">' +
+                    '<h5>Enter Your PIN</h5>' +
+                    '<p class="text-muted small mb-2">A valid user PIN is required to save changes.</p>' +
+                    '<input type="text" class="form-control gm-pin-input" placeholder="PIN" inputmode="numeric" autocomplete="off" autofocus style="-webkit-text-security:disc" />' +
+                    '<div class="gm-pin-error text-danger small mt-1" hidden></div>' +
+                    '<div class="d-flex gap-2 mt-3">' +
+                        '<button type="button" class="btn btn-primary gm-pin-confirm flex-fill">Confirm</button>' +
+                        '<button type="button" class="btn btn-outline-secondary gm-pin-cancel flex-fill">Cancel</button>' +
+                    '</div>' +
+                '</div>'
+            );
+
+            $overlay.append($dialog);
+            $('body').append($overlay);
+
+            var $input   = $dialog.find('.gm-pin-input');
+            var $error   = $dialog.find('.gm-pin-error');
+
+            function close(val) {
+                $overlay.remove();
+                resolve(val);
+            }
+
+            $dialog.find('.gm-pin-cancel').on('click', function () { close(null); });
+
+            $dialog.find('.gm-pin-confirm').on('click', function () {
+                var val = parseInt($input.val(), 10);
+                if (!val || val <= 0) {
+                    $error.text('Please enter a valid numeric PIN.').prop('hidden', false);
+                    $input.focus();
+                    return;
+                }
+                close(val);
+            });
+
+            $input.on('keydown', function (e) {
+                if (e.key === 'Enter') $dialog.find('.gm-pin-confirm').click();
+                if (e.key === 'Escape') close(null);
+            });
+
+            setTimeout(function () { $input.focus(); }, 100);
+        });
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

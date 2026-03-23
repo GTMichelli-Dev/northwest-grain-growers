@@ -7,9 +7,13 @@ namespace GrainManagement.Models;
 
 public partial class LotLab
 {
-    public long Id { get; set; }
+    public long LotLabId { get; set; }
 
-    public Guid RowGuid { get; set; }
+    public int BaseId { get; set; }
+
+    public int LocationId { get; set; }
+
+    public int ServerId { get; set; }
 
     public long LotId { get; set; }
 
@@ -20,4 +24,10 @@ public partial class LotLab
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual Location Location { get; set; }
+
+    public virtual Lot Lot { get; set; }
+
+    public virtual Server Server { get; set; }
 }

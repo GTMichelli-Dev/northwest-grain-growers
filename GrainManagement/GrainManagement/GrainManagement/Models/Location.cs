@@ -17,6 +17,8 @@ public partial class Location
 
     public bool IsActive { get; set; }
 
+    public decimal FuelSurcharge { get; set; }
+
     public bool UseForSeed { get; set; }
 
     public bool UseForWarehouse { get; set; }
@@ -25,15 +27,27 @@ public partial class Location
 
     public virtual ICollection<ChemicalLot> ChemicalLots { get; set; } = new List<ChemicalLot>();
 
+    public virtual ICollection<Container> Containers { get; set; } = new List<Container>();
+
     public virtual ICollection<CustomerPriceOverride> CustomerPriceOverrides { get; set; } = new List<CustomerPriceOverride>();
 
     public virtual LocationDistrict District { get; set; }
 
+    public virtual ICollection<InventoryEvent> InventoryEvents { get; set; } = new List<InventoryEvent>();
+
+    public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
+
     public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+
+    public virtual ICollection<LabResult> LabResults { get; set; } = new List<LabResult>();
 
     public virtual ICollection<LocationCounty> LocationCounties { get; set; } = new List<LocationCounty>();
 
     public virtual ICollection<LocationItemFilter> LocationItemFilters { get; set; } = new List<LocationItemFilter>();
+
+    public virtual ICollection<LotLab> LotLabs { get; set; } = new List<LotLab>();
+
+    public virtual ICollection<LotPriceOverride> LotPriceOverrides { get; set; } = new List<LotPriceOverride>();
 
     public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
 
@@ -49,5 +63,5 @@ public partial class Location
 
     public virtual ICollection<SalesOrder> SalesOrders { get; set; } = new List<SalesOrder>();
 
-    public virtual ICollection<WeightSheet> WeightSheets { get; set; } = new List<WeightSheet>();
+    public virtual ICollection<StorageLocation> StorageLocations { get; set; } = new List<StorageLocation>();
 }

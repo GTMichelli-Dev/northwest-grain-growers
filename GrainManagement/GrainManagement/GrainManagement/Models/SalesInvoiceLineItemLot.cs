@@ -20,8 +20,4 @@ public partial class SalesInvoiceLineItemLot
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
-
-    public virtual Lot Lot { get; set; }
-
-    public virtual SalesInvoiceLineItem SalesInvoiceLineItem { get; set; }
 }

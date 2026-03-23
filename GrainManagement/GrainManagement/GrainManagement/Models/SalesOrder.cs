@@ -7,11 +7,15 @@ namespace GrainManagement.Models;
 
 public partial class SalesOrder
 {
-    public long Id { get; set; }
+    public long SalesOrderId { get; set; }
 
-    public Guid RowGuid { get; set; }
+    public long As400Id { get; set; }
+
+    public int BaseId { get; set; }
 
     public int LocationId { get; set; }
+
+    public int ServerId { get; set; }
 
     public long? CustomerAccountId { get; set; }
 
@@ -28,8 +32,4 @@ public partial class SalesOrder
     public virtual Account CustomerAccount { get; set; }
 
     public virtual Location Location { get; set; }
-
-    public virtual ICollection<SalesInvoice> SalesInvoices { get; set; } = new List<SalesInvoice>();
-
-    public virtual ICollection<SalesOrderLineItem> SalesOrderLineItems { get; set; } = new List<SalesOrderLineItem>();
 }

@@ -31,13 +31,15 @@ public partial class Product
 
     public virtual Category Category { get; set; }
 
-    public virtual ICollection<ChemicalLot> ChemicalLots { get; set; } = new List<ChemicalLot>();
-
     public virtual ICollection<CustomerPriceOverride> CustomerPriceOverrides { get; set; } = new List<CustomerPriceOverride>();
 
-    public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+    public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
+
+    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetails { get; set; } = new List<InventoryTransactionDetail>();
 
     public virtual ICollection<Item> Items { get; set; } = new List<Item>();
+
+    public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
 
     public virtual ICollection<PriceListLine> PriceListLines { get; set; } = new List<PriceListLine>();
 
@@ -50,4 +52,6 @@ public partial class Product
     public virtual ICollection<ProductRequiredTraitType> ProductRequiredTraitTypes { get; set; } = new List<ProductRequiredTraitType>();
 
     public virtual ICollection<ProductTrait> ProductTraits { get; set; } = new List<ProductTrait>();
+
+    public virtual ICollection<PurchaseOrderLineItemDetail> PurchaseOrderLineItemDetails { get; set; } = new List<PurchaseOrderLineItemDetail>();
 }

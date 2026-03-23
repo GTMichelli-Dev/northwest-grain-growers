@@ -20,4 +20,8 @@ public partial class StorageLocation
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual ICollection<Container> Containers { get; set; } = new List<Container>();
+
+    public virtual Location Location { get; set; }
 }

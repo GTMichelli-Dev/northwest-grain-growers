@@ -1,0 +1,27 @@
+@{
+    ViewData["Title"] = "Hauler Rates";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/admin.hauling.css" asp-append-version="true" />
+}
+
+<a href="@Url.Action("Hauling", "Admin")" class="gm-module-bar gm-module-bar--admin gm-module-bar--link" title="Back to Hauling">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--hauling" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">HAULER RATES</span>
+</a>
+
+<div id="hrAlert" hidden role="alert"></div>
+
+<div class="gm-haul-card gm-haulers-card--half">
+    <div class="gm-haul-toolbar">
+        <label>Rate Type:</label>
+        <div id="hrRateTypeFilter" style="width:240px"></div>
+    </div>
+    <div id="haulerRatesGrid"></div>
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/admin.haulerrates.js" asp-append-version="true"></script>
+}

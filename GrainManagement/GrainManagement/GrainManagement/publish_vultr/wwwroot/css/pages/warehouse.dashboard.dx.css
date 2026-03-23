@@ -1,164 +1,110 @@
-﻿/* =========================================================
-   Warehouse Dashboard (document flow)
-   - Page grows as grids need space (NO fixed viewport height)
-   - Accordion animates height + subtle opacity/transform
-   ========================================================= */
-
-.gm-wd {
-    /* IMPORTANT: do NOT set height: calc(100vh - ...) */
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px 12px 16px;
-}
-
-/* Section container */
-.gm-wdSec {
-    display: flex;
-    flex-direction: column;
-    border-radius: 14px;
-    border: 1px solid rgba(0,0,0,.14);
-    background: #fff;
-    overflow: hidden;
-    min-height: 56px;
-}
-
-/* No flex-grow dashboard sizing in document-flow mode */
-.gm-wdSec--open {
-    flex: 0 0 auto;
-}
-
-.gm-wdSec--closed {
-    flex: 0 0 auto;
-}
-
-/* Header button */
-.gm-wdHdr {
-    width: 100%;
-    border: 0;
-    background: #fff;
-    padding: 10px 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    transition: background-color 160ms ease;
-}
-
-    .gm-wdHdr:active {
-        background: rgba(0,0,0,.03);
-    }
-
-.gm-wdHdr__left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-}
-
-.gm-wdHdr__title {
-    font-weight: 900;
-    font-size: 1.05rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.gm-wdHdr__count {
-    font-weight: 900;
-    font-size: .95rem;
-    padding: 2px 8px;
-    border-radius: 999px;
-    border: 1px solid rgba(0,0,0,.14);
-    background: rgba(0,0,0,.04);
-}
-
-.gm-wdHdr__dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 999px;
-    background: rgba(0,0,0,.18);
-}
-
-.gm-wdHdr__chev {
-    font-size: 1.2rem;
-    transform: rotate(0deg);
-    transition: transform .12s ease;
-}
-
-.gm-wdSec--closed .gm-wdHdr__chev {
-    transform: rotate(-90deg);
-}
-
 /* =========================================================
-   Animated accordion body
-   - JS sets height: 0px on close and animates to scrollHeight on open
+   Warehouse Dashboard
    ========================================================= */
-.gm-wdSec__body {
-    border-top: 1px solid rgba(0,0,0,.10);
-    overflow: hidden;
-    height: auto; /* JS temporarily sets explicit px height during animation */
-
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    transition: height 220ms ease, opacity 180ms ease, transform 220ms ease;
-}
-
-.gm-wdSec--closed .gm-wdSec__body {
-    opacity: 0;
-    transform: translateY(-4px) scale(.995);
-}
-
-/* IMPORTANT: grid should be auto-height so the page can grow */
-.gm-wdGrid {
-    height: auto;
-    min-height: 0;
-    padding: 8px;
-}
-
-/* semantic section dots */
-.gm-wdHdr--intake .gm-wdHdr__dot {
-    background: rgba(0, 140, 255, .55);
-}
-
-.gm-wdHdr--transfer .gm-wdHdr__dot {
-    background: rgba(22, 163, 74, .55);
-}
-
-.gm-wdHdr--outbound .gm-wdHdr__dot {
-    background: rgba(255, 150, 0, .65);
-}
-
-.gm-wdHdr--yard .gm-wdHdr__dot {
-    background: rgba(0,0,0,.35);
-}
-
-/* row striping by type (left indicator) */
-.gm-row-intake td {
-    border-left: 6px solid rgba(0, 140, 255, .40);
-}
-
-.gm-row-transfer-in td {
-    border-left: 6px solid rgba(22, 163, 74, .40);
-}
-
-.gm-row-transfer-out td {
-    border-left: 6px solid rgba(147, 51, 234, .40);
-}
-
-.gm-row-outbound td {
-    border-left: 6px solid rgba(255, 150, 0, .45);
-}
-
-.gm-row-yard td {
-    border-left: 6px solid rgba(0,0,0,.18);
-}
-
 
 .gm-wdActions {
     display: flex;
     gap: 8px;
     align-items: center;
     padding: 0 2px 4px;
+    flex-wrap: wrap;
+}
+
+/* =========================================================
+   Title group with inline location picker
+   ========================================================= */
+
+.gm-wdTitleGroup {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3em;
+    flex-wrap: nowrap;
+}
+
+.gm-wdTitlePrefix {
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    white-space: nowrap;
+}
+
+/* Location SelectBox — styled to match pagehead heading */
+.gm-wd-location-pick {
+    min-width: 140px;
+}
+
+.gm-wd-location-pick .dx-texteditor {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.45) !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+.gm-wd-location-pick .dx-texteditor.dx-state-focused,
+.gm-wd-location-pick .dx-texteditor.dx-state-hover {
+    border-bottom-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.gm-wd-location-pick .dx-texteditor-input {
+    font-size: 1.15rem !important;
+    font-weight: 900 !important;
+    color: inherit !important;
+    background: transparent !important;
+    padding: 0 1.6em 0 0 !important;
+    min-height: unset !important;
+    height: 1.4em !important;
+    line-height: 1.4 !important;
+}
+
+.gm-wd-location-pick .dx-dropdowneditor-icon,
+.gm-wd-location-pick .dx-dropdowneditor-button {
+    color: inherit !important;
+}
+
+.gm-wd-location-pick .dx-placeholder::before {
+    font-size: 1.15rem !important;
+    font-weight: 900 !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* =========================================================
+   "No location selected" empty-state prompt
+   ========================================================= */
+
+.gm-wd-nolocation {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 60px 20px;
+    color: rgba(0, 0, 0, 0.35);
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.gm-wd-nolocation .gm-icon {
+    font-size: 2.5rem;
+    opacity: 0.25;
+}
+
+/* =========================================================
+   Dashboard content panels
+   ========================================================= */
+
+.gm-wd-content {
+    padding: 16px;
+}
+
+.gm-wd-panel {
+    max-width: 900px;
+}
+
+.gm-wd-panel__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #333;
 }

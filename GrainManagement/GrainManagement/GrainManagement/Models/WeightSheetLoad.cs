@@ -12,8 +12,4 @@ public partial class WeightSheetLoad
     public Guid InventoryTransactionId { get; set; }
 
     public Guid WeightSheetUid { get; set; }
-
-    public virtual InventoryTransaction InventoryTransaction { get; set; }
-
-    public virtual WeightSheet WeightSheetU { get; set; }
 }

@@ -37,10 +37,7 @@
       return undefined;
     }
 
-    function getCookie(name) {
-      const m = document.cookie.match(new RegExp("(^| )" + name.replace(".", "\\.") + "=([^;]+)"));
-      return m ? decodeURIComponent(m[2]) : "";
-    }
+    function getCookie(name) { return GM.getCookie(name) || ""; }
 
     function toNumber(v) {
       const n = Number(v);

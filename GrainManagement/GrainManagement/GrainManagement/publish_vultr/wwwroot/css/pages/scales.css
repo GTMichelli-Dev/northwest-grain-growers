@@ -27,10 +27,18 @@
 /* Force pink background on table rows with errors */
 tr.scale-error > td {
     background-color: #ffc0cb !important;
-    color: #900;
+    color: #000;
     font-weight: bold;
     border-top: 1px solid #e28aa0;
     border-bottom: 1px solid #e28aa0;
+}
+
+/* Light yellow background for scales in motion */
+tr.scale-motion > td {
+    background-color: #fff9c4 !important;
+    color: #000;
+    border-top: 1px solid #e6d95e;
+    border-bottom: 1px solid #e6d95e;
 }
 
 #scalesBody tr > td {

@@ -21,7 +21,5 @@ public partial class ReceivedInventoryPurchaseOrderLineItem
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual PurchaseOrderLineItem PurchaseOrderLineItem { get; set; }
-
     public virtual ReceivedInventoryItem ReceivedInventoryItem { get; set; }
 }

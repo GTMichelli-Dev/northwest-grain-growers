@@ -1,0 +1,62 @@
+/* =========================================================
+   States & Counties Admin Page – GrainManagement
+   Block namespace: .gm-sc
+   ========================================================= */
+
+.gm-sc-card {
+    background: #fff;
+    border-radius: var(--radius, 12px);
+    box-shadow: var(--shadow-sm, 0 6px 12px rgba(0,0,0,.06));
+    padding: 20px 20px 24px;
+    margin: 0 auto 20px;
+    max-width: 880px;
+}
+
+.gm-sc-card__title {
+    font-weight: 900;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted, #6c757d);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gm-sc-state-label {
+    text-transform: none;
+    font-weight: 700;
+    color: var(--text, #202124);
+}
+
+.gm-sc-count {
+    font-weight: 400;
+    font-size: 0.78rem;
+    color: var(--muted, #6c757d);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.gm-sc-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+/* Alert */
+#scAlert {
+    border-radius: var(--radius, 12px);
+    margin: 0 auto 16px;
+    max-width: 880px;
+}
+
+#scAlert.alert-success { background: rgba(46,125,50,.12); color: #1b5e20; border-color: rgba(46,125,50,.3); }
+#scAlert.alert-danger  { background: rgba(198,40,40,.10); color: #b71c1c; border-color: rgba(198,40,40,.3); }
+
+/* Grid link styling */
+#scStatesGrid .dx-link,
+#scCountiesGrid .dx-link {
+    text-decoration: none;
+}

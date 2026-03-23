@@ -1,26 +1,10 @@
 ﻿(function () {
     "use strict";
 
-    const cookieLocation = "GM.SelectedWarehouseLocationId";
     const selectId = "gmLocationSelect";
     const noLocationId = "gmNoLocationSet";
 
     const endpoint = "/api/locations/WarehouseLocationsList";
-
-    function setCookie(name, value, days) {
-        const d = new Date();
-        d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
-        document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
-    }
-
-    function getCookie(name) {
-        const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
-        return m ? decodeURIComponent(m[2]) : null;
-    }
-
-    function clearCookie(name) {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
-    }
 
     function showNoLocation(show) {
         const el = document.getElementById(noLocationId);
@@ -78,7 +62,7 @@
             console.error(e);
             selectEl.innerHTML = `<option value="">Error loading locations</option>`;
             selectEl.disabled = true;
-            clearCookie(cookieLocation);
+            GM.setLocationId(null);
             showNoLocation(true);
             document.body.classList.add("gm-js-ready");
             return;
@@ -87,16 +71,16 @@
         if (!locations.length) {
             selectEl.innerHTML = `<option value="">No warehouse locations</option>`;
             selectEl.disabled = true;
-            clearCookie(cookieLocation);
+            GM.setLocationId(null);
             showNoLocation(true);
             document.body.classList.add("gm-js-ready");
             return;
         }
 
-        const saved = getCookie(cookieLocation);
+        const saved = GM.getLocationId();
         const exists = saved && locations.some(l => String(l.id) === String(saved));
 
-        if (!exists) clearCookie(cookieLocation);
+        if (!exists) GM.setLocationId(null);
 
         render(selectEl, locations, !!exists);
 
@@ -111,7 +95,7 @@
             const val = selectEl.value;
             if (!val) return;
 
-            setCookie(cookieLocation, val, 365);
+            GM.setLocationId(val);
             selectEl.classList.remove("gm-loc-select--required");
             showNoLocation(false);
 

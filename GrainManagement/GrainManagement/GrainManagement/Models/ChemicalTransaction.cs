@@ -7,7 +7,7 @@ namespace GrainManagement.Models;
 
 public partial class ChemicalTransaction
 {
-    public long ChemicalTxnId { get; set; }
+    public long TransactionId { get; set; }
 
     public long ChemicalLotId { get; set; }
 
@@ -28,6 +28,8 @@ public partial class ChemicalTransaction
     public DateTime CreatedAt { get; set; }
 
     public virtual ChemicalLot ChemicalLot { get; set; }
+
+    public virtual InventoryTransaction Transaction { get; set; }
 
     public virtual UnitOfMeasure Uom { get; set; }
 }

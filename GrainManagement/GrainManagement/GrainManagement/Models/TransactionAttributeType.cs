@@ -23,7 +23,5 @@ public partial class TransactionAttributeType
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual ICollection<TransactionAttribute> TransactionAttributes { get; set; } = new List<TransactionAttribute>();
-
     public virtual UnitOfMeasure Uom { get; set; }
 }

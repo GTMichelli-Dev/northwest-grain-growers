@@ -9,7 +9,11 @@ public partial class AuditTrail
 {
     public long AuditId { get; set; }
 
-    public DateTime AuditTime { get; set; }
+    public long BaseId { get; set; }
+
+    public int LocationId { get; set; }
+
+    public int ServerId { get; set; }
 
     public string UserName { get; set; }
 
@@ -24,6 +28,4 @@ public partial class AuditTrail
     public string NewJson { get; set; }
 
     public DateTime CreatedAt { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
 }

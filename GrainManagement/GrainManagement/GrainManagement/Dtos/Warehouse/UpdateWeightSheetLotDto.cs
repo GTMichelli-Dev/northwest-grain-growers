@@ -8,4 +8,5 @@ public sealed class UpdateWeightSheetLotDto
     public string State          { get; set; }
     public string County         { get; set; }
     public string Landlord       { get; set; }
+    public int?   Pin            { get; set; }
 }

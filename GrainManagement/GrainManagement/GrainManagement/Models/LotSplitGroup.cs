@@ -17,5 +17,7 @@ public partial class LotSplitGroup
 
     public bool PrimaryAccount { get; set; }
 
+    public virtual Account Account { get; set; }
+
     public virtual Lot Lot { get; set; }
 }

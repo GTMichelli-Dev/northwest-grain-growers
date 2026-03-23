@@ -26,6 +26,8 @@
         .then(function (current) {
             if (current.HasLocation) {
                 dropdown.value = current.LocationId;
+                // Sync to global cookie so all pages can read it
+                if (window.GM && GM.setLocationId) GM.setLocationId(current.LocationId);
             }
         })
         .catch(function (err) {
@@ -45,6 +47,8 @@
         .then(function (r) { return r.json(); })
         .then(function (result) {
             if (result.HasLocation) {
+                // Sync to global cookie before reload
+                if (window.GM && GM.setLocationId) GM.setLocationId(locId);
                 // Reload page to reflect new location capabilities
                 window.location.reload();
             }

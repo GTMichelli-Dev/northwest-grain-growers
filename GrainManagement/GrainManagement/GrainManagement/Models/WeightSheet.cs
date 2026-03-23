@@ -7,13 +7,17 @@ namespace GrainManagement.Models;
 
 public partial class WeightSheet
 {
-    public Guid WeightSheetUid { get; set; }
+    public long WeightSheetId { get; set; }
+
+    public long As400Id { get; set; }
+
+    public int BaseId { get; set; }
 
     public int LocationId { get; set; }
 
-    public long WeightSheetId { get; set; }
+    public int ServerId { get; set; }
 
-    public string SheetType { get; set; }
+    public string WeightSheetType { get; set; }
 
     public DateOnly CreationDate { get; set; }
 
@@ -21,13 +25,15 @@ public partial class WeightSheet
 
     public DateTime? ClosedAt { get; set; }
 
-    public string Status { get; set; }
+    public int? HaulerId { get; set; }
 
-    public string VoidReason { get; set; }
+    public decimal? Miles { get; set; }
 
-    public long? CarrierAccountId { get; set; }
+    public string CustomRateDescription { get; set; }
 
-    public long? TruckId { get; set; }
+    public string RateType { get; set; }
+
+    public decimal? Rate { get; set; }
 
     public long? LotId { get; set; }
 
@@ -35,13 +41,9 @@ public partial class WeightSheet
 
     public DateTime? UpdatedAt { get; set; }
 
-    public virtual Account CarrierAccount { get; set; }
+    public Guid RowUid { get; set; }
+
+    public virtual Hauler Hauler { get; set; }
 
     public virtual Location Location { get; set; }
-
-    public virtual Lot Lot { get; set; }
-
-    public virtual Truck Truck { get; set; }
-
-    public virtual ICollection<WeightSheetLoad> WeightSheetLoads { get; set; } = new List<WeightSheetLoad>();
 }

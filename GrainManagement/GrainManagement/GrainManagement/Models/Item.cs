@@ -25,13 +25,19 @@ public partial class Item
 
     public virtual ICollection<CustomerPriceOverride> CustomerPriceOverrides { get; set; } = new List<CustomerPriceOverride>();
 
-    public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+    public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
+
+    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetails { get; set; } = new List<InventoryTransactionDetail>();
 
     public virtual ICollection<ItemTrait> ItemTraits { get; set; } = new List<ItemTrait>();
 
     public virtual ICollection<LocationItemFilter> LocationItemFilters { get; set; } = new List<LocationItemFilter>();
 
+    public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
+
     public virtual ICollection<PriceListLine> PriceListLines { get; set; } = new List<PriceListLine>();
 
     public virtual Product Product { get; set; }
+
+    public virtual ICollection<PurchaseOrderLineItemDetail> PurchaseOrderLineItemDetails { get; set; } = new List<PurchaseOrderLineItemDetail>();
 }

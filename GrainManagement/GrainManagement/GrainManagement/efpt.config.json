@@ -27,6 +27,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[account].[Haulers]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[account].[SplitGroupPercents]",
          "ObjectType": 0
       },
@@ -72,6 +76,10 @@
       },
       {
          "Name": "[Inventory].[InventoryMovements]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[Inventory].[InventoryTransactionDetails]",
          "ObjectType": 0
       },
       {
@@ -179,6 +187,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[purchase].[PurchaseOrderLineItemDetails]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[purchase].[PurchaseOrderLineItems]",
          "ObjectType": 0
       },
@@ -195,23 +207,15 @@
          "ObjectType": 0
       },
       {
-         "Name": "[purchase].[WeightSheetLoadLotAllocations]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[purchase].[WeightSheetLoads]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[purchase].[WeightSheets]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[sale].[CustomerPriceOverrides]",
          "ObjectType": 0
       },
       {
          "Name": "[sale].[Payments]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[sale].[SalesInvoiceLineItemDetails]",
          "ObjectType": 0
       },
       {
@@ -224,6 +228,10 @@
       },
       {
          "Name": "[sale].[SalesInvoices]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[sale].[SalesOrderLineItemDetails]",
          "ObjectType": 0
       },
       {
@@ -295,6 +303,26 @@
          "ObjectType": 0
       },
       {
+         "Name": "[warehouse].[RateSurcharge]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[warehouse].[WeightSheetHaulerRates]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[warehouse].[WeightSheetLoadLotAllocations]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[warehouse].[WeightSheetLoads]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[warehouse].[WeightSheets]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[account].[SplitGroupsLookup]",
          "ObjectType": 3
       },
@@ -355,10 +383,6 @@
          "ObjectType": 2
       },
       {
-         "Name": "[container].[NextContainersId]",
-         "ObjectType": 2
-      },
-      {
          "Name": "[Inventory].[fn_HasPrimaryAccount]",
          "ObjectType": 2
       },
@@ -367,19 +391,7 @@
          "ObjectType": 2
       },
       {
-         "Name": "[Inventory].[NextInventoryEventsId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[Inventory].[NextInventoryMovementsId]",
-         "ObjectType": 2
-      },
-      {
          "Name": "[Inventory].[NextLabResultsId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[Inventory].[NextLotId]",
          "ObjectType": 2
       },
       {
@@ -387,55 +399,7 @@
          "ObjectType": 2
       },
       {
-         "Name": "[purchase].[NextPurchaseOrderLineItemsId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[purchase].[NextPurchaseOrdersId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[purchase].[NextReceivedInventoryItemsId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[purchase].[NextReceivedInventoryPurchaseOrderLineItemsId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[purchase].[NextWeightSheetId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[purchase].[NextWeightSheetLoadLotAllocationsId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[purchase].[NextWeightSheetLoadsId]",
-         "ObjectType": 2
-      },
-      {
          "Name": "[sale].[NextPaymentsId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[sale].[NextSalesInvoiceLineItemLotsId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[sale].[NextSalesInvoiceLineItemsId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[sale].[NextSalesInvoicesId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[sale].[NextSalesOrderLineItemsId]",
-         "ObjectType": 2
-      },
-      {
-         "Name": "[sale].[NextSalesOrdersId]",
          "ObjectType": 2
       },
       {
@@ -448,6 +412,14 @@
       },
       {
          "Name": "[system].[DistributedIdSeed]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[system].[fn_BuildAs400Id]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[system].[fn_BuildSmartId]",
          "ObjectType": 2
       },
       {

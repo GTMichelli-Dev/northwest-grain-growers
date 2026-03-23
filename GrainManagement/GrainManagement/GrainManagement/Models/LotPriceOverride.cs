@@ -9,6 +9,12 @@ public partial class LotPriceOverride
 {
     public long LotPriceOverrideId { get; set; }
 
+    public int BaseId { get; set; }
+
+    public int LocationId { get; set; }
+
+    public int ServerId { get; set; }
+
     public long LotId { get; set; }
 
     public int PriceTypeId { get; set; }
@@ -33,7 +39,11 @@ public partial class LotPriceOverride
 
     public virtual Account Account { get; set; }
 
+    public virtual Location Location { get; set; }
+
     public virtual Lot Lot { get; set; }
 
     public virtual PriceType PriceType { get; set; }
+
+    public virtual Server Server { get; set; }
 }

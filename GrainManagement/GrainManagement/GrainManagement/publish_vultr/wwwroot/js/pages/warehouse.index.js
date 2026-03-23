@@ -15,7 +15,8 @@
     intake: "/Warehouse/ModePartial?mode=intake",
     transfer: "/Warehouse/ModePartial?mode=transfer",
     outbound: "/Warehouse/ModePartial?mode=outbound",
-    kiosk: "/Warehouse/KioskCamera",
+      kiosk: "/Warehouse/KioskCamera",
+
     newtruck: "/Warehouse/ModePartial?mode=newtruck"
 };
 
@@ -27,7 +28,7 @@ const modeScripts = {
     newtruck: "/js/pages/warehouse.newtruck.js"
 };
 
-
+    
     function getCookie(name) {
         const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
         return m ? decodeURIComponent(m[2]) : null;
@@ -38,6 +39,7 @@ const modeScripts = {
         d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
         document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
     }
+
 
     function show(id, yes) {
         const el = document.getElementById(id);
@@ -180,8 +182,12 @@ const modeScripts = {
 
             initMode(btn.dataset.mode).catch(console.error);
         });
+
+       
     }
 
+
+    
 
     function bootDefault() {
         // If location not set, show location message only
@@ -212,5 +218,12 @@ const modeScripts = {
     document.addEventListener("DOMContentLoaded", () => {
         wireButtons();
         bootDefault();
+   const printBtn = document.getElementById("btnPrintTicket");
+    if (printBtn) {
+        printBtn.addEventListener("click", function () {
+            const ticket = this.dataset.ticket;
+            printTicket(this, ticket);
+        });
+    }
     });
 })();

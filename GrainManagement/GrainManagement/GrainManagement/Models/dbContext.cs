@@ -39,11 +39,15 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<CustomerPriceOverride> CustomerPriceOverrides { get; set; }
 
+    public virtual DbSet<Hauler> Haulers { get; set; }
+
     public virtual DbSet<InventoryEvent> InventoryEvents { get; set; }
 
     public virtual DbSet<InventoryMovement> InventoryMovements { get; set; }
 
     public virtual DbSet<InventoryTransaction> InventoryTransactions { get; set; }
+
+    public virtual DbSet<InventoryTransactionDetail> InventoryTransactionDetails { get; set; }
 
     public virtual DbSet<Item> Items { get; set; }
 
@@ -101,6 +105,10 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<PurchaseOrderLineItem> PurchaseOrderLineItems { get; set; }
 
+    public virtual DbSet<PurchaseOrderLineItemDetail> PurchaseOrderLineItemDetails { get; set; }
+
+    public virtual DbSet<RateSurcharge> RateSurcharges { get; set; }
+
     public virtual DbSet<ReceivedGrade> ReceivedGrades { get; set; }
 
     public virtual DbSet<ReceivedInventoryItem> ReceivedInventoryItems { get; set; }
@@ -111,11 +119,15 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<SalesInvoiceLineItem> SalesInvoiceLineItems { get; set; }
 
+    public virtual DbSet<SalesInvoiceLineItemDetail> SalesInvoiceLineItemDetails { get; set; }
+
     public virtual DbSet<SalesInvoiceLineItemLot> SalesInvoiceLineItemLots { get; set; }
 
     public virtual DbSet<SalesOrder> SalesOrders { get; set; }
 
     public virtual DbSet<SalesOrderLineItem> SalesOrderLineItems { get; set; }
+
+    public virtual DbSet<SalesOrderLineItemDetail> SalesOrderLineItemDetails { get; set; }
 
     public virtual DbSet<SeedTreatmentApplication> SeedTreatmentApplications { get; set; }
 
@@ -156,6 +168,8 @@ public partial class dbContext : DbContext
     public virtual DbSet<VwProductWarehouseVsMarket> VwProductWarehouseVsMarkets { get; set; }
 
     public virtual DbSet<WeightSheet> WeightSheets { get; set; }
+
+    public virtual DbSet<WeightSheetHaulerRate> WeightSheetHaulerRates { get; set; }
 
     public virtual DbSet<WeightSheetLoad> WeightSheetLoads { get; set; }
 
@@ -200,7 +214,7 @@ public partial class dbContext : DbContext
             entity.HasIndex(e => new { e.AccountId, e.ItemId, e.LocationId }, "IX_AccountItemFilters").IsUnique();
 
             entity.Property(e => e.Id)
-                .HasDefaultValueSql("(newid())")
+                .HasDefaultValueSql("(newsequentialid())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_AccountItemFilters_Id");
 
             entity.HasOne(d => d.Account).WithMany(p => p.AccountItemFilters)
@@ -232,19 +246,24 @@ public partial class dbContext : DbContext
         {
             entity.HasKey(e => e.AuditId);
 
-            entity.ToTable("AuditTrail", "system");
+            entity.ToTable("AuditTrail", "system", tb =>
+                {
+                    tb.HasTrigger("trg_AuditTrail_AutoGenerateIDs");
+                    tb.HasTrigger("trg_AuditTrail_PreventChanges");
+                });
 
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_AuditTrail_Srv_Loc_Base").IsUnique();
+
+            entity.Property(e => e.AuditId).ValueGeneratedNever();
             entity.Property(e => e.Action)
                 .IsRequired()
                 .HasMaxLength(10);
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_system_AuditTrail_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_AuditTrail_CreatedAt_Final");
             entity.Property(e => e.TableName)
                 .IsRequired()
                 .HasMaxLength(256);
-            entity.Property(e => e.UpdatedAt).HasPrecision(0);
             entity.Property(e => e.UserName)
                 .IsRequired()
                 .HasMaxLength(200);
@@ -282,53 +301,33 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<ChemicalLot>(entity =>
         {
-            entity.ToTable("ChemicalLots", "chem");
+            entity.ToTable("ChemicalLots", "chem", tb =>
+                {
+                    tb.HasTrigger("trg_ChemicalLots_AutoGenerateIDs");
+                    tb.HasTrigger("trg_ChemicalLots_LockCore");
+                });
 
-            entity.HasIndex(e => new { e.ProductId, e.LocationId, e.ExpirationDate }, "IX_ChemicalLots_Product_Location_Exp");
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_ChemicalLots_Srv_Loc_Base").IsUnique();
 
-            entity.HasIndex(e => e.RowGuid, "UX_ChemicalLots_RowGuid").IsUnique();
-
+            entity.Property(e => e.ChemicalLotId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_ChemicalLots_CreatedAt");
-            entity.Property(e => e.IsActive)
-                .HasDefaultValue(true)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ChemicalLots_IsActive");
-            entity.Property(e => e.QtyOnHand)
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ChemicalLots_QtyOnHand")
-                .HasColumnType("decimal(18, 6)");
-            entity.Property(e => e.ReceivedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ChemicalLots_ReceivedAt");
-            entity.Property(e => e.RowGuid)
-                .HasDefaultValueSql("(newsequentialid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ChemicalLots_RowGuid");
-            entity.Property(e => e.UpdatedAt).HasPrecision(0);
-            entity.Property(e => e.VendorLotNumber)
-                .IsRequired()
-                .HasMaxLength(50);
 
             entity.HasOne(d => d.Location).WithMany(p => p.ChemicalLots)
                 .HasForeignKey(d => d.LocationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ChemicalLots_Location");
+                .HasConstraintName("FK_ChemicalLots_Locations");
 
-            entity.HasOne(d => d.Product).WithMany(p => p.ChemicalLots)
-                .HasForeignKey(d => d.ProductId)
+            entity.HasOne(d => d.Server).WithMany(p => p.ChemicalLots)
+                .HasForeignKey(d => d.ServerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ChemicalLots_Product");
-
-            entity.HasOne(d => d.Uom).WithMany(p => p.ChemicalLots)
-                .HasForeignKey(d => d.UomId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ChemicalLots_Uom");
+                .HasConstraintName("FK_ChemicalLots_Servers");
         });
 
         modelBuilder.Entity<ChemicalTransaction>(entity =>
         {
-            entity.HasKey(e => e.ChemicalTxnId);
+            entity.HasKey(e => e.TransactionId);
 
             entity.ToTable("ChemicalTransactions", "chem");
 
@@ -336,10 +335,8 @@ public partial class dbContext : DbContext
 
             entity.HasIndex(e => new { e.RefTable, e.RefId }, "IX_ChemicalTx_Ref");
 
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_ChemicalTx_CreatedAt");
+            entity.Property(e => e.TransactionId).ValueGeneratedOnAdd();
+            entity.Property(e => e.CreatedAt).HasPrecision(0);
             entity.Property(e => e.Note).HasMaxLength(200);
             entity.Property(e => e.Qty).HasColumnType("decimal(18, 6)");
             entity.Property(e => e.RefTable).HasMaxLength(50);
@@ -354,7 +351,12 @@ public partial class dbContext : DbContext
             entity.HasOne(d => d.ChemicalLot).WithMany(p => p.ChemicalTransactions)
                 .HasForeignKey(d => d.ChemicalLotId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ChemicalTx_Lot");
+                .HasConstraintName("FK_ChemicalTransactions_ChemicalLots");
+
+            entity.HasOne(d => d.Transaction).WithOne(p => p.ChemicalTransaction)
+                .HasForeignKey<ChemicalTransaction>(d => d.TransactionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ChemicalTransactions_InventoryTransactions");
 
             entity.HasOne(d => d.Uom).WithMany(p => p.ChemicalTransactions)
                 .HasForeignKey(d => d.UomId)
@@ -364,25 +366,57 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<Container>(entity =>
         {
-            entity.ToTable("Containers", "container");
+            entity.ToTable("Containers", "container", tb =>
+                {
+                    tb.HasTrigger("trg_Containers_AutoGenerateIDs");
+                    tb.HasTrigger("trg_Containers_LockCore");
+                });
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_Containers_Srv_Loc_Base").IsUnique();
+
+            entity.Property(e => e.ContainerId).ValueGeneratedNever();
             entity.Property(e => e.CapacityLb).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_container_Containers_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Containers_CreatedAt_Final");
             entity.Property(e => e.Description)
                 .IsRequired()
                 .HasMaxLength(100);
+            entity.Property(e => e.Destroyed).HasAnnotation("Relational:DefaultConstraintName", "DF_Containers_Destroyed");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Containers_IsActive");
             entity.Property(e => e.Notes).HasMaxLength(1000);
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.ContainerType).WithMany(p => p.Containers)
+                .HasForeignKey(d => d.ContainerTypeId)
+                .HasConstraintName("FK_Containers_ContainerTypes");
+
+            entity.HasOne(d => d.Location).WithMany(p => p.Containers)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Containers_Locations");
+
+            entity.HasOne(d => d.Server).WithMany(p => p.Containers)
+                .HasForeignKey(d => d.ServerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Containers_Servers");
+
+            entity.HasOne(d => d.StorageLocation).WithMany(p => p.Containers)
+                .HasForeignKey(d => d.StorageLocationId)
+                .HasConstraintName("FK_Containers_StorageLocations");
         });
 
         modelBuilder.Entity<ContainerLotLayer>(entity =>
         {
+            entity.HasKey(e => e.ContainerLotLayerUid);
+
             entity.ToTable("ContainerLotLayers", "Inventory");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.ContainerLotLayerUid)
+                .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_ContainerLotLayers_ContainerLotLayerUid");
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
@@ -392,6 +426,20 @@ public partial class dbContext : DbContext
             entity.Property(e => e.QtyLbIn).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.QtyLbRemaining).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Container).WithMany(p => p.ContainerLotLayers)
+                .HasForeignKey(d => d.ContainerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ContainerLotLayers_Containers");
+
+            entity.HasOne(d => d.Lot).WithMany(p => p.ContainerLotLayers)
+                .HasForeignKey(d => d.LotId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ContainerLotLayers_Lots");
+
+            entity.HasOne(d => d.SourceInventoryMovement).WithMany(p => p.ContainerLotLayers)
+                .HasForeignKey(d => d.SourceInventoryMovementId)
+                .HasConstraintName("FK_ContainerLotLayers_InventoryMovements");
         });
 
         modelBuilder.Entity<ContainerType>(entity =>
@@ -476,47 +524,141 @@ public partial class dbContext : DbContext
                 .HasConstraintName("FK_CustomerPriceOverrides_Products");
         });
 
-        modelBuilder.Entity<InventoryEvent>(entity =>
+        modelBuilder.Entity<Hauler>(entity =>
         {
-            entity.ToTable("InventoryEvents", "Inventory");
+            entity.ToTable("Haulers", "account");
+
+            entity.HasIndex(e => e.Description, "IX_Haulers").IsUnique();
 
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<InventoryEvent>(entity =>
+        {
+            entity.ToTable("InventoryEvents", "Inventory", tb =>
+                {
+                    tb.HasTrigger("trg_InventoryEvents_AutoGenerateIDs");
+                    tb.HasTrigger("trg_InventoryEvents_LockCore");
+                });
+
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_InvEvents_Srv_Loc_Base").IsUnique();
+
+            entity.Property(e => e.InventoryEventId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Inventory_InventoryEvents_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_InvEvents_CreatedAt_Unique");
+            entity.Property(e => e.EventTime)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_InvEvents_EventTime");
             entity.Property(e => e.EventType)
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.Notes).HasMaxLength(1000);
             entity.Property(e => e.ReferenceUid).HasColumnName("ReferenceUID");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Location).WithMany(p => p.InventoryEvents)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryEvents_Locations");
+
+            entity.HasOne(d => d.Server).WithMany(p => p.InventoryEvents)
+                .HasForeignKey(d => d.ServerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryEvents_Servers");
         });
 
         modelBuilder.Entity<InventoryMovement>(entity =>
         {
-            entity.ToTable("InventoryMovements", "Inventory");
+            entity.ToTable("InventoryMovements", "Inventory", tb =>
+                {
+                    tb.HasTrigger("trg_InventoryMovements_AutoGenerateIDs");
+                    tb.HasTrigger("trg_InventoryMovements_LockCore");
+                });
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_InvMove_Srv_Loc_Base").IsUnique();
+
+            entity.Property(e => e.InventoryMovementId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Inventory_InventoryMovements_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_InvMove_CreatedAt_Final");
             entity.Property(e => e.Moisture).HasColumnType("decimal(6, 3)");
             entity.Property(e => e.Protein).HasColumnType("decimal(6, 3)");
             entity.Property(e => e.QtyLb).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Container).WithMany(p => p.InventoryMovements)
+                .HasForeignKey(d => d.ContainerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryMovements_Containers");
+
+            entity.HasOne(d => d.InventoryEvent).WithMany(p => p.InventoryMovements)
+                .HasForeignKey(d => d.InventoryEventId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryMovements_InventoryEvents");
+
+            entity.HasOne(d => d.Item).WithMany(p => p.InventoryMovements)
+                .HasForeignKey(d => d.ItemId)
+                .HasConstraintName("FK_InventoryMovements_Items");
+
+            entity.HasOne(d => d.Location).WithMany(p => p.InventoryMovements)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryMovements_Locations");
+
+            entity.HasOne(d => d.Lot).WithMany(p => p.InventoryMovements)
+                .HasForeignKey(d => d.LotId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryMovements_Lots");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.InventoryMovements)
+                .HasForeignKey(d => d.ProductId)
+                .HasConstraintName("FK_InventoryMovements_Products");
+
+            entity.HasOne(d => d.Server).WithMany(p => p.InventoryMovements)
+                .HasForeignKey(d => d.ServerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryMovements_Servers");
         });
 
         modelBuilder.Entity<InventoryTransaction>(entity =>
         {
-            entity.ToTable("InventoryTransactions", "Inventory");
+            entity.HasKey(e => e.TransactionId).HasName("PK_InventoryTransactions_Details");
+
+            entity.ToTable("InventoryTransactions", "Inventory", tb =>
+                {
+                    tb.HasTrigger("trg_InventoryTransactions_AutoGenerateIDs");
+                    tb.HasTrigger("trg_InventoryTransactions_LockCore");
+                });
+
+            entity.Property(e => e.TransactionId).ValueGeneratedNever();
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_InventoryTransactions_CreatedAt");
+
+            entity.HasOne(d => d.Location).WithMany(p => p.InventoryTransactions)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryTransactions_Locations");
+
+            entity.HasOne(d => d.Server).WithMany(p => p.InventoryTransactions)
+                .HasForeignKey(d => d.ServerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryTransactions_Servers");
+        });
+
+        modelBuilder.Entity<InventoryTransactionDetail>(entity =>
+        {
+            entity.HasKey(e => e.TransactionId).HasName("PK_InventoryTransactions_1");
+
+            entity.ToTable("InventoryTransactionDetails", "Inventory");
 
             entity.HasIndex(e => new { e.AccountId, e.TxnAt }, "IX_InventoryTxn_Account_TxnAt");
 
             entity.HasIndex(e => new { e.LotId, e.TxnAt }, "IX_InventoryTxn_Active").HasFilter("([IsVoided]=(0))");
-
-            entity.HasIndex(e => new { e.LocationId, e.TxnType, e.TxnAt }, "IX_InventoryTxn_Location_Type");
 
             entity.HasIndex(e => new { e.LotId, e.TxnAt }, "IX_InventoryTxn_Lot_TxnAt");
 
@@ -524,14 +666,8 @@ public partial class dbContext : DbContext
 
             entity.HasIndex(e => new { e.SplitGroupId, e.TxnAt }, "IX_InventoryTxn_SplitGroup").HasFilter("([SplitGroupId] IS NOT NULL)");
 
-            entity.Property(e => e.Id)
-                .HasDefaultValueSql("(newsequentialid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_InventoryTransactions_Id");
+            entity.Property(e => e.TransactionId).ValueGeneratedNever();
             entity.Property(e => e.CompletedAt).HasPrecision(0);
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_InventoryTransactions_CreatedAt");
             entity.Property(e => e.DirectQty).HasColumnType("decimal(18, 6)");
             entity.Property(e => e.DurationMinutes).HasComputedColumnSql("(case when [StartedAt] IS NOT NULL AND [CompletedAt] IS NOT NULL then datediff(minute,[StartedAt],[CompletedAt])  end)", true);
             entity.Property(e => e.EndQty).HasColumnType("decimal(18, 6)");
@@ -555,26 +691,42 @@ public partial class dbContext : DbContext
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
             entity.Property(e => e.VoidReason).HasMaxLength(200);
 
-            entity.HasOne(d => d.Item).WithMany(p => p.InventoryTransactions)
+            entity.HasOne(d => d.Account).WithMany(p => p.InventoryTransactionDetails)
+                .HasForeignKey(d => d.AccountId)
+                .HasConstraintName("FK_InventoryTransactionDetails_Accounts");
+
+            entity.HasOne(d => d.FromContainer).WithMany(p => p.InventoryTransactionDetailFromContainers)
+                .HasForeignKey(d => d.FromContainerId)
+                .HasConstraintName("FK_InventoryTransactionDetails_Containers1");
+
+            entity.HasOne(d => d.Item).WithMany(p => p.InventoryTransactionDetails)
                 .HasForeignKey(d => d.ItemId)
                 .HasConstraintName("FK_InventoryTxn_Item");
 
-            entity.HasOne(d => d.Location).WithMany(p => p.InventoryTransactions)
-                .HasForeignKey(d => d.LocationId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_InventoryTxn_Location");
-
-            entity.HasOne(d => d.Lot).WithMany(p => p.InventoryTransactions)
+            entity.HasOne(d => d.Lot).WithMany(p => p.InventoryTransactionDetails)
                 .HasForeignKey(d => d.LotId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_InventoryTxn_Lot");
+                .HasConstraintName("FK_InventoryTransactionDetails_Lots");
 
-            entity.HasOne(d => d.Product).WithMany(p => p.InventoryTransactions)
+            entity.HasOne(d => d.Product).WithMany(p => p.InventoryTransactionDetails)
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_InventoryTxn_Product");
 
-            entity.HasOne(d => d.Uom).WithMany(p => p.InventoryTransactions)
+            entity.HasOne(d => d.SplitGroup).WithMany(p => p.InventoryTransactionDetails)
+                .HasForeignKey(d => d.SplitGroupId)
+                .HasConstraintName("FK_InventoryTransactionDetails_SplitGroups");
+
+            entity.HasOne(d => d.ToContainer).WithMany(p => p.InventoryTransactionDetailToContainers)
+                .HasForeignKey(d => d.ToContainerId)
+                .HasConstraintName("FK_InventoryTransactionDetails_Containers");
+
+            entity.HasOne(d => d.Transaction).WithOne(p => p.InventoryTransactionDetail)
+                .HasForeignKey<InventoryTransactionDetail>(d => d.TransactionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_InventoryTransactionDetails_InventoryTransactions");
+
+            entity.HasOne(d => d.Uom).WithMany(p => p.InventoryTransactionDetails)
                 .HasForeignKey(d => d.UomId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_InventoryTxn_Uom");
@@ -640,13 +792,18 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<LabResult>(entity =>
         {
-            entity.ToTable("LabResults", "Inventory");
+            entity.ToTable("LabResults", "Inventory", tb =>
+                {
+                    tb.HasTrigger("trg_LabResults_AutoGenerateIDs");
+                    tb.HasTrigger("trg_LabResults_LockCore");
+                });
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_LabResults_Srv_Loc_Base").IsUnique();
+
+            entity.Property(e => e.LabResultId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Inventory_LabResults_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LabResults_CreatedAt_Final");
             entity.Property(e => e.Notes).HasMaxLength(1000);
             entity.Property(e => e.Result)
                 .IsRequired()
@@ -655,6 +812,16 @@ public partial class dbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Location).WithMany(p => p.LabResults)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LabResults_Locations");
+
+            entity.HasOne(d => d.Server).WithMany(p => p.LabResults)
+                .HasForeignKey(d => d.ServerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LabResults_Servers");
         });
 
         modelBuilder.Entity<Location>(entity =>
@@ -669,6 +836,9 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Code)
                 .IsRequired()
                 .HasMaxLength(20);
+            entity.Property(e => e.FuelSurcharge)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Locations_FuelSurcharge")
+                .HasColumnType("money");
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(200);
@@ -734,32 +904,46 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<Lot>(entity =>
         {
-            entity.ToTable("Lots", "Inventory");
+            entity.ToTable("Lots", "Inventory", tb =>
+                {
+                    tb.HasTrigger("trg_Lots_AutoGenerateIDs");
+                    tb.HasTrigger("trg_Lots_LockAndSync");
+                });
 
-            entity.HasIndex(e => e.RowGuid, "IX_Lots").IsUnique();
+            entity.HasIndex(e => e.RowUid, "IX_Lots_RowUid");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.LotId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Inventory_Lots_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_CreatedAt");
             entity.Property(e => e.IsOpen)
                 .HasDefaultValue(true)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_IsOpen");
             entity.Property(e => e.LotDescription)
                 .IsRequired()
                 .HasMaxLength(500);
-            entity.Property(e => e.LotLabel)
-                .HasMaxLength(523)
-                .HasComputedColumnSql("((CONVERT([nvarchar](20),[Id])+N' - ')+coalesce([LotDescription],N''))", true);
+            entity.Property(e => e.LotLabel).HasMaxLength(550);
             entity.Property(e => e.Notes).HasMaxLength(255);
-            entity.Property(e => e.RowGuid)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_RowGuid");
+            entity.Property(e => e.RowUid).HasDefaultValueSql("(newid())");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Item).WithMany(p => p.Lots)
+                .HasForeignKey(d => d.ItemId)
+                .HasConstraintName("FK_Lots_Items");
 
             entity.HasOne(d => d.Location).WithMany(p => p.Lots)
                 .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Lots_Locations");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.Lots)
+                .HasForeignKey(d => d.ProductId)
+                .HasConstraintName("FK_Lots_Products");
+
+            entity.HasOne(d => d.Server).WithMany(p => p.Lots)
+                .HasForeignKey(d => d.ServerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Lots_Servers");
 
             entity.HasOne(d => d.SplitGroup).WithMany(p => p.Lots)
                 .HasForeignKey(d => d.SplitGroupId)
@@ -778,37 +962,79 @@ public partial class dbContext : DbContext
                 .HasDefaultValueSql("(sysutcdatetime())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Inventory_LotComponents_CreatedAt");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.ChildLot).WithMany(p => p.LotComponentChildLots)
+                .HasForeignKey(d => d.ChildLotId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LotComponents_Lots1");
+
+            entity.HasOne(d => d.ParentLot).WithMany(p => p.LotComponentParentLots)
+                .HasForeignKey(d => d.ParentLotId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LotComponents_Lots");
         });
 
         modelBuilder.Entity<LotLab>(entity =>
         {
-            entity.ToTable("LotLabs", "Inventory");
+            entity.ToTable("LotLabs", "Inventory", tb =>
+                {
+                    tb.HasTrigger("trg_Inventory_LotLabs_LockCore");
+                    tb.HasTrigger("trg_LotLabs_AutoGenerateIDs");
+                });
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_LotLabs_Srv_Loc_Base").IsUnique();
+
+            entity.Property(e => e.LotLabId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_Inventory_LotLabs_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LotLabs_CreatedAt_Final");
             entity.Property(e => e.Notes).HasMaxLength(1000);
+            entity.Property(e => e.TakenAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LotLabs_TakenAt");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Location).WithMany(p => p.LotLabs)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LotLabs_Locations");
+
+            entity.HasOne(d => d.Lot).WithMany(p => p.LotLabs)
+                .HasForeignKey(d => d.LotId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LotLabs_Lots");
+
+            entity.HasOne(d => d.Server).WithMany(p => p.LotLabs)
+                .HasForeignKey(d => d.ServerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LotLabs_Servers");
         });
 
         modelBuilder.Entity<LotPriceOverride>(entity =>
         {
-            entity.ToTable("LotPriceOverrides", "Inventory");
+            entity.ToTable("LotPriceOverrides", "Inventory", tb =>
+                {
+                    tb.HasTrigger("trg_LotPriceOverrides_AutoGenerateIDs");
+                    tb.HasTrigger("trg_LotPriceOverrides_LockCore");
+                });
 
-            entity.HasIndex(e => new { e.LotId, e.PriceTypeId, e.CurrencyCode, e.EffectiveFrom }, "IX_LotPriceOverrides_Lookup");
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_LotPriceOverrides_Srv_Loc_Base").IsUnique();
 
+            entity.Property(e => e.LotPriceOverrideId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_LotPriceOverrides_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LotPriceOverrides_CreatedAt_Final");
             entity.Property(e => e.CurrencyCode)
                 .IsRequired()
                 .HasMaxLength(3)
                 .IsUnicode(false)
-                .IsFixedLength();
-            entity.Property(e => e.EffectiveFrom).HasPrecision(0);
+                .HasDefaultValue("USD")
+                .IsFixedLength()
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LotPriceOverrides_Currency");
+            entity.Property(e => e.EffectiveFrom)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LotPriceOverrides_EffectiveFrom");
             entity.Property(e => e.EffectiveTo).HasPrecision(0);
             entity.Property(e => e.PremiumDiscount).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Reason).HasMaxLength(200);
@@ -819,6 +1045,11 @@ public partial class dbContext : DbContext
                 .HasForeignKey(d => d.AccountId)
                 .HasConstraintName("FK_LotPriceOverrides_Accounts");
 
+            entity.HasOne(d => d.Location).WithMany(p => p.LotPriceOverrides)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LotPriceOverrides_Locations");
+
             entity.HasOne(d => d.Lot).WithMany(p => p.LotPriceOverrides)
                 .HasForeignKey(d => d.LotId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -828,6 +1059,11 @@ public partial class dbContext : DbContext
                 .HasForeignKey(d => d.PriceTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_LotPriceOverrides_PriceTypes");
+
+            entity.HasOne(d => d.Server).WithMany(p => p.LotPriceOverrides)
+                .HasForeignKey(d => d.ServerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LotPriceOverrides_Servers");
         });
 
         modelBuilder.Entity<LotSplitGroup>(entity =>
@@ -836,12 +1072,23 @@ public partial class dbContext : DbContext
 
             entity.ToTable("LotSplitGroups", "Inventory", tb => tb.HasTrigger("TR_LotSplitGroups_PreventOrphan"));
 
+            entity.HasIndex(e => e.LotId, "IX_LotSplitGroups");
+
+            entity.HasIndex(e => e.AccountId, "IX_LotSplitGroups_1");
+
             entity.HasIndex(e => e.LotId, "UX_LotSplitGroups_OnePrimary")
                 .IsUnique()
                 .HasFilter("([PrimaryAccount]=(1))");
 
-            entity.Property(e => e.RowGuid).ValueGeneratedNever();
+            entity.Property(e => e.RowGuid)
+                .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LotSplitGroups_RowGuid");
             entity.Property(e => e.SplitPercent).HasColumnType("decimal(10, 7)");
+
+            entity.HasOne(d => d.Account).WithMany(p => p.LotSplitGroups)
+                .HasForeignKey(d => d.AccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LotSplitGroups_Accounts");
 
             entity.HasOne(d => d.Lot).WithOne(p => p.LotSplitGroup)
                 .HasForeignKey<LotSplitGroup>(d => d.LotId)
@@ -851,6 +1098,8 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<LotTrait>(entity =>
         {
+            entity.HasKey(e => e.LotTraitUid).HasName("PK_LotTraits_1");
+
             entity.ToTable("LotTraits", "Inventory");
 
             entity.HasIndex(e => new { e.TraitId, e.LotId }, "IX_LotTraits_Trait");
@@ -865,6 +1114,9 @@ public partial class dbContext : DbContext
 
             entity.HasIndex(e => new { e.LotId, e.TraitId }, "UX_LotTraits_Lot_Trait").IsUnique();
 
+            entity.Property(e => e.LotTraitUid)
+                .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LotTraits_LotTraitUid");
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
@@ -874,7 +1126,7 @@ public partial class dbContext : DbContext
             entity.HasOne(d => d.Lot).WithMany(p => p.LotTraits)
                 .HasForeignKey(d => d.LotId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_LotTraits_Lot");
+                .HasConstraintName("FK_LotTraits_Lots");
 
             entity.HasOne(d => d.Trait).WithMany(p => p.LotTraitTraits)
                 .HasForeignKey(d => d.TraitId)
@@ -911,9 +1163,10 @@ public partial class dbContext : DbContext
                 .HasForeignKey(d => d.AccountId)
                 .HasConstraintName("FK_Payments_Account");
 
-            entity.HasOne(d => d.SalesInvoice).WithMany(p => p.Payments)
-                .HasForeignKey(d => d.SalesInvoiceId)
-                .HasConstraintName("FK_Payments_Invoice");
+            entity.HasOne(d => d.IdNavigation).WithOne(p => p.Payment)
+                .HasForeignKey<Payment>(d => d.Id)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Payments_SalesInvoices");
         });
 
         modelBuilder.Entity<PriceAdjustment>(entity =>
@@ -1250,17 +1503,27 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<PurchaseOrder>(entity =>
         {
-            entity.ToTable("PurchaseOrders", "purchase");
+            entity.ToTable("PurchaseOrders", "purchase", tb =>
+                {
+                    tb.HasTrigger("trg_PurchaseOrders_AutoGenerateIDs");
+                    tb.HasTrigger("trg_PurchaseOrders_LockCore");
+                });
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_PurchaseOrders_Srv_Loc_Base").IsUnique();
+
+            entity.Property(e => e.PurchaseOrderId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_purchase_PurchaseOrders_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_PurchaseOrders_CreatedAt_Full");
             entity.Property(e => e.Notes).HasMaxLength(1000);
+            entity.Property(e => e.OrderDate)
+                .HasDefaultValueSql("(CONVERT([date],getdate()))")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_PurchaseOrders_OrderDate");
             entity.Property(e => e.Status)
                 .IsRequired()
-                .HasMaxLength(20);
+                .HasMaxLength(20)
+                .HasDefaultValue("Pending")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_PurchaseOrders_Status");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
             entity.HasOne(d => d.Location).WithMany(p => p.PurchaseOrders)
@@ -1275,23 +1538,58 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<PurchaseOrderLineItem>(entity =>
         {
-            entity.ToTable("PurchaseOrderLineItems", "purchase");
+            entity.ToTable("PurchaseOrderLineItems", "purchase", tb =>
+                {
+                    tb.HasTrigger("trg_PurchaseOrderLineItems_AutoGenerateIDs");
+                    tb.HasTrigger("trg_PurchaseOrderLineItems_LockCore");
+                });
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.ContractPrice).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.PurchaseOrderLineItemId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_purchase_PurchaseOrderLineItems_CreatedAt");
+        });
+
+        modelBuilder.Entity<PurchaseOrderLineItemDetail>(entity =>
+        {
+            entity.HasKey(e => e.PurchaseOrderLineItemId);
+
+            entity.ToTable("PurchaseOrderLineItemDetails", "purchase");
+
+            entity.Property(e => e.PurchaseOrderLineItemId).ValueGeneratedNever();
+            entity.Property(e => e.ContractPrice).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Notes).HasMaxLength(1000);
             entity.Property(e => e.QtyLbOrdered).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.QtyLbUnpriced).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
-            entity.HasOne(d => d.PurchaseOrder).WithMany(p => p.PurchaseOrderLineItems)
-                .HasForeignKey(d => d.PurchaseOrderId)
+            entity.HasOne(d => d.Item).WithMany(p => p.PurchaseOrderLineItemDetails)
+                .HasForeignKey(d => d.ItemId)
+                .HasConstraintName("FK_PurchaseOrderLineItemDetails_Items");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.PurchaseOrderLineItemDetails)
+                .HasForeignKey(d => d.ProductId)
+                .HasConstraintName("FK_PurchaseOrderLineItemDetails_Products");
+
+            entity.HasOne(d => d.PurchaseOrderLineItem).WithOne(p => p.PurchaseOrderLineItemDetail)
+                .HasForeignKey<PurchaseOrderLineItemDetail>(d => d.PurchaseOrderLineItemId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_POLI_PO");
+                .HasConstraintName("FK_PurchaseOrderLineItemDetails_PurchaseOrderLineItems");
+        });
+
+        modelBuilder.Entity<RateSurcharge>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Rate_Surcharge");
+
+            entity.ToTable("RateSurcharge", "warehouse");
+
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.Price).HasColumnType("money");
+            entity.Property(e => e.Surcharge).HasColumnType("decimal(5, 4)");
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasMaxLength(10);
         });
 
         modelBuilder.Entity<ReceivedGrade>(entity =>
@@ -1337,15 +1635,6 @@ public partial class dbContext : DbContext
                 .HasForeignKey(d => d.LocationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_RII_Location");
-
-            entity.HasOne(d => d.Lot).WithMany(p => p.ReceivedInventoryItems)
-                .HasForeignKey(d => d.LotId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_RII_Lot");
-
-            entity.HasOne(d => d.PurchaseOrderLineItem).WithMany(p => p.ReceivedInventoryItems)
-                .HasForeignKey(d => d.PurchaseOrderLineItemId)
-                .HasConstraintName("FK_RII_POLI");
         });
 
         modelBuilder.Entity<ReceivedInventoryPurchaseOrderLineItem>(entity =>
@@ -1360,11 +1649,6 @@ public partial class dbContext : DbContext
             entity.Property(e => e.QtyLb).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
-            entity.HasOne(d => d.PurchaseOrderLineItem).WithMany(p => p.ReceivedInventoryPurchaseOrderLineItems)
-                .HasForeignKey(d => d.PurchaseOrderLineItemId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_RIPOLI_POLI");
-
             entity.HasOne(d => d.ReceivedInventoryItem).WithMany(p => p.ReceivedInventoryPurchaseOrderLineItems)
                 .HasForeignKey(d => d.ReceivedInventoryItemId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -1373,46 +1657,72 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<SalesInvoice>(entity =>
         {
-            entity.ToTable("SalesInvoices", "sale");
+            entity.ToTable("SalesInvoices", "sale", tb =>
+                {
+                    tb.HasTrigger("trg_SalesInvoices_AutoGenerateIDs");
+                    tb.HasTrigger("trg_SalesInvoices_LockCore");
+                });
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_SalesInvoices_Srv_Loc_Base").IsUnique();
+
+            entity.Property(e => e.SalesInvoiceId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_sale_SalesInvoices_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_SalesInvoices_CreatedAt_Final");
+            entity.Property(e => e.InvoiceDate)
+                .HasDefaultValueSql("(CONVERT([date],getdate()))")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_SalesInvoices_InvDate");
             entity.Property(e => e.Notes).HasMaxLength(1000);
             entity.Property(e => e.Status)
                 .IsRequired()
-                .HasMaxLength(20);
+                .HasMaxLength(20)
+                .HasDefaultValue("Open")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_SalesInvoices_Status");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
             entity.HasOne(d => d.Location).WithMany(p => p.SalesInvoices)
                 .HasForeignKey(d => d.LocationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_SalesInvoices_Location");
-
-            entity.HasOne(d => d.SalesOrder).WithMany(p => p.SalesInvoices)
-                .HasForeignKey(d => d.SalesOrderId)
-                .HasConstraintName("FK_SalesInvoices_Order");
         });
 
         modelBuilder.Entity<SalesInvoiceLineItem>(entity =>
         {
-            entity.ToTable("SalesInvoiceLineItems", "sale");
+            entity.ToTable("SalesInvoiceLineItems", "sale", tb =>
+                {
+                    tb.HasTrigger("trg_SalesInvoiceLineItems_AutoGenerateIDs");
+                    tb.HasTrigger("trg_SalesInvoiceLineItems_LockCore");
+                });
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_SaleInvLineItems_Srv_Loc_Base").IsUnique();
+
+            entity.Property(e => e.SalesInvoiceLineItemId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_sale_SalesInvoiceLineItems_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_SaleInvLines_CreatedAt_Final");
+
+            entity.HasOne(d => d.SalesInvoice).WithMany(p => p.SalesInvoiceLineItems)
+                .HasForeignKey(d => d.SalesInvoiceId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_SalesInvoiceLineItems_Invoices");
+        });
+
+        modelBuilder.Entity<SalesInvoiceLineItemDetail>(entity =>
+        {
+            entity.HasKey(e => e.SalesInvoiceLineItemId);
+
+            entity.ToTable("SalesInvoiceLineItemDetails", "sale");
+
+            entity.Property(e => e.SalesInvoiceLineItemId).ValueGeneratedNever();
             entity.Property(e => e.Notes).HasMaxLength(1000);
             entity.Property(e => e.QtyLb).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.UnitPrice).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
-            entity.HasOne(d => d.SalesOrderLineItem).WithMany(p => p.SalesInvoiceLineItems)
-                .HasForeignKey(d => d.SalesOrderLineItemId)
-                .HasConstraintName("FK_SILI_OrderLine");
+            entity.HasOne(d => d.SalesInvoice).WithMany(p => p.SalesInvoiceLineItemDetails)
+                .HasForeignKey(d => d.SalesInvoiceId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_SalesInvoiceLineItemDetails_SalesInvoices");
         });
 
         modelBuilder.Entity<SalesInvoiceLineItemLot>(entity =>
@@ -1426,31 +1736,31 @@ public partial class dbContext : DbContext
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_sale_SalesInvoiceLineItemLots_CreatedAt");
             entity.Property(e => e.QtyLb).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
-
-            entity.HasOne(d => d.Lot).WithMany(p => p.SalesInvoiceLineItemLots)
-                .HasForeignKey(d => d.LotId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SILIL_Lot");
-
-            entity.HasOne(d => d.SalesInvoiceLineItem).WithMany(p => p.SalesInvoiceLineItemLots)
-                .HasForeignKey(d => d.SalesInvoiceLineItemId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SILIL_Line");
         });
 
         modelBuilder.Entity<SalesOrder>(entity =>
         {
-            entity.ToTable("SalesOrders", "sale");
+            entity.ToTable("SalesOrders", "sale", tb =>
+                {
+                    tb.HasTrigger("trg_SalesOrders_AutoGenerateIDs");
+                    tb.HasTrigger("trg_SalesOrders_LockCore");
+                });
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_SalesOrders_Srv_Loc_Base").IsUnique();
+
+            entity.Property(e => e.SalesOrderId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_sale_SalesOrders_CreatedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_SalesOrders_CreatedAt_Full");
             entity.Property(e => e.Notes).HasMaxLength(1000);
+            entity.Property(e => e.OrderDate)
+                .HasDefaultValueSql("(CONVERT([date],getdate()))")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_SalesOrders_OrderDate");
             entity.Property(e => e.Status)
                 .IsRequired()
-                .HasMaxLength(20);
+                .HasMaxLength(20)
+                .HasDefaultValue("Pending")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_SalesOrders_Status");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
             entity.HasOne(d => d.CustomerAccount).WithMany(p => p.SalesOrders)
@@ -1467,55 +1777,55 @@ public partial class dbContext : DbContext
         {
             entity.ToTable("SalesOrderLineItems", "sale");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.BlendPercent).HasColumnType("decimal(6, 3)");
+            entity.Property(e => e.SalesOrderLineItemId).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_sale_SalesOrderLineItems_CreatedAt");
+        });
+
+        modelBuilder.Entity<SalesOrderLineItemDetail>(entity =>
+        {
+            entity.HasKey(e => e.SalesOrderLineItemId);
+
+            entity.ToTable("SalesOrderLineItemDetails", "sale");
+
+            entity.Property(e => e.SalesOrderLineItemId).ValueGeneratedNever();
+            entity.Property(e => e.BlendPercent).HasColumnType("decimal(6, 3)");
             entity.Property(e => e.Notes).HasMaxLength(1000);
             entity.Property(e => e.QtyLb).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.QuotedUnitPrice).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
-
-            entity.HasOne(d => d.SalesOrder).WithMany(p => p.SalesOrderLineItems)
-                .HasForeignKey(d => d.SalesOrderId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SOLI_Order");
         });
 
         modelBuilder.Entity<SeedTreatmentApplication>(entity =>
         {
             entity.HasKey(e => e.ApplicationId);
 
-            entity.ToTable("SeedTreatmentApplications", "chem");
+            entity.ToTable("SeedTreatmentApplications", "chem", tb =>
+                {
+                    tb.HasTrigger("trg_SeedTreatmentApps_AutoGenerateIDs");
+                    tb.HasTrigger("trg_SeedTreatmentApps_LockCore");
+                });
 
-            entity.HasIndex(e => new { e.ChemicalLotId, e.AppliedAt }, "IX_SeedTreatApps_ChemLot_AppliedAt");
+            entity.HasIndex(e => new { e.ServerId, e.LocationId, e.BaseId }, "UQ_SeedTreatApps_Srv_Loc_Base").IsUnique();
 
-            entity.HasIndex(e => new { e.SeedLotId, e.AppliedAt }, "IX_SeedTreatApps_SeedLot_AppliedAt");
-
-            entity.HasIndex(e => e.RowGuid, "UX_SeedTreatApps_RowGuid").IsUnique();
-
+            entity.Property(e => e.ApplicationId).ValueGeneratedNever();
             entity.Property(e => e.AppliedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_SeedTreatApps_AppliedAt");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_SeedTreatApps_AppliedAt_Final");
             entity.Property(e => e.ChemicalUsedQty).HasColumnType("decimal(18, 6)");
             entity.Property(e => e.Comments).HasMaxLength(200);
             entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_SeedTreatApps_CreatedAt");
-            entity.Property(e => e.RowGuid)
-                .HasDefaultValueSql("(newsequentialid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_SeedTreatApps_RowGuid");
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_SeedTreatApps_CreatedAt_Final");
             entity.Property(e => e.SeedTreatedQty).HasColumnType("decimal(18, 6)");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
             entity.HasOne(d => d.ChemicalLot).WithMany(p => p.SeedTreatmentApplications)
                 .HasForeignKey(d => d.ChemicalLotId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SeedTreatApps_ChemLot");
+                .HasConstraintName("FK_SeedTreatmentApplications_ChemicalLots");
 
             entity.HasOne(d => d.ChemicalUsedUom).WithMany(p => p.SeedTreatmentApplicationChemicalUsedUoms)
                 .HasForeignKey(d => d.ChemicalUsedUomId)
@@ -1529,7 +1839,7 @@ public partial class dbContext : DbContext
             entity.HasOne(d => d.SeedLot).WithMany(p => p.SeedTreatmentApplications)
                 .HasForeignKey(d => d.SeedLotId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SeedTreatApps_SeedLot");
+                .HasConstraintName("FK_SeedTreatmentApplications_Lots");
 
             entity.HasOne(d => d.SeedTreatedUom).WithMany(p => p.SeedTreatmentApplicationSeedTreatedUoms)
                 .HasForeignKey(d => d.SeedTreatedUomId)
@@ -1646,6 +1956,11 @@ public partial class dbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Location).WithMany(p => p.StorageLocations)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StorageLocations_Locations");
         });
 
         modelBuilder.Entity<Trait>(entity =>
@@ -1691,11 +2006,9 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<TransactionAttribute>(entity =>
         {
-            entity.ToTable("TransactionAttributes", "Inventory");
-
-            entity.HasIndex(e => e.TransactionId, "IX_TxnAttr_Transaction");
-
-            entity.HasIndex(e => new { e.TransactionId, e.AttributeTypeId }, "UX_TransactionAttributes_Txn_Type").IsUnique();
+            entity
+                .HasNoKey()
+                .ToTable("TransactionAttributes", "Inventory");
 
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
@@ -1703,17 +2016,20 @@ public partial class dbContext : DbContext
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_TxnAttr_CreatedAt");
             entity.Property(e => e.DecimalValue).HasColumnType("decimal(18, 6)");
             entity.Property(e => e.StringValue).HasMaxLength(200);
+            entity.Property(e => e.TransactionAttributesUid)
+                .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_TransactionAttributes_TransactionAttributesUid");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
-            entity.HasOne(d => d.AttributeType).WithMany(p => p.TransactionAttributes)
+            entity.HasOne(d => d.AttributeType).WithMany()
                 .HasForeignKey(d => d.AttributeTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_TxnAttr_AttributeType");
 
-            entity.HasOne(d => d.Transaction).WithMany(p => p.TransactionAttributes)
+            entity.HasOne(d => d.Transaction).WithMany()
                 .HasForeignKey(d => d.TransactionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_TxnAttr_Transaction");
+                .HasConstraintName("FK_TransactionAttributes_InventoryTransactions");
         });
 
         modelBuilder.Entity<TransactionAttributeType>(entity =>
@@ -1747,9 +2063,13 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<Truck>(entity =>
         {
+            entity.HasKey(e => e.TruckUid).HasName("PK_Trucks_1");
+
             entity.ToTable("Trucks", "account");
 
-            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.TruckUid)
+                .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_Trucks_TruckUid");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(sysutcdatetime())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_account_Trucks_CreatedAt");
@@ -1866,71 +2186,82 @@ public partial class dbContext : DbContext
 
         modelBuilder.Entity<WeightSheet>(entity =>
         {
-            entity.HasKey(e => e.WeightSheetUid);
+            entity
+                .HasNoKey()
+                .ToTable("WeightSheets", "warehouse", tb =>
+                {
+                    tb.HasTrigger("trg_WeightSheets_AutoGenerateIDs");
+                    tb.HasTrigger("trg_WeightSheets_LockCoreColumns");
+                });
 
-            entity.ToTable("WeightSheets", "purchase");
+            entity.HasIndex(e => e.RowUid, "IX_WeightSheets_RowUid");
 
-            entity.Property(e => e.WeightSheetUid)
-                .ValueGeneratedNever()
-                .HasColumnName("WeightSheetUID");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(sysutcdatetime())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_purchase_WeightSheets_CreatedAt");
+            entity.Property(e => e.CreationDate)
+                .HasDefaultValueSql("(CONVERT([date],getdate()))")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_WeightSheets_CreationDate");
+            entity.Property(e => e.CustomRateDescription).HasMaxLength(255);
+            entity.Property(e => e.Miles).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.Notes).HasMaxLength(1000);
-            entity.Property(e => e.SheetType)
-                .IsRequired()
-                .HasMaxLength(20);
-            entity.Property(e => e.Status)
-                .IsRequired()
-                .HasMaxLength(20);
+            entity.Property(e => e.Rate).HasColumnType("money");
+            entity.Property(e => e.RateType)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .IsFixedLength();
+            entity.Property(e => e.RowUid)
+                .HasDefaultValueSql("(newid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__WeightShe__RowUi__544C7222");
+            entity.Property(e => e.ServerId)
+                .HasDefaultValueSql("([system].[serverid]())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_WeightSheets_ServerId");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
-            entity.Property(e => e.VoidReason).HasMaxLength(200);
+            entity.Property(e => e.WeightSheetType)
+                .IsRequired()
+                .HasMaxLength(20);
 
-            entity.HasOne(d => d.CarrierAccount).WithMany(p => p.WeightSheets)
-                .HasForeignKey(d => d.CarrierAccountId)
-                .HasConstraintName("FK_WeightSheets_Carrier");
+            entity.HasOne(d => d.Hauler).WithMany()
+                .HasForeignKey(d => d.HaulerId)
+                .HasConstraintName("FK_WeightSheets_Haulers");
 
-            entity.HasOne(d => d.Location).WithMany(p => p.WeightSheets)
+            entity.HasOne(d => d.Location).WithMany()
                 .HasForeignKey(d => d.LocationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_WeightSheets_Location");
+        });
 
-            entity.HasOne(d => d.Lot).WithMany(p => p.WeightSheets)
-                .HasForeignKey(d => d.LotId)
-                .HasConstraintName("FK_WeightSheets_Lot");
+        modelBuilder.Entity<WeightSheetHaulerRate>(entity =>
+        {
+            entity.ToTable("WeightSheetHaulerRates", "warehouse");
 
-            entity.HasOne(d => d.Truck).WithMany(p => p.WeightSheets)
-                .HasForeignKey(d => d.TruckId)
-                .HasConstraintName("FK_WeightSheets_Truck");
+            entity.HasIndex(e => new { e.MaxDistance, e.RateType }, "IX_WeightSheetHaulerRates").IsUnique();
+
+            entity.Property(e => e.Rate).HasColumnType("money");
+            entity.Property(e => e.RateType)
+                .IsRequired()
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .IsFixedLength();
         });
 
         modelBuilder.Entity<WeightSheetLoad>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK_WeightSheetLoads_1");
 
-            entity.ToTable("WeightSheetLoads", "purchase");
+            entity.ToTable("WeightSheetLoads", "warehouse");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_WeightSheetLoads_Id");
             entity.Property(e => e.WeightSheetUid).HasColumnName("WeightSheetUID");
-
-            entity.HasOne(d => d.InventoryTransaction).WithMany(p => p.WeightSheetLoads)
-                .HasForeignKey(d => d.InventoryTransactionId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_WeightSheetLoads_InventoryTransactions");
-
-            entity.HasOne(d => d.WeightSheetU).WithMany(p => p.WeightSheetLoads)
-                .HasForeignKey(d => d.WeightSheetUid)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_WSL_WeightSheet");
         });
 
         modelBuilder.Entity<WeightSheetLoadLotAllocation>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK_WeightSheetLoadLotAlloc");
 
-            entity.ToTable("WeightSheetLoadLotAllocations", "purchase");
+            entity.ToTable("WeightSheetLoadLotAllocations", "warehouse");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt)
@@ -1939,11 +2270,6 @@ public partial class dbContext : DbContext
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_purchase_WeightSheetLoadLotAllocations_CreatedAt");
             entity.Property(e => e.QtyLb).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
-
-            entity.HasOne(d => d.Lot).WithMany(p => p.WeightSheetLoadLotAllocations)
-                .HasForeignKey(d => d.LotId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_WSLotAlloc_Lot");
         });
 
         OnModelCreatingGeneratedFunctions(modelBuilder);

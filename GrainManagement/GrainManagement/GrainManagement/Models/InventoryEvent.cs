@@ -7,11 +7,13 @@ namespace GrainManagement.Models;
 
 public partial class InventoryEvent
 {
-    public long Id { get; set; }
+    public long InventoryEventId { get; set; }
 
-    public Guid RowGuid { get; set; }
+    public long BaseId { get; set; }
 
     public int LocationId { get; set; }
+
+    public int ServerId { get; set; }
 
     public string EventType { get; set; }
 
@@ -24,4 +26,10 @@ public partial class InventoryEvent
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
+
+    public virtual Location Location { get; set; }
+
+    public virtual Server Server { get; set; }
 }

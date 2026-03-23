@@ -1,6 +1,14 @@
 (function () {
     'use strict';
 
+    // ── Helpers ─────────────────────────────────────────────────────────────
+
+    function formatLotId(id) {
+        var s = String(id);
+        if (s.length < 7) return s;
+        return s.substring(0, 3) + '-' + s.substring(3, 6) + '-' + s.substring(6);
+    }
+
     // ── Selectors ────────────────────────────────────────────────────────────
 
     const SEL = {
@@ -29,6 +37,12 @@
         nwsCreateError:     '#gdNwsCreateError',
         createWsLotBtn:     '#gdCreateWsLotBtn',
         nwsSelectedLotName: '#gdNwsSelectedLotName',
+
+        // WS header (shown when wsId is provided)
+        wsHeader:       '#gdWsHeader',
+        wsIdFmt:        '#gdWsIdFormatted',
+        wsLot:          '#gdWsLot',
+        wsHauler:       '#gdWsHauler',
 
         // Gross
         captureGross:   '#gdCaptureGross',
@@ -66,9 +80,10 @@
         newLotSave:     '#gdNewLotSave',
     };
 
-    // ── Constants ────────────────────────────────────────────────────────────
+    // ── Cookie helpers (delegate to global GM namespace) ──────────────────
 
-    const LOCATION_STORAGE_KEY = 'gm_location_id';
+    function getLocationCookie() { return GM.getLocationId(); }
+    function setLocationCookie(val) { GM.setLocationId(val); }
 
     // ── State ────────────────────────────────────────────────────────────────
 
@@ -82,7 +97,16 @@
     // ── Init ─────────────────────────────────────────────────────────────────
 
     $(function () {
-        initLocation();       // async — fetches eagerly, restores from localStorage
+        var locationId = GM.getLocationId();
+        if (!locationId) {
+            showAlert('Please select a location from the Warehouse dashboard first.', 'warning');
+            return;
+        }
+
+        $(SEL.locationId).val(locationId);
+        $('#gdFormBody').prop('hidden', false);
+        $(SEL.wsPanel).prop('hidden', false);
+
         initSelectBoxes();
         initNwsAccountPicker();
         initNwsSplitGroupPicker();
@@ -90,53 +114,48 @@
         wireNewLotModal();
         wireWeightSheetPanel();
         wireSubmit();
+
+        // Parse wsId from URL query string and load WS header if present
+        var wsId = parseInt(new URLSearchParams(window.location.search).get('wsId'), 10) || 0;
+        if (wsId > 0) {
+            loadWsHeader(locationId, wsId);
+        }
+
+        refreshWeightSheets(locationId);
     });
 
-    // ── Location — eager load + localStorage persistence ─────────────────────
+    // ── Weight sheet header (shown when wsId is in URL) ─────────────────────
 
-    async function initLocation() {
-        // Restore previously selected location (survives browser close)
-        const savedId = parseInt(localStorage.getItem(LOCATION_STORAGE_KEY) || '0', 10) || null;
+    function formatWsId(id) {
+        var s = String(id);
+        if (s.length < 7) return s;
+        return s.substring(0, 3) + '-' + s.substring(3, 6) + '-' + s.substring(6);
+    }
 
-        // Pre-fetch the list immediately so the dropdown is populated on first open
-        let locations = [];
-        try {
-            locations = await $.getJSON('/api/locations/WarehouseLocationsList');
-        } catch (ex) {
-            console.warn('[GrowerDelivery] Location prefetch failed', ex);
-        }
+    function loadWsHeader(locationId, wsId) {
+        $.ajax({
+            url: '/api/GrowerDelivery/WeightSheetDeliveryLoads',
+            data: { locationId: locationId, wsId: wsId },
+            method: 'GET',
+            dataType: 'json',
+        })
+        .done(function (data) {
+            if (!data || data.length === 0) return;
+            var row = data[0];
+            var fmtId = formatWsId(row.WeightSheetId);
+            $(SEL.wsIdFmt).text('#' + fmtId);
+            $(SEL.wsLot).text(row.LotDescription || '\u2014');
+            $(SEL.wsHauler).text(row.HaulerName || 'Grower');
+            $(SEL.wsHeader).removeAttr('hidden');
 
-        $('#gdLocation').dxSelectBox({
-            dataSource:    locations,
-            valueExpr:     'LocationId',
-            displayExpr:   function (item) { return item ? item.Name + ' \u2013 ' + item.LocationId : ''; },
-            searchEnabled: true,
-            placeholder:   'Select location…',
-            width:         'auto',
-            value:         savedId,
-            onValueChanged: function (e) {
-                const val = e.value ?? '';
-                $(SEL.locationId).val(val);
-                $('#gdFormBody').prop('hidden', !val);
-                $(SEL.wsPanel).prop('hidden', !val);
-                $(SEL.newWsPanel).prop('hidden', true);
-                if (val) {
-                    localStorage.setItem(LOCATION_STORAGE_KEY, String(val));
-                    refreshWeightSheets(val);
-                } else {
-                    localStorage.removeItem(LOCATION_STORAGE_KEY);
-                    selectWeightSheet(null);
-                }
+            // Auto-select the weight sheet UID if available
+            if (row.WeightSheetUid) {
+                selectWeightSheet(row.WeightSheetUid);
             }
+        })
+        .fail(function () {
+            console.warn('[GrowerDelivery] Failed to load WS header for wsId=' + wsId);
         });
-
-        // Sync hidden input and reveal panels if a location was restored
-        if (savedId) {
-            $(SEL.locationId).val(savedId);
-            $('#gdFormBody').prop('hidden', false);
-            $(SEL.wsPanel).prop('hidden', false);
-            refreshWeightSheets(savedId);
-        }
     }
 
     // ── SelectBox initialization ─────────────────────────────────────────────
@@ -441,14 +460,11 @@
             // Grain quality
             Moisture:      numOrNull('gdMoisture'),
             Protein:       numOrNull('gdProtein'),
-            TestWeight:    numOrNull('gdTestWeight'),
-            Dockage:       numOrNull('gdDockage'),
-            Grade:         strOrNull('gdGrade'),
-            ForeignMatter: numOrNull('gdForeignMatter'),
-            Splits:        numOrNull('gdSplits'),
-            Damaged:       numOrNull('gdDamaged'),
-            Oil:           numOrNull('gdOil'),
-            Starch:        numOrNull('gdStarch'),
+
+            // Transport / load attributes
+            BOL:           strOrNull('gdBOL'),
+            TruckId:       strOrNull('gdTruckId'),
+            Driver:        strOrNull('gdDriver'),
         };
     }
 
@@ -539,7 +555,7 @@
             return (
                 '<div class="gm-gd-ws-row' + (isSelected ? ' gm-gd-ws-row--selected' : '') + '" ' +
                       'data-uid="' + escapeAttr(ws.WeightSheetUid) + '">' +
-                    '<div class="gm-gd-ws-row__id">#' + ws.WeightSheetId + '</div>' +
+                    '<div class="gm-gd-ws-row__id">#' + formatLotId(ws.WeightSheetId) + '</div>' +
                     '<div class="gm-gd-ws-row__date">' + escapeHtml(ws.CreationDate) + '</div>' +
                     '<div class="gm-gd-ws-row__lot">' + lot + '</div>' +
                     '<div class="gm-gd-ws-row__status">' + status + '</div>' +
@@ -669,10 +685,10 @@
                     return;
                 }
 
-                const created = await resp.json();   // { Id, LotDescription }
+                const created = await resp.json();   // { LotId, LotDescription }
 
                 // Auto-select the new lot and refresh the list
-                setNwsLot(created.Id, created.LotDescription);
+                setNwsLot(created.LotId, created.LotDescription);
                 resetNwsCreateForm();
                 refreshNwsLots(locationId);
 
@@ -716,12 +732,12 @@
         const rows = lots.map(function (lot) {
             const desc  = lot.LotDescription        ? escapeHtml(lot.LotDescription)        : '—';
             const sg    = lot.SplitGroupDescription ? escapeHtml(lot.SplitGroupDescription) : '';
-            const isSel = selectedNwsLotId === lot.Id;
+            const isSel = selectedNwsLotId === lot.LotId;
 
             return (
                 '<div class="gm-gd-ws-row' + (isSel ? ' gm-gd-ws-row--selected' : '') + '" ' +
-                      'data-lot-id="' + lot.Id + '" data-lot-desc="' + escapeAttr(lot.LotDescription || '') + '">' +
-                    '<div class="gm-gd-ws-row__id">#' + lot.Id + '</div>' +
+                      'data-lot-id="' + lot.LotId + '" data-lot-desc="' + escapeAttr(lot.LotDescription || '') + '">' +
+                    '<div class="gm-gd-ws-row__id">#' + formatLotId(lot.LotId) + '</div>' +
                     '<div class="gm-gd-ws-row__lot">' + desc + '</div>' +
                     '<div class="gm-gd-ws-row__status">' + sg + '</div>' +
                     '<button type="button" class="btn btn-sm ' +

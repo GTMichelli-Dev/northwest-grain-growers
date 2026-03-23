@@ -1,5 +1,6 @@
 using GrainManagement.Dtos.Warehouse;
 using GrainManagement.Reporting;
+using GrainManagement.Services;
 using GrainManagement.Services.Warehouse;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,16 +11,18 @@ namespace GrainManagement.Controllers;
 public class WarehouseController : Controller
 {
     private readonly IWarehouseDashboardService _dash;
+    private readonly ILocationContext _locationContext;
 
-    public WarehouseController(IWarehouseDashboardService dash)
+    public WarehouseController(IWarehouseDashboardService dash, ILocationContext locationContext)
     {
         _dash = dash;
+        _locationContext = locationContext;
     }
 
     [HttpGet("")]
-    public IActionResult Index([FromQuery] int? locationId)
+    public IActionResult Index()
     {
-        var vm = _dash.GetDashboard(locationId: locationId);
+        var vm = _dash.GetDashboard(locationId: _locationContext.LocationId);
         return View(vm);
     }
 

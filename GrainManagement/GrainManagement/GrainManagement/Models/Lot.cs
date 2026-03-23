@@ -7,9 +7,15 @@ namespace GrainManagement.Models;
 
 public partial class Lot
 {
-    public long Id { get; set; }
+    public long LotId { get; set; }
 
-    public Guid RowGuid { get; set; }
+    public long As400Id { get; set; }
+
+    public int BaseId { get; set; }
+
+    public int LocationId { get; set; }
+
+    public int ServerId { get; set; }
 
     public long? ItemId { get; set; }
 
@@ -25,15 +31,27 @@ public partial class Lot
 
     public int? SplitGroupId { get; set; }
 
-    public int? LocationId { get; set; }
-
     public string LotLabel { get; set; }
 
     public string Notes { get; set; }
 
-    public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+    public Guid RowUid { get; set; }
+
+    public virtual ICollection<ContainerLotLayer> ContainerLotLayers { get; set; } = new List<ContainerLotLayer>();
+
+    public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
+
+    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetails { get; set; } = new List<InventoryTransactionDetail>();
+
+    public virtual Item Item { get; set; }
 
     public virtual Location Location { get; set; }
+
+    public virtual ICollection<LotComponent> LotComponentChildLots { get; set; } = new List<LotComponent>();
+
+    public virtual ICollection<LotComponent> LotComponentParentLots { get; set; } = new List<LotComponent>();
+
+    public virtual ICollection<LotLab> LotLabs { get; set; } = new List<LotLab>();
 
     public virtual ICollection<LotPriceOverride> LotPriceOverrides { get; set; } = new List<LotPriceOverride>();
 
@@ -41,15 +59,11 @@ public partial class Lot
 
     public virtual ICollection<LotTrait> LotTraits { get; set; } = new List<LotTrait>();
 
-    public virtual ICollection<ReceivedInventoryItem> ReceivedInventoryItems { get; set; } = new List<ReceivedInventoryItem>();
-
-    public virtual ICollection<SalesInvoiceLineItemLot> SalesInvoiceLineItemLots { get; set; } = new List<SalesInvoiceLineItemLot>();
+    public virtual Product Product { get; set; }
 
     public virtual ICollection<SeedTreatmentApplication> SeedTreatmentApplications { get; set; } = new List<SeedTreatmentApplication>();
 
+    public virtual Server Server { get; set; }
+
     public virtual SplitGroup SplitGroup { get; set; }
-
-    public virtual ICollection<WeightSheetLoadLotAllocation> WeightSheetLoadLotAllocations { get; set; } = new List<WeightSheetLoadLotAllocation>();
-
-    public virtual ICollection<WeightSheet> WeightSheets { get; set; } = new List<WeightSheet>();
 }

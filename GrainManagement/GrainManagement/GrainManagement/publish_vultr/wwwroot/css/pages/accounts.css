@@ -1,0 +1,107 @@
+/* ── Page layout ──────────────────────────────────────────── */
+.gm-accounts-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+
+.gm-accounts-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 14px;
+}
+
+/* ── No split groups label ───────────────────────────────── */
+.sg-no-groups-label {
+    color: #dc3545;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* ── Split Group cards in popup ────────────────────────────── */
+.sg-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    background: #fafafa;
+}
+
+.sg-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.sg-card__title {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.sg-status {
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.sg-status--active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.sg-status--inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.sg-card__tags {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.sg-tag {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.sg-tag--receive {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.sg-tag--sales {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* ── Percents table ──────────────────────────────────────── */
+.sg-percents-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 0.9rem;
+}
+
+.sg-percents-table th {
+    text-align: left;
+    padding: 6px 10px;
+    background: #e9ecef;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+}
+
+.sg-percents-table td {
+    padding: 5px 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.sg-percents-table tr:last-child td {
+    border-bottom: none;
+}

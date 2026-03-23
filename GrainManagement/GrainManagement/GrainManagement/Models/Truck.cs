@@ -7,9 +7,7 @@ namespace GrainManagement.Models;
 
 public partial class Truck
 {
-    public long Id { get; set; }
-
-    public Guid RowGuid { get; set; }
+    public Guid TruckUid { get; set; }
 
     public long? CarrierAccountId { get; set; }
 
@@ -24,6 +22,4 @@ public partial class Truck
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
-
-    public virtual ICollection<WeightSheet> WeightSheets { get; set; } = new List<WeightSheet>();
 }

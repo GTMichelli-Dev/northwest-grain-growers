@@ -19,11 +19,11 @@ namespace GrainManagement.Controllers
         {
             
 
-            new("1", "Clancy Kiosk", "1",1),
+            //new("1", "Clancy Kiosk", "1",1),
             new("2", "Clancy", "2",1),
             new("3", "Bol", "3",1),
             new("4", "Clean Scale Front", "4",2),
-            new("5", "Clean Scale Rear", "5",2),
+            //new("5", "Clean Scale Rear", "5",2),
             new("6", "Treat Scale Rear", "6",3),
             new("7", "Treat Scale Front", "7",3),
 

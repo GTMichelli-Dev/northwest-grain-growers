@@ -7,11 +7,15 @@ namespace GrainManagement.Models;
 
 public partial class PurchaseOrder
 {
-    public long Id { get; set; }
+    public long PurchaseOrderId { get; set; }
 
-    public Guid RowGuid { get; set; }
+    public long As400Id { get; set; }
+
+    public int BaseId { get; set; }
 
     public int LocationId { get; set; }
+
+    public int ServerId { get; set; }
 
     public long? VendorAccountId { get; set; }
 
@@ -26,8 +30,6 @@ public partial class PurchaseOrder
     public DateTime? UpdatedAt { get; set; }
 
     public virtual Location Location { get; set; }
-
-    public virtual ICollection<PurchaseOrderLineItem> PurchaseOrderLineItems { get; set; } = new List<PurchaseOrderLineItem>();
 
     public virtual Account VendorAccount { get; set; }
 }

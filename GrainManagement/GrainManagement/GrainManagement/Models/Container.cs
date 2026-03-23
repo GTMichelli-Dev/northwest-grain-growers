@@ -7,11 +7,17 @@ namespace GrainManagement.Models;
 
 public partial class Container
 {
-    public long Id { get; set; }
+    public long ContainerId { get; set; }
 
-    public Guid RowGuid { get; set; }
+    public int BaseId { get; set; }
 
-    public int StorageLocationId { get; set; }
+    public int LocationId { get; set; }
+
+    public int ServerId { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public int? StorageLocationId { get; set; }
 
     public int? ContainerTypeId { get; set; }
 
@@ -25,7 +31,21 @@ public partial class Container
 
     public string Notes { get; set; }
 
-    public DateTime CreatedAt { get; set; }
-
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual ICollection<ContainerLotLayer> ContainerLotLayers { get; set; } = new List<ContainerLotLayer>();
+
+    public virtual ContainerType ContainerType { get; set; }
+
+    public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
+
+    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetailFromContainers { get; set; } = new List<InventoryTransactionDetail>();
+
+    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetailToContainers { get; set; } = new List<InventoryTransactionDetail>();
+
+    public virtual Location Location { get; set; }
+
+    public virtual Server Server { get; set; }
+
+    public virtual StorageLocation StorageLocation { get; set; }
 }

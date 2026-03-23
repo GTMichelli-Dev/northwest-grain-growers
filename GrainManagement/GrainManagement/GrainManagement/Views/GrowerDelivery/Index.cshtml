@@ -9,19 +9,34 @@
 <div class="gm-pagehead gm-pagehead--sticky">
     <div class="gm-pagehead__title">
         <span class="gm-pagehead__icon gm-icon gm-icon--delivery" aria-hidden="true"></span>
-        <div class="gm-gd-title-group">
-            <span class="gm-gd-title-prefix">Grower Delivery For</span>
-            <div id="gdLocation" class="gm-gd-location-pick"></div>
-        </div>
+        <span>Grower Delivery</span>
     </div>
     <div class="gm-pagehead__right">
-        <a class="btn btn-outline-secondary btn-sm" href="/Warehouse/LoadType">Cancel</a>
+        <a class="btn btn-outline-secondary btn-sm" id="gdCancelBtn" href="/Warehouse/LoadType">Cancel</a>
     </div>
 </div>
 
 <div class="gm-gd">
 
     <div id="gmGdAlert" class="alert" role="alert" hidden></div>
+
+    <!-- ── Weight sheet details header (shown when wsId is provided) ── -->
+    <div id="gdWsHeader" class="gm-dl-header" hidden>
+        <div class="gm-dl-header__title">
+            <span class="gm-dl-header__label">Weight Sheet</span>
+            <span class="gm-dl-header__wsid" id="gdWsIdFormatted"></span>
+        </div>
+        <div class="gm-dl-header__details">
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Lot</span>
+                <span class="gm-dl-header__detail-value" id="gdWsLot">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Hauler</span>
+                <span class="gm-dl-header__detail-value" id="gdWsHauler">—</span>
+            </div>
+        </div>
+    </div>
 
     @await Html.PartialAsync("_WeightSheets")
     @await Html.PartialAsync("_NewWeightSheet")
@@ -151,9 +166,9 @@
                 </div>
             </div>
 
-            <!-- ── Section 3: Grain Quality ───────────────────────────── -->
+            <!-- ── Section 3: Load Details ────────────────────────────── -->
             <div class="gm-gd-section">
-                <div class="gm-gd-section__title">Grain Quality</div>
+                <div class="gm-gd-section__title">Load Details</div>
                 <div class="gm-gd-fields gm-gd-fields--3col">
 
                     <div class="gm-gd-field">
@@ -169,51 +184,21 @@
                     </div>
 
                     <div class="gm-gd-field">
-                        <label class="form-label" for="gdTestWeight">Test Weight (lbs/bu)</label>
-                        <input type="number" class="form-control" id="gdTestWeight" name="TestWeight"
-                               min="0" step="0.1" placeholder="0.0" inputmode="decimal" />
+                        <label class="form-label" for="gdBOL">BOL</label>
+                        <input type="text" class="form-control" id="gdBOL" name="BOL"
+                               maxlength="100" placeholder="Bill of Lading" />
                     </div>
 
                     <div class="gm-gd-field">
-                        <label class="form-label" for="gdDockage">Dockage (%)</label>
-                        <input type="number" class="form-control" id="gdDockage" name="Dockage"
-                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                        <label class="form-label" for="gdTruckId">Truck ID</label>
+                        <input type="text" class="form-control" id="gdTruckId" name="TruckId"
+                               maxlength="100" placeholder="Truck identifier" />
                     </div>
 
                     <div class="gm-gd-field">
-                        <label class="form-label" for="gdGrade">Grade</label>
-                        <input type="text" class="form-control" id="gdGrade" name="Grade"
-                               maxlength="50" placeholder="e.g. US #2" />
-                    </div>
-
-                    <div class="gm-gd-field">
-                        <label class="form-label" for="gdForeignMatter">Foreign Matter (%)</label>
-                        <input type="number" class="form-control" id="gdForeignMatter" name="ForeignMatter"
-                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
-                    </div>
-
-                    <div class="gm-gd-field">
-                        <label class="form-label" for="gdSplits">Splits (%)</label>
-                        <input type="number" class="form-control" id="gdSplits" name="Splits"
-                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
-                    </div>
-
-                    <div class="gm-gd-field">
-                        <label class="form-label" for="gdDamaged">Damaged (%)</label>
-                        <input type="number" class="form-control" id="gdDamaged" name="Damaged"
-                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
-                    </div>
-
-                    <div class="gm-gd-field">
-                        <label class="form-label" for="gdOil">Oil (%)</label>
-                        <input type="number" class="form-control" id="gdOil" name="Oil"
-                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
-                    </div>
-
-                    <div class="gm-gd-field">
-                        <label class="form-label" for="gdStarch">Starch (%)</label>
-                        <input type="number" class="form-control" id="gdStarch" name="Starch"
-                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                        <label class="form-label" for="gdDriver">Driver</label>
+                        <input type="text" class="form-control" id="gdDriver" name="Driver"
+                               maxlength="100" placeholder="Driver name" />
                     </div>
 
                 </div>

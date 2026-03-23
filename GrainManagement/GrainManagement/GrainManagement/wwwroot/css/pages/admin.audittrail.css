@@ -1,0 +1,98 @@
+/* ── Audit Trail page ──────────────────────────────────────────────────── */
+
+.gm-at-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.07);
+    padding: 20px;
+    margin-top: 12px;
+}
+
+/* ── Change summary pills (in grid cell) ─────────────────────────────── */
+
+.gm-at-diffs-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.gm-at-diff {
+    display: inline-block;
+    background: #f0f4ff;
+    border: 1px solid #c5d2f0;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: .78rem;
+    white-space: nowrap;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Master-detail: Old / New side-by-side ───────────────────────────── */
+
+.gm-at-detail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 12px 8px;
+}
+
+@media (max-width: 768px) {
+    .gm-at-detail {
+        grid-template-columns: 1fr;
+    }
+}
+
+.gm-at-detail__col {
+    background: #fafbfc;
+    border: 1px solid #e4e8ec;
+    border-radius: 8px;
+    padding: 12px 14px;
+}
+
+.gm-at-detail__heading {
+    font-weight: 700;
+    font-size: .85rem;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e4e8ec;
+}
+
+/* ── Key-value rows ──────────────────────────────────────────────────── */
+
+.gm-at-kv {
+    display: flex;
+    gap: 8px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: .82rem;
+    line-height: 1.4;
+}
+
+.gm-at-kv + .gm-at-kv {
+    margin-top: 2px;
+}
+
+.gm-at-kv__key {
+    font-weight: 600;
+    color: #555;
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+.gm-at-kv__key::after {
+    content: ':';
+}
+
+.gm-at-kv__val {
+    word-break: break-word;
+}
+
+/* Highlight changed values */
+.gm-at-changed {
+    background: #fff9e6;
+    border-left: 3px solid #f0c040;
+}

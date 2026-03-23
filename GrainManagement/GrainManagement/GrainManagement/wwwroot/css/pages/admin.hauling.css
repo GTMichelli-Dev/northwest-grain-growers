@@ -1,0 +1,35 @@
+/* ── Hauling admin pages ──────────────────────────────────────────────── */
+
+.gm-haul-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.07);
+    padding: 20px;
+    margin-top: 12px;
+}
+
+.gm-haulers-card--half {
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@media (max-width: 992px) {
+    .gm-haulers-card--half {
+        width: 100%;
+    }
+}
+
+.gm-haul-toolbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.gm-haul-toolbar label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}

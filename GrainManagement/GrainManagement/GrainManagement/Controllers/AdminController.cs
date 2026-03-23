@@ -66,7 +66,71 @@ namespace GrainManagement
             return View();
         }
 
+        // GET: Admin/AuditTrail
+        public IActionResult AuditTrail()
+        {
+            if (!_me.IsAdmin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
 
+            return View();
+        }
+
+        // GET: Admin/Hauling
+        public IActionResult Hauling()
+        {
+            if (!_me.IsAdmin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View();
+        }
+
+        // GET: Admin/Haulers
+        public IActionResult Haulers()
+        {
+            if (!_me.IsAdmin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View();
+        }
+
+        // GET: Admin/FuelSurcharge
+        public IActionResult FuelSurcharge()
+        {
+            if (!_me.IsAdmin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View();
+        }
+
+        // GET: Admin/SystemSettings
+        public IActionResult SystemSettings()
+        {
+            if (!_me.IsAdmin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View();
+        }
+
+        // GET: Admin/WeightSheetHaulerRates
+        public IActionResult WeightSheetHaulerRates()
+        {
+            if (!_me.IsAdmin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View();
+        }
 
     }
 }

@@ -77,7 +77,11 @@ public partial class Account
 
     public virtual ICollection<CustomerPriceOverride> CustomerPriceOverrides { get; set; } = new List<CustomerPriceOverride>();
 
+    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetails { get; set; } = new List<InventoryTransactionDetail>();
+
     public virtual ICollection<LotPriceOverride> LotPriceOverrides { get; set; } = new List<LotPriceOverride>();
+
+    public virtual ICollection<LotSplitGroup> LotSplitGroups { get; set; } = new List<LotSplitGroup>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
@@ -88,6 +92,4 @@ public partial class Account
     public virtual ICollection<SplitGroupPercent> SplitGroupPercents { get; set; } = new List<SplitGroupPercent>();
 
     public virtual ICollection<SplitGroup> SplitGroups { get; set; } = new List<SplitGroup>();
-
-    public virtual ICollection<WeightSheet> WeightSheets { get; set; } = new List<WeightSheet>();
 }

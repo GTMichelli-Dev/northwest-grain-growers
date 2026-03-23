@@ -1,0 +1,146 @@
+/* ── Back button ─────────────────────────────────────────── */
+.gm-locations-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 14px;
+}
+
+/* =========================================================
+   Locations Grid – word-wrap for Filtered Items column
+   ========================================================= */
+
+/* Filtered Items column: allow text to wrap and row to grow */
+#locationsGrid .loc-filtered-items-cell {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-height: none !important;
+    height: auto !important;
+}
+
+#locationsGrid .loc-filtered-items-cell .dx-datagrid-text-content,
+#locationsGrid .loc-filtered-items-cell > div {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-height: none !important;
+}
+
+/* Allow rows to grow to fit wrapped content */
+#locationsGrid .dx-datagrid-rowsview .dx-row > td {
+    vertical-align: middle;
+    max-height: none !important;
+}
+
+/* =========================================================
+   Locations Page – LocationCounties popup
+   Block namespace: .lc-
+   ========================================================= */
+
+.lc-popup-body {
+    padding: 4px 0;
+}
+
+.lc-section-title {
+    font-weight: 900;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted, #6c757d);
+    margin-bottom: 10px;
+}
+
+.lc-section-title--add {
+    margin-top: 20px;
+}
+
+.lc-add-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.lc-add-field {
+    flex: 1 1 200px;
+    min-width: 160px;
+}
+
+#lcAddBtn {
+    flex: 0 0 auto;
+    padding-top: 1px;
+}
+
+/* Alert */
+#lcAlert {
+    border-radius: var(--radius, 8px);
+    margin-bottom: 12px;
+    padding: 8px 14px;
+    font-size: 0.88rem;
+}
+
+#lcAlert.alert-success { background: rgba(46,125,50,.12); color: #1b5e20; border-color: rgba(46,125,50,.3); }
+#lcAlert.alert-danger  { background: rgba(198,40,40,.10); color: #b71c1c; border-color: rgba(198,40,40,.3); }
+
+/* Grid trash button */
+#lcGrid .dx-button.dx-button-danger .dx-icon {
+    color: #d32f2f;
+}
+
+/* =========================================================
+   Locations Page – LocationItems popup
+   Block namespace: .li-
+   ========================================================= */
+
+.li-popup-body {
+    padding: 4px 0;
+}
+
+.li-section-title {
+    font-weight: 900;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted, #6c757d);
+    margin-bottom: 10px;
+}
+
+.li-section-title--add {
+    margin-top: 20px;
+}
+
+.li-add-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.li-add-field {
+    flex: 1 1 200px;
+    min-width: 160px;
+}
+
+#liAddBtn {
+    flex: 0 0 auto;
+    padding-top: 1px;
+}
+
+/* Alert */
+#liAlert {
+    border-radius: var(--radius, 8px);
+    margin-bottom: 12px;
+    padding: 8px 14px;
+    font-size: 0.88rem;
+}
+
+#liAlert.alert-success { background: rgba(46,125,50,.12); color: #1b5e20; border-color: rgba(46,125,50,.3); }
+#liAlert.alert-danger  { background: rgba(198,40,40,.10); color: #b71c1c; border-color: rgba(198,40,40,.3); }
+
+/* Grid trash button */
+#liGrid .dx-button.dx-button-danger .dx-icon {
+    color: #d32f2f;
+}

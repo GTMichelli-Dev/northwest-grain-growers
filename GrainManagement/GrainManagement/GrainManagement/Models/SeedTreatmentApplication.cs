@@ -9,7 +9,15 @@ public partial class SeedTreatmentApplication
 {
     public long ApplicationId { get; set; }
 
-    public Guid RowGuid { get; set; }
+    public long As400Id { get; set; }
+
+    public int BaseId { get; set; }
+
+    public int LocationId { get; set; }
+
+    public int ServerId { get; set; }
+
+    public DateTime CreatedAt { get; set; }
 
     public long SeedLotId { get; set; }
 
@@ -28,8 +36,6 @@ public partial class SeedTreatmentApplication
     public int ChemicalUsedUomId { get; set; }
 
     public string Comments { get; set; }
-
-    public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
 

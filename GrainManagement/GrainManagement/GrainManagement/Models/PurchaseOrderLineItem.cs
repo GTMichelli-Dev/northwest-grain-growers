@@ -7,31 +7,17 @@ namespace GrainManagement.Models;
 
 public partial class PurchaseOrderLineItem
 {
-    public long Id { get; set; }
+    public long PurchaseOrderLineItemId { get; set; }
 
-    public Guid RowGuid { get; set; }
+    public int BaseId { get; set; }
+
+    public int LocationId { get; set; }
+
+    public int ServerId { get; set; }
 
     public long PurchaseOrderId { get; set; }
 
-    public long? ItemId { get; set; }
-
-    public int? ProductId { get; set; }
-
-    public decimal QtyLbOrdered { get; set; }
-
-    public decimal? ContractPrice { get; set; }
-
-    public decimal? QtyLbUnpriced { get; set; }
-
-    public string Notes { get; set; }
-
     public DateTime CreatedAt { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
-
-    public virtual PurchaseOrder PurchaseOrder { get; set; }
-
-    public virtual ICollection<ReceivedInventoryItem> ReceivedInventoryItems { get; set; } = new List<ReceivedInventoryItem>();
-
-    public virtual ICollection<ReceivedInventoryPurchaseOrderLineItem> ReceivedInventoryPurchaseOrderLineItems { get; set; } = new List<ReceivedInventoryPurchaseOrderLineItem>();
+    public virtual PurchaseOrderLineItemDetail PurchaseOrderLineItemDetail { get; set; }
 }

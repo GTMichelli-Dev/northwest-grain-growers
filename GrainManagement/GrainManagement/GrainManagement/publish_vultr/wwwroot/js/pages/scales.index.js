@@ -15,6 +15,19 @@
         return v ? "Yes" : "No";
     }
 
+    function fmtDate(val) {
+        if (!val) return "";
+        var d = new Date(val);
+        if (isNaN(d.getTime())) return val;
+        var hh = String(d.getHours()).padStart(2, "0");
+        var mm = String(d.getMinutes()).padStart(2, "0");
+        var ss = String(d.getSeconds()).padStart(2, "0");
+        var MM = String(d.getMonth() + 1).padStart(2, "0");
+        var DD = String(d.getDate()).padStart(2, "0");
+        var YY = String(d.getFullYear()).slice(-2);
+        return hh + ":" + mm + ":" + ss + " " + MM + "-" + DD + "-" + YY;
+    }
+
     function upsertRow(dto) {
         if (!dto || !dto.Id) return;
 
@@ -41,11 +54,12 @@
         tr.querySelector(".c-ok").textContent = fmtBool(dto.Ok);
         tr.querySelector(".c-motion").textContent = fmtBool(dto.Motion);
         tr.querySelector(".c-status").textContent = dto.Status ?? "";
-        tr.querySelector(".c-last").textContent = dto.LastUpdate ?? "";
+        tr.querySelector(".c-last").textContent = fmtDate(dto.LastUpdate);
 
 
-        // Highlight row pink when scale is NOT OK
+        // Highlight row pink when scale is NOT OK, yellow when in motion
         tr.classList.toggle("scale-error", dto.Ok === false);
+        tr.classList.toggle("scale-motion", dto.Ok !== false && dto.Motion === true);
     }
 
     function sortRows() {

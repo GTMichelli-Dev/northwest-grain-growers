@@ -100,11 +100,11 @@ namespace GrainManagement.API
                 query = query.Where(l => l.ProductId == productId.Value);
 
             var data = await query
-                .OrderByDescending(l => l.Id)
+                .OrderByDescending(l => l.LotId)
                 .Select(l => new
                 {
-                    Id        = l.Id,
-                    LotNumber = l.LotDescription ?? l.Id.ToString()
+                    Id        = l.LotId,
+                    LotNumber = l.LotDescription ?? l.LotId.ToString()
                 })
                 .ToListAsync(ct);
 
@@ -130,7 +130,6 @@ namespace GrainManagement.API
                 LotDescription = dto.LotDescription.Trim(),
                 SplitGroupId   = dto.SplitGroupId,
                 IsOpen         = true,
-                RowGuid        = Guid.NewGuid(),
                 CreatedAt      = DateTime.UtcNow,
             };
 
@@ -146,7 +145,7 @@ namespace GrainManagement.API
                 return StatusCode(500, new { message = "Database error while creating lot." });
             }
 
-            return Ok(new { id = lot.Id, lotNumber = lot.LotDescription });
+            return Ok(new { id = lot.LotId, lotNumber = lot.LotDescription });
         }
 
         // GET /api/Lookups/UnitOfMeasures
@@ -178,7 +177,7 @@ namespace GrainManagement.API
                 .AsNoTracking()
                 .Where(c => c.IsActive == true && c.Destroyed != true)
                 .OrderBy(c => c.Description)
-                .Select(c => new { Id = c.Id, Name = c.Description })
+                .Select(c => new { Id = c.ContainerId, Name = c.Description })
                 .ToListAsync(ct);
 
             return Ok(data);
@@ -332,6 +331,45 @@ namespace GrainManagement.API
             }
 
             return Ok(new { county.Id, CountyAbv = county.CountyAbv });
+        }
+
+        // GET /api/Lookups/Haulers
+        // Active haulers for the weight sheet hauler selector.
+        [HttpGet("Haulers")]
+        public async Task<IActionResult> Haulers(CancellationToken ct)
+        {
+            var data = await _ctx.Haulers
+                .AsNoTracking()
+                .Where(h => h.IsActive)
+                .OrderBy(h => h.Description)
+                .Select(h => new { h.Id, h.Description })
+                .ToListAsync(ct);
+
+            return Ok(data);
+        }
+
+        // GET /api/Lookups/HaulerRateForMiles?rateType=A&miles=10
+        // Looks up the hauler rate tier that covers the given mileage for the specified rate type.
+        [HttpGet("HaulerRateForMiles")]
+        public async Task<IActionResult> HaulerRateForMiles(
+            [FromQuery] string rateType,
+            [FromQuery] decimal miles,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(rateType))
+                return BadRequest(new { message = "rateType is required." });
+
+            var rate = await _ctx.WeightSheetHaulerRates
+                .AsNoTracking()
+                .Where(r => r.RateType == rateType && r.MaxDistance >= miles)
+                .OrderBy(r => r.MaxDistance)
+                .Select(r => new { r.Rate, r.MaxDistance })
+                .FirstOrDefaultAsync(ct);
+
+            if (rate == null)
+                return NotFound(new { message = "No rate tier covers the specified mileage." });
+
+            return Ok(rate);
         }
 
         // GET /api/Lookups/StatesWithCounties

@@ -8,5 +8,11 @@ namespace GrainManagement.Controllers
 
         [HttpGet]
         public IActionResult WeightSheetLots() => View();
+
+        [HttpGet]
+        public IActionResult NewWeightSheet() => View();
+
+        [HttpGet]
+        public IActionResult WeightSheetDeliveryLoads() => View();
     }
 }

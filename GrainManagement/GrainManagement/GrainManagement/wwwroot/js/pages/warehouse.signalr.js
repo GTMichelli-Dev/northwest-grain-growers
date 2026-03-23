@@ -1,17 +1,8 @@
 (function () {
     "use strict";
 
-    // Shared cookie name already used by warehouse.index.js
-    const cookieLocation = "GM.SelectedWarehouseLocationId";
-
-    function getCookie(name) {
-        const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
-        return m ? decodeURIComponent(m[2]) : null;
-    }
-
     function getLocationId() {
-        const v = parseInt(getCookie(cookieLocation) || "0", 10);
-        return isNaN(v) ? 0 : v;
+        return GM.getLocationId();
     }
 
     let connection = null;

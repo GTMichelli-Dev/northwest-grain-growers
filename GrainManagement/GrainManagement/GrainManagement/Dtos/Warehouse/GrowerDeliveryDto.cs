@@ -99,5 +99,16 @@ namespace GrainManagement.Dtos.Warehouse
 
         /// <summary>Damaged kernels percentage (DAMAGED).</summary>
         public decimal? Damaged { get; set; }
+
+        // ── Transport / load-level attributes ──────────────────────────────────
+
+        /// <summary>Bill of Lading number (BOL, AttributeTypeId=11).</summary>
+        public string BOL { get; set; }
+
+        /// <summary>Truck identifier (TRUCK_ID, AttributeTypeId=12).</summary>
+        public string TruckId { get; set; }
+
+        /// <summary>Driver name (DRIVER, AttributeTypeId=13).</summary>
+        public string Driver { get; set; }
     }
 }

@@ -9,8 +9,6 @@ public partial class Payment
 {
     public long Id { get; set; }
 
-    public Guid RowGuid { get; set; }
-
     public long? SalesInvoiceId { get; set; }
 
     public long? AccountId { get; set; }
@@ -29,5 +27,5 @@ public partial class Payment
 
     public virtual Account Account { get; set; }
 
-    public virtual SalesInvoice SalesInvoice { get; set; }
+    public virtual SalesInvoice IdNavigation { get; set; }
 }

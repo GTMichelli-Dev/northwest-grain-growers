@@ -7,9 +7,13 @@ namespace GrainManagement.Models;
 
 public partial class LabResult
 {
-    public long Id { get; set; }
+    public long LabResultId { get; set; }
 
-    public Guid RowGuid { get; set; }
+    public long BaseId { get; set; }
+
+    public int LocationId { get; set; }
+
+    public int ServerId { get; set; }
 
     public long LotLabId { get; set; }
 
@@ -22,4 +26,8 @@ public partial class LabResult
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual Location Location { get; set; }
+
+    public virtual Server Server { get; set; }
 }

@@ -89,3 +89,51 @@
     font-size: 2.5rem;
     opacity: 0.25;
 }
+
+/* =========================================================
+   Dashboard content panels
+   ========================================================= */
+
+.gm-wd-content {
+    padding: 16px;
+}
+
+.gm-wd-panel {
+    /* full width — no max-width constraint */
+}
+
+/* ── Weight-sheet row coloring by type ────────────────────── */
+
+/* Grower Delivery rows — blue tint */
+.gm-ws-row--delivery {
+    background-color: rgba(0, 140, 255, 0.08) !important;
+}
+.gm-ws-row--delivery.gm-ws-row--alt {
+    background-color: rgba(0, 140, 255, 0.14) !important;
+}
+
+/* Transfer rows — green tint (future) */
+.gm-ws-row--transfer {
+    background-color: rgba(22, 163, 74, 0.08) !important;
+}
+.gm-ws-row--transfer.gm-ws-row--alt {
+    background-color: rgba(22, 163, 74, 0.14) !important;
+}
+
+/* Row hover highlight */
+#wdOpenWsGrid .dx-data-row:hover > td {
+    background-color: rgba(0, 0, 0, 0.08) !important;
+}
+#wdOpenWsGrid .gm-ws-row--delivery:hover > td {
+    background-color: rgba(0, 140, 255, 0.22) !important;
+}
+#wdOpenWsGrid .gm-ws-row--transfer:hover > td {
+    background-color: rgba(22, 163, 74, 0.22) !important;
+}
+
+.gm-wd-panel__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #333;
+}

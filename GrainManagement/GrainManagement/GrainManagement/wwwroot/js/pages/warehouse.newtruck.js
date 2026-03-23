@@ -568,14 +568,8 @@
     }
 
 
-    function setCookie(name, value, days = 30) {
-      const d = new Date();
-      d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
-      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/`;
-    }
-
     async function backToIntake() {
-      setCookie("GM.WarehouseMode", "intake", 30);
+      GM.setCookie("GM.WarehouseMode", "intake", 30);
 
       if (window.gmWarehouse?.initMode) {
         await window.gmWarehouse.initMode("intake");

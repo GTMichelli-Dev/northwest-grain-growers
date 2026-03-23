@@ -16,4 +16,8 @@ public partial class LotComponent
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual Lot ChildLot { get; set; }
+
+    public virtual Lot ParentLot { get; set; }
 }

@@ -7,9 +7,9 @@ namespace GrainManagement.Models;
 
 public partial class TransactionAttribute
 {
-    public int Id { get; set; }
+    public Guid TransactionAttributesUid { get; set; }
 
-    public Guid TransactionId { get; set; }
+    public long TransactionId { get; set; }
 
     public int AttributeTypeId { get; set; }
 
