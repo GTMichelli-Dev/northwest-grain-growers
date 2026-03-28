@@ -1,3 +1,4 @@
+#nullable enable
 using DevExtreme.AspNet.Data;
 using DevExtreme.AspNet.Mvc;
 using GrainManagement.Models;
@@ -22,12 +23,12 @@ public class ItemsApiController : ControllerBase
     public class ItemRow
     {
         public long ItemId { get; set; }
-        public string Description { get; set; }
+        public string? Description { get; set; }
         public bool IsActive { get; set; }
         public long ProductId { get; set; }
-        public string ProductDescription { get; set; }
-        public string CategoryDescription { get; set; }
-        public string SystemUsage { get; set; }
+        public string? ProductDescription { get; set; }
+        public string? CategoryDescription { get; set; }
+        public string? SystemUsage { get; set; }
         public int TraitCount { get; set; }
         public int OtherTraitCount { get; set; }
     }

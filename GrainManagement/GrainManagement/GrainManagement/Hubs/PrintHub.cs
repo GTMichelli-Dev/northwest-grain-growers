@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿#nullable enable
+using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 
 namespace GrainManagement.Hubs

@@ -25,8 +25,10 @@
 
 @section Scripts {
     <script>
-        var _splitFilter = "";
-        var _search = "";
+        // Restore toolbar filters from sessionStorage
+        var _splitFilter = sessionStorage.getItem("acct_splitFilter") || "";
+        var _search = sessionStorage.getItem("acct_search") || "";
+        var _producerFilter = sessionStorage.getItem("acct_producerFilter") || "";
 
         const accountsStore = DevExpress.data.AspNet.createStore({
             key: "AccountId",
@@ -37,6 +39,9 @@
                 }
                 if (_search) {
                     ajaxOptions.data.search = _search;
+                }
+                if (_producerFilter) {
+                    ajaxOptions.data.producerFilter = _producerFilter;
                 }
             }
         });
@@ -70,13 +75,39 @@
                                 width: 260,
                                 placeholder: "Search accounts...",
                                 mode: "search",
+                                value: _search,
                                 onValueChanged: function (e) {
                                     _search = e.value || "";
+                                    sessionStorage.setItem("acct_search", _search);
                                     var grid = $("#accountsGrid").dxDataGrid("instance");
                                     grid.refresh();
                                 }
                             }).appendTo($wrap);
                             return $wrap;
+                        }
+                    },
+                    {
+                        location: "after",
+                        template: function () {
+                            return $("<div>").css({ display: "flex", alignItems: "center", gap: "8px" })
+                                .append($("<span>").text("Producer").css({ fontWeight: 600 }))
+                                .append($("<div id='producerFilter'>").dxSelectBox({
+                                    items: [
+                                        { value: "all", text: "All" },
+                                        { value: "producer", text: "Producers" },
+                                        { value: "non-producer", text: "Non-Producers" }
+                                    ],
+                                    valueExpr: "value",
+                                    displayExpr: "text",
+                                    value: _producerFilter || "all",
+                                    width: 160,
+                                    onValueChanged: function (e) {
+                                        _producerFilter = (e.value === "all") ? "" : e.value;
+                                        sessionStorage.setItem("acct_producerFilter", _producerFilter);
+                                        var grid = $("#accountsGrid").dxDataGrid("instance");
+                                        grid.refresh();
+                                    }
+                                }));
                         }
                     },
                     {
@@ -92,10 +123,11 @@
                                     ],
                                     valueExpr: "value",
                                     displayExpr: "text",
-                                    value: "all",
+                                    value: _splitFilter || "all",
                                     width: 170,
                                     onValueChanged: function (e) {
                                         _splitFilter = (e.value === "all") ? "" : e.value;
+                                        sessionStorage.setItem("acct_splitFilter", _splitFilter);
                                         var grid = $("#accountsGrid").dxDataGrid("instance");
                                         grid.refresh();
                                     }
@@ -107,9 +139,17 @@
 
             showBorders: true,
             columnAutoWidth: true,
+            allowColumnResizing: true,
+            columnResizingMode: "widget",
             wordWrapEnabled: true,
             rowAlternationEnabled: true,
             hoverStateEnabled: true,
+
+            stateStoring: {
+                enabled: true,
+                type: "sessionStorage",
+                storageKey: "accountsGridState"
+            },
 
             searchPanel: { visible: false },
 
@@ -134,12 +174,19 @@
                         if (!isActive) cellElement.css("color", "red");
                     }
                 },
-                { dataField: "AccountId", caption: "ID", width: 70, allowSearch: false },
-                { dataField: "As400AccountId", caption: "AS400 ID", width: 90, allowSearch: false },
+                { dataField: "As400AccountId", caption: "Agvantage Id", width: 100, allowSearch: false },
                 { dataField: "LookupName", caption: "Lookup Name", minWidth: 200 },
+                {
+                    dataField: "IsProducer",
+                    caption: "Producer",
+                    width: 85,
+                    allowSearch: false,
+                    cellTemplate: function (el, info) { el.text(info.value ? "Yes" : "No"); }
+                },
                 {
                     dataField: "IsSeedProducer",
                     caption: "Seed Producer",
+                    width: 95,
                     allowSearch: false,
                     cellTemplate: function (el, info) { el.text(info.value ? "Yes" : "No"); }
                 },
@@ -151,7 +198,7 @@
                     cellTemplate: function (el, info) { el.text(info.value ? "Yes" : "No"); }
                 },
                 { dataField: "Phone1", caption: "Phone", width: 120 },
-                { dataField: "Email", caption: "Email", width: 180 },
+                { dataField: "Email", caption: "Email" },
                 {
                     dataField: "SplitGroupCount",
                     caption: "Split Groups",
@@ -159,6 +206,9 @@
                     allowSearch: false,
                     allowFiltering: false,
                     cellTemplate: function (cellElement, cellInfo) {
+                        if (!cellInfo.data.IsProducer) {
+                            return;
+                        }
                         var count = cellInfo.value || 0;
                         if (count === 0) {
                             $("<span>").addClass("sg-no-groups-label").text("No Split Groups").appendTo(cellElement);

@@ -18,7 +18,6 @@ namespace GrainManagement.API
     public class SystemApiController : ControllerBase
     {
 
-        private static Server _serverInfo;
         private readonly dbContext _ctx;
         private readonly ILogger<SystemApiController> _logger;
         private readonly IServerInfoProvider _serverInfoProvider;

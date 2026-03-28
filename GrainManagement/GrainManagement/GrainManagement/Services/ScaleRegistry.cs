@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿#nullable enable
+using System.Collections.Concurrent;
 using GrainManagement.Dtos.Scales;
 
 namespace GrainManagement.Services

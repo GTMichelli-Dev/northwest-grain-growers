@@ -1,3 +1,4 @@
+#nullable enable
 using DevExtreme.AspNet.Data;
 using DevExtreme.AspNet.Mvc;
 using GrainManagement.Models;
@@ -24,30 +25,35 @@ public class AccountsApiController : ControllerBase
         public long AccountId { get; set; }
         public long As400AccountId { get; set; }
         public bool IsActive { get; set; }
-        public string LookupName { get; set; }
+        public string? LookupName { get; set; }
+        public bool IsProducer { get; set; }
         public bool IsSeedProducer { get; set; }
         public bool IsWholesale { get; set; }
-        public string Phone1 { get; set; }
-        public string Email { get; set; }
+        public string? Phone1 { get; set; }
+        public string? Email { get; set; }
         public int SplitGroupCount { get; set; }
     }
 
     /// <summary>GET /api/accounts — DevExtreme DataSource load</summary>
     /// <param name="splitFilter">Optional: "none" = no split groups, "has" = has split groups</param>
     [HttpGet]
-    public object Get(DataSourceLoadOptions loadOptions, [FromQuery] string? splitFilter = null, [FromQuery] string? search = null)
+    public object Get(DataSourceLoadOptions loadOptions, [FromQuery] string? splitFilter = null, [FromQuery] string? search = null, [FromQuery] string? producerFilter = null)
     {
         DevExtremeUtils.NormalizeLoadOptions(loadOptions);
 
         var baseQuery = _ctx.Accounts
-            .AsNoTracking()
-            .Where(a => a.IsProducer);
+            .AsNoTracking();
+
+        if (producerFilter == "producer")
+            baseQuery = baseQuery.Where(a => a.IsProducer);
+        else if (producerFilter == "non-producer")
+            baseQuery = baseQuery.Where(a => !a.IsProducer);
 
         if (!string.IsNullOrWhiteSpace(search))
             baseQuery = baseQuery.Where(a => a.LookupName.Contains(search));
 
         if (splitFilter == "none")
-            baseQuery = baseQuery.Where(a => !_ctx.SplitGroups.Any(sg => sg.PrimaryAccountId == a.AccountId));
+            baseQuery = baseQuery.Where(a => a.IsProducer && !_ctx.SplitGroups.Any(sg => sg.PrimaryAccountId == a.AccountId));
         else if (splitFilter == "has")
             baseQuery = baseQuery.Where(a => _ctx.SplitGroups.Any(sg => sg.PrimaryAccountId == a.AccountId));
 
@@ -57,6 +63,7 @@ public class AccountsApiController : ControllerBase
                 As400AccountId = a.As400AccountId,
                 IsActive = a.IsActive,
                 LookupName = a.LookupName,
+                IsProducer = a.IsProducer,
                 IsSeedProducer = a.IsSeedProducer,
                 IsWholesale = a.IsWholesale,
                 Phone1 = a.Phone1,

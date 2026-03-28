@@ -45,7 +45,9 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             var ids = new List<string>();
+#nullable enable
             string? next = "https://graph.microsoft.com/v1.0/me/transitiveMemberOf/microsoft.graph.group?$select=id";
+#nullable restore
 
             while (!string.IsNullOrEmpty(next))
             {

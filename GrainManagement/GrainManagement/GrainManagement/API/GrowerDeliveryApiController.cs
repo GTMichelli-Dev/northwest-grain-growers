@@ -435,7 +435,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             long lotId;
             using (var cmd = conn.CreateCommand())
             {
-                cmd.Transaction = (SqlTransaction?)_ctx.Database.CurrentTransaction?.GetDbTransaction();
+                cmd.Transaction = _ctx.Database.CurrentTransaction?.GetDbTransaction() as SqlTransaction;
                 cmd.CommandText = "SELECT LotId FROM [Inventory].[Lots] WHERE RowUid = @uid";
                 cmd.Parameters.AddWithValue("@uid", rowUid);
                 var result = await cmd.ExecuteScalarAsync(ct)
@@ -665,7 +665,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             long wsId;
             using (var cmd = conn.CreateCommand())
             {
-                cmd.Transaction = (SqlTransaction?)_ctx.Database.CurrentTransaction?.GetDbTransaction();
+                cmd.Transaction = _ctx.Database.CurrentTransaction?.GetDbTransaction() as SqlTransaction;
                 cmd.CommandText = "SELECT WeightSheetId FROM [warehouse].[WeightSheets] WHERE RowUid = @uid";
                 cmd.Parameters.AddWithValue("@uid", wsRowUid);
                 var result = await cmd.ExecuteScalarAsync(ct)
@@ -746,7 +746,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             ORDER BY ws.WeightSheetId DESC, itd.TxnAt DESC";
 
         using var cmd = conn.CreateCommand();
-        cmd.Transaction = (SqlTransaction?)_ctx.Database.CurrentTransaction?.GetDbTransaction();
+        cmd.Transaction = _ctx.Database.CurrentTransaction?.GetDbTransaction() as SqlTransaction;
         cmd.CommandText = sql;
         cmd.Parameters.AddWithValue("@locationId", locationId);
         cmd.Parameters.AddWithValue("@serverId", _systemInfo.ServerId);
@@ -882,7 +882,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
               AND ws.ServerId      = @serverId";
 
         using var cmd = conn.CreateCommand();
-        cmd.Transaction = (SqlTransaction?)_ctx.Database.CurrentTransaction?.GetDbTransaction();
+        cmd.Transaction = _ctx.Database.CurrentTransaction?.GetDbTransaction() as SqlTransaction;
         cmd.CommandText = sql;
         cmd.Parameters.AddWithValue("@wsId", id);
         cmd.Parameters.AddWithValue("@serverId", _systemInfo.ServerId);
