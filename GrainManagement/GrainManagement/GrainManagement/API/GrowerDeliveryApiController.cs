@@ -1,3 +1,4 @@
+using GrainManagement.Auth;
 using GrainManagement.Dtos.Warehouse;
 using GrainManagement.Models;
 using GrainManagement.Services;
@@ -12,6 +13,7 @@ namespace GrainManagement.API;
 [UseAdminConnection]
 [ApiController]
 [Route("api/GrowerDelivery")]
+[RequiresModule(nameof(Services.ModuleOptions.GrowerDelivery))]
 public sealed class GrowerDeliveryApiController : ControllerBase
 {
     private readonly dbContext _ctx;

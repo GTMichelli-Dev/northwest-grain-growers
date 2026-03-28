@@ -1,3 +1,4 @@
+using GrainManagement.Auth;
 using GrainManagement.Services;
 using Microsoft.AspNetCore.Mvc;
 using GrainManagement.Dtos.Warehouse;
@@ -6,6 +7,7 @@ namespace GrainManagement.API;
 
 [ApiController]
 [Route("api/warehouse/intake")]
+[RequiresModule(nameof(ModuleOptions.WarehouseIntake))]
 public sealed class WarehouseIntakeApiController : ControllerBase
 {
     private readonly IWarehouseIntakeDataService _service;

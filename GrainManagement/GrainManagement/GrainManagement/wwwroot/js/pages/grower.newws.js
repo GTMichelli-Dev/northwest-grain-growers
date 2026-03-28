@@ -169,17 +169,8 @@
     }
 
     function showStep3(wsId) {
-        _createdWsId = wsId;
-        $(SEL.step1).prop('hidden', true);
-        $(SEL.step2).prop('hidden', true);
-        $(SEL.step3).prop('hidden', false);
-
-        $(SEL.successInfo).html(
-            '<strong>Weight Sheet #' + formatLotId(wsId) + '</strong> has been created.' +
-            (_selectedLot ? '<br>Lot: ' + formatLotId(_selectedLot.LotId) + ' &mdash; ' + (_selectedLot.LotDescription || '') : '')
-        );
-
-        $(SEL.addLoadBtn).attr('href', '/GrowerDelivery/Index');
+        // Auto-redirect to new load entry after weight sheet creation
+        window.location.href = '/GrowerDelivery/Index';
     }
 
     // ── Wire navigation buttons ──────────────────────────────────────────────

@@ -1,7 +1,10 @@
+using GrainManagement.Auth;
+using GrainManagement.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GrainManagement.Controllers
 {
+    [RequiresModule(nameof(ModuleOptions.GrowerDelivery))]
     public class GrowerDeliveryController : Controller
     {
         public IActionResult Index() => View();

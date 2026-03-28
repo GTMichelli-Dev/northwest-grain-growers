@@ -3,24 +3,27 @@
 }
 @inject ICurrentUser CurrentUser
 @inject ILocationContext LocationCtx
+@inject IModuleContext Modules
 
 <div class="gm-hero">
     <div class="gm-hero__inner">
-        <h1 class="gm-hero__title">Grain Management</h1>
-        @if (LocationCtx.HasLocation)
-        {
-            <p class="gm-hero__subtitle">@LocationCtx.LocationName</p>
-        }
-        else
-        {
-            <p class="gm-hero__subtitle">Select a location above to get started.</p>
-        }
+        <h1 class="gm-hero__title">Grain Management@(LocationCtx.HasLocation ? " - " + LocationCtx.LocationName + " (" + LocationCtx.LocationId + ")" : "")</h1>
     </div>
 </div>
 
+@if (!LocationCtx.HasLocation)
+{
+    <div style="text-align: center; margin-top: 3rem;">
+        <p style="color: red; font-weight: bold; font-size: 2rem;">
+            Select a Location to Begin
+        </p>
+    </div>
+    return;
+}
+
 <div class="row g-4 mt-2">
 
-    @if (!LocationCtx.HasLocation || LocationCtx.CanDoWarehouse)
+    @if (Modules.IsEnabled("WarehouseIntake") && (!LocationCtx.HasLocation || LocationCtx.CanDoWarehouse))
     {
         <div class="col-12 col-lg-4">
             <a class="gm-tile gm-tile--link gm-tile--warehouse" href="/Warehouse">
@@ -33,7 +36,7 @@
         </div>
     }
 
-    @if (!LocationCtx.HasLocation || LocationCtx.CanDoSeed)
+    @if (Modules.IsEnabled("Seed") && (!LocationCtx.HasLocation || LocationCtx.CanDoSeed))
     {
         <div class="col-12 col-lg-4">
             <a class="gm-tile gm-tile--link gm-tile--seed" href="/Seed">
@@ -46,44 +49,56 @@
         </div>
     }
 
-    <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link gm-tile--reports" href="/Reports">
-            <div class="gm-tile__header">
-                <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
-                <h2 class="gm-tile__title">Reports</h2>
-            </div>
-            <p class="gm-tile__text">Daily totals, history, inventory reports, and management summaries.</p>
-        </a>
-    </div>
+    @if (Modules.IsEnabled("Reporting"))
+    {
+        <div class="col-12 col-lg-4">
+            <a class="gm-tile gm-tile--link gm-tile--reports" href="/Reports">
+                <div class="gm-tile__header">
+                    <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
+                    <h2 class="gm-tile__title">Reports</h2>
+                </div>
+                <p class="gm-tile__text">Daily totals, history, inventory reports, and management summaries.</p>
+            </a>
+        </div>
+    }
 
-    <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link gm-tile--system" href="/System">
-            <div class="gm-tile__header">
-                <div class="gm-tile__icon gm-icon gm-icon--settings" aria-hidden="true"></div>
-                <h2 class="gm-tile__title">System</h2>
-            </div>
-            <p class="gm-tile__text">Cameras, scales, and hardware configuration</p>
-        </a>
-    </div>
+    @if (Modules.IsEnabled("System"))
+    {
+        <div class="col-12 col-lg-4">
+            <a class="gm-tile gm-tile--link gm-tile--system" href="/System">
+                <div class="gm-tile__header">
+                    <div class="gm-tile__icon gm-icon gm-icon--settings" aria-hidden="true"></div>
+                    <h2 class="gm-tile__title">System</h2>
+                </div>
+                <p class="gm-tile__text">Cameras, scales, and hardware configuration</p>
+            </a>
+        </div>
+    }
 
-    <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link gm-tile--remote" href="/Remote">
-            <div class="gm-tile__header">
-                <div class="gm-tile__icon gm-icon gm-icon--remote" aria-hidden="true"></div>
-                <h2 class="gm-tile__title">Remote</h2>
-            </div>
-            <p class="gm-tile__text">Remote access to other locations</p>
-        </a>
-    </div>
+    @if (Modules.IsCentral)
+    {
+        <div class="col-12 col-lg-4">
+            <a class="gm-tile gm-tile--link gm-tile--remote" href="/Remote">
+                <div class="gm-tile__header">
+                    <div class="gm-tile__icon gm-icon gm-icon--remote" aria-hidden="true"></div>
+                    <h2 class="gm-tile__title">Remote</h2>
+                </div>
+                <p class="gm-tile__text">Remote access to other locations</p>
+            </a>
+        </div>
+    }
 
-    <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link gm-tile--admin" href="/Admin">
-            <div class="gm-tile__header">
-                <div class="gm-tile__icon gm-icon gm-icon--admin" aria-hidden="true"></div>
-                <h2 class="gm-tile__title">Administrator</h2>
-            </div>
-            <p class="gm-tile__text">Account, Product, User Setup</p>
-        </a>
-    </div>
+    @if (Modules.IsEnabled("DatabaseAdmin"))
+    {
+        <div class="col-12 col-lg-4">
+            <a class="gm-tile gm-tile--link gm-tile--admin" href="/Admin">
+                <div class="gm-tile__header">
+                    <div class="gm-tile__icon gm-icon gm-icon--admin" aria-hidden="true"></div>
+                    <h2 class="gm-tile__title">Administrator</h2>
+                </div>
+                <p class="gm-tile__text">Account, Product, User Setup</p>
+            </a>
+        </div>
+    }
 
 </div>

@@ -1,4 +1,5 @@
 ﻿#nullable enable
+using GrainManagement.Auth;
 using GrainManagement.Dtos.Scales;
 using GrainManagement.Services;
 using GrainManagement.Hubs;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 
 [ApiController]
 [Route("api/[controller]")]
+[RequiresModule(nameof(ModuleOptions.Scales))]
 public class ScaleController : ControllerBase
 {
     private readonly IScaleRegistry _scaleRegistry;

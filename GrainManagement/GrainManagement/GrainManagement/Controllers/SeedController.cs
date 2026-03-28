@@ -1,3 +1,5 @@
+using GrainManagement.Auth;
+using GrainManagement.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -9,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace GrainManagement.Controllers
 {
-
+    [RequiresModule(nameof(ModuleOptions.Seed))]
     public class SeedController : Controller
     {
 

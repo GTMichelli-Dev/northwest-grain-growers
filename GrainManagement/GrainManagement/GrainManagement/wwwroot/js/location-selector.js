@@ -6,11 +6,14 @@
     var currentLabel = document.getElementById("gm-location-current");
     if (!dropdown) return;
 
+    var availableIds = [];
+
     // Load available locations into dropdown
     fetch("/api/LocationContextApi/available")
         .then(function (r) { return r.json(); })
         .then(function (locations) {
             locations.forEach(function (loc) {
+                availableIds.push(loc.LocationId);
                 var opt = document.createElement("option");
                 opt.value = loc.LocationId;
                 opt.textContent = loc.Name + " (" + loc.LocationId + ")";
@@ -25,9 +28,29 @@
         .then(function (r) { return r.json(); })
         .then(function (current) {
             if (current.HasLocation) {
+                // If current location is not in the allowed list, clear it and go home
+                if (availableIds.indexOf(current.LocationId) === -1) {
+                    fetch("/api/LocationContextApi/clear", { method: "POST" })
+                        .then(function () { window.location.href = "/"; });
+                    return;
+                }
                 dropdown.value = current.LocationId;
                 // Sync to global cookie so all pages can read it
                 if (window.GM && GM.setLocationId) GM.setLocationId(current.LocationId);
+            } else if (availableIds.length === 1) {
+                // Only one location available — auto-select it
+                fetch("/api/LocationContextApi/select", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ LocationId: availableIds[0] })
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (result) {
+                    if (result.HasLocation) {
+                        if (window.GM && GM.setLocationId) GM.setLocationId(availableIds[0]);
+                        window.location.reload();
+                    }
+                });
             }
         })
         .catch(function (err) {

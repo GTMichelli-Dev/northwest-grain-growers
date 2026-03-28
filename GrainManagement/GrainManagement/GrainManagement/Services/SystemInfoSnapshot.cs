@@ -25,7 +25,12 @@ public sealed class SystemInfoSnapshot
 
         var assembly = typeof(SystemInfoSnapshot).Assembly;
         ApplicationName = assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title ?? "GrainManagement";
-        Version = assembly.GetName().Version?.ToString() ?? "0.0.0.0";
+        var infoVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+                         ?? assembly.GetName().Version?.ToString(3)
+                         ?? "0.0.0";
+        // Strip the +commitHash suffix that .NET SDK appends
+        var plusIndex = infoVersion.IndexOf('+');
+        Version = plusIndex >= 0 ? infoVersion[..plusIndex] : infoVersion;
         BuildDate = File.GetLastWriteTimeUtc(assembly.Location).ToString("yyyy-MM-dd");
     }
 

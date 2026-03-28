@@ -2,6 +2,7 @@ using GrainManagement.Models;
 using GrainManagement.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace GrainManagement.API;
 
@@ -10,21 +11,57 @@ namespace GrainManagement.API;
 public class LocationContextApiController : ControllerBase
 {
     private readonly dbContext _db;
+    private readonly ModuleOptions _modules;
 
-    public LocationContextApiController(dbContext db)
+    public LocationContextApiController(dbContext db, IOptions<ModuleOptions> modules)
     {
         _db = db;
+        _modules = modules.Value;
     }
 
     /// <summary>
-    /// Returns all active locations for the location selector dropdown.
+    /// Returns active locations for the location selector dropdown.
+    /// Filters by enabled modules: Warehouse-only shows UseForWarehouse locations,
+    /// Seed-only shows UseForSeed, both shows either. Admin/Reporting modes show all.
+    /// AllowedLocationIds further restricts the list when non-empty.
     /// </summary>
     [HttpGet("available")]
     public async Task<IActionResult> GetAvailable()
     {
-        var locations = await _db.Locations
+        var query = _db.Locations
             .AsNoTracking()
-            .Where(l => l.IsActive)
+            .Where(l => l.IsActive);
+
+        // If any admin or reporting module is on, show all locations (no capability filter)
+        bool isAdminOrReporting = _modules.DatabaseAdmin || _modules.WarehouseAdmin
+            || _modules.SeedAdmin || _modules.Reporting;
+
+        if (!isAdminOrReporting)
+        {
+            bool wh = _modules.WarehouseIntake;
+            bool seed = _modules.Seed;
+
+            if (wh && seed)
+                query = query.Where(l => l.UseForWarehouse || l.UseForSeed);
+            else if (wh)
+                query = query.Where(l => l.UseForWarehouse);
+            else if (seed)
+                query = query.Where(l => l.UseForSeed);
+        }
+
+        // Apply AllowedLocationIds restriction, but if that yields zero results
+        // fall back to showing all locations matching the module capability filter
+        var baseQuery = query;
+
+        if (_modules.AllowedLocationIds.Count > 0)
+        {
+            var restricted = query.Where(l => _modules.AllowedLocationIds.Contains(l.LocationId));
+            if (await restricted.AnyAsync())
+                query = restricted;
+            // else: fall back to baseQuery (all locations for the enabled module)
+        }
+
+        var locations = await query
             .OrderBy(l => l.Name)
             .Select(l => new
             {
@@ -85,6 +122,16 @@ public class LocationContextApiController : ControllerBase
             CanDoSeed = location.UseForSeed,
             IsAdminOnly = !location.UseForWarehouse && !location.UseForSeed
         });
+    }
+
+    /// <summary>
+    /// Clears the user's selected location cookie.
+    /// </summary>
+    [HttpPost("clear")]
+    public IActionResult Clear()
+    {
+        LocationContext.ClearLocation(HttpContext.Response);
+        return Ok(new { HasLocation = false });
     }
 
     public class SelectLocationDto

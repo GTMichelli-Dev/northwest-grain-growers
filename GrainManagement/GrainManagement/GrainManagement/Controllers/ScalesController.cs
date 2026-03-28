@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using GrainManagement.Auth;
+using GrainManagement.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace GrainManagement.Controllers
 {
+    [RequiresModule(nameof(ModuleOptions.Scales))]
     public class ScalesController : Controller
     {
       

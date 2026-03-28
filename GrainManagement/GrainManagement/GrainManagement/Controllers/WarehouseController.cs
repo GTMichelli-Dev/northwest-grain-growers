@@ -1,3 +1,4 @@
+using GrainManagement.Auth;
 using GrainManagement.Dtos.Warehouse;
 using GrainManagement.Reporting;
 using GrainManagement.Services;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GrainManagement.Controllers;
 
 [Route("Warehouse")]
+[RequiresModule(nameof(ModuleOptions.WarehouseIntake))]
 public class WarehouseController : Controller
 {
     private readonly IWarehouseDashboardService _dash;

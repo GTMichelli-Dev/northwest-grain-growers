@@ -1,4 +1,6 @@
-﻿using GrainManagement.Models;
+﻿using DevExpress.AspNetCore;
+using DevExpress.AspNetCore.Reporting;
+using GrainManagement.Models;
 using GrainManagement.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -23,6 +25,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 	// Branding / theming (server-controlled)
 	builder.Services.Configure<BrandingOptions>(builder.Configuration.GetSection("Branding"));
+
+// Module system — controls which features are active for this deployment
+builder.Services.Configure<ModuleOptions>(builder.Configuration.GetSection(ModuleOptions.SectionName));
+builder.Services.AddSingleton<IModuleContext, ModuleContext>();
+
+// DevExpress Reporting — web document viewer
+builder.Services.AddDevExpressControls();
+builder.Services.AddScoped<DevExpress.XtraReports.Web.Extensions.ReportStorageWebExtension, ReportStorageService>();
+builder.Services.ConfigureReportingServices(configurator =>
+{
+    configurator.ConfigureWebDocumentViewer(viewerConfigurator =>
+    {
+        viewerConfigurator.UseCachedReportSourceBuilder();
+    });
+});
 
 // Authentication + Microsoft Entra ID (OIDC)
 // Also enable token acquisition so you can inject ITokenAcquisition in controllers.
@@ -306,6 +323,7 @@ fh.KnownProxies.Clear();
 app.UseForwardedHeaders(fh);
 
 //app.UseHttpsRedirection();
+app.UseDevExpressControls();
 app.UseStaticFiles();
 
   

@@ -12,6 +12,7 @@ namespace GrainManagement
     // TEMP: disabled for local testing — re-enable before deploy!
     //[Authorize]
     //[AuthorizeForScopes(Scopes = new[] { "Group.Read.All" })]
+    [GrainManagement.Auth.RequiresModule(nameof(GrainManagement.Services.ModuleOptions.DatabaseAdmin))]
     public class AdminController : Controller
     {
 
