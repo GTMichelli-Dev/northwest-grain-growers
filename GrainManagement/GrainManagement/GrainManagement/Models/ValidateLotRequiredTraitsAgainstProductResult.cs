@@ -8,7 +8,5 @@ namespace GrainManagement.Models
 {
     public partial class ValidateLotRequiredTraitsAgainstProductResult
     {
-        [StringLength(30)]
-        public string MissingTraitTypeCode { get; set; }
     }
 }

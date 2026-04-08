@@ -69,6 +69,148 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         if (hasScale && hasDirect)
             return BadRequest(new { message = "Provide scale weights OR a direct quantity, not both." });
 
+        // ── Quantity source validation ──────────────────────────────────────────
+        // When StartQty or EndQty is provided, we require method + source type + location + description.
+        if (hasScale)
+        {
+            if (!dto.StartQtyMethodId.HasValue)
+                return BadRequest(new { message = "StartQtyMethodId is required when StartQty is provided." });
+            if (!dto.StartQtySourceTypeId.HasValue)
+                return BadRequest(new { message = "StartQtySourceTypeId is required when StartQty is provided." });
+            if (string.IsNullOrWhiteSpace(dto.StartQtyLocation))
+                return BadRequest(new { message = "StartQtyLocation is required when StartQty is provided." });
+            if (string.IsNullOrWhiteSpace(dto.StartQtySourceDescription))
+                return BadRequest(new { message = "StartQtySourceDescription is required when StartQty is provided." });
+
+            if (!dto.EndQtyMethodId.HasValue)
+                return BadRequest(new { message = "EndQtyMethodId is required when EndQty is provided." });
+            if (!dto.EndQtySourceTypeId.HasValue)
+                return BadRequest(new { message = "EndQtySourceTypeId is required when EndQty is provided." });
+            if (string.IsNullOrWhiteSpace(dto.EndQtyLocation))
+                return BadRequest(new { message = "EndQtyLocation is required when EndQty is provided." });
+            if (string.IsNullOrWhiteSpace(dto.EndQtySourceDescription))
+                return BadRequest(new { message = "EndQtySourceDescription is required when EndQty is provided." });
+        }
+
+        // When DirectQty is provided, require source tracking fields.
+        if (hasDirect)
+        {
+            if (!dto.DirectQtyMethodId.HasValue)
+                return BadRequest(new { message = "DirectQtyMethodId is required when DirectQty is provided." });
+            if (!dto.DirectQtySourceTypeId.HasValue)
+                return BadRequest(new { message = "DirectQtySourceTypeId is required when DirectQty is provided." });
+            if (string.IsNullOrWhiteSpace(dto.DirectQtyLocation))
+                return BadRequest(new { message = "DirectQtyLocation is required when DirectQty is provided." });
+            if (string.IsNullOrWhiteSpace(dto.DirectQtySourceDescription))
+                return BadRequest(new { message = "DirectQtySourceDescription is required when DirectQty is provided." });
+        }
+
+        // Validate source types exist and are active
+        var sourceTypeIds = new HashSet<int>();
+        if (dto.StartQtySourceTypeId.HasValue)  sourceTypeIds.Add(dto.StartQtySourceTypeId.Value);
+        if (dto.EndQtySourceTypeId.HasValue)    sourceTypeIds.Add(dto.EndQtySourceTypeId.Value);
+        if (dto.DirectQtySourceTypeId.HasValue) sourceTypeIds.Add(dto.DirectQtySourceTypeId.Value);
+
+        Dictionary<int, string> sourceTypeMap = new();
+        if (sourceTypeIds.Count > 0)
+        {
+            sourceTypeMap = await _ctx.QuantitySourceTypes
+                .AsNoTracking()
+                .Where(q => q.IsActive && sourceTypeIds.Contains(q.QuantitySourceTypeId))
+                .ToDictionaryAsync(q => q.QuantitySourceTypeId, q => q.Code, ct);
+
+            foreach (var id in sourceTypeIds)
+            {
+                if (!sourceTypeMap.ContainsKey(id))
+                    return BadRequest(new { message = $"QuantitySourceTypeId {id} is not valid or not active." });
+            }
+        }
+
+        // Validate methods exist and are active
+        var methodIds = new HashSet<int>();
+        if (dto.StartQtyMethodId.HasValue)  methodIds.Add(dto.StartQtyMethodId.Value);
+        if (dto.EndQtyMethodId.HasValue)    methodIds.Add(dto.EndQtyMethodId.Value);
+        if (dto.DirectQtyMethodId.HasValue) methodIds.Add(dto.DirectQtyMethodId.Value);
+
+        if (methodIds.Count > 0)
+        {
+            var activeMethods = await _ctx.QuantityMethods
+                .AsNoTracking()
+                .Where(m => m.IsActive && methodIds.Contains(m.QuantityMethodId))
+                .Select(m => m.QuantityMethodId)
+                .ToHashSetAsync(ct);
+
+            foreach (var id in methodIds)
+            {
+                if (!activeMethods.Contains(id))
+                    return BadRequest(new { message = $"QuantityMethodId {id} is not valid or not active." });
+            }
+        }
+
+        // Validate method + source type combos against QuantityMethodSources cross-ref
+        if (dto.StartQtyMethodId.HasValue && dto.StartQtySourceTypeId.HasValue)
+        {
+            var startComboValid = await _ctx.QuantityMethodSources
+                .AsNoTracking()
+                .AnyAsync(ms => ms.QuantityMethodId == dto.StartQtyMethodId.Value
+                             && ms.QuantitySourceTypeId == dto.StartQtySourceTypeId.Value, ct);
+            if (!startComboValid)
+                return BadRequest(new { message = $"Source type {dto.StartQtySourceTypeId} is not allowed for method {dto.StartQtyMethodId} (StartQty)." });
+        }
+
+        if (dto.EndQtyMethodId.HasValue && dto.EndQtySourceTypeId.HasValue)
+        {
+            var endComboValid = await _ctx.QuantityMethodSources
+                .AsNoTracking()
+                .AnyAsync(ms => ms.QuantityMethodId == dto.EndQtyMethodId.Value
+                             && ms.QuantitySourceTypeId == dto.EndQtySourceTypeId.Value, ct);
+            if (!endComboValid)
+                return BadRequest(new { message = $"Source type {dto.EndQtySourceTypeId} is not allowed for method {dto.EndQtyMethodId} (EndQty)." });
+        }
+
+        // Validate DirectQty method + source type combo
+        if (dto.DirectQtyMethodId.HasValue && dto.DirectQtySourceTypeId.HasValue)
+        {
+            var directComboValid = await _ctx.QuantityMethodSources
+                .AsNoTracking()
+                .AnyAsync(ms => ms.QuantityMethodId == dto.DirectQtyMethodId.Value
+                             && ms.QuantitySourceTypeId == dto.DirectQtySourceTypeId.Value, ct);
+            if (!directComboValid)
+                return BadRequest(new { message = $"Source type {dto.DirectQtySourceTypeId} is not allowed for method {dto.DirectQtyMethodId} (DirectQty)." });
+        }
+
+        // ── Lot Product/Item match validation (WAREHOUSE_RECEIVE constraint) ────
+        var lot = await _ctx.Lots
+            .AsNoTracking()
+            .Where(l => l.LotId == dto.LotId)
+            .Select(l => new { l.ProductId, l.ItemId })
+            .FirstOrDefaultAsync(ct);
+
+        if (lot is null)
+            return BadRequest(new { message = $"Lot {dto.LotId} not found." });
+
+        if (lot.ProductId.HasValue && lot.ProductId.Value != dto.ProductId)
+            return BadRequest(new { message = "ProductId must match the Lot's ProductId." });
+
+        if (lot.ItemId.HasValue && dto.ItemId.HasValue && lot.ItemId.Value != dto.ItemId.Value)
+            return BadRequest(new { message = "ItemId must match the Lot's ItemId." });
+
+        // If either source is MANUAL, CreatedByUserId is required
+        bool anyManual = sourceTypeMap.Values.Any(code => code == "MANUAL");
+
+        if (anyManual)
+        {
+            if (!dto.CreatedByUserId.HasValue || dto.CreatedByUserId.Value <= 0)
+                return BadRequest(new { message = "CreatedByUserId is required when any quantity source is Manual." });
+
+            var userExists = await _ctx.Users
+                .AsNoTracking()
+                .AnyAsync(u => u.UserId == dto.CreatedByUserId.Value && u.IsActive, ct);
+
+            if (!userExists)
+                return BadRequest(new { message = $"CreatedByUserId {dto.CreatedByUserId.Value} is not valid or not active." });
+        }
+
         // ── Build the transaction (header + detail) ────────────────────────────
         var txn = new InventoryTransaction
         {
@@ -81,7 +223,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             LotId        = dto.LotId,
             ProductId    = dto.ProductId,
             ItemId       = dto.ItemId,
-            TxnType      = "RECEIVE",
+            TxnType      = "WAREHOUSE_RECEIVE",
             Direction    = 1,
             UomId        = uomId,
             AccountId    = dto.AccountId,
@@ -97,8 +239,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             Notes        = dto.Notes,
             TxnAt        = DateTime.UtcNow,
             IsVoided     = false,
-            // TODO: resolve UserId from _currentUser.UPN via users.Users table
-            CreatedByUserId = null,
+            CreatedByUserId = dto.CreatedByUserId,
         };
 
         _ctx.InventoryTransactions.Add(txn);
@@ -111,6 +252,59 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         {
             _logger.LogError(ex, "Failed to save GrowerDelivery for LotId={LotId}", dto.LotId);
             return StatusCode(500, new { message = "Database error while saving delivery." });
+        }
+
+        // ── Save quantity source records ────────────────────────────────────────
+        if (dto.StartQtySourceTypeId.HasValue)
+        {
+            _ctx.TransactionQuantitySources.Add(new TransactionQuantitySource
+            {
+                TransactionId     = txn.TransactionId,
+                QuantityField     = "START",
+                MethodId          = dto.StartQtyMethodId,
+                SourceTypeId      = dto.StartQtySourceTypeId.Value,
+                Location          = dto.StartQtyLocation?.Trim(),
+                SourceDescription = dto.StartQtySourceDescription.Trim(),
+            });
+        }
+
+        if (dto.EndQtySourceTypeId.HasValue)
+        {
+            _ctx.TransactionQuantitySources.Add(new TransactionQuantitySource
+            {
+                TransactionId     = txn.TransactionId,
+                QuantityField     = "END",
+                MethodId          = dto.EndQtyMethodId,
+                SourceTypeId      = dto.EndQtySourceTypeId.Value,
+                Location          = dto.EndQtyLocation?.Trim(),
+                SourceDescription = dto.EndQtySourceDescription.Trim(),
+            });
+        }
+
+        if (dto.DirectQtySourceTypeId.HasValue)
+        {
+            _ctx.TransactionQuantitySources.Add(new TransactionQuantitySource
+            {
+                TransactionId     = txn.TransactionId,
+                QuantityField     = "DIRECT",
+                MethodId          = dto.DirectQtyMethodId,
+                SourceTypeId      = dto.DirectQtySourceTypeId.Value,
+                Location          = dto.DirectQtyLocation?.Trim(),
+                SourceDescription = dto.DirectQtySourceDescription.Trim(),
+            });
+        }
+
+        if (dto.StartQtySourceTypeId.HasValue || dto.EndQtySourceTypeId.HasValue || dto.DirectQtySourceTypeId.HasValue)
+        {
+            try
+            {
+                await _ctx.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Failed to save quantity sources for TransactionId={TxnId}", txn.TransactionId);
+                return StatusCode(500, new { message = "Database error while saving quantity sources." });
+            }
         }
 
         // ── Build grain quality TransactionAttributes via raw SQL (keyless entity) ──
@@ -149,6 +343,23 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         return Ok(new { id = txn.TransactionId });
     }
 
+    // GET /api/GrowerDelivery/ValidatePin?pin=
+    [HttpGet("ValidatePin")]
+    public async Task<IActionResult> ValidatePin([FromQuery] int pin, CancellationToken ct)
+    {
+        if (pin <= 0)
+            return BadRequest(new { message = "PIN is required." });
+
+        var user = await _ctx.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Pin == pin && u.IsActive, ct);
+
+        if (user is null)
+            return Unauthorized(new { message = "Invalid or inactive PIN." });
+
+        return Ok(new { UserId = user.UserId, UserName = user.UserName });
+    }
+
     // GET /api/GrowerDelivery/OpenWeightSheets?locationId=
     [HttpGet("OpenWeightSheets")]
     public async Task<IActionResult> GetOpenWeightSheets([FromQuery] int locationId, CancellationToken ct)
@@ -163,6 +374,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             .Select(ws => new
             {
                 ws.WeightSheetId,
+                ws.RowUid,
                 ws.WeightSheetType,
                 CreationDate   = ws.CreationDate.ToString("MM/dd/yyyy"),
                 IsOpen         = ws.ClosedAt == null,
@@ -713,6 +925,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 itd.NetQty              AS Net,
                 itd.TxnAt,
                 itd.Notes,
+                itd.ToContainerId       AS ContainerId,
                 c.Description           AS ContainerDescription,
                 attr1.DecimalValue      AS Attr1Value,
                 attr1.StringValue       AS Attr1String,
@@ -776,6 +989,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 Net                    = reader.IsDBNull(reader.GetOrdinal("Net")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Net")),
                 TxnAt                  = reader.GetDateTime(reader.GetOrdinal("TxnAt")),
                 Notes                  = reader.IsDBNull(reader.GetOrdinal("Notes")) ? null : reader.GetString(reader.GetOrdinal("Notes")),
+                ContainerId            = reader.IsDBNull(reader.GetOrdinal("ContainerId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("ContainerId")),
                 ContainerDescription   = reader.IsDBNull(reader.GetOrdinal("ContainerDescription")) ? null : reader.GetString(reader.GetOrdinal("ContainerDescription")),
                 Attr1Value             = reader.IsDBNull(reader.GetOrdinal("Attr1Value")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Attr1Value")),
                 Attr1String            = reader.IsDBNull(reader.GetOrdinal("Attr1String")) ? null : reader.GetString(reader.GetOrdinal("Attr1String")),
@@ -789,6 +1003,28 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         }
 
         return Ok(results);
+    }
+
+    // POST /api/GrowerDelivery/WeightSheetDeliveryLoads/UpdateBin
+    [HttpPost("WeightSheetDeliveryLoads/UpdateBin")]
+    public async Task<IActionResult> UpdateDeliveryLoadBin(
+        [FromBody] UpdateLoadBinDto dto,
+        CancellationToken ct)
+    {
+        if (dto.LoadId == Guid.Empty)
+            return BadRequest(new { message = "LoadId is required." });
+
+        var load = await _ctx.WeightSheetLoads
+            .FirstOrDefaultAsync(l => l.Id == dto.LoadId, ct);
+
+        if (load == null)
+            return NotFound(new { message = "Load not found." });
+
+        // Update ToContainerId on the linked InventoryTransactionDetail
+        await _ctx.Database.ExecuteSqlAsync(
+            $"UPDATE [Inventory].[InventoryTransactionDetails] SET ToContainerId = {dto.ContainerId} WHERE RefId = {dto.LoadId}", ct);
+
+        return Ok();
     }
 
     // POST /api/GrowerDelivery/WeightSheetDeliveryLoads/UpdateAttribute
@@ -843,6 +1079,27 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         return Ok(new { success = true });
     }
 
+    // GET /api/GrowerDelivery/LotSplitGroup/{lotId} — split group accounts + percentages
+    [HttpGet("LotSplitGroup/{lotId:long}")]
+    public async Task<IActionResult> GetLotSplitGroup(long lotId, CancellationToken ct)
+    {
+        var rows = await _ctx.LotSplitGroups
+            .Where(lsg => lsg.LotId == lotId)
+            .Include(lsg => lsg.Account)
+            .OrderByDescending(lsg => lsg.PrimaryAccount)
+            .ThenByDescending(lsg => lsg.SplitPercent)
+            .Select(lsg => new {
+                lsg.AccountId,
+                AccountName = lsg.Account.EntityName ?? lsg.Account.LookupName,
+                lsg.SplitPercent,
+                lsg.PrimaryAccount,
+            })
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return Ok(rows);
+    }
+
     // GET /api/GrowerDelivery/WeightSheet/{id}  — header info only (no loads required)
     [HttpGet("WeightSheet/{id:long}")]
     public async Task<IActionResult> GetWeightSheet(long id, CancellationToken ct)
@@ -861,11 +1118,14 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 h.Description   AS HaulerName,
                 ws.RateType,
                 ws.CustomRateDescription,
+                ws.Miles,
+                ws.Rate,
                 ws.LotId,
                 lot.LotDescription,
                 lot.ServerId    AS LotServerId,
                 lot.LocationId  AS LotLocationId,
                 p.Description   AS CropName,
+                sg.SplitGroupId,
                 sg.SplitGroupDescription AS SplitName,
                 COALESCE(
                     NULLIF(lsgAcct.EntityName, ''), lsgAcct.LookupName,
@@ -903,11 +1163,14 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             HaulerName         = reader.IsDBNull(reader.GetOrdinal("HaulerName")) ? null : reader.GetString(reader.GetOrdinal("HaulerName")),
             RateType           = reader.IsDBNull(reader.GetOrdinal("RateType")) ? null : reader.GetString(reader.GetOrdinal("RateType")),
             CustomRateDescription = reader.IsDBNull(reader.GetOrdinal("CustomRateDescription")) ? null : reader.GetString(reader.GetOrdinal("CustomRateDescription")),
+            Miles              = reader.IsDBNull(reader.GetOrdinal("Miles")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Miles")),
+            Rate               = reader.IsDBNull(reader.GetOrdinal("Rate")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Rate")),
             LotId              = reader.IsDBNull(reader.GetOrdinal("LotId")) ? (long?)null : reader.GetInt64(reader.GetOrdinal("LotId")),
             LotDescription     = reader.IsDBNull(reader.GetOrdinal("LotDescription")) ? null : reader.GetString(reader.GetOrdinal("LotDescription")),
             LotServerId        = reader.IsDBNull(reader.GetOrdinal("LotServerId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("LotServerId")),
             LotLocationId      = reader.IsDBNull(reader.GetOrdinal("LotLocationId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("LotLocationId")),
             CropName           = reader.IsDBNull(reader.GetOrdinal("CropName")) ? null : reader.GetString(reader.GetOrdinal("CropName")),
+            SplitGroupId       = reader.IsDBNull(reader.GetOrdinal("SplitGroupId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("SplitGroupId")),
             SplitName          = reader.IsDBNull(reader.GetOrdinal("SplitName")) ? null : reader.GetString(reader.GetOrdinal("SplitName")),
             PrimaryAccountName = reader.IsDBNull(reader.GetOrdinal("PrimaryAccountName")) ? null : reader.GetString(reader.GetOrdinal("PrimaryAccountName")),
         });
@@ -948,17 +1211,74 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         // Snapshot old values for audit
         long? oldLotId = ws.LotId;
 
+        // Use raw SQL since WeightSheets may be a keyless entity in EF
+        var sets = new List<string>();
+        var parameters = new List<SqlParameter>();
+
         if (dto.HaulerId.HasValue)
+        {
+            sets.Add("HaulerId = @haulerId");
+            parameters.Add(new SqlParameter("@haulerId", dto.HaulerId.Value == 0 ? DBNull.Value : dto.HaulerId.Value));
             ws.HaulerId = dto.HaulerId.Value == 0 ? null : dto.HaulerId;
+        }
 
         if (dto.LotId.HasValue)
+        {
+            sets.Add("LotId = @lotId");
+            parameters.Add(new SqlParameter("@lotId", dto.LotId.Value == 0 ? DBNull.Value : dto.LotId.Value));
             ws.LotId = dto.LotId.Value == 0 ? null : dto.LotId;
+        }
 
         if (dto.Notes != null)
-            ws.Notes = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim();
+        {
+            var notesVal = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim();
+            sets.Add("Notes = @notes");
+            parameters.Add(new SqlParameter("@notes", (object)notesVal ?? DBNull.Value));
+            ws.Notes = notesVal;
+        }
 
-        ws.UpdatedAt = DateTime.UtcNow;
-        await _ctx.SaveChangesAsync(ct);
+        if (dto.RateType != null)
+        {
+            sets.Add("RateType = @rateType");
+            parameters.Add(new SqlParameter("@rateType", dto.RateType));
+        }
+
+        if (dto.Miles.HasValue)
+        {
+            sets.Add("Miles = @miles");
+            parameters.Add(new SqlParameter("@miles", dto.Miles.Value));
+        }
+
+        if (dto.CustomRateDescription != null)
+        {
+            var descVal = string.IsNullOrWhiteSpace(dto.CustomRateDescription) ? null : dto.CustomRateDescription.Trim();
+            sets.Add("CustomRateDescription = @customRateDesc");
+            parameters.Add(new SqlParameter("@customRateDesc", (object)descVal ?? DBNull.Value));
+        }
+
+        if (dto.Rate.HasValue)
+        {
+            sets.Add("Rate = @rate");
+            parameters.Add(new SqlParameter("@rate", dto.Rate.Value));
+        }
+
+        sets.Add("UpdatedAt = @updatedAt");
+        parameters.Add(new SqlParameter("@updatedAt", DateTime.UtcNow));
+        parameters.Add(new SqlParameter("@wsId", id));
+        parameters.Add(new SqlParameter("@serverId", _systemInfo.ServerId));
+
+        if (sets.Count > 1) // more than just UpdatedAt
+        {
+            var sql = $"UPDATE [warehouse].[WeightSheets] SET {string.Join(", ", sets)} WHERE WeightSheetId = @wsId AND ServerId = @serverId";
+            var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+            if (conn.State != System.Data.ConnectionState.Open)
+                await conn.OpenAsync(ct);
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = _ctx.Database.CurrentTransaction?.GetDbTransaction() as SqlTransaction;
+            cmd.CommandText = sql;
+            cmd.Parameters.AddRange(parameters.ToArray());
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
 
         // ── Audit trail for lot change ────────────────────────────────────────
         if (lotChanging && pinUserName != null)

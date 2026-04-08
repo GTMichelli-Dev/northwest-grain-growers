@@ -65,7 +65,11 @@ namespace GrainManagement.Services
                     existing.Ok = scale.Ok;
                     existing.Weight = scale.Weight;
                     existing.Status = scale.Status;
+                    existing.RawResponse = scale.RawResponse;
                     existing.LastUpdate = now;
+                    existing.LocationId = scale.LocationId;
+                    existing.LocationDescription = scale.LocationDescription;
+                    existing.ServiceId = scale.ServiceId;
 
                     // Ensure mapping points to this Id
                     _descToId[desc] = scale.Id;
@@ -96,7 +100,11 @@ namespace GrainManagement.Services
                 Ok = s.Ok,
                 Motion = s.Motion,
                 Status = s.Status,
-                LastUpdate = s.LastUpdate
+                RawResponse = s.RawResponse,
+                LastUpdate = s.LastUpdate,
+                LocationId = s.LocationId,
+                LocationDescription = s.LocationDescription,
+                ServiceId = s.ServiceId
             };
 
             if (now - dto.LastUpdate > staleAfter)

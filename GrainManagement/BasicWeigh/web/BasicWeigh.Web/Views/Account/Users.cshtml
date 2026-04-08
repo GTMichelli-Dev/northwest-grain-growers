@@ -1,0 +1,170 @@
+@model List<BasicWeigh.Web.Models.AppUser>
+@{
+    ViewData["Title"] = "User Management";
+    int adminCount = ViewBag.AdminCount ?? 0;
+}
+
+<style>
+    .role-badge {
+        display: inline-block;
+        min-width: 70px;
+        text-align: center;
+    }
+</style>
+
+<h3 class="mb-2">User Management</h3>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show py-1 mb-2" role="alert">
+        @TempData["Message"]
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show py-1 mb-2" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="mb-2">
+    <a asp-action="CreateUser" class="btn btn-primary btn-sm">+ Add User</a>
+    <a asp-controller="Setup" asp-action="Index" class="btn btn-secondary btn-sm">Back to Setup</a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-sm table-hover mb-0">
+            <thead>
+                <tr style="background: var(--bw-surface-alt);">
+                    <th>Username</th>
+                    <th>Display Name</th>
+                    <th>Role</th>
+                    <th>Active</th>
+                    <th>Must Change Password</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    <tr>
+                        <td>@user.Username</td>
+                        <td>@user.DisplayName</td>
+                        <td>
+                            @if (user.Role == "Admin")
+                            {
+                                <span class="badge bg-danger role-badge">Admin</span>
+                            }
+                            else if (user.Role == "Manager")
+                            {
+                                <span class="badge bg-warning text-dark role-badge">Manager</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-info text-dark role-badge">User</span>
+                            }
+                        </td>
+                        <td>
+                            @if (user.Active)
+                            {
+                                <span class="badge bg-success">Yes</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">No</span>
+                            }
+                        </td>
+                        <td>
+                            @if (user.MustChangePassword)
+                            {
+                                <span class="badge bg-warning text-dark">Yes</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a asp-action="EditUser" asp-route-id="@user.Id" class="btn btn-outline-primary btn-sm">Edit</a>
+                                <form asp-action="ResetPassword" asp-route-id="@user.Id" method="post" class="d-inline" id="resetPwForm-@user.Id">
+                                    @Html.AntiForgeryToken()
+                                    <button type="button" class="btn btn-outline-warning btn-sm"
+                                            onclick="showConfirmModal('Reset Password', 'Reset password for \'@user.Username\' to default (michelli)?<br><br>The user will be required to change it on next login.', 'resetPwForm-@user.Id', 'btn-warning')">Reset PW</button>
+                                </form>
+                                @if (user.Role == "Admin" && adminCount <= 1)
+                                {
+                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                            onclick="showConfirmModal('Cannot Delete', 'This is the only active admin user.<br><br>You must create another admin before you can delete this one.', null, 'btn-secondary')">Delete</button>
+                                }
+                                else
+                                {
+                                    <form asp-action="DeleteUser" asp-route-id="@user.Id" method="post" class="d-inline" id="deleteUserForm-@user.Id">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                onclick="showConfirmModal('Delete User', 'Delete user \'@user.Username\'?<br><br>This cannot be undone.', 'deleteUserForm-@user.Id', 'btn-danger')">Delete</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+        <strong>Roles</strong>
+    </div>
+    <div class="card-body py-2 small">
+        <table class="table table-sm mb-0">
+            <tr><td><span class="badge bg-info text-dark role-badge">User</span></td><td>Weigh trucks in and out</td></tr>
+            <tr><td><span class="badge bg-warning text-dark role-badge">Manager</span></td><td>Weigh trucks + edit master data tables (customers, carriers, etc.)</td></tr>
+            <tr><td><span class="badge bg-danger role-badge">Admin</span></td><td>Full access including Setup page and user management</td></tr>
+        </table>
+        <p class="mt-2 mb-0 text-muted">When an admin resets a password, it is set to <code>michelli</code> and the user must change it on next login.</p>
+    </div>
+</div>
+
+<!-- Confirm Operation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="confirmModalTitle">Confirm Operation</h6>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3" id="confirmModalBody"></div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm" id="confirmModalBtn" onclick="confirmModalSubmit()">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var _confirmFormId = null;
+    function showConfirmModal(title, message, formId, btnClass) {
+        _confirmFormId = formId;
+        document.getElementById('confirmModalTitle').textContent = title;
+        document.getElementById('confirmModalBody').innerHTML = message;
+        var btn = document.getElementById('confirmModalBtn');
+        btn.className = 'btn btn-sm ' + btnClass;
+        if (formId) {
+            btn.textContent = title;
+            btn.style.display = '';
+        } else {
+            btn.style.display = 'none';
+        }
+        new bootstrap.Modal(document.getElementById('confirmModal')).show();
+    }
+    function confirmModalSubmit() {
+        if (_confirmFormId) {
+            document.getElementById(_confirmFormId).submit();
+        }
+    }
+</script>
+}

@@ -1,5 +1,3 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using ScaleReaderService.Models;
 using System.Net.Sockets;
 using System.Text;
@@ -9,89 +7,110 @@ namespace ScaleReaderService.Services
 {
     /// <summary>
     /// Minimal SMA-over-TCP client: sends a request command and parses the reply.
-    /// Parser is tolerant and extracts:
-    ///   - Weight (int, scaled to units of whole weight; adjust if you need decimals)
-    ///   - Motion (true if line indicates motion/unstable)
-    ///   - Ok (true when a valid weight was parsed and no explicit error tokens present)
-    ///   - Status (raw response)
     /// </summary>
     public sealed class SmaClient
     {
-        private readonly SmaOptions _sma;
-        private readonly PollingOptions _poll;
         private readonly ILogger<SmaClient> _log;
-        private readonly Encoding _enc;
-
-        // Heuristic regex: finds the last integer in the line (common for gross/net)
         private static readonly Regex WeightRegex = new(@"\s*(-?\d+)(?:\.\d+)?\s*", RegexOptions.Compiled);
 
-        public SmaClient(IOptions<SmaOptions> sma, IOptions<PollingOptions> poll, ILogger<SmaClient> log)
+        public SmaClient(ILogger<SmaClient> log)
         {
-            _sma = sma.Value;
-            _poll = poll.Value;
             _log = log;
-            _enc = string.Equals(_sma.Encoding, "utf-8", StringComparison.OrdinalIgnoreCase)
-                 ? Encoding.UTF8
-                 : Encoding.ASCII;
         }
 
-        public async Task<(bool ok, int weight, bool motion, string status)> QueryOnceAsync(string ip, int port, CancellationToken ct)
+        public async Task<(bool ok, int weight, bool motion, string status, string rawResponse)> QueryOnceAsync(
+            ScaleConfigEntity config, int timeoutMs, CancellationToken ct)
         {
+            var enc = string.Equals(config.Encoding, "utf-8", StringComparison.OrdinalIgnoreCase)
+                ? Encoding.UTF8
+                : Encoding.ASCII;
+
             using var client = new TcpClient();
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(_poll.TimeoutMs);
+            cts.CancelAfter(timeoutMs);
 
-            await client.ConnectAsync(ip, port, cts.Token);
-            client.ReceiveTimeout = _poll.TimeoutMs;
-            client.SendTimeout = _poll.TimeoutMs;
+            await client.ConnectAsync(config.IpAddress, config.Port, cts.Token);
+            client.ReceiveTimeout = timeoutMs;
+            client.SendTimeout = timeoutMs;
 
             using NetworkStream ns = client.GetStream();
 
-            // Send request
-            byte[] request = BuildRequestBytes(_sma.RequestCommand);
+            byte[] request = BuildRequestBytes(config.RequestCommand, enc);
             await ns.WriteAsync(request.AsMemory(0, request.Length), cts.Token);
             await ns.FlushAsync(ct);
 
-            // Read response (read until CR/LF or socket idle)
             var buffer = new byte[1024];
             var sb = new StringBuilder();
-            int bytesRead;
             do
             {
                 if (ns.DataAvailable)
                 {
-                    bytesRead = await ns.ReadAsync(buffer, 0, buffer.Length, cts.Token);
+                    int bytesRead = await ns.ReadAsync(buffer, cts.Token);
                     if (bytesRead <= 0) break;
-                    sb.Append(_enc.GetString(buffer, 0, bytesRead));
-                    if (sb.ToString().Contains("\n") || sb.ToString().Contains("\r")) break;
+                    sb.Append(enc.GetString(buffer, 0, bytesRead));
+                    if (sb.ToString().Contains('\n') || sb.ToString().Contains('\r')) break;
                 }
                 else
                 {
-                    // short pause to allow device to respond
                     await Task.Delay(10, ct);
                 }
             }
             while (!ct.IsCancellationRequested);
 
-            string reply = sb.ToString().Trim();
+            // Trim only CR/LF, preserve internal spaces (SMA uses spaces as status codes)
+            string reply = sb.ToString().Trim('\r', '\n');
             if (string.IsNullOrWhiteSpace(reply))
+                return (false, 0, false, "No response", "");
+
+            // ── SMA Standard Response: <LF><s><r><n><m><f><XXXXXX.XXX><uuu><CR>
+            //   <s> Scale Status:  Z=Center of Zero, O=Over Capacity, U=Under Capacity,
+            //                      E=Zero Error, T=Tare Error, space=None
+            //   <r> Range:         Always '1' if multi-interval
+            //   <n> Gross/Net:     G=Gross, T=Tare, N=Net
+            //   <m> Motion:        M=scale is in motion, space=stable
+            //   <f> Future:        Always space
+            //   <XXXXXX.XXX>       Weight value
+            //   <uuu>              Unit (lb, kg, etc.)
+
+            // Try positional parse: find the status header before the weight digits
+            // The header is typically <s><r><n><m><f> (5 chars) before the weight
+            var headerMatch = Regex.Match(reply, @"^([ZOUET ])(\d)([GTN])([M ])( )", RegexOptions.None);
+
+            bool motion = false;
+            bool error = false;
+
+            if (headerMatch.Success)
             {
-                return (false, 0, false, "No response");
+                // Positional parse succeeded
+                char scaleStatus = headerMatch.Groups[1].Value[0];
+                char motionChar  = headerMatch.Groups[4].Value[0];
+
+                motion = (motionChar == 'M');
+                error  = scaleStatus == 'O'     // Over Capacity
+                      || scaleStatus == 'U'     // Under Capacity
+                      || scaleStatus == 'E'     // Zero Error
+                      || scaleStatus == 'T';    // Tare Error
+            }
+            else
+            {
+                // Fallback: heuristic for non-standard responses
+                motion = reply.Contains("US", StringComparison.OrdinalIgnoreCase)
+                      || reply.Contains("UNST", StringComparison.OrdinalIgnoreCase)
+                      || reply.Contains("MOTION", StringComparison.OrdinalIgnoreCase)
+                      || reply.Contains('M');
+
+                error = reply.Contains("ERR", StringComparison.OrdinalIgnoreCase)
+                     || reply.Contains('O')
+                     || reply.Contains('U')
+                     || reply.Contains('E');
             }
 
-            // Parse motion/status tokens commonly seen in SMA-like outputs:
-            // Examples: "ST,GS,   000123 kg", "US,GS,000123", "MOTION", "STABLE"
-            bool motion = reply.Contains("US", StringComparison.OrdinalIgnoreCase)
-                       || reply.Contains("M", StringComparison.OrdinalIgnoreCase)
-                        || reply.Contains("UNST", StringComparison.OrdinalIgnoreCase)
-                       || reply.Contains("MOTION", StringComparison.OrdinalIgnoreCase);
-
+            // Parse weight value
             var m = WeightRegex.Matches(reply);
             int weight = 0;
             bool ok = false;
             if (m.Count > 0)
             {
-                // take the last numeric token as gross (devices often include headings + weight)
                 if (int.TryParse(m[^1].Groups[1].Value, out int parsed))
                 {
                     weight = parsed;
@@ -99,31 +118,64 @@ namespace ScaleReaderService.Services
                 }
             }
 
-            // Additional failure tokens
-            if (reply.Contains("ERR", StringComparison.OrdinalIgnoreCase)
-                || reply.Contains("U", StringComparison.OrdinalIgnoreCase)
-                        || reply.Contains("O", StringComparison.OrdinalIgnoreCase)
-                       || reply.Contains("E", StringComparison.OrdinalIgnoreCase))
-                ok = false;
-            var status = (!ok) ? "Error" : (motion ? "Motion" : "Ok");
-            return (ok, weight, motion, status);
+            if (error) ok = false;
+
+            var status = !ok ? "Error" : (motion ? "Motion" : "Ok");
+            var safeReply = ToSafeString(reply);
+            return (ok, weight, motion, status, safeReply);
         }
 
-        private byte[] BuildRequestBytes(string s)
+        /// <summary>
+        /// Converts a string to a safe display form, replacing non-printable characters
+        /// with ASCII names (e.g. [STX], [CR], [LF], [ENQ]) or [0xXX] for unknowns.
+        /// </summary>
+        private static string ToSafeString(string s)
         {
-            // Support escape forms like \u0005 (ENQ) and \r\n
-            s = s
-                .Replace("\\r", "\r")
-                .Replace("\\n", "\n");
+            var sb = new StringBuilder(s.Length);
+            foreach (char c in s)
+            {
+                if (c >= 0x20 && c <= 0x7E)
+                {
+                    sb.Append(c);
+                }
+                else
+                {
+                    sb.Append((int)c switch
+                    {
+                        0x00 => "[NUL]",
+                        0x01 => "[SOH]",
+                        0x02 => "[STX]",
+                        0x03 => "[ETX]",
+                        0x04 => "[EOT]",
+                        0x05 => "[ENQ]",
+                        0x06 => "[ACK]",
+                        0x07 => "[BEL]",
+                        0x08 => "[BS]",
+                        0x09 => "[TAB]",
+                        0x0A => "[LF]",
+                        0x0B => "[VT]",
+                        0x0C => "[FF]",
+                        0x0D => "[CR]",
+                        0x0E => "[SO]",
+                        0x0F => "[SI]",
+                        0x1B => "[ESC]",
+                        0x7F => "[DEL]",
+                        _ => $"[0x{(int)c:X2}]"
+                    });
+                }
+            }
+            return sb.ToString();
+        }
 
-            // \uXXXX support
+        private static byte[] BuildRequestBytes(string s, Encoding enc)
+        {
+            s = s.Replace("\\r", "\r").Replace("\\n", "\n");
             s = Regex.Replace(s, @"\\u([0-9A-Fa-f]{4})", match =>
             {
                 var code = Convert.ToInt32(match.Groups[1].Value, 16);
                 return char.ConvertFromUtf32(code);
             });
-
-            return _enc.GetBytes(s);
+            return enc.GetBytes(s);
         }
     }
 }

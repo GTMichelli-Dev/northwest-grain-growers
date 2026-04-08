@@ -15,8 +15,8 @@ namespace GrainManagement.Models
     {
         Task<List<CheckProductPriceCoverageResult>> CheckProductPriceCoverageAsync(bool? includeInactiveProducts, bool? autoSeed, string currencyCode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<int> SetAuditUserFromPinAsync(int? pin, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<int> SetLotConditionAsync(long? lotId, string conditionCode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<int> SetLotTraitAsync(long? lotId, int? traitId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<SetLotConditionResult>> SetLotConditionAsync(long? lotId, string conditionCode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<SetLotTraitResult>> SetLotTraitAsync(long? lotId, int? traitId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<SetProductLocationPriceResult>> SetProductLocationPriceAsync(int? productId, int? locationId, decimal? wholesalePrice, decimal? retailPrice, string currencyCode, DateTime? effectiveAt, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<usp_ApplySeedTreatmentResult>> usp_ApplySeedTreatmentAsync(long? seedLotId, long? chemicalLotId, DateTime? appliedAt, int? operatorUserId, decimal? seedTreatedQty, int? seedTreatedUomId, decimal? chemicalUsedQty, int? chemicalUsedUomId, string comments, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<ValidateLotConditionAgainstProductResult>> ValidateLotConditionAgainstProductAsync(int? lotId, bool? throwIfInvalid, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);

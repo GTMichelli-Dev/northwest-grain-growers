@@ -1,0 +1,279 @@
+@{
+    ViewData["Title"] = "Printer Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h3 class="mb-0">Printer Management</h3>
+    <a href="/Setup" class="btn btn-outline-secondary btn-sm">Back to Setup</a>
+</div>
+
+<!-- Printer Assignments -->
+<div class="card mb-3">
+    <div class="card-header py-2"><strong>Printer Assignments</strong></div>
+    <div class="card-body py-2">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label mb-0 small fw-bold">Inbound Printer</label>
+                <select id="inboundPrinterSelect" class="form-select form-select-sm" onchange="saveAssignments()">
+                    <option value="">-- None --</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label mb-0 small fw-bold">Outbound Printer</label>
+                <select id="outboundPrinterSelect" class="form-select form-select-sm" onchange="saveAssignments()">
+                    <option value="">-- None --</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <span id="assignmentStatus" class="small"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status bar -->
+<div id="serviceStatusBar" class="alert alert-warning py-2 mb-3 d-flex align-items-center">
+    <i class="fa fa-spinner fa-spin me-2"></i> Checking print services...
+</div>
+
+<!-- Service/Printer list -->
+<div id="servicesContainer"></div>
+<div id="noServicesMessage" class="text-center text-muted py-4" style="display:none;">
+    <h5>No Print Services Connected</h5>
+    <p>Start a Web Print Service and point it to this server's SignalR hub.</p>
+</div>
+
+<!-- Toast container -->
+<div id="toastContainer" style="position:fixed;top:70px;right:20px;z-index:9999;min-width:300px;max-width:450px;"></div>
+
+<!-- Test Print Modal -->
+<div class="modal fade" id="testPrintModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title">Test Print — <span id="testPrintPrinter"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div id="testPrintSpinner">
+                    <i class="fa fa-spinner fa-spin fa-3x mb-2"></i>
+                    <p>Sending test page...</p>
+                </div>
+                <div id="testPrintResult" style="display:none;"></div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/signalr/signalr.min.js"></script>
+<script>
+    var connectedServices = {};
+    var savedInboundPrinterId = '@(ViewBag.InboundPrinterId ?? "")';
+    var savedOutboundPrinterId = '@(ViewBag.OutboundPrinterId ?? "")';
+
+    function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function escAttr(s) { return s.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+    // ===== SIGNALR =====
+    var connection = new signalR.HubConnectionBuilder()
+        .withUrl('/scaleHub')
+        .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+        .build();
+
+    connection.onreconnecting(function () {
+        updateStatusBar();
+    });
+
+    connection.onreconnected(function () {
+        connectedServices = {};
+        connection.invoke('RequestPrinterList').catch(function () {});
+    });
+
+    connection.onclose(function () {
+        connectedServices = {};
+        updateStatusBar();
+        renderServices();
+        // Try to reconnect after a delay
+        setTimeout(startConnection, 5000);
+    });
+
+    function startConnection() {
+        connection.start().then(function () {
+            connection.invoke('RequestPrinterList').catch(function () {});
+        }).catch(function () {
+            setTimeout(startConnection, 5000);
+        });
+    }
+
+    connection.on('PrintServiceReady', function (data) {
+        connectedServices[data.serviceId] = data;
+        renderServices();
+        updateStatusBar();
+    });
+
+    connection.on('PrinterListReceived', function (data) {
+        connectedServices[data.serviceId] = data;
+        renderServices();
+        updateStatusBar();
+    });
+
+    connection.on('PrintServiceStatusChanged', function (serviceIds) {
+        Object.keys(connectedServices).forEach(function (sid) {
+            if (serviceIds.indexOf(sid) < 0) delete connectedServices[sid];
+        });
+        updateStatusBar();
+        renderServices();
+    });
+
+    connection.on('TestPrintResult', function (data) {
+        document.getElementById('testPrintSpinner').style.display = 'none';
+        var result = document.getElementById('testPrintResult');
+        result.style.display = 'block';
+        if (data.success) {
+            result.innerHTML = '<div class="alert alert-success mb-0"><strong>Success!</strong> ' + escHtml(data.message) + '</div>';
+        } else {
+            result.innerHTML = '<div class="alert alert-danger mb-0"><strong>Failed:</strong> ' + escHtml(data.message) + '</div>';
+        }
+    });
+
+    startConnection();
+
+    // ===== STATUS BAR =====
+    function updateStatusBar() {
+        var bar = document.getElementById('serviceStatusBar');
+        var noMsg = document.getElementById('noServicesMessage');
+        var count = Object.keys(connectedServices).length;
+        if (count > 0) {
+            bar.className = 'alert alert-success py-2 mb-3 d-flex align-items-center';
+            bar.innerHTML = '<strong>' + count + ' Print Service(s) Connected</strong>';
+            noMsg.style.display = 'none';
+        } else {
+            bar.className = 'alert alert-warning py-2 mb-3 d-flex align-items-center';
+            bar.innerHTML = '<strong>No Print Services Connected</strong> — Start a Web Print Service and point it to this server\'s SignalR hub.';
+            noMsg.style.display = 'block';
+        }
+    }
+
+    // ===== RENDER SERVICES =====
+    function renderServices() {
+        var container = document.getElementById('servicesContainer');
+        var html = '';
+
+        Object.keys(connectedServices).forEach(function (serviceId) {
+            var svc = connectedServices[serviceId];
+            var printers = svc.printers || [];
+
+            html += '<div class="card mb-3">';
+            html += '<div class="card-header py-2 d-flex justify-content-between align-items-center" style="background:#f0fdf4;">';
+            html += '<span><span class="badge bg-success me-2">Connected</span> <strong>' + escHtml(serviceId) + '</strong> (' + printers.length + ' printer' + (printers.length !== 1 ? 's' : '') + ')</span>';
+            html += '</div>';
+
+            html += '<div class="card-body p-0"><table class="table table-sm table-hover mb-0">';
+            html += '<thead><tr><th>Printer ID</th><th>Status</th><th>Enabled</th><th style="width:100px;">Actions</th></tr></thead><tbody>';
+
+            printers.forEach(function (p) {
+                html += '<tr>';
+                html += '<td>' + escHtml(p.printerId) + '</td>';
+                html += '<td>';
+                if (p.status === 'idle') html += '<span class="text-success">Idle</span>';
+                else if (p.status === 'printing') html += '<span class="text-primary">Printing</span>';
+                else if (p.status === 'disabled') html += '<span class="text-danger">Disabled</span>';
+                else html += '<span class="text-muted">' + escHtml(p.status) + '</span>';
+                html += '</td>';
+                html += '<td>' + (p.enabled ? '<span class="text-success fw-bold">&#10003;</span>' : '<span class="text-muted">&#10007;</span>') + '</td>';
+                html += '<td><button class="btn btn-outline-info btn-sm" onclick="testPrint(\'' + escAttr(serviceId) + '\',\'' + escAttr(p.printerId) + '\')">Test</button></td>';
+                html += '</tr>';
+            });
+
+            if (printers.length === 0) {
+                html += '<tr><td colspan="4" class="text-center text-muted py-3">No printers found on this service.</td></tr>';
+            }
+
+            html += '</tbody></table></div></div>';
+        });
+
+        container.innerHTML = html;
+        updateAssignmentDropdowns();
+    }
+
+    // ===== ASSIGNMENTS =====
+    function updateAssignmentDropdowns() {
+        var inSel = document.getElementById('inboundPrinterSelect');
+        var outSel = document.getElementById('outboundPrinterSelect');
+        var inVal = inSel.value || savedInboundPrinterId;
+        var outVal = outSel.value || savedOutboundPrinterId;
+
+        var options = '<option value="">-- None --</option>';
+        options += '<option value="Browser:Browser">Print to Browser</option>';
+        Object.keys(connectedServices).forEach(function (sid) {
+            var printers = connectedServices[sid].printers || [];
+            printers.forEach(function (p) {
+                if (!p.enabled) return;
+                var val = sid + ':' + p.printerId;
+                var label = p.printerId;
+                if (Object.keys(connectedServices).length > 1) label += ' (' + sid + ')';
+                options += '<option value="' + escAttr(val) + '">' + escHtml(label) + '</option>';
+            });
+        });
+
+        inSel.innerHTML = options;
+        outSel.innerHTML = options;
+        inSel.value = inVal;
+        outSel.value = outVal;
+    }
+
+    function saveAssignments() {
+        var inVal = document.getElementById('inboundPrinterSelect').value;
+        var outVal = document.getElementById('outboundPrinterSelect').value;
+        var status = document.getElementById('assignmentStatus');
+        status.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+
+        fetch('/api/printers/assignments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                inboundPrinterId: inVal,
+                outboundPrinterId: outVal
+            })
+        }).then(function (r) {
+            if (r.ok) {
+                savedInboundPrinterId = inVal;
+                savedOutboundPrinterId = outVal;
+                status.innerHTML = '<span class="text-success">&#10003; Saved</span>';
+                setTimeout(function () { status.innerHTML = ''; }, 2000);
+            } else {
+                status.innerHTML = '<span class="text-danger">Failed</span>';
+            }
+        }).catch(function () {
+            status.innerHTML = '<span class="text-danger">Failed</span>';
+        });
+    }
+
+    // ===== TEST PRINT =====
+    function testPrint(serviceId, printerId) {
+        document.getElementById('testPrintPrinter').textContent = printerId;
+        document.getElementById('testPrintSpinner').style.display = 'block';
+        document.getElementById('testPrintResult').style.display = 'none';
+        new bootstrap.Modal('#testPrintModal').show();
+
+        connection.invoke('TestPrint', serviceId, printerId).catch(function (err) {
+            document.getElementById('testPrintSpinner').style.display = 'none';
+            var result = document.getElementById('testPrintResult');
+            result.style.display = 'block';
+            result.innerHTML = '<div class="alert alert-danger mb-0">Failed to send test: ' + escHtml(err.toString()) + '</div>';
+        });
+    }
+
+    function showToast(type, msg) {
+        var container = document.getElementById('toastContainer');
+        var html = '<div class="alert alert-' + type + ' alert-dismissible fade show py-2" role="alert">' +
+            msg + '<button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button></div>';
+        container.innerHTML = html;
+        setTimeout(function () { container.innerHTML = ''; }, 5000);
+    }
+</script>
+}

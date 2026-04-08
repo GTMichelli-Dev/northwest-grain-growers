@@ -1,0 +1,1509 @@
+@model BasicWeigh.Web.Models.AppSetup
+@{
+    Layout = null;
+    var theme = Model.Theme ?? "default";
+    var kioskDark = Model.KioskDarkMode;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1280, height=800, initial-scale=1.0, user-scalable=no" />
+    <title>Basic Weigh - Kiosk</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            min-height: 100%;
+            margin: 0;
+            background: #000;
+            color: #fff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: default;
+        }
+
+        /* Demo mode: grey surround to show 1280x800 boundary */
+        body.demo-mode {
+            background: #2a2a2a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        body.demo-mode #kiosk {
+            border: 2px solid #ffc107;
+            box-shadow: 0 0 40px rgba(255, 193, 7, 0.15);
+        }
+        body.demo-mode .kiosk-size-label {
+            display: block;
+        }
+        .kiosk-size-label {
+            display: none;
+            position: absolute;
+            bottom: -28px;
+            right: 0;
+            font-size: 0.75rem;
+            color: #ffc107;
+            letter-spacing: 1px;
+            font-family: 'Courier New', monospace;
+        }
+
+        #kiosk-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #kiosk {
+            width: 1280px;
+            height: 800px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* ===== HEADER ===== */
+        #kiosk-header {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: #111;
+            border-bottom: 2px solid #333;
+            flex-shrink: 0;
+            position: relative;
+        }
+        #kiosk-header img { height: 40px; width: 40px; }
+        #kiosk-header .company-name {
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        /* Simulator in header (demo mode) */
+        .header-sim {
+            position: absolute;
+            right: 16px;
+            top: 0;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.75rem;
+        }
+        .header-sim input[type="range"] {
+            width: 140px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #ffc107;
+        }
+        .header-sim label {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            color: #ccc;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .header-sim input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #ffc107;
+        }
+        .header-sim .sim-weight-val {
+            color: #ffc107;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 0.8rem;
+            min-width: 52px;
+            text-align: right;
+        }
+
+        /* ===== WEIGHT DISPLAY ===== */
+        #weight-area {
+            text-align: center;
+            padding: 10px 0;
+            flex-shrink: 0;
+        }
+        #weight-display {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-align: center;
+            display: inline-flex;
+            align-items: baseline;
+            justify-content: center;
+            padding: 10px 20px;
+            border-radius: 16px;
+            background: #0a0a0a;
+            border: 3px solid #222;
+            letter-spacing: 2px;
+            width: 1180px;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: color 0.2s;
+        }
+        #weight-display.size-huge {
+            font-size: 9.5rem;
+            line-height: 1.1;
+        }
+        #weight-display.size-large {
+            font-size: 9.5rem;
+            line-height: 1.1;
+        }
+        #weight-display.size-medium {
+            font-size: 4rem;
+            line-height: 1.1;
+        }
+        .weight-ok { color: #00ff41; }
+        .weight-motion { color: #ffff00; }
+        .weight-error { color: #ff0000; }
+        #weight-unit {
+            font-size: 3rem;
+            opacity: 0.6;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+        #scale-status {
+            font-size: 1.4rem;
+            font-weight: bold;
+            letter-spacing: 3px;
+            min-height: 1.6em;
+            margin-top: 4px;
+        }
+
+        /* ===== CONTENT AREA ===== */
+        #content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 40px;
+        }
+
+        .kiosk-state { display: none; width: 100%; text-align: center; }
+        .kiosk-state.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        /* ===== BIG MESSAGE ===== */
+        .big-message {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @@keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ===== ACTION BUTTONS ===== */
+        .kiosk-btn {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 40px;
+            font-size: 2.4rem;
+            font-weight: 700;
+            border: 3px solid;
+            border-radius: 20px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: transform 0.1s, box-shadow 0.1s;
+            width: 440px;
+            height: 160px;
+            white-space: nowrap;
+        }
+        .kiosk-btn .btn-sub {
+            font-size: 1.4rem;
+            opacity: 0.85;
+            margin-top: 8px;
+            letter-spacing: 3px;
+        }
+        .kiosk-btn:active { transform: scale(0.97); }
+        .btn-green {
+            background: #1a8c1a;
+            border-color: #00ff41;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(0,255,65,0.2);
+        }
+        .btn-green:hover { background: #22a822; box-shadow: 0 0 30px rgba(0,255,65,0.5); }
+        .btn-blue {
+            background: #1a4f8c;
+            border-color: #4fc3f7;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(79,195,247,0.2);
+        }
+        .btn-blue:hover { background: #1f68b8; box-shadow: 0 0 30px rgba(79,195,247,0.5); }
+        .btn-red {
+            background: #8c1a1a;
+            border-color: #ff4444;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(255,68,68,0.2);
+        }
+        .btn-red:hover { background: #a82222; box-shadow: 0 0 30px rgba(255,68,68,0.5); }
+        .btn-row {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        /* ===== NUMPAD ===== */
+        .ticket-entry { text-align: center; }
+        .ticket-label {
+            font-size: 2rem;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+        .ticket-value {
+            font-family: 'Courier New', monospace;
+            font-size: 4rem;
+            font-weight: bold;
+            color: #4fc3f7;
+            letter-spacing: 6px;
+            min-height: 5rem;
+            background: #111;
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 10px 30px;
+            margin-bottom: 16px;
+            min-width: 300px;
+            display: inline-block;
+        }
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 8px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        .numpad-btn {
+            width: 100px;
+            height: 80px;
+            font-size: 2rem;
+            font-weight: 700;
+            border: 2px solid #444;
+            border-radius: 12px;
+            background: #1a1a1a;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .numpad-btn:hover { background: #2a2a2a; }
+        .numpad-btn:active { background: #333; transform: scale(0.95); }
+        .numpad-btn.btn-clr { background: #4d1a1a; border-color: #ff4444; color: #ff6666; }
+        .numpad-btn.btn-ent { background: #1a4d1a; border-color: #00cc00; color: #00ff41; }
+
+        /* ===== LIST SELECTOR ===== */
+        .list-selector { width: 100%; max-width: 700px; }
+        .list-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        .list-container {
+            background: #111;
+            border: 2px solid #666;
+            border-radius: 12px;
+            max-height: 420px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #666 #111;
+        }
+        .list-item {
+            padding: 18px 24px;
+            font-size: 1.8rem;
+            color: #ffffff;
+            border-bottom: 1px solid #444;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .list-item:last-child { border-bottom: none; }
+        .list-item:hover { background: transparent; }
+        .list-item.selected {
+            background: #1a8c1a;
+            color: #ffffff;
+            font-weight: 700;
+        }
+        .list-item.selected::before {
+            content: '\25B6  ';
+        }
+        .list-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+            gap: 20px;
+        }
+        .list-btn {
+            flex: 1;
+            padding: 20px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            border: 3px solid;
+            border-radius: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .list-btn-cancel { background: #8c1a1a; border-color: #ff4444; color: #ffffff; box-shadow: 0 0 10px rgba(255,68,68,0.2); }
+        .list-btn-select { background: #1a8c1a; border-color: #00ff41; color: #ffffff; box-shadow: 0 0 10px rgba(0,255,65,0.2); }
+        .list-btn-skip { background: #555; border-color: #aaa; color: #ffffff; }
+
+        /* ===== FULLSCREEN OVERLAYS ===== */
+        .overlay-screen {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .overlay-screen.active { display: flex; }
+        .overlay-yellow { background: #cc9900; }
+        .overlay-red { background: #cc0000; }
+        .overlay-message {
+            font-size: 4rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-align: center;
+            padding: 40px;
+        }
+        .overlay-sub {
+            font-size: 2rem;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+
+        /* ===== WAITING SPINNER ===== */
+        .waiting-message {
+            font-size: 2.5rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+        .waiting-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @@keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+
+        /* ===== COMPLETE SCREEN ===== */
+        #state-complete {
+            background: #32cd32;
+            border-radius: 0;
+        }
+        #state-complete .big-message {
+            color: #000 !important;
+            font-weight: 900;
+            animation: none !important;
+        }
+        .complete-info {
+            font-size: 2rem;
+            color: #000;
+            font-weight: 700;
+            margin-top: 16px;
+        }
+        .complete-buttons {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .complete-buttons .kiosk-btn {
+            width: 300px;
+            height: 120px;
+            font-size: 1.8rem;
+        }
+
+        /* ===== DEMO TICKET ===== */
+        .demo-ticket {
+            background: #fff;
+            color: #000;
+            font-family: 'Courier New', monospace;
+            padding: 24px;
+            border-radius: 8px;
+            max-width: 420px;
+            text-align: left;
+            font-size: 1rem;
+            margin-top: 16px;
+        }
+        .demo-ticket .dt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; }
+        .demo-ticket .dt-row { display: flex; justify-content: space-between; padding: 2px 0; }
+        .demo-ticket .dt-label { font-weight: bold; min-width: 110px; }
+        .demo-ticket .dt-weights { border-top: 1px dashed #000; margin-top: 8px; padding-top: 8px; }
+
+        /* ===== LIGHT MODE ===== */
+        body.kiosk-light {
+            background: #f0f0f0;
+            color: #111;
+        }
+        body.kiosk-light.demo-mode {
+            background: #ccc;
+        }
+        body.kiosk-light.demo-mode #kiosk {
+            border-color: #0066cc;
+            box-shadow: 0 0 40px rgba(0, 102, 204, 0.15);
+        }
+        body.kiosk-light.demo-mode .kiosk-size-label {
+            color: #0066cc;
+        }
+        body.kiosk-light #kiosk {
+            background: #f5f5f5;
+        }
+        body.kiosk-light #kiosk-header {
+            background: #e0e0e0;
+            border-bottom-color: #bbb;
+        }
+        body.kiosk-light #kiosk-header .company-name {
+            color: #111;
+        }
+        body.kiosk-light .header-sim label {
+            color: #444;
+        }
+        body.kiosk-light .header-sim .sim-weight-val {
+            color: #0066cc;
+        }
+        body.kiosk-light #weight-display {
+            background: #fff;
+            border-color: #ccc;
+        }
+        body.kiosk-light .weight-ok { color: #000; }
+        body.kiosk-light .weight-motion { color: #000; }
+        body.kiosk-light .weight-error { color: #fff; }
+        body.kiosk-light #scale-status { color: #000; }
+        body.kiosk-light #weight-display.weight-motion { background: #ffc107; }
+        body.kiosk-light #weight-display.weight-error { background: #dc3545; }
+        body.kiosk-light .big-message { color: #222; }
+        body.kiosk-light .btn-green {
+            background: #28a745;
+            border-color: #1e7e34;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        body.kiosk-light .btn-green:hover { background: #218838; box-shadow: 0 4px 16px rgba(40, 167, 69, 0.4); }
+        body.kiosk-light .btn-blue {
+            background: #007bff;
+            border-color: #0056b3;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+        body.kiosk-light .btn-blue:hover { background: #0069d9; box-shadow: 0 4px 16px rgba(0, 123, 255, 0.4); }
+        body.kiosk-light .btn-red {
+            background: #dc3545;
+            border-color: #bd2130;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+        body.kiosk-light .btn-red:hover { background: #c82333; box-shadow: 0 4px 16px rgba(220, 53, 69, 0.4); }
+        body.kiosk-light .list-title { color: #222; }
+        body.kiosk-light .list-container {
+            background: #fff;
+            border-color: #ccc;
+            scrollbar-color: #bbb #fff;
+        }
+        body.kiosk-light .list-item {
+            color: #222;
+            border-bottom-color: #e0e0e0;
+        }
+        body.kiosk-light .list-item.selected {
+            background: #28a745;
+            color: #fff;
+        }
+        body.kiosk-light .list-btn-cancel { background: #dc3545; border-color: #bd2130; color: #fff; box-shadow: none; }
+        body.kiosk-light .list-btn-select { background: #28a745; border-color: #1e7e34; color: #fff; box-shadow: none; }
+        body.kiosk-light .list-btn-skip { background: #6c757d; border-color: #5a6268; color: #fff; }
+        body.kiosk-light .ticket-value {
+            background: #fff;
+            border-color: #ccc;
+            color: #007bff;
+        }
+        body.kiosk-light .ticket-label { color: #555; }
+        body.kiosk-light .numpad-btn {
+            background: #fff;
+            border-color: #ccc;
+            color: #222;
+        }
+        body.kiosk-light .numpad-btn:hover { background: #e9ecef; }
+        body.kiosk-light .numpad-btn:active { background: #dee2e6; }
+        body.kiosk-light .numpad-btn.btn-clr { background: #fff0f0; border-color: #dc3545; color: #dc3545; }
+        body.kiosk-light .numpad-btn.btn-ent { background: #f0fff0; border-color: #28a745; color: #28a745; }
+        body.kiosk-light .waiting-message { color: #333; }
+        body.kiosk-light .complete-info { color: #000; }
+        body.kiosk-light .overlay-yellow { background: #ffc107; color: #111; }
+        body.kiosk-light .overlay-red { background: #dc3545; color: #fff; }
+        body.kiosk-light .demo-ticket { background: #fff; color: #000; border: 1px solid #ccc; }
+    </style>
+</head>
+<body class="@(Model.DemoMode ? "demo-mode" : "") @(!Model.KioskDarkMode ? "kiosk-light" : "")">
+<div id="kiosk-wrapper">
+<div id="kiosk" data-theme="@theme">
+    <!-- HEADER -->
+    <div id="kiosk-header">
+        <img src="/api/setup/icon" alt="Icon" />
+        <span class="company-name">@(Model.Header1 ?? "Basic Weigh")</span>
+        @if (Model.DemoMode)
+        {
+            <div class="header-sim">
+                <span class="sim-weight-val" id="simWeightVal">0</span>
+                <input type="range" id="simSlider" min="0" max="200000" value="0" step="100" />
+                <label><input type="checkbox" id="simMotion" /> Motion</label>
+                <label><input type="checkbox" id="simError" /> Error</label>
+            </div>
+        }
+    </div>
+
+    <!-- WEIGHT DISPLAY -->
+    <div id="weight-area">
+        <div id="weight-display" class="size-huge weight-ok">
+            <span id="weight-value">0</span><span id="weight-unit"> lb</span>
+        </div>
+        <div id="scale-status">&nbsp;</div>
+    </div>
+
+    <!-- CONTENT AREA (state-driven) -->
+    <div id="content-area">
+
+        <!-- IDLE: Place truck on scale -->
+        <div id="state-idle" class="kiosk-state active">
+            <div class="big-message">Place Truck on Scale</div>
+        </div>
+
+        <!-- READY: New Load / Enter Ticket -->
+        <div id="state-ready" class="kiosk-state">
+            <div class="btn-row">
+                <button class="kiosk-btn btn-green" id="btn-new-load">
+                    New Load
+                    <span class="btn-sub">Weigh In</span>
+                </button>
+                <button class="kiosk-btn btn-blue" id="btn-enter-ticket">
+                    Enter Ticket #
+                    <span class="btn-sub">Weigh Out</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ENTERING TICKET: Numpad -->
+        <div id="state-entering-ticket" class="kiosk-state">
+            <div class="ticket-entry">
+                <div class="ticket-label">Enter Ticket Number</div>
+                <div class="ticket-value" id="ticket-display">&nbsp;</div>
+                <div class="numpad">
+                    <button class="numpad-btn" data-num="1">1</button>
+                    <button class="numpad-btn" data-num="2">2</button>
+                    <button class="numpad-btn" data-num="3">3</button>
+                    <button class="numpad-btn" data-num="4">4</button>
+                    <button class="numpad-btn" data-num="5">5</button>
+                    <button class="numpad-btn" data-num="6">6</button>
+                    <button class="numpad-btn" data-num="7">7</button>
+                    <button class="numpad-btn" data-num="8">8</button>
+                    <button class="numpad-btn" data-num="9">9</button>
+                    <button class="numpad-btn btn-clr" id="numpad-clear">CLR</button>
+                    <button class="numpad-btn" data-num="0">0</button>
+                    <button class="numpad-btn btn-ent" id="numpad-enter">ENT</button>
+                </div>
+                <div style="margin-top: 16px;">
+                    <button class="list-btn list-btn-cancel" id="ticket-cancel" style="padding: 16px 60px; font-size: 1.4rem;">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHECKING TICKET -->
+        <div id="state-checking-ticket" class="kiosk-state">
+            <div class="waiting-message">Checking Ticket<span class="waiting-dots"></span></div>
+        </div>
+
+        <!-- MOTION WAIT -->
+        <div id="state-motion-wait" class="kiosk-state">
+            <div class="waiting-message">Waiting for Scale<span class="waiting-dots"></span></div>
+            <div style="font-size:1.5rem; color:#ffff00; margin-top:16px;">Motion Detected — Please Wait</div>
+        </div>
+
+        <!-- PROMPT: List Selector (reused for all prompts) -->
+        <div id="state-prompt" class="kiosk-state">
+            <div class="list-selector">
+                <div class="list-title" id="prompt-title">Select Item</div>
+                <div class="list-container" id="prompt-list"></div>
+                <div class="list-buttons">
+                    <button class="list-btn list-btn-cancel" id="prompt-cancel">Cancel</button>
+                    <button class="list-btn list-btn-skip" id="prompt-skip">Skip</button>
+                    <button class="list-btn list-btn-select" id="prompt-select">Select</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SAVING -->
+        <div id="state-saving" class="kiosk-state">
+            <div class="waiting-message">Saving<span class="waiting-dots"></span></div>
+        </div>
+
+        <!-- COMPLETE -->
+        <div id="state-complete" class="kiosk-state">
+            <div class="big-message">Complete</div>
+            <div class="complete-info" id="complete-info"></div>
+            <div id="demo-ticket-area"></div>
+            <div class="complete-buttons">
+                <button class="kiosk-btn btn-blue" id="btn-reprint">Reprint</button>
+                <button class="kiosk-btn btn-red" id="btn-complete-done">Done</button>
+            </div>
+        </div>
+
+        <!-- SCALE ERROR (persistent) -->
+        <div id="state-scale-error" class="kiosk-state">
+            <div class="big-message" style="color:#ff0000;">Scale Error</div>
+            <div style="font-size:1.8rem; color:#ff6666; margin-top:16px;">Check scale connection</div>
+        </div>
+    </div>
+
+    <!-- FULLSCREEN OVERLAYS -->
+    <div id="overlay-motion-timeout" class="overlay-screen overlay-yellow">
+        <div class="overlay-message">Operation Cancelled</div>
+        <div class="overlay-sub">Motion did not stop in time</div>
+    </div>
+    <div id="overlay-error-cancel" class="overlay-screen overlay-red">
+        <div class="overlay-message">Operation Cancelled</div>
+        <div class="overlay-sub">Scale Error</div>
+    </div>
+    <div id="overlay-server-error" class="overlay-screen overlay-red">
+        <div class="overlay-message">Save Failed</div>
+        <div class="overlay-sub" id="server-error-detail">Server error. Please try again.</div>
+    </div>
+    <div id="overlay-ticket-not-found" class="overlay-screen overlay-red">
+        <div class="overlay-message">Ticket Not Found</div>
+        <div class="overlay-sub">Please try again</div>
+    </div>
+    <div id="overlay-ticket-completed" class="overlay-screen overlay-yellow">
+        <div class="overlay-message">Ticket Already Completed</div>
+        <div class="overlay-sub">This ticket has already been weighed out</div>
+    </div>
+    <div id="overlay-ticket-voided" class="overlay-screen overlay-red">
+        <div class="overlay-message">Ticket Voided</div>
+        <div class="overlay-sub">This ticket has been voided</div>
+    </div>
+    <div id="overlay-operation-timeout" class="overlay-screen overlay-yellow">
+        <div class="overlay-message">Operation Timed Out</div>
+        <div class="overlay-sub">Please try again</div>
+    </div>
+    <div id="overlay-weight-changed" class="overlay-screen overlay-yellow">
+        <div class="overlay-message">Operation Cancelled</div>
+        <div class="overlay-sub">Weight changed during operation</div>
+    </div>
+</div>
+<span class="kiosk-size-label">1280 × 800</span>
+</div>
+
+<script src="/lib/jquery/dist/jquery.min.js"></script>
+<script src="/js/signalr/signalr.min.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    // ===== CONFIG =====
+    var WEIGHT_THRESHOLD = 1000;
+    var MOTION_TIMEOUT_MS = 10000;
+    var OVERLAY_DURATION_MS = 2000;
+    var COMPLETE_DURATION_MS = 4000;
+    var OPERATION_TIMEOUT_MS = 60000;
+    var OPERATION_WEIGHT_CHANGE = 1000;
+
+    // ===== KIOSK SETTINGS FROM SERVER =====
+    var kioskSettings = {
+        promptCommodity: @(Model.PromptKioskCommodity.ToString().ToLower()),
+        promptCustomer: @(Model.PromptKioskCustomer.ToString().ToLower()),
+        promptCarrier: @(Model.PromptKioskCarrier.ToString().ToLower()),
+        promptTruckId: @(Model.PromptKioskTruckId.ToString().ToLower()),
+        promptLocation: @(Model.PromptKioskLocation.ToString().ToLower()),
+        promptDestinationOnInbound: @(Model.PromptKioskDestinationOnInbound.ToString().ToLower()),
+        promptDestinationOnOutbound: @(Model.PromptKioskDestinationOnOutbound.ToString().ToLower()),
+        demoMode: @(Model.DemoMode.ToString().ToLower()),
+        header1: '@Html.Raw((Model.Header1 ?? "").Replace("'", "\\'"))',
+        header2: '@Html.Raw((Model.Header2 ?? "").Replace("'", "\\'"))',
+        header3: '@Html.Raw((Model.Header3 ?? "").Replace("'", "\\'"))',
+        header4: '@Html.Raw((Model.Header4 ?? "").Replace("'", "\\'"))'
+    };
+
+    // Printer params from URL query string
+    var kioskServiceId = '@Html.Raw((ViewBag.ServiceId ?? "").ToString().Replace("'", "\\'"))';
+    var kioskPrinterId = '@Html.Raw((ViewBag.PrinterId ?? "").ToString().Replace("'", "\\'"))';
+    var kioskHasPrinter = @(((bool)(ViewBag.HasPrinter ?? false)).ToString().ToLower());
+    var kioskIsBrowserPrint = kioskServiceId.toLowerCase() === 'browser' && kioskPrinterId.toLowerCase() === 'browser';
+
+    // ===== STATE =====
+    var currentState = 'idle';
+    var scaleData = { weight: 0, motion: false, error: false, ok: true };
+    var ticketInput = '';
+    var activeFlow = null; // 'weighin' or 'weighout'
+    var weighoutTicket = null; // ticket data for weigh-out
+    var weighinData = {}; // collected weigh-in prompt data
+    var promptQueue = []; // queue of prompt steps
+    var promptIndex = 0;
+    var selectedListIndex = 0;
+    var currentListItems = [];
+    var motionTimer = null;
+    var lists = { commodities: [], customers: [], carriers: [], locations: [], destinations: [] };
+    var completedWeight = null;  // weight at time of completion
+    var completedTicket = null;  // ticket number for reprint
+    var completedType = null;    // 'Weigh In' or 'Weigh Out'
+    var WEIGHT_CHANGE_EXIT = 1000; // exit complete screen when weight changes this much
+    var operationStartWeight = null; // weight when operation started
+    var operationTimer = null; // 60-sec timeout for operations
+
+    // ===== ELEMENTS =====
+    var $weightDisplay = $('#weight-display');
+    var $weightValue = $('#weight-value');
+    var $weightUnit = $('#weight-unit');
+    var $scaleStatus = $('#scale-status');
+
+    // ===== LOAD MASTER DATA =====
+    $.getJSON('/api/kiosk/lists', function (data) {
+        lists = data;
+    });
+
+    // ===== SIGNALR CONNECTION =====
+    var connection = new signalR.HubConnectionBuilder()
+        .withUrl('/scaleHub')
+        .withAutomaticReconnect()
+        .build();
+
+    var configuredScaleId = '@(ViewBag.ScaleId ?? "")';
+
+    connection.on('ScaleWeight', function (data) {
+        // In demo mode, ignore real scale data — use the simulator instead
+        if (kioskSettings.demoMode) return;
+
+        // Filter by configured scale — match "serviceId:scaleId" or just "scaleId"
+        if (configuredScaleId) {
+            var fullId = (data.serviceId || '') + ':' + (data.scaleId || '');
+            if (fullId !== configuredScaleId && data.scaleId !== configuredScaleId) {
+                return; // Not our scale
+            }
+        }
+        scaleData = data;
+        updateWeightDisplay();
+        handleScaleChange();
+    });
+
+    connection.start().catch(function (err) {
+        console.error('SignalR error:', err);
+        // Fallback to polling if SignalR fails
+        setInterval(function () {
+            $.getJSON('/api/scale/weight', function (data) {
+                scaleData = data;
+                updateWeightDisplay();
+                handleScaleChange();
+            });
+        }, 500);
+    });
+
+    // ===== NO-PRINTER WARNING =====
+    if (!kioskHasPrinter && !kioskSettings.demoMode) {
+        // Show warning overlay that blocks the kiosk until acknowledged
+        var warningHtml = '<div id="noPrinterWarning" style="' +
+            'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;' +
+            'background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;">' +
+            '<div style="background:#fff;border-radius:12px;padding:40px;max-width:600px;text-align:center;">' +
+            '<div style="font-size:48px;margin-bottom:16px;">&#9888;</div>' +
+            '<h2 style="margin-bottom:12px;color:#dc3545;">No Printer Configured</h2>' +
+            '<p style="font-size:16px;color:#333;margin-bottom:16px;">This kiosk does not have a printer assigned. Tickets will <strong>not</strong> be printed.</p>' +
+            '<p style="font-size:14px;color:#666;margin-bottom:24px;">To configure printing, add printer parameters to the kiosk URL:</p>' +
+            '<code style="display:block;background:#f0f0f0;padding:10px;border-radius:6px;font-size:13px;margin-bottom:24px;word-break:break-all;">' +
+            window.location.origin + '/Kiosk?service-id=<em>your-service</em>&amp;printer-id=<em>your-printer</em></code>' +
+            '<p style="font-size:13px;color:#666;margin-bottom:24px;">Use <code>service-id=Browser&amp;printer-id=Browser</code> to print via browser.</p>' +
+            '<button onclick="document.getElementById(\'noPrinterWarning\').remove();" ' +
+            'style="padding:12px 40px;font-size:18px;background:#0d6efd;color:#fff;border:none;border-radius:8px;cursor:pointer;">OK</button>' +
+            '</div></div>';
+        $('body').append(warningHtml);
+    }
+
+    // ===== WEIGHT DISPLAY =====
+    function updateWeightDisplay() {
+        if (scaleData.error) {
+            $weightValue.text('------');
+            $weightUnit.text('');
+            $weightDisplay.removeClass('weight-ok weight-motion').addClass('weight-error');
+            $scaleStatus.css('color', '#ff0000').text('ERROR');
+        } else if (scaleData.motion) {
+            $weightValue.text(scaleData.weight.toLocaleString());
+            $weightUnit.text(' lb');
+            $weightDisplay.removeClass('weight-ok weight-error').addClass('weight-motion');
+            $scaleStatus.css('color', '#ffff00').text('MOTION');
+        } else {
+            $weightValue.text(scaleData.weight.toLocaleString());
+            $weightUnit.text(' lb');
+            $weightDisplay.removeClass('weight-motion weight-error').addClass('weight-ok');
+            $scaleStatus.html('&nbsp;');
+        }
+    }
+
+    // ===== STATE MACHINE =====
+    function setState(newState) {
+        currentState = newState;
+        $('.kiosk-state').removeClass('active');
+        $('#state-' + newState).addClass('active');
+
+        // Show/hide weight display based on state
+        var showWeight = (newState === 'idle' || newState === 'ready' || newState === 'scale-error');
+        $('#weight-area').toggle(showWeight);
+
+        // Adjust weight display size based on state
+        $weightDisplay.removeClass('size-huge size-large size-medium');
+        if (newState === 'idle' || newState === 'ready' || newState === 'scale-error') {
+            $weightDisplay.addClass('size-huge');
+        } else {
+            $weightDisplay.addClass('size-medium');
+        }
+    }
+
+    function handleScaleChange() {
+        // Persistent error display
+        if (scaleData.error && (currentState === 'idle' || currentState === 'ready')) {
+            setState('scale-error');
+            return;
+        }
+
+        // Recover from error
+        if (!scaleData.error && currentState === 'scale-error') {
+            setState(scaleData.weight >= WEIGHT_THRESHOLD ? 'ready' : 'idle');
+            return;
+        }
+
+        // Error during active operation (don't cancel during saving — request is in flight)
+        if (scaleData.error && isActiveOperation() && currentState !== 'saving') {
+            cancelOperation('error');
+            return;
+        }
+
+        // Weight change during active operation (entering ticket, prompts, motion-wait)
+        // Don't cancel during 'saving' — the request is already in flight
+        if (isActiveOperation() && currentState !== 'saving' && operationStartWeight !== null) {
+            if (Math.abs(scaleData.weight - operationStartWeight) >= OPERATION_WEIGHT_CHANGE) {
+                cancelOperation('weight-changed');
+                return;
+            }
+        }
+
+        // Complete state: exit when weight changes by 1000 lbs
+        if (currentState === 'complete' && completedWeight !== null) {
+            if (Math.abs(scaleData.weight - completedWeight) >= WEIGHT_CHANGE_EXIT) {
+                exitCompleteState();
+            }
+            return;
+        }
+
+        // Auto-transition between idle and ready
+        if (currentState === 'idle' && scaleData.weight >= WEIGHT_THRESHOLD && !scaleData.error) {
+            setState('ready');
+            return;
+        }
+        if (currentState === 'ready' && scaleData.weight < WEIGHT_THRESHOLD) {
+            setState('idle');
+            return;
+        }
+
+        // Motion wait: check if motion stopped
+        if (currentState === 'motion-wait' && !scaleData.motion && !scaleData.error) {
+            clearTimeout(motionTimer);
+            motionTimer = null;
+            onMotionStopped();
+        }
+    }
+
+    function isActiveOperation() {
+        return ['entering-ticket', 'checking-ticket', 'motion-wait', 'prompt', 'saving'].indexOf(currentState) >= 0;
+    }
+
+    function cancelOperation(reason) {
+        clearTimeout(motionTimer);
+        motionTimer = null;
+        clearTimeout(operationTimer);
+        operationTimer = null;
+        operationStartWeight = null;
+        activeFlow = null;
+        weighoutTicket = null;
+        weighinData = {};
+        promptQueue = [];
+        ticketInput = '';
+
+        var overlayId;
+        if (reason === 'error') overlayId = 'overlay-error-cancel';
+        else if (reason === 'timeout') overlayId = 'overlay-operation-timeout';
+        else if (reason === 'weight-changed') overlayId = 'overlay-weight-changed';
+        else overlayId = 'overlay-motion-timeout';
+        showOverlay(overlayId, OVERLAY_DURATION_MS);
+    }
+
+    function showOverlay(id, duration) {
+        $('#' + id).addClass('active');
+        setTimeout(function () {
+            $('#' + id).removeClass('active');
+            setState(scaleData.weight >= WEIGHT_THRESHOLD && !scaleData.error ? 'ready' : 'idle');
+        }, duration);
+    }
+
+    // ===== READY STATE ACTIONS =====
+    $('#btn-new-load').on('click', function () {
+        startWeighIn();
+    });
+
+    $('#btn-enter-ticket').on('click', function () {
+        ticketInput = '';
+        updateTicketDisplay();
+        startOperationTracking();
+        setState('entering-ticket');
+    });
+
+    // Cancel button on ticket entry screen
+    $('#ticket-cancel').on('click', function () {
+        clearOperationTracking();
+        ticketInput = '';
+        setState(scaleData.weight >= WEIGHT_THRESHOLD ? 'ready' : 'idle');
+    });
+
+    function startOperationTracking() {
+        operationStartWeight = scaleData.weight;
+        clearTimeout(operationTimer);
+        operationTimer = setTimeout(function () {
+            operationTimer = null;
+            if (isActiveOperation()) {
+                cancelOperation('timeout');
+            }
+        }, OPERATION_TIMEOUT_MS);
+    }
+
+    function clearOperationTracking() {
+        clearTimeout(operationTimer);
+        operationTimer = null;
+        operationStartWeight = null;
+    }
+
+    // ===== WEIGH-IN FLOW =====
+    function startWeighIn() {
+        activeFlow = 'weighin';
+        weighinData = {};
+        promptQueue = buildWeighInPrompts();
+        promptIndex = 0;
+        startOperationTracking();
+
+        if (promptQueue.length > 0) {
+            showNextPrompt();
+        } else {
+            startMotionWait();
+        }
+    }
+
+    function buildWeighInPrompts() {
+        var prompts = [];
+        if (kioskSettings.promptCarrier) prompts.push({ key: 'carrier', title: 'Select Carrier', items: lists.carriers });
+        if (kioskSettings.promptCarrier && kioskSettings.promptTruckId) prompts.push({ key: 'truck', title: 'Select Truck', items: [], loadFrom: 'carrier' });
+        if (kioskSettings.promptCommodity) prompts.push({ key: 'commodity', title: 'Select Commodity', items: lists.commodities });
+        if (kioskSettings.promptCustomer) prompts.push({ key: 'customer', title: 'Select Customer', items: lists.customers });
+        if (kioskSettings.promptLocation) prompts.push({ key: 'location', title: 'Select Location', items: lists.locations });
+        if (kioskSettings.promptDestinationOnInbound) prompts.push({ key: 'destination', title: 'Select Destination', items: lists.destinations });
+        return prompts;
+    }
+
+    function showNextPrompt() {
+        if (promptIndex >= promptQueue.length) {
+            startMotionWait();
+            return;
+        }
+
+        var prompt = promptQueue[promptIndex];
+
+        // If truck prompt, load trucks for selected carrier
+        if (prompt.loadFrom === 'carrier' && weighinData.carrier) {
+            $.getJSON('/api/kiosk/trucks/' + encodeURIComponent(weighinData.carrier), function (trucks) {
+                prompt.items = trucks;
+                renderPrompt(prompt);
+            });
+        } else if (prompt.loadFrom === 'carrier' && !weighinData.carrier) {
+            // No carrier selected, skip truck prompt
+            promptIndex++;
+            if (promptIndex < promptQueue.length) {
+                showNextPrompt();
+            } else {
+                startMotionWait();
+            }
+        } else {
+            renderPrompt(prompt);
+        }
+    }
+
+    function renderPrompt(prompt) {
+        currentListItems = prompt.items || [];
+        selectedListIndex = 0;
+
+        $('#prompt-title').text(prompt.title);
+        var $list = $('#prompt-list').empty().scrollTop(0);
+
+        if (currentListItems.length === 0) {
+            // Auto-skip empty lists
+            promptIndex++;
+            if (promptIndex < promptQueue.length) {
+                showNextPrompt();
+            } else {
+                startMotionWait();
+            }
+            return;
+        } else {
+            currentListItems.forEach(function (item, i) {
+                var $item = $('<div class="list-item"></div>').text(item).attr('data-index', i);
+                if (i === 0) $item.addClass('selected');
+                $item.on('click', function () {
+                    selectedListIndex = i;
+                    updateListSelection();
+                });
+                $list.append($item);
+            });
+            $('#prompt-select').show();
+            $('#prompt-skip').show();
+        }
+
+        setState('prompt');
+        scrollToSelected();
+    }
+
+    function updateListSelection() {
+        $('#prompt-list .list-item').removeClass('selected');
+        $('#prompt-list .list-item[data-index="' + selectedListIndex + '"]').addClass('selected');
+        scrollToSelected();
+    }
+
+    function scrollToSelected() {
+        var $selected = $('#prompt-list .list-item.selected');
+        if ($selected.length) {
+            var container = $('#prompt-list')[0];
+            var item = $selected[0];
+            if (item.offsetTop < container.scrollTop) {
+                container.scrollTop = item.offsetTop;
+            } else if (item.offsetTop + item.offsetHeight > container.scrollTop + container.clientHeight) {
+                container.scrollTop = item.offsetTop + item.offsetHeight - container.clientHeight;
+            }
+        }
+    }
+
+    $('#prompt-select').on('click', function () {
+        selectCurrentPromptItem();
+    });
+
+    $('#prompt-skip').on('click', function () {
+        promptIndex++;
+        showNextPrompt();
+    });
+
+    $('#prompt-cancel').on('click', function () {
+        clearOperationTracking();
+        activeFlow = null;
+        weighinData = {};
+        promptQueue = [];
+        setState(scaleData.weight >= WEIGHT_THRESHOLD ? 'ready' : 'idle');
+    });
+
+    function selectCurrentPromptItem() {
+        if (currentListItems.length === 0) return;
+        var prompt = promptQueue[promptIndex];
+        var selected = currentListItems[selectedListIndex];
+        weighinData[prompt.key] = selected;
+        promptIndex++;
+        showNextPrompt();
+    }
+
+    // ===== WEIGH-OUT FLOW =====
+    function startWeighOut(ticket) {
+        activeFlow = 'weighout';
+        weighoutTicket = ticket;
+        weighinData = {};
+        // Keep operation tracking running from ticket entry (already started)
+
+        if (kioskSettings.promptDestinationOnOutbound) {
+            promptQueue = [{ key: 'destination', title: 'Select Destination', items: lists.destinations }];
+            promptIndex = 0;
+            showNextPrompt();
+        } else {
+            startMotionWait();
+        }
+    }
+
+    // ===== MOTION WAIT =====
+    function startMotionWait() {
+        // If no motion, proceed immediately
+        if (!scaleData.motion && !scaleData.error) {
+            onMotionStopped();
+            return;
+        }
+
+        setState('motion-wait');
+        motionTimer = setTimeout(function () {
+            motionTimer = null;
+            cancelOperation('motion');
+        }, MOTION_TIMEOUT_MS);
+    }
+
+    function onMotionStopped() {
+        var weight = scaleData.weight;
+
+        if (activeFlow === 'weighin') {
+            saveWeighIn(weight);
+        } else if (activeFlow === 'weighout') {
+            saveWeighOut(weight);
+        }
+    }
+
+    // ===== SAVE TRANSACTIONS =====
+    function saveWeighIn(weight) {
+        setState('saving');
+        $.ajax({
+            url: '/api/kiosk/weighin',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                weight: weight,
+                commodity: weighinData.commodity || null,
+                customer: weighinData.customer || null,
+                carrier: weighinData.carrier || null,
+                truckId: weighinData.truck || null,
+                location: weighinData.location || null,
+                destination: weighinData.destination || null,
+                printerId: kioskHasPrinter ? (kioskServiceId + ':' + kioskPrinterId) : null
+            }),
+            success: function (result) {
+                showComplete('Weigh In', result.ticket, weight, null);
+            },
+            error: function (xhr) {
+                var msg = 'Server error (' + xhr.status + '). Please try again.';
+                try { var body = JSON.parse(xhr.responseText); if (body.message) msg = body.message; } catch(e) {}
+                $('#server-error-detail').text(msg);
+                showOverlay('overlay-server-error', OVERLAY_DURATION_MS * 2);
+            }
+        });
+    }
+
+    function saveWeighOut(weight) {
+        setState('saving');
+        $.ajax({
+            url: '/api/kiosk/weighout',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                ticket: weighoutTicket.ticket,
+                weight: weight,
+                destination: weighinData.destination || null,
+                printerId: kioskHasPrinter ? (kioskServiceId + ':' + kioskPrinterId) : null
+            }),
+            success: function (result) {
+                showComplete('Weigh Out', result.ticket, weighoutTicket.inWeight, weight);
+            },
+            error: function (xhr) {
+                var msg = 'Server error (' + xhr.status + '). Please try again.';
+                try { var body = JSON.parse(xhr.responseText); if (body.message) msg = body.message; } catch(e) {}
+                $('#server-error-detail').text(msg);
+                showOverlay('overlay-server-error', OVERLAY_DURATION_MS * 2);
+            }
+        });
+    }
+
+    function showComplete(type, ticketNum, inWeight, outWeight) {
+        activeFlow = null;
+        clearOperationTracking();
+        completedWeight = scaleData.weight;
+        completedTicket = ticketNum;
+
+        var info = 'Ticket #' + ticketNum;
+        if (outWeight !== null) {
+            var gross = Math.max(inWeight, outWeight);
+            var tare = Math.min(inWeight, outWeight);
+            var net = Math.abs(inWeight - outWeight);
+            info += ' — Net: ' + net.toLocaleString() + ' lb';
+        } else {
+            info += ' — ' + inWeight.toLocaleString() + ' lb';
+        }
+        $('#complete-info').text(info);
+
+        // Show ticket info on complete screen
+        showDemoTicket(type, ticketNum, inWeight, outWeight);
+
+        // Show the complete screen FIRST, then trigger print async
+        completedType = type; // 'Weigh In' or 'Weigh Out'
+        setState('complete');
+
+        // Browser print: open ticket in new window for printing
+        // Only print to browser if service-id=Browser&printer-id=Browser
+        if (kioskIsBrowserPrint) {
+            setTimeout(function () {
+                var url = (type === 'Weigh In')
+                    ? '/Ticket/KioskView/' + encodeURIComponent(ticketNum)
+                    : '/Ticket/View/' + encodeURIComponent(ticketNum);
+                window.open(url, '_blank');
+            }, 500);
+        }
+    }
+
+    function exitCompleteState() {
+        completedWeight = null;
+        completedTicket = null;
+        completedType = null;
+        clearOperationTracking();
+        $('#demo-ticket-area').empty();
+        setState(scaleData.weight >= WEIGHT_THRESHOLD && !scaleData.error ? 'ready' : 'idle');
+    }
+
+    function reprintTicket() {
+        if (!completedTicket) return;
+
+        // Browser printing — open ticket in new window
+        if (kioskIsBrowserPrint || kioskSettings.demoMode) {
+            var url = (completedType === 'Weigh In')
+                ? '/Ticket/KioskView/' + encodeURIComponent(completedTicket)
+                : '/Ticket/View/' + encodeURIComponent(completedTicket);
+            window.open(url, '_blank');
+            return;
+        }
+
+        // Request reprint via server (SignalR to print agents)
+        $.ajax({
+            url: '/api/kiosk/reprint/' + encodeURIComponent(completedTicket) + (kioskHasPrinter ? '?printerId=' + encodeURIComponent(kioskServiceId + ':' + kioskPrinterId) : ''),
+            method: 'POST'
+        });
+    }
+
+    // Reprint and Done button handlers
+    $('#btn-reprint').on('click', function () { reprintTicket(); });
+    $('#btn-complete-done').on('click', function () { exitCompleteState(); });
+
+    function showDemoTicket(type, ticketNum, inWeight, outWeight) {
+        var html = '<div class="demo-ticket">';
+        html += '<div class="dt-header">';
+        if (kioskSettings.header1) html += '<div>' + escHtml(kioskSettings.header1) + '</div>';
+        if (kioskSettings.header2) html += '<div>' + escHtml(kioskSettings.header2) + '</div>';
+        html += '</div>';
+        html += '<div class="dt-row"><span class="dt-label">Ticket #:</span><span>' + escHtml(ticketNum) + '</span></div>';
+        html += '<div class="dt-row"><span class="dt-label">Type:</span><span>' + type + '</span></div>';
+
+        if (weighinData.commodity) html += '<div class="dt-row"><span class="dt-label">Commodity:</span><span>' + escHtml(weighinData.commodity) + '</span></div>';
+        if (weighinData.customer) html += '<div class="dt-row"><span class="dt-label">Customer:</span><span>' + escHtml(weighinData.customer) + '</span></div>';
+        if (weighinData.carrier) html += '<div class="dt-row"><span class="dt-label">Carrier:</span><span>' + escHtml(weighinData.carrier) + '</span></div>';
+        if (weighinData.truck) html += '<div class="dt-row"><span class="dt-label">Truck ID:</span><span>' + escHtml(weighinData.truck) + '</span></div>';
+        if (weighinData.destination) html += '<div class="dt-row"><span class="dt-label">Destination:</span><span>' + escHtml(weighinData.destination) + '</span></div>';
+
+        html += '<div class="dt-weights">';
+        if (outWeight !== null) {
+            var gross = Math.max(inWeight, outWeight);
+            var tare = Math.min(inWeight, outWeight);
+            var net = Math.abs(inWeight - outWeight);
+            html += '<div class="dt-row"><span class="dt-label">Gross:</span><span>' + gross.toLocaleString() + ' lb</span></div>';
+            html += '<div class="dt-row"><span class="dt-label">Tare:</span><span>' + tare.toLocaleString() + ' lb</span></div>';
+            html += '<div class="dt-row" style="font-weight:bold;font-size:1.1rem;"><span class="dt-label">Net:</span><span>' + net.toLocaleString() + ' lb</span></div>';
+        } else {
+            html += '<div class="dt-row"><span class="dt-label">Weight:</span><span>' + inWeight.toLocaleString() + ' lb</span></div>';
+        }
+        html += '</div></div>';
+        $('#demo-ticket-area').html(html);
+    }
+
+    function escHtml(s) {
+        return $('<span>').text(s).html();
+    }
+
+    // ===== TICKET ENTRY =====
+    function updateTicketDisplay() {
+        $('#ticket-display').text(ticketInput || '\u00A0');
+    }
+
+    function addTicketDigit(d) {
+        if (ticketInput.length < 10) {
+            ticketInput += d;
+            updateTicketDisplay();
+        }
+    }
+
+    function submitTicket() {
+        if (!ticketInput) return;
+        setState('checking-ticket');
+        $.ajax({
+            url: '/api/kiosk/ticket/' + encodeURIComponent(ticketInput),
+            method: 'GET',
+            success: function (data) {
+                setTimeout(function () {
+                    startWeighOut(data);
+                }, 1000);
+            },
+            error: function (xhr) {
+                setTimeout(function () {
+                    var msg = '';
+                    try { msg = JSON.parse(xhr.responseText).message; } catch (e) {}
+                    var overlayId;
+                    if (msg === 'Ticket already completed') {
+                        overlayId = 'overlay-ticket-completed';
+                    } else if (msg === 'Ticket is voided') {
+                        overlayId = 'overlay-ticket-voided';
+                    } else {
+                        overlayId = 'overlay-ticket-not-found';
+                    }
+                    showOverlay(overlayId, OVERLAY_DURATION_MS);
+                    ticketInput = '';
+                }, 1000);
+            }
+        });
+    }
+
+    // Numpad buttons
+    $('.numpad-btn[data-num]').on('click', function () {
+        addTicketDigit($(this).attr('data-num'));
+    });
+    $('#numpad-clear').on('click', function () {
+        ticketInput = '';
+        updateTicketDisplay();
+    });
+    $('#numpad-enter').on('click', function () {
+        submitTicket();
+    });
+
+    // ===== KEYBOARD HANDLER (USB keypad + barcode scanner) =====
+    var barcodeBuffer = '';
+    var barcodeTimer = null;
+
+    $(document).on('keydown', function (e) {
+        var key = e.key;
+
+        // Barcode scanner: rapid digit input
+        if (/^\d$/.test(key)) {
+            clearTimeout(barcodeTimer);
+
+            if (currentState === 'ready') {
+                // Auto-switch to ticket entry on digit press
+                ticketInput = '';
+                startOperationTracking();
+                setState('entering-ticket');
+            }
+
+            if (currentState === 'entering-ticket') {
+                addTicketDigit(key);
+                // Barcode scanner fires Enter quickly after digits
+            }
+            e.preventDefault();
+            return;
+        }
+
+        switch (key) {
+            case 'Enter':
+                e.preventDefault();
+                if (currentState === 'entering-ticket') {
+                    submitTicket();
+                } else if (currentState === 'prompt') {
+                    selectCurrentPromptItem();
+                }
+                break;
+
+            case 'Escape':
+            case 'Backspace':
+            case 'Delete':
+                e.preventDefault();
+                if (currentState === 'complete') {
+                    exitCompleteState();
+                } else if (currentState === 'entering-ticket') {
+                    clearOperationTracking();
+                    ticketInput = '';
+                    updateTicketDisplay();
+                    setState('ready');
+                } else if (currentState === 'prompt') {
+                    $('#prompt-cancel').click();
+                }
+                break;
+
+            case 'ArrowUp':
+                e.preventDefault();
+                if (currentState === 'prompt' && currentListItems.length > 0) {
+                    selectedListIndex = Math.max(0, selectedListIndex - 1);
+                    updateListSelection();
+                }
+                break;
+
+            case 'ArrowDown':
+                e.preventDefault();
+                if (currentState === 'prompt' && currentListItems.length > 0) {
+                    selectedListIndex = Math.min(currentListItems.length - 1, selectedListIndex + 1);
+                    updateListSelection();
+                }
+                break;
+        }
+    });
+
+    // ===== PREVENT CONTEXT MENU & TEXT SELECTION =====
+    $(document).on('contextmenu', function (e) { e.preventDefault(); });
+
+    // ===== DEMO SIMULATOR (header) =====
+    if (kioskSettings.demoMode) {
+        var $simSlider = $('#simSlider');
+        var $simVal = $('#simWeightVal');
+        var $simMotion = $('#simMotion');
+        var $simError = $('#simError');
+        var simDebounce = null;
+
+        function sendSimUpdate() {
+            clearTimeout(simDebounce);
+            simDebounce = setTimeout(function () {
+                $.ajax({
+                    url: '/api/scale/simulate',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        weight: parseInt($simSlider.val()),
+                        motion: $simMotion.is(':checked'),
+                        error: $simError.is(':checked')
+                    })
+                });
+            }, 50);
+        }
+
+        function updateLocalSimData() {
+            var w = parseInt($simSlider.val());
+            var m = $simMotion.is(':checked');
+            var e = $simError.is(':checked');
+            scaleData = {
+                weight: w,
+                motion: m,
+                error: e,
+                ok: !e,
+                comError: false,
+                scaleId: 'sim',
+                serviceId: 'sim'
+            };
+            updateWeightDisplay();
+            handleScaleChange();
+        }
+
+        $simSlider.on('input', function () {
+            $simVal.text(parseInt(this.value).toLocaleString());
+            updateLocalSimData();
+            sendSimUpdate();
+        });
+        $simMotion.on('change', function () { updateLocalSimData(); sendSimUpdate(); });
+        $simError.on('change', function () { updateLocalSimData(); sendSimUpdate(); });
+    }
+
+})();
+</script>
+</body>
+</html>

@@ -30,6 +30,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<ModuleOptions>(builder.Configuration.GetSection(ModuleOptions.SectionName));
 builder.Services.AddSingleton<IModuleContext, ModuleContext>();
 
+// App readiness flag — set after EF warm-up
+builder.Services.AddSingleton<AppReadiness>();
+
 // DevExpress Reporting — web document viewer
 builder.Services.AddDevExpressControls();
 builder.Services.AddScoped<DevExpress.XtraReports.Web.Extensions.ReportStorageWebExtension, ReportStorageService>();
@@ -60,6 +63,24 @@ builder.Services.AddScoped<IWarehouseDashboardService, DummyWarehouseDashboardSe
 
 // Warehouse data abstraction (dummy now, real later)
 builder.Services.AddScoped<IWarehouseIntakeDataService, DummyWarehouseIntakeDataService>();
+
+// ── Scale Reader Service (now runs as a separate standalone service) ─────
+// Scale configs and polling are managed by the external ScaleReaderService process.
+// The web app receives scale updates via SignalR and serves the config UI.
+
+// ── Camera Service (hosted background worker) ──────────────────────────
+builder.Services.AddSingleton<GrainManagement.Services.Camera.RestartSignal>();
+builder.Services.AddSingleton<GrainManagement.Services.Camera.AnnounceSignal>();
+builder.Services.AddDbContext<GrainManagement.Services.Camera.Data.CameraDbContext>(opt =>
+    opt.UseSqlite($"Data Source={Path.Combine(AppContext.BaseDirectory, "cameraservice.db")}"));
+builder.Services.AddScoped<GrainManagement.Services.Camera.CameraCaptureService>();
+builder.Services.AddHostedService<GrainManagement.Services.Camera.CameraWorker>();
+
+// ── Print Service (hosted background worker) ────────────────────────────
+builder.Services.AddSingleton<GrainManagement.Services.Print.CupsClient>();
+builder.Services.AddSingleton<GrainManagement.Services.Print.RestartSignal>();
+builder.Services.AddSingleton<GrainManagement.Services.Print.Data.PrintDbContext>();
+builder.Services.AddHostedService<GrainManagement.Services.Print.PrintWorker>();
 
 
 
@@ -371,8 +392,15 @@ app.MapRazorPages();
 using (var scope = app.Services.CreateScope())
 {
     var ctx = scope.ServiceProvider.GetRequiredService<dbContext>();
+    // Warm up core tables and their query plans
     _ = ctx.Locations.AsNoTracking().Select(l => l.LocationId).FirstOrDefault();
+    _ = ctx.Lots.AsNoTracking().Include(l => l.SplitGroup).Select(l => l.LotId).FirstOrDefault();
+    _ = ctx.WeightSheets.AsNoTracking().Select(w => w.WeightSheetId).FirstOrDefault();
+    _ = ctx.Items.AsNoTracking().Select(i => i.ItemId).FirstOrDefault();
 }
+
+// Mark app as ready (EF warm-up complete)
+app.Services.GetRequiredService<AppReadiness>().MarkReady();
 
 // Build system info string once at startup (assembly info + server friendly name)
 var systemInfo = app.Services.GetRequiredService<SystemInfoSnapshot>();

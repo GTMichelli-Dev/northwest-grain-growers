@@ -21,15 +21,7 @@ public partial class InventoryTransactionDetail
 
     public int UomId { get; set; }
 
-    public int? StartScaleId { get; set; }
-
-    public string StartScaleDescription { get; set; }
-
     public decimal? StartQty { get; set; }
-
-    public int? EndScaleId { get; set; }
-
-    public string EndScaleDescription { get; set; }
 
     public decimal? EndQty { get; set; }
 

@@ -1,0 +1,14 @@
+{
+    "name": "basicweigh-web",
+    "version": "1.0.0",
+    "private": true,
+    "dependencies": {
+        "@devexpress/analytics-core": "25.2.5",
+        "@microsoft/signalr": "^8.0.17",
+        "ace-builds": "^1.36.0",
+        "devexpress-reporting": "25.2.5",
+        "devextreme-dist": "25.2.5",
+        "jquery": "^3.7.1",
+        "knockout": "^3.5.1"
+    }
+}

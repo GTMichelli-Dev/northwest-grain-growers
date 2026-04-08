@@ -1,13 +1,18 @@
 @{
     ViewData["Title"] = "Weight Sheet Details";
+    var wsType = (ViewData["WsType"] as string ?? "delivery").ToLower();
+    var isTransfer = wsType == "transfer";
+    var barClass = isTransfer ? "gm-module-bar--transfer" : "gm-module-bar--intake";
+    var iconClass = isTransfer ? "gm-icon--transfer" : "gm-icon--delivery";
+    var barLabel = isTransfer ? "TRANSFER WEIGHT SHEET" : "GROWER INTAKE WEIGHT SHEET";
 }
 
 <link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
 
-<a href="/Warehouse" class="gm-module-bar gm-module-bar--warehouse gm-module-bar--link" title="Back to Warehouse">
+<a id="dlModuleBar" href="/Warehouse" class="gm-module-bar @barClass gm-module-bar--link" title="Back to Warehouse">
     <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
-    <span class="gm-module-bar__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
-    <span class="gm-module-bar__label">WEIGHT SHEET DETAILS</span>
+    <span id="dlModuleBarIcon" class="gm-module-bar__icon gm-icon @iconClass" aria-hidden="true"></span>
+    <span id="dlModuleBarLabel" class="gm-module-bar__label">@barLabel</span>
 </a>
 
 <div class="gm-pagehead gm-pagehead--sticky">
@@ -47,22 +52,45 @@
                 <span class="gm-dl-header__detail-value" id="dlWsAccount">—</span>
             </div>
             <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Split Group #</span>
+                <span class="gm-dl-header__detail-value fw-semibold" id="dlWsSplitId">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
                 <span class="gm-dl-header__detail-label">Split</span>
                 <span class="gm-dl-header__detail-value" id="dlWsSplit">—</span>
             </div>
         </div>
-        <!-- Row 2 — Hauler & Rate Type -->
-        <div class="gm-dl-header__details" style="margin-top:8px;">
-            <div class="gm-dl-header__detail">
-                <span class="gm-dl-header__detail-label">Hauler</span>
-                <span class="gm-dl-header__detail-value" id="dlWsHauler">—</span>
-                <button type="button" class="btn btn-outline-secondary btn-sm gm-dl-header__edit-btn" id="dlEditHaulerBtn" title="Edit Hauler">
-                    <i class="dx-icon dx-icon-edit"></i>
-                </button>
-            </div>
+        <!-- BOL Type separator row -->
+        <div style="margin-top:10px; border-top:1px solid #dee2e6; padding-top:8px;" class="d-flex align-items-center gap-2">
+            <span class="gm-dl-header__detail-label" style="font-size:0.7rem;letter-spacing:.08em;">BOL TYPE</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm gm-dl-header__edit-btn" id="dlEditHaulerBtn" title="Change BOL Type">
+                <i class="dx-icon dx-icon-edit"></i>
+            </button>
+        </div>
+        <div class="gm-dl-header__details" style="margin-top:6px;">
             <div class="gm-dl-header__detail">
                 <span class="gm-dl-header__detail-label">Rate Type</span>
                 <span class="gm-dl-header__detail-value" id="dlWsRateType">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Hauler</span>
+                <span class="gm-dl-header__detail-value" id="dlWsHauler">—</span>
+            </div>
+            <div class="gm-dl-header__detail" id="dlWsMilesDetail" hidden>
+                <span class="gm-dl-header__detail-label">Miles</span>
+                <span class="gm-dl-header__detail-value" id="dlWsMiles">—</span>
+            </div>
+            <div class="gm-dl-header__detail" id="dlWsCalcRateDetail" hidden>
+                <span class="gm-dl-header__detail-label">Calculated Rate</span>
+                <span class="gm-dl-header__detail-value" id="dlWsCalcRate">—</span>
+            </div>
+            <div class="gm-dl-header__detail" id="dlWsCustomDescDetail" hidden>
+                <span class="gm-dl-header__detail-label">Rate Description</span>
+                <span class="gm-dl-header__detail-value" id="dlWsCustomDesc">—</span>
+            </div>
+            <div class="gm-dl-header__detail" id="dlWsCustomRateDetail" hidden>
+                <span class="gm-dl-header__detail-label">Rate</span>
+                <span class="gm-dl-header__detail-value" id="dlWsCustomRate">—</span>
             </div>
         </div>
         <!-- Row 4 — Comment (editable, full width) -->
@@ -85,7 +113,11 @@
         <div class="gm-gd-section">
 
             <div class="d-flex align-items-center justify-content-between mb-3">
-                <div class="gm-gd-section__title" style="margin-bottom:0">Weight Sheet Loads</div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="gm-gd-section__title" style="margin-bottom:0">Weight Sheet Loads</div>
+                    <span class="badge bg-secondary" id="dlStatTotal" title="Total loads">0 loads</span>
+                    <span class="badge bg-success" id="dlStatComplete" title="Completed loads">0 complete</span>
+                </div>
                 <div>
                     <a class="btn btn-primary btn-sm" id="dlNewLoadBtn" href="/GrowerDelivery/Index">
                         <i class="dx-icon dx-icon-add"></i> New Load
@@ -131,24 +163,91 @@
         </div>
     </div>
 
-    <!-- ── Edit Hauler popup ───────────────────────────────────────────────── -->
+    <!-- ── Change BOL Type modal ───────────────────────────────────────────── -->
     <div class="modal fade" id="dlHaulerModal" tabindex="-1" aria-labelledby="dlHaulerModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="dlHaulerModalLabel">Edit Hauler</h5>
+                    <h5 class="modal-title" id="dlHaulerModalLabel">Change BOL Type</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Hauler</label>
-                        <div id="dlHaulerSelect"></div>
+                    <div class="alert alert-warning mb-3" style="font-size:0.875rem;">
+                        <i class="dx-icon dx-icon-warning" style="margin-right:4px;"></i>
+                        <strong>Warning:</strong> Changing the BOL type will affect <strong>all loads</strong> on this weight sheet.
                     </div>
-                    <div id="dlHaulerError" class="text-danger small" hidden></div>
+
+                    <div class="px-3 py-2 border border-2 border-warning rounded bg-warning bg-opacity-10">
+                        <label class="form-label fw-bold text-dark mb-1" style="font-size:1.05rem;">
+                            What is the BOL Type? <span class="text-danger">*</span>
+                        </label>
+                        <div style="max-width:360px;" class="mt-2">
+                            <div id="dlBolTypeSelect"></div>
+                        </div>
+                        <div id="dlBolTypeHint" class="text-muted small mt-1" hidden></div>
+
+                        <!-- A/F: Hauler + Miles + Calculated Rate -->
+                        <div id="dlBolHaulerMiles" class="mt-3" hidden>
+                            <div class="gm-gd-fields gm-gd-fields--2col">
+                                <div class="gm-gd-field">
+                                    <label class="form-label">Hauler <span class="text-danger">*</span></label>
+                                    <div id="dlBolHauler"></div>
+                                </div>
+                                <div class="gm-gd-field" style="max-width:120px;">
+                                    <label class="form-label">Miles <span class="text-danger">*</span></label>
+                                    <div id="dlBolMiles"></div>
+                                </div>
+                                <div class="gm-gd-field" id="dlBolCalcRateGroup" style="max-width:200px;" hidden>
+                                    <label class="form-label">Calculated Rate</label>
+                                    <input type="text" class="form-control" id="dlBolCalcRate" readonly style="text-align:right;" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- C: Hauler + Rate Desc + Rate -->
+                        <div id="dlBolCustom" class="mt-3" hidden>
+                            <div class="gm-gd-fields gm-gd-fields--2col">
+                                <div class="gm-gd-field">
+                                    <label class="form-label">Hauler <span class="text-danger">*</span></label>
+                                    <div id="dlBolCustomHauler"></div>
+                                </div>
+                                <div class="gm-gd-field">
+                                    <label class="form-label">Rate Description <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="dlBolCustomRateDesc" placeholder="Describe the custom rate..." />
+                                </div>
+                                <div class="gm-gd-field" style="max-width:120px;">
+                                    <label class="form-label">Rate <span class="text-danger">*</span></label>
+                                    <div id="dlBolCustomRate"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="dlHaulerError" class="text-danger small mt-2" hidden></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="dlHaulerSaveBtn">Save</button>
+                    <button type="button" class="btn btn-primary" id="dlHaulerSaveBtn">Update BOL Type</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Bin selection popup ─────────────────────────────────────────────── -->
+    <div class="modal fade" id="dlBinModal" tabindex="-1" aria-labelledby="dlBinModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dlBinModalLabel">Select Bin</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="dlBinGrid"></div>
+                    <div id="dlBinError" class="text-danger small mt-2" hidden></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="dlBinSaveBtn" disabled>Assign Bin</button>
                 </div>
             </div>
         </div>

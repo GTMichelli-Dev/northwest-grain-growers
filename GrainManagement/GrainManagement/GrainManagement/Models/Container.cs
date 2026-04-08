@@ -17,9 +17,9 @@ public partial class Container
 
     public DateTime CreatedAt { get; set; }
 
-    public int? StorageLocationId { get; set; }
+    public int ContainerLocationId { get; set; }
 
-    public int? ContainerTypeId { get; set; }
+    public int ContainerTypeId { get; set; }
 
     public string Description { get; set; }
 
@@ -32,6 +32,8 @@ public partial class Container
     public string Notes { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public virtual ContainerLocation ContainerLocation { get; set; }
 
     public virtual ICollection<ContainerLotLayer> ContainerLotLayers { get; set; } = new List<ContainerLotLayer>();
 
@@ -46,6 +48,4 @@ public partial class Container
     public virtual Location Location { get; set; }
 
     public virtual Server Server { get; set; }
-
-    public virtual StorageLocation StorageLocation { get; set; }
 }

@@ -41,6 +41,14 @@ tr.scale-motion > td {
     border-bottom: 1px solid #e6d95e;
 }
 
+/* Light green background for scales that are ok and stable */
+tr.scale-ok > td {
+    background-color: #d4edda !important;
+    color: #000;
+    border-top: 1px solid #a3d5b1;
+    border-bottom: 1px solid #a3d5b1;
+}
+
 #scalesBody tr > td {
     transition: background-color 0.25s ease;
 }

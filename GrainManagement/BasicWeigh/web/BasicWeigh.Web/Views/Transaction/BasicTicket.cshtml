@@ -1,0 +1,170 @@
+@{
+    ViewData["Title"] = "Basic Ticket";
+}
+
+<h3>Basic Ticket</h3>
+
+<form asp-action="BasicTicket" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Ticket Number</label>
+                        <input type="text" class="form-control" value="@ViewBag.NextTicket" readonly />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Weight (lb)</label>
+                        <input type="number" name="InWeight" class="form-control" value="@ViewBag.CurrentWeight" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Date/Time</label>
+                        <input type="datetime-local" name="DateIn" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Customer</label>
+                        <select name="Customer" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var c in (List<BasicWeigh.Web.Models.Customer>)ViewBag.Customers)
+                            {
+                                <option value="@c.CustomerName">@c.CustomerName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Carrier</label>
+                        <select name="Carrier" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var name in (List<string>)ViewBag.CarrierOptions)
+                            {
+                                <option value="@name">@name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Truck ID</label>
+                        <div class="input-group">
+                            <select name="TruckId" id="truckSelect" class="form-select" disabled>
+                                <option value="">-- Select Carrier First --</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-primary" id="addTruckBtn" disabled title="Add New Truck">+</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Commodity</label>
+                        <select name="Commodity" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var c in (List<BasicWeigh.Web.Models.Commodity>)ViewBag.Commodities)
+                            {
+                                <option value="@c.CommodityName">@c.CommodityName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-warning btn-lg me-2">Save Basic Ticket</button>
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary btn-lg">Cancel</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Add Truck Modal -->
+<div class="modal fade" id="addTruckModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Truck</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Carrier</label>
+                    <input type="text" id="modalCarrier" class="form-control" readonly />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Truck ID</label>
+                    <input type="text" id="modalTruckId" class="form-control" maxlength="50" required />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveTruckBtn">Add Truck</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(function () {
+        var customerSelect = $('select[name="Customer"]');
+        var carrierSelect = $('select[name="Carrier"]');
+        var truckSelect = $('#truckSelect');
+        var addTruckBtn = $('#addTruckBtn');
+
+        customerSelect.on('change', function () {
+            if (!carrierSelect.val() && $(this).val()) {
+                carrierSelect.val($(this).val());
+                carrierSelect.trigger('change');
+            }
+        });
+
+        function loadTrucks(carrier, selectTruckId) {
+            if (!carrier) {
+                truckSelect.html('<option value="">-- Select Carrier First --</option>').prop('disabled', true);
+                addTruckBtn.prop('disabled', true);
+                return;
+            }
+            $.getJSON('/api/masterdata/trucks/' + encodeURIComponent(carrier), function (trucks) {
+                truckSelect.html('<option value="">-- Select --</option>');
+                trucks.forEach(function (t) {
+                    truckSelect.append($('<option>').val(t.truckId).text(t.truckId));
+                });
+                truckSelect.prop('disabled', false);
+                addTruckBtn.prop('disabled', false);
+                if (selectTruckId) truckSelect.val(selectTruckId);
+            });
+        }
+
+        carrierSelect.on('change', function () { loadTrucks($(this).val()); });
+
+        addTruckBtn.on('click', function () {
+            $('#modalCarrier').val(carrierSelect.val());
+            $('#modalTruckId').val('');
+            new bootstrap.Modal('#addTruckModal').show();
+            setTimeout(function () { $('#modalTruckId').focus(); }, 500);
+        });
+
+        $('#saveTruckBtn').on('click', function () {
+            var carrier = $('#modalCarrier').val();
+            var truckId = $('#modalTruckId').val().trim();
+            if (!truckId) return;
+            $.ajax({
+                url: '/api/masterdata/trucks',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ truckId: truckId, carrierName: carrier }),
+                success: function () {
+                    bootstrap.Modal.getInstance('#addTruckModal').hide();
+                    loadTrucks(carrier, truckId);
+                }
+            });
+        });
+
+        $('#modalTruckId').on('keypress', function (e) {
+            if (e.which === 13) { e.preventDefault(); $('#saveTruckBtn').click(); }
+        });
+    });
+</script>
+}

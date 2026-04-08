@@ -1,13 +1,20 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System; // for OperatingSystem
+using System.Reflection;
+using Microsoft.EntityFrameworkCore;
+using ScaleReaderService.Data;
 using ScaleReaderService.Models;
 using ScaleReaderService.Services;
 
-HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+var version = Assembly.GetExecutingAssembly()
+    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+    ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString()
+    ?? "unknown";
 
-// Logging: console + Windows Event Log (Windows only)
+Console.WriteLine($"ScaleReaderService v{version}");
+Console.WriteLine(new string('-', 40));
+
+var builder = Host.CreateApplicationBuilder(args);
+
+// Logging
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(o =>
 {
@@ -24,46 +31,16 @@ if (OperatingSystem.IsWindows())
     });
 }
 
-// === Options binding ===
-// NOTE: bind lists, not arrays
-builder.Services.Configure<PollingOptions>(builder.Configuration.GetSection("Polling"));
-builder.Services.Configure<SmaOptions>(builder.Configuration.GetSection("Sma"));
-builder.Services.Configure<List<EndpointOptions>>(builder.Configuration.GetSection("Endpoints"));
-builder.Services.Configure<List<ScaleOptions>>(builder.Configuration.GetSection("Scales"));
+// Options
+builder.Services.Configure<ServiceSettings>(builder.Configuration.GetSection("Service"));
 
-// HttpClient factory
-builder.Services.AddHttpClient("endpoints");
+// SQLite database for scale configs
+builder.Services.AddDbContext<ScaleDbContext>(opt =>
+    opt.UseSqlite($"Data Source={Path.Combine(AppContext.BaseDirectory, "scalereaderservice.db")}"));
 
 // Services
 builder.Services.AddSingleton<SmaClient>();
-builder.Services.AddSingleton<ScalePoller>();
-
-// Hosted service that runs the poller
-builder.Services.AddHostedService(provider =>
-{
-    var poller = provider.GetRequiredService<ScalePoller>();
-    var log = provider.GetRequiredService<ILogger<BackgroundServiceImpl>>();
-    return new BackgroundServiceImpl(poller, log);
-});
+builder.Services.AddSingleton<RestartSignal>();
+builder.Services.AddHostedService<ScaleWorker>();
 
 await builder.Build().RunAsync();
-
-// Wrapper background service to drive the poller loop
-public class BackgroundServiceImpl : BackgroundService
-{
-    private readonly ScalePoller _poller;
-    private readonly ILogger<BackgroundServiceImpl> _log;
-
-    public BackgroundServiceImpl(ScalePoller poller, ILogger<BackgroundServiceImpl> log)
-    {
-        _poller = poller;
-        _log = log;
-    }
-
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        _log.LogInformation("ScaleReaderService starting.");
-        await _poller.RunAsync(stoppingToken);
-        _log.LogInformation("ScaleReaderService stopping.");
-    }
-}

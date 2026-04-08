@@ -6,6 +6,7 @@ using GrainManagement.Models;
 using GrainManagement.Services;
 using GrainManagement.Utilities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
@@ -194,6 +195,33 @@ public class LocationsApiController : ControllerBase
         _ctx.Locations.Add(entity);
         await _ctx.SaveChangesAsync();
 
+        // Auto-add default weight methods (MANUAL + TRUCK_SCALE) for the new location
+        try
+        {
+            var defaultCodes = new[] { "MANUAL", "TRUCK_SCALE" };
+            var defaultMethodIds = await _ctx.QuantityMethods
+                .AsNoTracking()
+                .Where(m => m.IsActive && defaultCodes.Contains(m.Code))
+                .Select(m => m.QuantityMethodId)
+                .ToListAsync();
+
+            foreach (var methodId in defaultMethodIds)
+            {
+                _ctx.LocationQuantityMethods.Add(new LocationQuantityMethod
+                {
+                    LocationId = entity.LocationId,
+                    QuantityMethodId = methodId
+                });
+            }
+
+            if (defaultMethodIds.Count > 0)
+                await _ctx.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to auto-add default weight methods for LocationId={LocationId}. Table may not exist yet.", entity.LocationId);
+        }
+
         return Ok(new { entity.LocationId });
     }
 
@@ -369,6 +397,421 @@ public class LocationsApiController : ControllerBase
 
         return Ok();
     }
+
+    // ── Container Locations (container.ContainerLocations) ───────────────────
+
+    [HttpGet("{locationId}/ContainerLocations")]
+    public async Task<IActionResult> GetContainerLocations(int locationId, CancellationToken ct)
+    {
+        var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync(ct);
+
+        var list = new List<object>();
+        using var cmd = new SqlCommand(@"
+            SELECT ContainerLocationId, LocationId, Description, IsActive, Idx
+            FROM   [container].[ContainerLocations]
+            WHERE  LocationId = @loc
+            ORDER BY Idx, Description", conn);
+        cmd.Parameters.AddWithValue("@loc", locationId);
+        using var rdr = await cmd.ExecuteReaderAsync(ct);
+        while (await rdr.ReadAsync(ct))
+        {
+            list.Add(new
+            {
+                ContainerLocationId = rdr.GetInt32(0),
+                LocationId          = rdr.GetInt32(1),
+                Description         = rdr.GetString(2),
+                IsActive            = rdr.GetBoolean(3),
+                Idx                 = rdr.GetInt32(4)
+            });
+        }
+        return Ok(list);
+    }
+
+    [HttpPost("{locationId}/ContainerLocations")]
+    public async Task<IActionResult> InsertContainerLocation(
+        int locationId, [FromBody] ContainerLocationUpsertDto dto, CancellationToken ct)
+    {
+        var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync(ct);
+
+        // Check for duplicate name
+        using var dupNameCmd = new SqlCommand(@"
+            SELECT COUNT(*) FROM [container].[ContainerLocations]
+            WHERE LocationId = @loc AND Description = @desc", conn);
+        dupNameCmd.Parameters.AddWithValue("@loc",  locationId);
+        dupNameCmd.Parameters.AddWithValue("@desc", dto.Description ?? "");
+        if ((int)await dupNameCmd.ExecuteScalarAsync(ct) > 0)
+            return BadRequest(new { message = $"A storage area named '{dto.Description}' already exists at this location." });
+
+        // Check for duplicate sort index
+        using var dupIdxCmd = new SqlCommand(@"
+            SELECT COUNT(*) FROM [container].[ContainerLocations]
+            WHERE LocationId = @loc AND Idx = @idx", conn);
+        dupIdxCmd.Parameters.AddWithValue("@loc", locationId);
+        dupIdxCmd.Parameters.AddWithValue("@idx", dto.Idx);
+        if ((int)await dupIdxCmd.ExecuteScalarAsync(ct) > 0)
+            return BadRequest(new { message = $"Sort index {dto.Idx} is already in use by another storage area at this location." });
+
+        using var cmd = new SqlCommand(@"
+            INSERT INTO [container].[ContainerLocations]
+                (LocationId, Description, IsActive, Idx, CreatedAt)
+            OUTPUT INSERTED.ContainerLocationId
+            VALUES (@loc, @desc, @active, @idx, SYSUTCDATETIME())", conn);
+        cmd.Parameters.AddWithValue("@loc",    locationId);
+        cmd.Parameters.AddWithValue("@desc",   dto.Description ?? "");
+        cmd.Parameters.AddWithValue("@active", dto.IsActive);
+        cmd.Parameters.AddWithValue("@idx",    dto.Idx);
+        var newId = (int)await cmd.ExecuteScalarAsync(ct);
+        return Ok(new { ContainerLocationId = newId });
+    }
+
+    [HttpPut("{locationId}/ContainerLocations/{id}")]
+    public async Task<IActionResult> UpdateContainerLocation(
+        int locationId, int id, [FromBody] ContainerLocationUpsertDto dto, CancellationToken ct)
+    {
+        var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync(ct);
+
+        // Check for duplicate name (exclude self)
+        using var dupNameCmd = new SqlCommand(@"
+            SELECT COUNT(*) FROM [container].[ContainerLocations]
+            WHERE LocationId = @loc AND Description = @desc AND ContainerLocationId <> @id", conn);
+        dupNameCmd.Parameters.AddWithValue("@loc",  locationId);
+        dupNameCmd.Parameters.AddWithValue("@desc", dto.Description ?? "");
+        dupNameCmd.Parameters.AddWithValue("@id",   id);
+        if ((int)await dupNameCmd.ExecuteScalarAsync(ct) > 0)
+            return BadRequest(new { message = $"A storage area named '{dto.Description}' already exists at this location." });
+
+        // Check for duplicate sort index (exclude self)
+        using var dupIdxCmd = new SqlCommand(@"
+            SELECT COUNT(*) FROM [container].[ContainerLocations]
+            WHERE LocationId = @loc AND Idx = @idx AND ContainerLocationId <> @id", conn);
+        dupIdxCmd.Parameters.AddWithValue("@loc", locationId);
+        dupIdxCmd.Parameters.AddWithValue("@idx", dto.Idx);
+        dupIdxCmd.Parameters.AddWithValue("@id",  id);
+        if ((int)await dupIdxCmd.ExecuteScalarAsync(ct) > 0)
+            return BadRequest(new { message = $"Sort index {dto.Idx} is already in use by another storage area at this location." });
+
+        using var cmd = new SqlCommand(@"
+            UPDATE [container].[ContainerLocations]
+            SET    Description = @desc, IsActive = @active, Idx = @idx, UpdatedAt = SYSUTCDATETIME()
+            WHERE  ContainerLocationId = @id AND LocationId = @loc", conn);
+        cmd.Parameters.AddWithValue("@desc",   dto.Description ?? "");
+        cmd.Parameters.AddWithValue("@active", dto.IsActive);
+        cmd.Parameters.AddWithValue("@idx",    dto.Idx);
+        cmd.Parameters.AddWithValue("@id",     id);
+        cmd.Parameters.AddWithValue("@loc",    locationId);
+        var rows = await cmd.ExecuteNonQueryAsync(ct);
+        return rows == 0 ? NotFound() : Ok();
+    }
+
+    [HttpDelete("{locationId}/ContainerLocations/{id}")]
+    public async Task<IActionResult> DeleteContainerLocation(
+        int locationId, int id, CancellationToken ct)
+    {
+        var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync(ct);
+
+        // Check if any containers reference this storage area
+        using var checkCmd = new SqlCommand(@"
+            SELECT COUNT(*) FROM [container].[Containers]
+            WHERE ContainerLocationId = @id", conn);
+        checkCmd.Parameters.AddWithValue("@id", id);
+        var count = (int)await checkCmd.ExecuteScalarAsync(ct);
+        if (count > 0)
+            return BadRequest(new { message = $"Cannot delete this storage area because {count} container(s) are associated with it. Remove or reassign the containers first." });
+
+        using var cmd = new SqlCommand(@"
+            DELETE FROM [container].[ContainerLocations]
+            WHERE ContainerLocationId = @id AND LocationId = @loc", conn);
+        cmd.Parameters.AddWithValue("@id",  id);
+        cmd.Parameters.AddWithValue("@loc", locationId);
+        var rows = await cmd.ExecuteNonQueryAsync(ct);
+        return rows == 0 ? NotFound() : Ok();
+    }
+
+    // ── Container Types ───────────────────────────────────────────────────────
+
+    [HttpGet("{locationId}/ContainerTypes")]
+    public async Task<IActionResult> GetContainerTypes(int locationId, CancellationToken ct)
+    {
+        var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync(ct);
+
+        var list = new List<object>();
+        using var cmd = new SqlCommand(@"
+            SELECT ContainerTypeId, Description, DefaultCapacityLb
+            FROM   [container].[ContainerTypes]
+            WHERE  IsActive = 1
+            ORDER BY Description", conn);
+        using var rdr = await cmd.ExecuteReaderAsync(ct);
+        while (await rdr.ReadAsync(ct))
+        {
+            list.Add(new
+            {
+                ContainerTypeId   = rdr.GetInt32(0),
+                Description       = rdr.GetString(1),
+                DefaultCapacityLb = rdr.IsDBNull(2) ? (decimal?)null : rdr.GetDecimal(2)
+            });
+        }
+        return Ok(list);
+    }
+
+    // ── Containers (container.Containers) ─────────────────────────────────────
+
+    [HttpGet("{locationId}/Containers")]
+    public async Task<IActionResult> GetContainers(int locationId, CancellationToken ct)
+    {
+        var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync(ct);
+
+        var list = new List<object>();
+        using var cmd = new SqlCommand(@"
+            SELECT c.ContainerId, c.ContainerLocationId, cl.Description AS ContainerLocationDescription,
+                   c.ContainerTypeId, ct.Description AS ContainerTypeDescription,
+                   c.Description, c.CapacityLb, c.IsActive, c.Notes
+            FROM   [container].[Containers] c
+            LEFT JOIN [container].[ContainerLocations] cl ON cl.ContainerLocationId = c.ContainerLocationId
+            LEFT JOIN [container].[ContainerTypes]     ct ON ct.ContainerTypeId     = c.ContainerTypeId
+            WHERE  c.LocationId = @loc
+               AND (c.Destroyed IS NULL OR c.Destroyed = 0)
+            ORDER BY c.Description", conn);
+        cmd.Parameters.AddWithValue("@loc", locationId);
+        using var rdr = await cmd.ExecuteReaderAsync(ct);
+        while (await rdr.ReadAsync(ct))
+        {
+            list.Add(new
+            {
+                ContainerId                   = rdr.GetInt64(0),
+                ContainerLocationId           = rdr.IsDBNull(1) ? (int?)null : rdr.GetInt32(1),
+                ContainerLocationDescription  = rdr.IsDBNull(2) ? null : rdr.GetString(2),
+                ContainerTypeId               = rdr.IsDBNull(3) ? (int?)null : rdr.GetInt32(3),
+                ContainerTypeDescription      = rdr.IsDBNull(4) ? null : rdr.GetString(4),
+                Description                   = rdr.IsDBNull(5) ? null : rdr.GetString(5),
+                CapacityLb                    = rdr.IsDBNull(6) ? (decimal?)null : rdr.GetDecimal(6),
+                IsActive                      = rdr.GetBoolean(7),
+                Notes                         = rdr.IsDBNull(8) ? null : rdr.GetString(8)
+            });
+        }
+        return Ok(list);
+    }
+
+    [HttpPost("{locationId}/Containers")]
+    public async Task<IActionResult> InsertContainer(
+        int locationId, [FromBody] ContainerUpsertDto dto, CancellationToken ct)
+    {
+        var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync(ct);
+
+        // Check for duplicate container name at this location
+        using var dupCmd = new SqlCommand(@"
+            SELECT COUNT(*) FROM [container].[Containers]
+            WHERE LocationId = @loc AND Description = @desc AND (Destroyed IS NULL OR Destroyed = 0)", conn);
+        dupCmd.Parameters.AddWithValue("@loc",  locationId);
+        dupCmd.Parameters.AddWithValue("@desc", dto.Description ?? "");
+        if ((int)await dupCmd.ExecuteScalarAsync(ct) > 0)
+            return BadRequest(new { message = $"A container named '{dto.Description}' already exists at this location." });
+
+        // INSTEAD OF trigger on Containers generates the ContainerId — OUTPUT clause not allowed with INSTEAD OF triggers.
+        // Insert first, then query back the generated ID.
+        using var cmd = new SqlCommand(@"
+            INSERT INTO [container].[Containers]
+                (LocationId, ContainerLocationId, ContainerTypeId, Description, CapacityLb, IsActive, Notes, Destroyed, CreatedAt)
+            VALUES (@loc, @clid, @ctid, @desc, @cap, @active, @notes, 0, SYSUTCDATETIME());
+            SELECT TOP 1 ContainerId FROM [container].[Containers]
+            WHERE LocationId = @loc AND Description = @desc AND (Destroyed IS NULL OR Destroyed = 0)
+            ORDER BY ContainerId DESC;", conn);
+        cmd.Parameters.AddWithValue("@loc",    locationId);
+        cmd.Parameters.AddWithValue("@clid",   (object)dto.ContainerLocationId ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@ctid",   (object)dto.ContainerTypeId     ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@desc",   dto.Description ?? "");
+        cmd.Parameters.AddWithValue("@cap",    (object)dto.CapacityLb          ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@active", dto.IsActive);
+        cmd.Parameters.AddWithValue("@notes",  (object)dto.Notes               ?? DBNull.Value);
+        var newId = (long)await cmd.ExecuteScalarAsync(ct);
+        return Ok(new { ContainerId = newId });
+    }
+
+    [HttpPut("{locationId}/Containers/{id}")]
+    public async Task<IActionResult> UpdateContainer(
+        int locationId, long id, [FromBody] ContainerUpsertDto dto, CancellationToken ct)
+    {
+        var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync(ct);
+
+        // Check for duplicate container name at this location (exclude self)
+        using var dupCmd = new SqlCommand(@"
+            SELECT COUNT(*) FROM [container].[Containers]
+            WHERE LocationId = @loc AND Description = @desc AND ContainerId <> @id AND (Destroyed IS NULL OR Destroyed = 0)", conn);
+        dupCmd.Parameters.AddWithValue("@loc",  locationId);
+        dupCmd.Parameters.AddWithValue("@desc", dto.Description ?? "");
+        dupCmd.Parameters.AddWithValue("@id",   id);
+        if ((int)await dupCmd.ExecuteScalarAsync(ct) > 0)
+            return BadRequest(new { message = $"A container named '{dto.Description}' already exists at this location." });
+
+        using var cmd = new SqlCommand(@"
+            UPDATE [container].[Containers]
+            SET ContainerLocationId = @clid, ContainerTypeId = @ctid,
+                Description = @desc, CapacityLb = @cap, IsActive = @active,
+                Notes = @notes, UpdatedAt = SYSUTCDATETIME()
+            WHERE ContainerId = @id AND LocationId = @loc", conn);
+        cmd.Parameters.AddWithValue("@clid",   (object)dto.ContainerLocationId ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@ctid",   (object)dto.ContainerTypeId     ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@desc",   dto.Description ?? "");
+        cmd.Parameters.AddWithValue("@cap",    (object)dto.CapacityLb          ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@active", dto.IsActive);
+        cmd.Parameters.AddWithValue("@notes",  (object)dto.Notes               ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@id",     id);
+        cmd.Parameters.AddWithValue("@loc",    locationId);
+        var rows = await cmd.ExecuteNonQueryAsync(ct);
+        return rows == 0 ? NotFound() : Ok();
+    }
+
+    [HttpDelete("{locationId}/Containers/{id}")]
+    public async Task<IActionResult> DeleteContainer(
+        int locationId, long id, CancellationToken ct)
+    {
+        var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync(ct);
+
+        using var cmd = new SqlCommand(@"
+            UPDATE [container].[Containers]
+            SET Destroyed = 1, UpdatedAt = SYSUTCDATETIME()
+            WHERE ContainerId = @id AND LocationId = @loc", conn);
+        cmd.Parameters.AddWithValue("@id",  id);
+        cmd.Parameters.AddWithValue("@loc", locationId);
+        var rows = await cmd.ExecuteNonQueryAsync(ct);
+        return rows == 0 ? NotFound() : Ok();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // LOCATION QUANTITY METHODS
+    // ══════════════════════════════════════════════════════════════════════
+
+    // GET /api/locations/{locationId}/QuantityMethods
+    [HttpGet("{locationId}/QuantityMethods")]
+    public async Task<IActionResult> GetQuantityMethods(int locationId, CancellationToken ct)
+    {
+        try
+        {
+            var data = await _ctx.LocationQuantityMethods
+                .AsNoTracking()
+                .Where(lqm => lqm.LocationId == locationId)
+                .Select(lqm => new
+                {
+                    lqm.QuantityMethodId,
+                    lqm.QuantityMethod.Code,
+                    lqm.QuantityMethod.Description,
+                    lqm.QuantityMethod.IsActive
+                })
+                .OrderBy(x => x.Code)
+                .ToListAsync(ct);
+
+            return Ok(data);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "LocationQuantityMethods query failed for LocationId={LocationId}. Table may not exist yet.", locationId);
+            return Ok(Array.Empty<object>());
+        }
+    }
+
+    // GET /api/locations/AllQuantityMethods
+    [HttpGet("AllQuantityMethods")]
+    public async Task<IActionResult> GetAllQuantityMethods(CancellationToken ct)
+    {
+        var data = await _ctx.QuantityMethods
+            .AsNoTracking()
+            .Where(m => m.IsActive)
+            .OrderBy(m => m.Code)
+            .Select(m => new
+            {
+                m.QuantityMethodId,
+                m.Code,
+                m.Description
+            })
+            .ToListAsync(ct);
+
+        return Ok(data);
+    }
+
+    // POST /api/locations/{locationId}/QuantityMethods
+    [HttpPost("{locationId}/QuantityMethods")]
+    public async Task<IActionResult> AddQuantityMethod(
+        int locationId,
+        [FromBody] AddLocationQuantityMethodDto dto,
+        CancellationToken ct)
+    {
+        if (dto is null || dto.QuantityMethodId <= 0)
+            return BadRequest(new { message = "QuantityMethodId is required." });
+
+        var exists = await _ctx.LocationQuantityMethods
+            .AnyAsync(lqm => lqm.LocationId == locationId && lqm.QuantityMethodId == dto.QuantityMethodId, ct);
+
+        if (exists)
+            return Conflict(new { message = "This quantity method is already configured for this location." });
+
+        _ctx.LocationQuantityMethods.Add(new LocationQuantityMethod
+        {
+            LocationId = locationId,
+            QuantityMethodId = dto.QuantityMethodId
+        });
+
+        try
+        {
+            await _ctx.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Failed to add QuantityMethod {MethodId} to Location {LocationId}", dto.QuantityMethodId, locationId);
+            return StatusCode(500, new { message = "Database error." });
+        }
+
+        return Ok();
+    }
+
+    // DELETE /api/locations/{locationId}/QuantityMethods/{methodId}
+    [HttpDelete("{locationId}/QuantityMethods/{methodId}")]
+    public async Task<IActionResult> RemoveQuantityMethod(
+        int locationId, int methodId, CancellationToken ct)
+    {
+        // Prevent deletion of MANUAL — it is always required
+        var methodCode = await _ctx.QuantityMethods
+            .AsNoTracking()
+            .Where(m => m.QuantityMethodId == methodId)
+            .Select(m => m.Code)
+            .FirstOrDefaultAsync(ct);
+
+        if (methodCode == "MANUAL")
+            return BadRequest(new { message = "Manual is always required and cannot be removed." });
+
+        var entity = await _ctx.LocationQuantityMethods
+            .FirstOrDefaultAsync(lqm => lqm.LocationId == locationId && lqm.QuantityMethodId == methodId, ct);
+
+        if (entity is null)
+            return NotFound(new { message = "Quantity method not found for this location." });
+
+        _ctx.LocationQuantityMethods.Remove(entity);
+
+        try
+        {
+            await _ctx.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Failed to remove QuantityMethod {MethodId} from Location {LocationId}", methodId, locationId);
+            return StatusCode(500, new { message = "Database error." });
+        }
+
+        return Ok();
+    }
+}
+
+/// <summary>DTO for adding a quantity method to a location.</summary>
+public class AddLocationQuantityMethodDto
+{
+    public int QuantityMethodId { get; set; }
 }
 
 /// <summary>DTO for adding a county to a location.</summary>
@@ -381,4 +824,21 @@ public class AddLocationCountyDto
 public class AddLocationItemDto
 {
     public long ItemId { get; set; }
+}
+
+public class ContainerLocationUpsertDto
+{
+    public string Description { get; set; } = "";
+    public bool IsActive { get; set; } = true;
+    public int Idx { get; set; }
+}
+
+public class ContainerUpsertDto
+{
+    public string Description { get; set; } = "";
+    public int? ContainerLocationId { get; set; }
+    public int? ContainerTypeId { get; set; }
+    public decimal? CapacityLb { get; set; }
+    public bool IsActive { get; set; } = true;
+    public string Notes { get; set; } = "";
 }

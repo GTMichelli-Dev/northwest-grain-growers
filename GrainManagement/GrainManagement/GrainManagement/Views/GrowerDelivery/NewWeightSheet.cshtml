@@ -76,6 +76,7 @@
                         <label class="form-label">Split Group <span class="text-danger">*</span></label>
                         <div id="nwsSplitGroup"></div>
                         <div id="nwsSplitGroupWarning" class="text-danger small mt-1" hidden>No split group set up for this account.</div>
+                        <div id="nwsSplitDesc" class="text-muted small mt-1" hidden></div>
                     </div>
 
                     <div class="gm-gd-field">
@@ -133,47 +134,25 @@
                 </button>
             </div>
 
-            <div id="nwsSelectedLotInfo" class="mb-3 p-3 border rounded bg-light">
-                <div class="fw-bold mb-2">Selected Lot</div>
-                <div class="gm-gd-fields gm-gd-fields--2col" style="gap:6px 16px;">
-                    <div class="gm-gd-field">
-                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Lot ID</label>
-                        <div id="nwsConfirmLotId" class="fw-semibold"></div>
-                    </div>
-                    <div class="gm-gd-field">
-                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Item</label>
-                        <div id="nwsConfirmItem"></div>
-                    </div>
-                    <div class="gm-gd-field gm-gd-field--full">
-                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Lot Description</label>
-                        <div id="nwsConfirmLotDesc" class="fw-semibold"></div>
-                    </div>
-                    <div class="gm-gd-field">
-                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Account</label>
-                        <div id="nwsConfirmAccount"></div>
-                    </div>
-                    <div class="gm-gd-field">
-                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Split Group</label>
-                        <div id="nwsConfirmSplitGroup"></div>
-                    </div>
-                    <div class="gm-gd-field">
-                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">State</label>
-                        <div id="nwsConfirmState"></div>
-                    </div>
-                    <div class="gm-gd-field">
-                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">County</label>
-                        <div id="nwsConfirmCounty"></div>
-                    </div>
-                    <div class="gm-gd-field gm-gd-field--full">
-                        <label class="form-label text-muted mb-0" style="font-size:0.8rem;">Landlord</label>
-                        <div id="nwsConfirmLandlord"></div>
-                    </div>
+            <div id="nwsSelectedLotInfo" class="mb-2 px-3 py-2 border rounded bg-light" style="font-size:0.85rem;">
+                <div class="d-flex flex-wrap align-items-baseline gap-3">
+                    <span class="fw-bold">Selected Lot:</span>
+                    <span><span class="text-muted">Lot</span> <span id="nwsConfirmLotId" class="fw-semibold"></span></span>
+                    <span><span class="text-muted">Item</span> <span id="nwsConfirmItem"></span></span>
+                    <span><span class="text-muted">Account</span> <span id="nwsConfirmAccount"></span></span>
+                    <span><span class="text-muted">Split</span> <span id="nwsConfirmSplitGroup"></span></span>
+                    <span><span class="text-muted">State</span> <span id="nwsConfirmState"></span></span>
+                    <span><span class="text-muted">County</span> <span id="nwsConfirmCounty"></span></span>
+                    <span><span class="text-muted">Landlord</span> <span id="nwsConfirmLandlord"></span></span>
+                </div>
+                <div class="mt-1">
+                    <span class="text-muted">Description</span> <span id="nwsConfirmLotDesc" class="fw-semibold"></span>
                 </div>
             </div>
 
             <!-- ── BOL Type (required, highly visible) ── -->
-            <div class="nws-bol-section p-3 mb-3 border border-2 border-warning rounded bg-warning bg-opacity-10">
-                <label class="form-label fw-bold fs-5 text-dark">
+            <div class="nws-bol-section px-3 py-2 mb-2 border border-2 border-warning rounded bg-warning bg-opacity-10">
+                <label class="form-label fw-bold text-dark mb-1" style="font-size:1.05rem;">
                     What is the BOL Type? <span class="text-danger">*</span>
                 </label>
                 <div style="max-width:360px;" class="mt-2">
@@ -188,13 +167,13 @@
                             <label class="form-label">Hauler <span class="text-danger">*</span></label>
                             <div id="nwsHauler"></div>
                         </div>
-                        <div class="gm-gd-field">
+                        <div class="gm-gd-field" style="max-width:120px;">
                             <label class="form-label">Miles <span class="text-danger">*</span></label>
                             <div id="nwsMiles"></div>
                         </div>
-                        <div class="gm-gd-field gm-gd-field--full" id="nwsCalcRateGroup" hidden>
+                        <div class="gm-gd-field" id="nwsCalcRateGroup" style="max-width:200px;" hidden>
                             <label class="form-label">Calculated Rate</label>
-                            <input type="text" class="form-control" id="nwsCalcRate" readonly />
+                            <input type="text" class="form-control" id="nwsCalcRate" readonly style="text-align:right;" />
                         </div>
                     </div>
                 </div>
@@ -211,7 +190,7 @@
                             <input type="text" class="form-control" id="nwsCustomRateDesc"
                                    placeholder="Describe the custom rate…" />
                         </div>
-                        <div class="gm-gd-field">
+                        <div class="gm-gd-field" style="max-width:120px;">
                             <label class="form-label">Rate <span class="text-danger">*</span></label>
                             <div id="nwsCustomRate"></div>
                         </div>
@@ -219,12 +198,12 @@
                 </div>
 
                 <div id="nwsHaulerError" class="text-danger fw-bold mt-2" hidden></div>
-            </div>
 
-            <div class="mt-3">
-                <button type="button" class="btn btn-primary btn-lg" id="nwsCreateWsBtn" disabled>
-                    Create Weight Sheet
-                </button>
+                <div class="mt-2">
+                    <button type="button" class="btn btn-primary" id="nwsCreateWsBtn" disabled>
+                        Create Weight Sheet
+                    </button>
+                </div>
             </div>
 
         </div>

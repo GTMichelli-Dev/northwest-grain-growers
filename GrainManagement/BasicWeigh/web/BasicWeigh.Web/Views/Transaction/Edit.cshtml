@@ -1,0 +1,475 @@
+@model BasicWeigh.Web.Models.Transaction
+@{
+    ViewData["Title"] = "Edit Ticket " + Model.Ticket;
+}
+
+<h3>Edit Ticket @Model.Ticket</h3>
+
+<form asp-action="Edit" asp-route-id="@Model.Ticket" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Ticket" />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Ticket Number</label>
+                        <input type="text" class="form-control" value="@Model.Ticket" readonly />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="InWeight" class="form-label"></label>
+                        <input asp-for="InWeight" class="form-control" type="number" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="OutWeight" class="form-label"></label>
+                        <input asp-for="OutWeight" class="form-control" type="number" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="DateIn" class="form-label"></label>
+                        <input asp-for="DateIn" class="form-control" type="datetime-local" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="DateOut" class="form-label"></label>
+                        <input asp-for="DateOut" class="form-control" type="datetime-local" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Customer" class="form-label"></label>
+                        <select asp-for="Customer" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var c in (List<BasicWeigh.Web.Models.Customer>)ViewBag.Customers)
+                            {
+                                <option value="@c.CustomerName">@c.CustomerName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Carrier" class="form-label"></label>
+                        <select asp-for="Carrier" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var name in (List<string>)ViewBag.CarrierOptions)
+                            {
+                                <option value="@name">@name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="TruckId" class="form-label"></label>
+                        <div class="input-group">
+                            <select asp-for="TruckId" id="truckSelect" class="form-select">
+                                <option value="">-- Select Carrier First --</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-primary" id="addTruckBtn" disabled title="Add New Truck">+</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Commodity" class="form-label"></label>
+                        <select asp-for="Commodity" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var c in (List<BasicWeigh.Web.Models.Commodity>)ViewBag.Commodities)
+                            {
+                                <option value="@c.CommodityName">@c.CommodityName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Location" class="form-label"></label>
+                        <select asp-for="Location" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var l in (List<BasicWeigh.Web.Models.Location>)ViewBag.Locations)
+                            {
+                                <option value="@l.LocationName">@l.LocationName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Destination" class="form-label"></label>
+                        <select asp-for="Destination" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var d in (List<BasicWeigh.Web.Models.Destination>)ViewBag.Destinations)
+                            {
+                                <option value="@d.DestinationName">@d.DestinationName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Notes" class="form-label"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    @if ((bool)(ViewBag.SavePicture ?? false))
+                    {
+                        var hasIn = (bool)(ViewBag.HasInImage ?? false);
+                        var hasOut = (bool)(ViewBag.HasOutImage ?? false);
+                        if (hasIn || hasOut)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Ticket Photos</label>
+                                <div class="d-flex gap-3">
+                                    @if (hasIn)
+                                    {
+                                        <div class="text-center">
+                                            <img src="/api/ticket/@Model.Ticket/image?direction=in"
+                                                 style="width:120px;height:auto;border-radius:4px;cursor:pointer;"
+                                                 onclick="showTicketImage('@Model.Ticket','in')" />
+                                            <div class="small text-muted">Inbound</div>
+                                        </div>
+                                    }
+                                    @if (hasOut)
+                                    {
+                                        <div class="text-center">
+                                            <img src="/api/ticket/@Model.Ticket/image?direction=out"
+                                                 style="width:120px;height:auto;border-radius:4px;cursor:pointer;"
+                                                 onclick="showTicketImage('@Model.Ticket','out')" />
+                                            <div class="small text-muted">Outbound</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    <input type="hidden" asp-for="Void" id="voidField" />
+
+                    <div class="mt-4 d-flex align-items-center gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Save Changes</button>
+                        <a asp-action="CompletedTrucks" class="btn btn-secondary btn-lg">Cancel</a>
+                        <button type="button" class="btn btn-info btn-lg" onclick="showPrintOptions('@Model.Ticket')">
+                            <i class="fa fa-print"></i> Reprint
+                        </button>
+                        <button type="button" class="btn btn-lg @(Model.Void ? "btn-success" : "btn-outline-danger")" id="voidBtn"
+                                onclick="toggleVoid()">
+                            @(Model.Void ? "Restore Ticket" : "Void Ticket")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Image Lightbox Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="imageModalTitle"></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body d-flex gap-3 p-3" style="background:#f8f9fa;">
+                <div style="flex:1;min-width:0;text-align:center;background:#000;border-radius:4px;overflow:hidden;">
+                    <img id="imageModalImg" src="" class="img-fluid" style="max-height:70vh;" />
+                </div>
+                <div id="imageModalInfo" style="min-width:250px;max-width:280px;font-family:'Courier New',monospace;font-size:13px;border:2px solid #000;padding:16px;background:#fff;border-radius:4px;align-self:flex-start;"></div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-sm btn-primary" onclick="downloadTicketImage(window._currentTicket, window._currentDirection)"><i class="fa fa-download"></i> Download</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Truck Modal -->
+<div class="modal fade" id="addTruckModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Truck</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Carrier</label>
+                    <input type="text" id="modalCarrier" class="form-control" readonly />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Truck ID</label>
+                    <input type="text" id="modalTruckId" class="form-control" maxlength="50" required />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveTruckBtn">Add Truck</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Modal -->
+<div class="modal fade" id="printModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title fw-bold">Print Ticket</h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="printModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Unsaved changes alert (hidden by default) -->
+<div class="alert alert-warning alert-dismissible fade py-1 mb-2 position-fixed top-0 start-50 translate-middle-x mt-3"
+     role="alert" id="unsavedAlert" style="display:none; z-index:9999;">
+    <strong>Unsaved changes!</strong> You have unsaved changes. Click <strong>Save Changes</strong> to keep them.
+    <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+</div>
+
+@section Scripts {
+<script src="~/js/ticket-image-download.js"></script>
+<script>
+    var ticketData = {
+        ticket: '@Model.Ticket',
+        customer: '@(Model.Customer?.Replace("'", "\\'") ?? "")',
+        carrier: '@(Model.Carrier?.Replace("'", "\\'") ?? "")',
+        truckId: '@(Model.TruckId?.Replace("'", "\\'") ?? "")',
+        commodity: '@(Model.Commodity?.Replace("'", "\\'") ?? "")',
+        location: '@(Model.Location?.Replace("'", "\\'") ?? "")',
+        destination: '@(Model.Destination?.Replace("'", "\\'") ?? "")',
+        dateIn: '@Model.DateIn.ToString("o")',
+        dateOut: '@(Model.DateOut?.ToString("o") ?? "")',
+        inWeight: @Model.InWeight,
+        outWeight: @Model.OutWeight,
+        netWeight: @Model.NetWeight,
+        notes: '@(Model.Notes?.Replace("'", "\\'") ?? "")'
+    };
+
+    function showTicketImage(ticket, direction) {
+        window._currentTicket = ticket;
+        window._currentDirection = direction;
+        var url = '/api/ticket/' + ticket + '/image?direction=' + direction;
+        $('#imageModalTitle').text('Ticket #' + ticket + ' (' + (direction === 'in' ? 'Inbound' : 'Outbound') + ')');
+        $('#imageModalImg').attr('src', url);
+
+        var label = direction === 'in' ? 'Inbound Ticket' : 'Completed Ticket';
+        var info = '<div style="text-align:center;font-weight:bold;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #333;padding-bottom:4px;margin-bottom:8px;font-size:11px;">' + label + '</div>';
+
+        function row(lbl, val) {
+            return '<div style="display:flex;justify-content:space-between;padding:2px 0;"><span style="font-weight:bold;">' + lbl + '</span><span>' + (val || '-') + '</span></div>';
+        }
+
+        var d = ticketData;
+        info += row('Ticket #:', d.ticket);
+        if (d.dateIn) info += row('Date In:', new Date(d.dateIn).toLocaleString());
+        if (direction !== 'in' && d.dateOut) info += row('Date Out:', new Date(d.dateOut).toLocaleString());
+        info += row('Customer:', d.customer);
+        info += row('Carrier:', d.carrier);
+        info += row('Truck:', d.truckId);
+        info += row('Commodity:', d.commodity);
+        if (d.location) info += row('Location:', d.location);
+        if (d.destination) info += row('Destination:', d.destination);
+
+        info += '<div style="border-top:1px dashed #000;border-bottom:1px dashed #000;margin:6px 0;padding:6px 0;">';
+        if (direction === 'in') {
+            info += '<div style="font-size:16px;font-weight:bold;display:flex;justify-content:space-between;"><span>Weight:</span><span>' + (d.inWeight || 0).toLocaleString() + ' lb</span></div>';
+        } else {
+            info += row('Gross:', (d.outWeight || 0).toLocaleString() + ' lb');
+            info += row('Tare:', (d.inWeight || 0).toLocaleString() + ' lb');
+            info += '<div style="font-size:16px;font-weight:bold;display:flex;justify-content:space-between;"><span>Net:</span><span>' + (d.netWeight || 0).toLocaleString() + ' lb</span></div>';
+        }
+        info += '</div>';
+        if (d.notes) info += row('Notes:', d.notes);
+
+        $('#imageModalInfo').html(info);
+        new bootstrap.Modal('#imageModal').show();
+    }
+
+    $(function () {
+        var isDirty = false;
+        var isSaving = false;
+
+        // Capture initial form state
+        var initialState = $('#setupForm').length ? null : $('form').serialize();
+
+        // Track changes on all form inputs
+        $('form').on('change input', 'input, select, textarea', function () {
+            if (!isDirty) {
+                isDirty = true;
+                $('#unsavedAlert').fadeIn().addClass('show');
+            }
+        });
+
+        // Allow form submission without warning
+        $('form').on('submit', function () { isSaving = true; });
+
+        // Warn on navigation away
+        $(window).on('beforeunload', function (e) {
+            if (isDirty && !isSaving) {
+                return 'You have unsaved changes.';
+            }
+        });
+
+        // Warn on link clicks
+        $('a').on('click', function (e) {
+            if (isDirty && !isSaving) {
+                if (!confirm('You have unsaved changes. Are you sure you want to leave?')) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        var customerSelect = $('select[name="Customer"]');
+        var carrierSelect = $('select[name="Carrier"]');
+        var truckSelect = $('#truckSelect');
+        var addTruckBtn = $('#addTruckBtn');
+        var initialTruckId = '@(Model.TruckId ?? "")';
+
+        customerSelect.on('change', function () {
+            if (!carrierSelect.val() && $(this).val()) {
+                carrierSelect.val($(this).val());
+                carrierSelect.trigger('change');
+            }
+        });
+
+        function loadTrucks(carrier, selectTruckId) {
+            if (!carrier) {
+                truckSelect.html('<option value="">-- Select Carrier First --</option>').prop('disabled', true);
+                addTruckBtn.prop('disabled', true);
+                return;
+            }
+            $.getJSON('/api/masterdata/trucks/' + encodeURIComponent(carrier), function (trucks) {
+                truckSelect.html('<option value="">-- Select --</option>');
+                trucks.forEach(function (t) {
+                    truckSelect.append($('<option>').val(t.truckId).text(t.truckId));
+                });
+                truckSelect.prop('disabled', false);
+                addTruckBtn.prop('disabled', false);
+                if (selectTruckId) truckSelect.val(selectTruckId);
+            });
+        }
+
+        carrierSelect.on('change', function () { loadTrucks($(this).val()); });
+
+        // Load trucks for existing carrier on page load
+        if (carrierSelect.val()) {
+            loadTrucks(carrierSelect.val(), initialTruckId);
+        }
+
+        addTruckBtn.on('click', function () {
+            $('#modalCarrier').val(carrierSelect.val());
+            $('#modalTruckId').val('');
+            new bootstrap.Modal('#addTruckModal').show();
+            setTimeout(function () { $('#modalTruckId').focus(); }, 500);
+        });
+
+        $('#saveTruckBtn').on('click', function () {
+            var carrier = $('#modalCarrier').val();
+            var truckId = $('#modalTruckId').val().trim();
+            if (!truckId) return;
+            $.ajax({
+                url: '/api/masterdata/trucks',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ truckId: truckId, carrierName: carrier }),
+                success: function () {
+                    bootstrap.Modal.getInstance('#addTruckModal').hide();
+                    loadTrucks(carrier, truckId);
+                }
+            });
+        });
+
+        $('#modalTruckId').on('keypress', function (e) {
+            if (e.which === 13) { e.preventDefault(); $('#saveTruckBtn').click(); }
+        });
+    });
+
+    function toggleVoid() {
+        var btn = $('#voidBtn');
+        var field = $('#voidField');
+        var isVoid = field.val() === 'True';
+        if (isVoid) {
+            btn.removeClass('btn-success').addClass('btn-outline-danger').text('Void Ticket');
+            field.val('False');
+        } else {
+            btn.removeClass('btn-outline-danger').addClass('btn-success').text('Restore Ticket');
+            field.val('True');
+        }
+        // Trigger change detection
+        field.trigger('change');
+    }
+
+    // ===== REPRINT =====
+    var availablePrinters = {};
+
+    function showPrintOptions(ticketId) {
+        var $modal = $('#printModal');
+        var $body = $('#printModalBody');
+        $body.empty();
+
+        var isCompleted = '@(Model.DateOut != null ? "true" : "false")' === 'true';
+        var viewUrl = isCompleted ? '/Ticket/View/' + ticketId : '/Ticket/KioskView/' + ticketId;
+
+        $body.append(
+            $('<button>').addClass('btn btn-outline-primary w-100 mb-2 py-2')
+                .html('<i class="fa fa-globe"></i> Print to Browser')
+                .on('click', function () {
+                    window.open(viewUrl, '_blank');
+                    bootstrap.Modal.getInstance($modal[0]).hide();
+                })
+        );
+
+        var hasPrinters = false;
+        Object.keys(availablePrinters).forEach(function (sid) {
+            (availablePrinters[sid] || []).forEach(function (p) {
+                if (!p.enabled) return;
+                hasPrinters = true;
+                var label = p.printerId;
+                if (Object.keys(availablePrinters).length > 1) label += ' (' + sid + ')';
+                $body.append(
+                    $('<button>').addClass('btn btn-outline-success w-100 mb-2 py-2')
+                        .html('<i class="fa fa-print"></i> ' + $('<span>').text(label).html())
+                        .on('click', function () {
+                            $.ajax({
+                                url: '/api/kiosk/reprint/' + encodeURIComponent(ticketId) + '?printerId=' + encodeURIComponent(sid + ':' + p.printerId),
+                                method: 'POST'
+                            });
+                            bootstrap.Modal.getInstance($modal[0]).hide();
+                        })
+                );
+            });
+        });
+
+        if (!hasPrinters) {
+            $body.append('<p class="text-muted small text-center mb-0">No print services connected.</p>');
+        }
+
+        new bootstrap.Modal($modal[0]).show();
+    }
+</script>
+<script src="~/js/signalr/signalr.min.js"></script>
+<script>
+    var printConn = new signalR.HubConnectionBuilder()
+        .withUrl('/scaleHub')
+        .withAutomaticReconnect()
+        .build();
+
+    printConn.on('PrintServiceReady', function (data) {
+        availablePrinters[data.serviceId] = data.printers || [];
+    });
+    printConn.on('PrinterListReceived', function (data) {
+        availablePrinters[data.serviceId] = data.printers || [];
+    });
+
+    printConn.start().then(function () {
+        printConn.invoke('RequestPrinterList').catch(function () {});
+    }).catch(function (err) { console.error('SignalR error:', err); });
+</script>
+}

@@ -17,9 +17,13 @@
 <!-- ── LocationItems popup ────────────────────────────────────────── -->
 <div id="liPopup"></div>
 
+<!-- ── LocationQuantityMethods popup ─────────────────────────────── -->
+<div id="lqmPopup"></div>
+
 @section Scripts {
     <script src="~/js/pages/locations.counties.js" asp-append-version="true"></script>
     <script src="~/js/pages/locations.items.js" asp-append-version="true"></script>
+    <script src="~/js/pages/locations.quantitymethods.js" asp-append-version="true"></script>
     <script>
         let districtsCache = null;
 
@@ -155,12 +159,11 @@
                         }
                     },
                     { dataField: "LocationId", caption: "ID", width: 60 },
-                    { dataField: "Code", caption: "Code", minWidth: 230 },
-                    { dataField: "Name", caption: "Name", minWidth: 230, sortOrder: "asc" },
+                    { dataField: "Code", caption: "Code", minWidth: 160 },
+                    { dataField: "Name", caption: "Name", minWidth: 160, sortOrder: "asc" },
                     {
                         dataField: "DistrictId",
                         caption: "District",
-                        width: 90,
                         lookup: {
                             dataSource: districtsStore,
                             valueExpr: "DistrictId",
@@ -169,8 +172,7 @@
                     },
                     {
                         dataField: "UseForSeed",
-                        caption: "Use For Seed",
-                        width: 110,
+                        caption: "Seed",
                         cellTemplate: function (cellElement, cellInfo) {
                             const value = cellInfo.value;
                             cellElement.text(value ? "Yes" : "No");
@@ -179,8 +181,7 @@
                     },
                     {
                         dataField: "UseForWarehouse",
-                        caption: "Use For Warehouse",
-                        width: 140,
+                        caption: "Warehouse",
                         cellTemplate: function (cellElement, cellInfo) {
                             const value = cellInfo.value;
                             cellElement.text(value ? "Yes" : "No");
@@ -189,7 +190,7 @@
                     },
                     {
                         caption: "Filtered Items",
-                        minWidth: 300,
+                        minWidth: 180,
                         allowSorting: false,
                         allowFiltering: false,
                         cssClass: "loc-filtered-items-cell",
@@ -205,17 +206,31 @@
                     },
                     {
                         caption: "",
-                        width: 555,
+                        width: 670,
                         allowSorting: false,
                         allowFiltering: false,
                         cellTemplate: function (cellElement, cellInfo) {
-                            var btnWidth = 175;
-                            var $row = $("<div>").css({ display: "flex", gap: "6px" });
+                            var btnWidth = 125;
+                            var $row = $("<div>").css({ display: "flex", gap: "4px" });
 
                             $("<div>").dxButton({
-                                text: "Filtered Items",
+                                text: "Storage",
+                                icon: "home",
+                                width: btnWidth,
+                                height: 30,
+                                stylingMode: "outlined",
+                                type: "default",
+                                hint: "Manage storage areas and containers for this location",
+                                onClick: function () {
+                                    window.location.href = "/Locations/Storage?locationId=" + cellInfo.data.LocationId;
+                                }
+                            }).appendTo($row);
+
+                            $("<div>").dxButton({
+                                text: "Items",
                                 icon: "product",
                                 width: btnWidth,
+                                height: 30,
                                 stylingMode: "outlined",
                                 type: "default",
                                 hint: "Manage filtered items for this location",
@@ -231,6 +246,7 @@
                                 text: "Counties",
                                 icon: "map",
                                 width: btnWidth,
+                                height: 30,
                                 stylingMode: "outlined",
                                 type: "default",
                                 hint: "Manage counties for this location",
@@ -243,9 +259,26 @@
                             }).appendTo($row);
 
                             $("<div>").dxButton({
+                                text: "Options",
+                                icon: "preferences",
+                                width: btnWidth,
+                                height: 30,
+                                stylingMode: "outlined",
+                                type: "default",
+                                hint: "Manage weight methods and options for this location",
+                                onClick: function () {
+                                    LocationQuantityMethods.open(
+                                        cellInfo.data.LocationId,
+                                        cellInfo.data.Name
+                                    );
+                                }
+                            }).appendTo($row);
+
+                            $("<div>").dxButton({
                                 text: "Edit",
                                 icon: "edit",
                                 width: btnWidth,
+                                height: 30,
                                 stylingMode: "outlined",
                                 type: "default",
                                 hint: "Edit location",

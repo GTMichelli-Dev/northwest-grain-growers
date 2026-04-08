@@ -1,0 +1,676 @@
+@model BasicWeigh.Web.Models.Transaction
+@inject BasicWeigh.Web.Services.AppSetupCache SetupCache
+@{
+    bool isEdit = ViewBag.IsEdit == true;
+    var ticketNum = isEdit ? Model.Ticket : (string)ViewBag.NextTicket;
+    ViewData["Title"] = isEdit ? "Edit Inbound Ticket " + ticketNum : "Weigh In";
+    var cachedSetup = SetupCache.Get();
+    var isDemoMode = cachedSetup.DemoMode;
+    bool hasInPhoto = ViewBag.HasInPhoto == true;
+}
+
+<style>
+    .get-weight-display {
+        background-color: #000;
+        color: #00ff41;
+        font-family: 'Courier New', monospace;
+        font-size: 2.5rem;
+        font-weight: bold;
+        text-align: right;
+        padding: 12px 24px;
+        border-radius: 12px;
+        letter-spacing: 3px;
+        max-width: 320px;
+        margin: 0 auto 10px;
+    }
+    .get-weight-status {
+        font-size: 0.9rem;
+        font-weight: bold;
+        text-align: center;
+        letter-spacing: 2px;
+        min-height: 1.2em;
+    }
+    .get-weight-unit {
+        font-size: 1.2rem;
+        color: #0a0;
+        margin-left: 8px;
+    }
+    .manual-weight-input {
+        font-family: 'Courier New', monospace;
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-align: right;
+        letter-spacing: 2px;
+    }
+</style>
+
+<h3>@(isEdit ? "Edit Inbound Ticket " + ticketNum : "Weigh In")</h3>
+<div id="validationAlert" class="alert alert-danger alert-dismissible fade" role="alert" style="display:none;">
+    <span id="validationMsg"></span>
+    <button type="button" class="btn-close" onclick="$('#validationAlert').removeClass('show').hide();"></button>
+</div>
+
+<form asp-action="WeighIn" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="isEdit" value="@isEdit.ToString().ToLower()" />
+    <input type="hidden" name="goToWeighOut" id="goToWeighOut" value="false" />
+    <input type="hidden" name="manualWeight" id="manualWeightFlag" value="@(isEdit && Model.ManualInbound ? "true" : "false")" />
+    @if (isEdit)
+    {
+        <input type="hidden" name="Ticket" value="@Model.Ticket" />
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Ticket Number</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="text" class="form-control" style="max-width: 140px;" value="@ticketNum" readonly />
+                            @if (hasInPhoto)
+                            {
+                                <a href="javascript:void(0)" onclick="showInboundPhoto()" title="View inbound photo">
+                                    <img src="/api/ticket/@ticketNum/image?direction=in&v=@DateTime.UtcNow.Ticks"
+                                         style="width:60px;height:45px;object-fit:cover;border-radius:4px;border:2px solid #0d6efd;cursor:pointer;transition:transform 0.2s;"
+                                         onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'"
+                                         alt="Inbound photo" />
+                                </a>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Commodity</label>
+                        <select name="Commodity" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var c in (List<BasicWeigh.Web.Models.Commodity>)ViewBag.Commodities)
+                            {
+                                <option value="@c.CommodityName" selected="@(Model.Commodity == c.CommodityName ? "selected" : null)">@c.CommodityName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Customer</label>
+                        <select name="Customer" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var c in (List<BasicWeigh.Web.Models.Customer>)ViewBag.Customers)
+                            {
+                                <option value="@c.CustomerName" selected="@(Model.Customer == c.CustomerName ? "selected" : null)">@c.CustomerName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Carrier</label>
+                        <select name="Carrier" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var name in (List<string>)ViewBag.CarrierOptions)
+                            {
+                                <option value="@name" selected="@(Model.Carrier == name ? "selected" : null)">@name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Truck ID</label>
+                        <div class="input-group">
+                            <select name="TruckId" id="truckSelect" class="form-select" disabled>
+                                <option value="">-- Select Carrier First --</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-primary" id="addTruckBtn" disabled title="Add New Truck">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Location</label>
+                        <select name="Location" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var l in (List<BasicWeigh.Web.Models.Location>)ViewBag.Locations)
+                            {
+                                <option value="@l.LocationName" selected="@(Model.Location == l.LocationName ? "selected" : null)">@l.LocationName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Destination</label>
+                        <select name="Destination" class="form-select">
+                            <option value="">-- Select --</option>
+                            @foreach (var d in (List<BasicWeigh.Web.Models.Destination>)ViewBag.Destinations)
+                            {
+                                <option value="@d.DestinationName" selected="@(Model.Destination == d.DestinationName ? "selected" : null)">@d.DestinationName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="Notes" class="form-control" rows="2">@Model.Notes</textarea>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-7">
+                            <label class="form-label">Weight (lb) <span id="manualBadge" class="badge bg-warning text-dark" style="display: @(isEdit && Model.ManualInbound ? "inline" : "none");">Manual</span></label>
+                            <div class="input-group">
+                                <input type="text" name="InWeight" id="inWeightInput" class="form-control text-end fw-bold" style="font-size: 1.1rem; letter-spacing: 1px; max-width: 160px;"
+                                       value="@(isEdit ? Model.InWeight : 0)" readonly />
+                                <button type="button" class="btn btn-primary" id="getWeightBtn">Get Weight</button>
+                            </div>
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label">Date In</label>
+                            <input type="datetime-local" name="DateIn" id="dateInInput" class="form-control form-control-sm"
+                                   value="@(isEdit ? Model.DateIn.ToString("yyyy-MM-ddTHH:mm") : DateTime.Now.ToString("yyyy-MM-ddTHH:mm"))" />
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success btn-lg me-2">Save</button>
+                        @if (isEdit)
+                        {
+                            <button type="submit" class="btn btn-primary btn-lg me-2" id="saveWeighOutBtn">Weigh Out</button>
+                            <button type="button" class="btn btn-info btn-lg me-2" onclick="showPrintOptions('@Model.Ticket')"><i class="fa fa-print"></i> Reprint</button>
+                            <button type="button" class="btn btn-danger btn-lg me-2" id="deleteBtn">Delete</button>
+                            <a asp-action="InboundTrucks" class="btn btn-secondary btn-lg">Cancel</a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary btn-lg">Cancel</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Print Modal -->
+<div class="modal fade" id="printModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title fw-bold">Print Ticket</h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="printModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Get Weight Modal -->
+<div class="modal fade" id="getWeightModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Get Weight from Scale</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="scaleWeightView">
+                    <div class="get-weight-display" id="gwDisplay">
+                        <span id="gwValue">0</span>
+                        <span class="get-weight-unit" id="gwUnit">lb</span>
+                        <div class="get-weight-status" id="gwStatus">&nbsp;</div>
+                    </div>
+                </div>
+                @if (isDemoMode)
+                {
+                <div id="gwSimPanel" class="mt-3 p-2 rounded" style="background: var(--bw-sim-bg); border: 1px solid var(--bw-sim-border);">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="fw-bold text-warning" style="font-size: 0.8rem;">SIMULATOR</span>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label mb-0 small fw-bold">Weight: <span id="gwSimLabel">0</span> lb</label>
+                        <input type="range" class="form-range" id="gwSimSlider" min="0" max="200000" step="20" value="0" />
+                    </div>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="gwSimMotion" />
+                            <label class="form-check-label small fw-bold" for="gwSimMotion">Motion</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="gwSimError" />
+                            <label class="form-check-label small fw-bold text-danger" for="gwSimError">Error</label>
+                        </div>
+                    </div>
+                </div>
+                }
+                <div id="manualWeightView" style="display:none;">
+                    <div class="mb-2">
+                        <label class="form-label fw-bold">Enter Weight Manually</label>
+                        <div class="input-group">
+                            <input type="number" id="manualWeightInput" class="form-control manual-weight-input"
+                                   min="0" max="40000000" step="1" value="0" />
+                            <span class="input-group-text fw-bold">lb</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning" id="gwManualBtn">Manual</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="gwSaveBtn">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Truck Modal -->
+<div class="modal fade" id="addTruckModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Truck</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Carrier</label>
+                    <input type="text" id="modalCarrier" class="form-control" readonly />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Truck ID</label>
+                    <input type="text" id="modalTruckId" class="form-control" maxlength="50" required />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveTruckBtn">Add Truck</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (isEdit)
+{
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Ticket @Model.Ticket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this inbound ticket? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+<!-- Unsaved changes alert (hidden by default) -->
+<div class="alert alert-warning alert-dismissible fade py-1 mb-2 position-fixed top-0 start-50 translate-middle-x mt-3"
+     role="alert" id="unsavedAlert" style="display:none; z-index:9999;">
+    <strong>Unsaved changes!</strong> You have unsaved changes. Click <strong>Save</strong> to keep them.
+    <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+</div>
+
+@if (hasInPhoto)
+{
+<!-- Inbound Photo Lightbox -->
+<div class="modal fade" id="inboundPhotoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title">Inbound Photo — Ticket @ticketNum</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0 text-center" style="background:#000;">
+                <img src="/api/ticket/@ticketNum/image?direction=in&v=@DateTime.UtcNow.Ticks"
+                     class="img-fluid" style="max-height:70vh;" alt="Inbound photo" />
+            </div>
+            <div class="modal-footer py-1">
+                <span class="me-auto small text-muted">@Model.DateIn.ToString("MM/dd/yyyy hh:mm tt")</span>
+                <a href="/api/ticket/@ticketNum/image?direction=in" download="ticket_@(ticketNum)_in.jpg" class="btn btn-outline-primary btn-sm">
+                    <i class="fa fa-download"></i> Download
+                </a>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+@section Scripts {
+<script>
+    function showInboundPhoto() {
+        new bootstrap.Modal('#inboundPhotoModal').show();
+    }
+    $(function () {
+        var isDirty = false;
+        var isSaving = false;
+
+        $('form').on('change input', 'input, select, textarea', function () {
+            if (!isDirty) {
+                isDirty = true;
+                $('#unsavedAlert').fadeIn().addClass('show');
+            }
+        });
+
+        $('form').on('submit', function () { isSaving = true; });
+
+        $(window).on('beforeunload', function () {
+            if (isDirty && !isSaving) return 'You have unsaved changes.';
+        });
+
+        $('a').on('click', function (e) {
+            if (isDirty && !isSaving) {
+                if (!confirm('You have unsaved changes. Are you sure you want to leave?')) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        var isEdit = @(isEdit ? "true" : "false");
+        var customerSelect = $('select[name="Customer"]');
+        var carrierSelect = $('select[name="Carrier"]');
+        var truckSelect = $('#truckSelect');
+        var addTruckBtn = $('#addTruckBtn');
+        var initialTruckId = '@(Model.TruckId ?? "")';
+        var inWeightInput = $('#inWeightInput');
+        var manualFlag = $('#manualWeightFlag');
+
+        // --- Get Weight Modal ---
+        var gwModal = null;
+        var gwPollTimer = null;
+        var isManualMode = false;
+        var lastScaleData = { weight: 0, motion: false, error: false };
+
+        function pollScaleWeight() {
+            $.getJSON('/api/scale/weight', function (data) {
+                lastScaleData = data;
+                var display = $('#gwDisplay');
+                var val = $('#gwValue');
+                var unit = $('#gwUnit');
+                var status = $('#gwStatus');
+                var saveBtn = $('#gwSaveBtn');
+
+                if (data.error) {
+                    val.text('------');
+                    unit.text('');
+                    display.css('color', '#ff0000');
+                    status.css('color', '#ff0000').text('ERROR');
+                    saveBtn.prop('disabled', true);
+                } else if (data.motion) {
+                    val.text(data.weight.toLocaleString());
+                    unit.text('lb');
+                    display.css('color', '#ffff00');
+                    status.css('color', '#ffff00').text('MOTION');
+                    saveBtn.prop('disabled', true);
+                } else {
+                    val.text(data.weight.toLocaleString());
+                    unit.text('lb');
+                    display.css('color', '#00ff41');
+                    status.html('&nbsp;');
+                    saveBtn.prop('disabled', false);
+                }
+            });
+        }
+
+        // Mini simulator inside modal (demo mode only)
+        var gwSimSlider = $('#gwSimSlider');
+        var gwSimLabel = $('#gwSimLabel');
+        var gwUserDragging = false;
+
+        function pushGwSim() {
+            var weight = parseInt(gwSimSlider.val());
+            var motion = $('#gwSimMotion').is(':checked');
+            var error = $('#gwSimError').is(':checked');
+            gwSimLabel.text(weight.toLocaleString());
+            $.ajax({
+                url: '/api/scale/simulate',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ weight: weight, motion: motion, error: error })
+            });
+        }
+
+        gwSimSlider.on('mousedown touchstart', function () { gwUserDragging = true; });
+        $(document).on('mouseup touchend', function () { gwUserDragging = false; });
+        gwSimSlider.on('input', pushGwSim);
+        $('#gwSimMotion').on('change', pushGwSim);
+        $('#gwSimError').on('change', pushGwSim);
+
+        // Sync modal simulator with server (other sessions)
+        function syncGwSim(data) {
+            if (gwUserDragging) return;
+            gwSimSlider.val(data.weight || 0);
+            gwSimLabel.text((data.weight || 0).toLocaleString());
+            $('#gwSimMotion').prop('checked', !!data.motion);
+            $('#gwSimError').prop('checked', !!data.error);
+        }
+
+        $('#getWeightBtn').on('click', function () {
+            isManualMode = false;
+            $('#scaleWeightView').show();
+            $('#manualWeightView').hide();
+            $('#gwSimPanel').show();
+            $('#gwManualBtn').show();
+            $('#gwSaveBtn').prop('disabled', true);
+            gwModal = new bootstrap.Modal('#getWeightModal');
+            gwModal.show();
+            // Load current weight into simulator slider
+            $.getJSON('/api/scale/weight', function (data) {
+                syncGwSim(data);
+            });
+            pollScaleWeight();
+            gwPollTimer = setInterval(function () {
+                pollScaleWeight();
+                // Also sync simulator controls from server
+                $.getJSON('/api/scale/weight', function (data) { syncGwSim(data); });
+            }, 500);
+        });
+
+        $('#getWeightModal').on('hidden.bs.modal', function () {
+            if (gwPollTimer) { clearInterval(gwPollTimer); gwPollTimer = null; }
+        });
+
+        $('#gwManualBtn').on('click', function () {
+            isManualMode = true;
+            $('#scaleWeightView').hide();
+            $('#gwSimPanel').hide();
+            $('#manualWeightView').show();
+            $(this).hide();
+            $('#gwSaveBtn').prop('disabled', false);
+            $('#manualWeightInput').val('').focus();
+        });
+
+        function updateDateIn() {
+            var now = new Date();
+            var y = now.getFullYear();
+            var mo = String(now.getMonth() + 1).padStart(2, '0');
+            var d = String(now.getDate()).padStart(2, '0');
+            var h = String(now.getHours()).padStart(2, '0');
+            var mi = String(now.getMinutes()).padStart(2, '0');
+            $('#dateInInput').val(y + '-' + mo + '-' + d + 'T' + h + ':' + mi);
+        }
+
+        $('#gwSaveBtn').on('click', function () {
+            if (isManualMode) {
+                var mw = parseInt($('#manualWeightInput').val()) || 0;
+                inWeightInput.val(mw);
+                manualFlag.val('true');
+                $('#manualBadge').show();
+            } else {
+                inWeightInput.val(lastScaleData.weight);
+                manualFlag.val('false');
+                $('#manualBadge').hide();
+            }
+            updateDateIn();
+            gwModal.hide();
+        });
+
+        // --- Customer/Carrier/Truck logic ---
+        customerSelect.on('change', function () {
+            if (!carrierSelect.val() && $(this).val()) {
+                carrierSelect.val($(this).val());
+                carrierSelect.trigger('change');
+            }
+        });
+
+        function loadTrucks(carrier, selectTruckId) {
+            if (!carrier) {
+                truckSelect.html('<option value="">-- Select Carrier First --</option>').prop('disabled', true);
+                addTruckBtn.prop('disabled', true);
+                return;
+            }
+            $.getJSON('/api/masterdata/trucks/' + encodeURIComponent(carrier), function (trucks) {
+                truckSelect.html('<option value="">-- Select --</option>');
+                trucks.forEach(function (t) {
+                    truckSelect.append($('<option>').val(t.truckId).text(t.truckId));
+                });
+                truckSelect.prop('disabled', false);
+                addTruckBtn.prop('disabled', false);
+                if (selectTruckId) truckSelect.val(selectTruckId);
+            });
+        }
+
+        carrierSelect.on('change', function () {
+            loadTrucks($(this).val());
+        });
+
+        if (carrierSelect.val()) {
+            loadTrucks(carrierSelect.val(), initialTruckId);
+        }
+
+        addTruckBtn.on('click', function () {
+            $('#modalCarrier').val(carrierSelect.val());
+            $('#modalTruckId').val('');
+            new bootstrap.Modal('#addTruckModal').show();
+            setTimeout(function () { $('#modalTruckId').focus(); }, 500);
+        });
+
+        $('#saveTruckBtn').on('click', function () {
+            var carrier = $('#modalCarrier').val();
+            var truckId = $('#modalTruckId').val().trim();
+            if (!truckId) return;
+
+            $.ajax({
+                url: '/api/masterdata/trucks',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ truckId: truckId, carrierName: carrier }),
+                success: function () {
+                    bootstrap.Modal.getInstance('#addTruckModal').hide();
+                    loadTrucks(carrier, truckId);
+                }
+            });
+        });
+
+        $('#modalTruckId').on('keypress', function (e) {
+            if (e.which === 13) { e.preventDefault(); $('#saveTruckBtn').click(); }
+        });
+
+        // Validate weight before save
+        function showValidation(msg) {
+            $('#validationMsg').text(msg);
+            $('#validationAlert').show().addClass('show');
+            $('html, body').animate({ scrollTop: 0 }, 300);
+        }
+
+        $('form').on('submit', function (e) {
+            var weight = parseInt(inWeightInput.val()) || 0;
+            if (weight <= 0) {
+                e.preventDefault();
+                showValidation('Please click "Get Weight" to capture the scale weight before saving.');
+                return false;
+            }
+        });
+
+        // Save & Weigh Out (edit mode only)
+        $('#saveWeighOutBtn').on('click', function () {
+            $('#goToWeighOut').val('true');
+        });
+
+        // Delete functionality (edit mode only)
+        if (isEdit) {
+            $('#deleteBtn').on('click', function () {
+                new bootstrap.Modal('#deleteModal').show();
+            });
+
+            $('#confirmDeleteBtn').on('click', function () {
+                $.post('/Transaction/DeleteInbound/@(Model.Ticket)', function () {
+                    window.location.href = '/Transaction/InboundTrucks';
+                });
+            });
+        }
+    });
+
+    // ===== REPRINT =====
+    var availablePrinters = {};
+
+    function showPrintOptions(ticketId) {
+        var $modal = $('#printModal');
+        var $body = $('#printModalBody');
+        $body.empty();
+
+        // Inbound ticket — use KioskView
+        $body.append(
+            $('<button>').addClass('btn btn-outline-primary w-100 mb-2 py-2')
+                .html('<i class="fa fa-globe"></i> Print to Browser')
+                .on('click', function () {
+                    window.open('/Ticket/KioskView/' + ticketId, '_blank');
+                    bootstrap.Modal.getInstance($modal[0]).hide();
+                })
+        );
+
+        var hasPrinters = false;
+        Object.keys(availablePrinters).forEach(function (sid) {
+            (availablePrinters[sid] || []).forEach(function (p) {
+                if (!p.enabled) return;
+                hasPrinters = true;
+                var label = p.printerId;
+                if (Object.keys(availablePrinters).length > 1) label += ' (' + sid + ')';
+                $body.append(
+                    $('<button>').addClass('btn btn-outline-success w-100 mb-2 py-2')
+                        .html('<i class="fa fa-print"></i> ' + $('<span>').text(label).html())
+                        .on('click', function () {
+                            $.ajax({
+                                url: '/api/kiosk/reprint/' + encodeURIComponent(ticketId) + '?printerId=' + encodeURIComponent(sid + ':' + p.printerId),
+                                method: 'POST'
+                            });
+                            bootstrap.Modal.getInstance($modal[0]).hide();
+                        })
+                );
+            });
+        });
+
+        if (!hasPrinters) {
+            $body.append('<p class="text-muted small text-center mb-0">No print services connected.</p>');
+        }
+
+        new bootstrap.Modal($modal[0]).show();
+    }
+</script>
+<script src="~/js/signalr/signalr.min.js"></script>
+<script>
+    var printConn = new signalR.HubConnectionBuilder()
+        .withUrl('/scaleHub')
+        .withAutomaticReconnect()
+        .build();
+
+    printConn.on('PrintServiceReady', function (data) {
+        availablePrinters[data.serviceId] = data.printers || [];
+    });
+    printConn.on('PrinterListReceived', function (data) {
+        availablePrinters[data.serviceId] = data.printers || [];
+    });
+
+    printConn.start().then(function () {
+        printConn.invoke('RequestPrinterList').catch(function () {});
+    }).catch(function (err) { console.error('SignalR error:', err); });
+</script>
+}

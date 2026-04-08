@@ -4,10 +4,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <PropertyGroup>
-    <Version>1.0.18</Version>
-    <FileVersion>1.0.18</FileVersion>
-    <AssemblyVersion>1.0.18</AssemblyVersion>
-    <InformationalVersion>1.0.18</InformationalVersion>
+    <Version>1.0.21</Version>
+    <FileVersion>1.0.21</FileVersion>
+    <AssemblyVersion>1.0.21</AssemblyVersion>
+    <InformationalVersion>1.0.21</InformationalVersion>
     <AssemblyTitle>GrainManagement</AssemblyTitle>
 	
   </PropertyGroup>
@@ -25,7 +25,9 @@
     <PackageReference Include="DevExpress.AspNetCore.Reporting" Version="25.2.5" />
     <PackageReference Include="DevExpress.Drawing.Skia" Version="25.2.5" />
     <PackageReference Include="DevExtreme.AspNet.Data" Version="5.1.0" />
-    <PackageReference Include="DevExtreme.AspNet.Core" Version="25.2.*" />
+    <PackageReference Include="DevExtreme.AspNet.Core" Version="25.2.5" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.12">
       <PrivateAssets>all</PrivateAssets>

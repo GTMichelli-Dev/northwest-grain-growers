@@ -29,6 +29,44 @@ namespace GrainManagement.Dtos.Warehouse
         /// <summary>Net quantity for non-scale entry (hours, gallons, direct weight). Mutually exclusive with StartQty/EndQty.</summary>
         public decimal? DirectQty { get; set; }
 
+        // ── Quantity source tracking ────────────────────────────────────────────
+
+        /// <summary>Measurement method for DirectQty (e.g. QuantityMethodId for MANUAL, BULKLOADER, RAIL).</summary>
+        public int? DirectQtyMethodId { get; set; }
+
+        /// <summary>Source type for DirectQty (e.g. QuantitySourceTypeId for MANUAL). Must be valid for the method.</summary>
+        public int? DirectQtySourceTypeId { get; set; }
+
+        /// <summary>Location where DirectQty was captured.</summary>
+        public string DirectQtyLocation { get; set; }
+
+        /// <summary>Description of the DirectQty source — user full name (manual entry).</summary>
+        public string DirectQtySourceDescription { get; set; }
+
+        /// <summary>Measurement method for StartQty (e.g. QuantityMethodId for BULKLOADER, TRUCK_SCALE, PUMP, etc.).</summary>
+        public int? StartQtyMethodId { get; set; }
+
+        /// <summary>Source type for StartQty (e.g. QuantitySourceTypeId for MANUAL, SCALE, PUMP). Must be valid for the method.</summary>
+        public int? StartQtySourceTypeId { get; set; }
+
+        /// <summary>Location where StartQty was captured (e.g. "Endicott Elevator").</summary>
+        public string StartQtyLocation { get; set; }
+
+        /// <summary>Description of the StartQty source — user full name (manual), scale description, or pump description.</summary>
+        public string StartQtySourceDescription { get; set; }
+
+        /// <summary>Measurement method for EndQty (e.g. QuantityMethodId for BULKLOADER, TRUCK_SCALE, PUMP, etc.).</summary>
+        public int? EndQtyMethodId { get; set; }
+
+        /// <summary>Source type for EndQty (e.g. QuantitySourceTypeId for MANUAL, SCALE, PUMP). Must be valid for the method.</summary>
+        public int? EndQtySourceTypeId { get; set; }
+
+        /// <summary>Location where EndQty was captured (e.g. "Endicott Elevator").</summary>
+        public string EndQtyLocation { get; set; }
+
+        /// <summary>Description of the EndQty source — user full name (manual), scale description, or pump description.</summary>
+        public string EndQtySourceDescription { get; set; }
+
         // ── Timing ──────────────────────────────────────────────────────────────
 
         /// <summary>When the truck pulled onto the scale (scale-in time).</summary>
@@ -52,6 +90,9 @@ namespace GrainManagement.Dtos.Warehouse
 
         /// <summary>Optional split-ownership group for this delivery.</summary>
         public int? SplitGroupId { get; set; }
+
+        /// <summary>User ID (from users.Users) who created this transaction. Required when any quantity source is Manual.</summary>
+        public int? CreatedByUserId { get; set; }
 
         // ── Source document reference ────────────────────────────────────────────
 

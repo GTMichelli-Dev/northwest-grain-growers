@@ -1,0 +1,56 @@
+@model string
+@inject BasicWeigh.Web.Data.ScaleDbContext Db
+@{
+    Layout = null;
+    var appSetup = Db.AppSetup.FirstOrDefault();
+    var designerAppName = appSetup?.Header1 ?? "Basic Weigh";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ticket Designer - Basic Weigh</title>
+
+    <!-- CSS -->
+    <link href="~/css/devextreme/bootstrap.css" rel="stylesheet" />
+    <link href="~/css/devextreme/dx.light.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/reporting/dx-analytics.common.css" />
+    <link rel="stylesheet" href="~/css/reporting/dx-analytics.light.css" />
+    <link rel="stylesheet" href="~/css/reporting/dx-reportdesigner.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+
+    <!-- All scripts in head so they're ready before body renders -->
+    <script src="~/js/devextreme/jquery.js"></script>
+    <script src="~/js/reporting/knockout-latest.js"></script>
+    <script src="~/js/reporting/ace/ace.js"></script>
+    <script src="~/js/reporting/ace/ext-language_tools.js"></script>
+    <script src="~/js/devextreme/dx.all.js"></script>
+    <script src="~/js/devextreme/aspnet/dx.aspnet.mvc.js"></script>
+    <script src="~/js/devextreme/aspnet/dx.aspnet.data.js"></script>
+    <script src="~/js/devextreme-license.js"></script>
+    <script src="~/js/reporting/dx-analytics-core.min.js"></script>
+    <script src="~/js/reporting/dx-querybuilder.min.js"></script>
+    <script src="~/js/reporting/dx-webdocumentviewer.min.js"></script>
+    <script src="~/js/reporting/dx-reportdesigner.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-sm mb-3" style="background: #fff; border-bottom: 3px solid #2ea3f2; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/" style="color: #2ea3f2; font-size: 1.3rem;">
+                <img src="/api/setup/icon" alt="" style="height: 28px; width: 28px;" />
+                <strong>@designerAppName</strong>
+            </a>
+            <span class="navbar-text ms-2" style="font-weight: 600;">Ticket Designer</span>
+            <a href="/Setup" class="btn btn-outline-secondary btn-sm ms-auto">Back to Setup</a>
+        </div>
+    </nav>
+
+    <div class="container-fluid" style="height: calc(100vh - 70px);">
+        @(Html.DevExpress().ReportDesigner("ticketDesigner")
+            .Height("100%")
+            .Bind(Model))
+    </div>
+</body>
+</html>

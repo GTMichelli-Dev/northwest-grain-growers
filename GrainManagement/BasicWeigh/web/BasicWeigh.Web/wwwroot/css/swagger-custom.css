@@ -1,0 +1,34 @@
+/* Basic Weigh Swagger custom theme */
+.swagger-ui .topbar {
+    background-color: #2e3a4e;
+    padding: 8px 0;
+}
+.swagger-ui .topbar .download-url-wrapper .select-label {
+    color: #fff;
+}
+.swagger-ui .topbar-wrapper .link {
+    content: url('/api/setup/icon');
+    max-height: 40px;
+    max-width: 40px;
+}
+.swagger-ui .topbar-wrapper .link::after {
+    content: 'Basic Weigh API';
+    color: #fff;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-left: 10px;
+}
+.swagger-ui .info .title {
+    color: #2e3a4e;
+}
+.swagger-ui .scheme-container {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+.swagger-ui .btn.execute {
+    background-color: #2e3a4e;
+    border-color: #2e3a4e;
+}
+.swagger-ui .btn.execute:hover {
+    background-color: #1a2536;
+}

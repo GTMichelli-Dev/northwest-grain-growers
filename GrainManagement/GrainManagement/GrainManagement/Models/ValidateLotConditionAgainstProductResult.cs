@@ -8,8 +8,5 @@ namespace GrainManagement.Models
 {
     public partial class ValidateLotConditionAgainstProductResult
     {
-        public bool? IsValid { get; set; }
-        [StringLength(39)]
-        public string Message { get; set; }
     }
 }

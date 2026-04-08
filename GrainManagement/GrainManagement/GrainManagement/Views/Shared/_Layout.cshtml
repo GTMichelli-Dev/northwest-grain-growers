@@ -46,6 +46,18 @@
 
 <body style="padding-top: 3.5rem;">
 
+    <!-- Startup overlay — blocks input until EF warm-up is complete (hidden by default) -->
+    <div id="gm-startup-overlay" style="
+        position:fixed; inset:0; z-index:9999;
+        background:rgba(255,255,255,0.92);
+        display:none; align-items:center; justify-content:center; flex-direction:column;
+        pointer-events:all; cursor:wait;">
+        <div class="spinner-border text-success mb-3" role="status" style="width:3rem;height:3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="fw-bold text-muted" style="font-size:1.1rem;">Starting up&hellip; warming database</div>
+    </div>
+
     <nav class="navbar navbar-dark gm-navbar fixed-top navbar-expand-md">
         <div class="container-fluid">
             <div class="d-flex align-items-center">
@@ -53,40 +65,40 @@
                     <img class="gm-logo" src="~/assets/branding/@(themeKey)/logo.png" alt="Logo" style="height:34px; width:auto;" />
                 </a>
 
-                <!-- Location Selector -->
-                <div class="me-3">
-                    <select id="gm-location-select" class="form-select form-select-sm gm-location-select">
-                        <option value="">-- Select Location --</option>
-                    </select>
-                </div>
+                <!-- Location Selector (hidden for Central/Admin deployments) -->
+                @if (!Modules.IsCentral)
+                {
+                    <div class="me-3">
+                        <select id="gm-location-select" class="form-select form-select-sm gm-location-select">
+                            <option value="">-- Select Location --</option>
+                        </select>
+                    </div>
+                }
 
                 <div>
                     <span id="system-info" style="font-size: 0.85rem; color: white;">@SystemInfo.ToDisplayString()</span>
                 </div>
             </div>
 
-            @if (Modules.IsCentral)
-            {
-                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar" aria-expanded="false" aria-controls="navbar">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+            <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-                <div id="navbar" class="collapse navbar-collapse">
-                    <div class="d-flex ms-auto align-items-center">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <span class="navbar-text text-light me-2">
-                                @User.Identity.Name
-                            </span>
-                            <a asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignOut" class="btn btn-outline-light btn-sm">Logout</a>
-                        }
-                        else
-                        {
-                            <a asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignIn" class="btn btn-outline-light btn-sm">Login</a>
-                        }
-                    </div>
+            <div id="navbar" class="collapse navbar-collapse">
+                <div class="d-flex ms-auto align-items-center">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <span class="navbar-text text-light me-2">
+                            @User.Identity.Name
+                        </span>
+                        <a asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignOut" class="btn btn-outline-light btn-sm">Logout</a>
+                    }
+                    else
+                    {
+                        <a asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignIn" class="btn btn-outline-light btn-sm">Login</a>
+                    }
                 </div>
-            }
+            </div>
         </div>
     </nav>
 
@@ -139,6 +151,34 @@
     <script src="~/js/location-selector.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+    (function () {
+        var overlay = document.getElementById('gm-startup-overlay');
+        if (!overlay) return;
+        var shown = false;
+        function showOverlay() {
+            if (shown) return;
+            shown = true;
+            overlay.style.display = 'flex';
+        }
+        function hideOverlay() {
+            if (!shown) { overlay.remove(); return; }
+            overlay.style.transition = 'opacity 0.3s';
+            overlay.style.opacity = '0';
+            setTimeout(function () { overlay.remove(); }, 350);
+        }
+        function check() {
+            fetch('/api/SystemApi/ready')
+                .then(function (r) {
+                    if (r.ok) { hideOverlay(); }
+                    else { showOverlay(); setTimeout(check, 500); }
+                })
+                .catch(function () { showOverlay(); setTimeout(check, 500); });
+        }
+        check();
+    })();
+    </script>
 </body>
 
 </html>

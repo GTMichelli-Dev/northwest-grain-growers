@@ -34,6 +34,12 @@ namespace GrainManagement.API
         }
 
 
+        [HttpGet("ready")]
+        public IActionResult Ready([FromServices] AppReadiness readiness)
+        {
+            return readiness.IsReady ? Ok(new { ready = true }) : StatusCode(503, new { ready = false });
+        }
+
         [HttpGet("/debug/wwwroot")]
         public IActionResult WwwrootPath()
         {

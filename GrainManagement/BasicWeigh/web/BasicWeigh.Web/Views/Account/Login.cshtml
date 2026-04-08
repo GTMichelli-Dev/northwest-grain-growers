@@ -1,0 +1,76 @@
+@inject BasicWeigh.Web.Data.ScaleDbContext Db
+@{
+    Layout = null;
+    var appSetup = Db.AppSetup.FirstOrDefault();
+    var appName = appSetup?.Header1 ?? "Basic Weigh";
+    var theme = appSetup?.Theme ?? "default";
+    var iconCacheBust = DateTime.UtcNow.Ticks;
+}
+<!DOCTYPE html>
+<html lang="en" data-theme="@theme">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - @appName</title>
+    <link href="~/css/devextreme/bootstrap.css" rel="stylesheet" />
+    <link href="~/css/site.css" rel="stylesheet" />
+    <style>
+        body {
+            background: var(--bw-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+            border: 2px solid var(--bw-primary);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .login-header {
+            text-align: center;
+            padding: 24px 24px 12px;
+        }
+        .login-header img {
+            height: 48px;
+            width: 48px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card login-card">
+        <div class="login-header">
+            <img src="/api/setup/icon?v=@iconCacheBust" alt="" />
+            <h4 style="color: var(--bw-primary); margin: 0;">@appName</h4>
+        </div>
+        <div class="card-body pt-0">
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger py-2 small">@ViewBag.Error</div>
+            }
+
+            <form asp-action="Login" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="username" class="form-control" autofocus required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password" class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="~/js/devextreme/jquery.js"></script>
+    <script src="~/js/devextreme/bootstrap.js"></script>
+</body>
+</html>

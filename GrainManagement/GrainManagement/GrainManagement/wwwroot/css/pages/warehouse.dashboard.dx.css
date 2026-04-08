@@ -104,12 +104,12 @@
 
 /* ── Weight-sheet row coloring by type ────────────────────── */
 
-/* Grower Delivery rows — blue tint */
+/* Grower Delivery rows — brown tint */
 .gm-ws-row--delivery {
-    background-color: rgba(0, 140, 255, 0.08) !important;
+    background-color: rgba(139, 94, 60, 0.08) !important;
 }
 .gm-ws-row--delivery.gm-ws-row--alt {
-    background-color: rgba(0, 140, 255, 0.14) !important;
+    background-color: rgba(139, 94, 60, 0.16) !important;
 }
 
 /* Transfer rows — green tint (future) */
@@ -125,7 +125,7 @@
     background-color: rgba(0, 0, 0, 0.08) !important;
 }
 #wdOpenWsGrid .gm-ws-row--delivery:hover > td {
-    background-color: rgba(0, 140, 255, 0.22) !important;
+    background-color: rgba(139, 94, 60, 0.22) !important;
 }
 #wdOpenWsGrid .gm-ws-row--transfer:hover > td {
     background-color: rgba(22, 163, 74, 0.22) !important;

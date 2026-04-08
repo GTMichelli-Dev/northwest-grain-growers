@@ -4,36 +4,190 @@
 
 <link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
 
-@await Html.PartialAsync("_ScaleWeight")
-
-<div class="gm-pagehead gm-pagehead--sticky">
-    <div class="gm-pagehead__title">
-        <span class="gm-pagehead__icon gm-icon gm-icon--delivery" aria-hidden="true"></span>
-        <span>Grower Delivery</span>
-    </div>
-    <div class="gm-pagehead__right">
-        <a class="btn btn-outline-secondary btn-sm" id="gdCancelBtn" href="/Warehouse/LoadType">Cancel</a>
-    </div>
-</div>
+<a href="/Warehouse/LoadType" class="gm-module-bar gm-module-bar--intake gm-module-bar--link" title="Back to Weight Sheet Type">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--delivery" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">GROWER DELIVERY</span>
+</a>
 
 <div class="gm-gd">
 
     <div id="gmGdAlert" class="alert" role="alert" hidden></div>
 
-    <!-- ── Weight sheet details header (shown when wsId is provided) ── -->
+    <!-- ── Weight sheet details header (shown when wsId is active) ── -->
     <div id="gdWsHeader" class="gm-dl-header" hidden>
         <div class="gm-dl-header__title">
             <span class="gm-dl-header__label">Weight Sheet</span>
             <span class="gm-dl-header__wsid" id="gdWsIdFormatted"></span>
+            <button type="submit" form="gmGdForm" class="btn btn-primary ms-auto" id="gmGdSubmitTop" hidden>
+                Save Delivery
+            </button>
         </div>
+        <!-- Row 1 — Lot # & Crop -->
         <div class="gm-dl-header__details">
             <div class="gm-dl-header__detail">
-                <span class="gm-dl-header__detail-label">Lot</span>
-                <span class="gm-dl-header__detail-value" id="gdWsLot">—</span>
+                <span class="gm-dl-header__detail-label">Lot #</span>
+                <span class="gm-dl-header__detail-value" id="gdWsLotId">—</span>
             </div>
             <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Crop</span>
+                <span class="gm-dl-header__detail-value" id="gdWsCrop">—</span>
+            </div>
+        </div>
+        <!-- Row 2 — Account & Split -->
+        <div class="gm-dl-header__details" style="margin-top:8px;">
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Primary Account</span>
+                <span class="gm-dl-header__detail-value" id="gdWsAccount">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Split</span>
+                <span class="gm-dl-header__detail-value" id="gdWsSplit">—</span>
+            </div>
+        </div>
+        <!-- Row 3 — Hauler & BOL Type -->
+        <div class="gm-dl-header__details" style="margin-top:8px;">
+            <div class="gm-dl-header__detail" id="gdWsHaulerField">
                 <span class="gm-dl-header__detail-label">Hauler</span>
                 <span class="gm-dl-header__detail-value" id="gdWsHauler">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Rate Type</span>
+                <span class="gm-dl-header__detail-value" id="gdWsBolType">—</span>
+            </div>
+        </div>
+        <!-- Row 4 — Conditional BOL details -->
+        <div class="gm-dl-header__details" style="margin-top:8px;" id="gdWsBolDetailsRow" hidden>
+            <div class="gm-dl-header__detail" id="gdWsMilesField" hidden>
+                <span class="gm-dl-header__detail-label">Miles</span>
+                <span class="gm-dl-header__detail-value" id="gdWsMiles">—</span>
+            </div>
+            <div class="gm-dl-header__detail" id="gdWsCalcRateField" hidden>
+                <span class="gm-dl-header__detail-label">Calculated Rate</span>
+                <span class="gm-dl-header__detail-value" id="gdWsCalcRate">—</span>
+            </div>
+            <div class="gm-dl-header__detail" id="gdWsCustomDescField" hidden>
+                <span class="gm-dl-header__detail-label">Rate Description</span>
+                <span class="gm-dl-header__detail-value" id="gdWsCustomDesc">—</span>
+            </div>
+            <div class="gm-dl-header__detail" id="gdWsCustomRateField" hidden>
+                <span class="gm-dl-header__detail-label">Rate</span>
+                <span class="gm-dl-header__detail-value" id="gdWsCustomRate">—</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Change BOL Type Modal ── -->
+    <div class="modal fade" id="gdBolModal" tabindex="-1" aria-labelledby="gdBolModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="gdBolModalLabel">Change BOL Type</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning mb-3" style="font-size:0.875rem;">
+                        <i class="dx-icon dx-icon-warning" style="margin-right:4px;"></i>
+                        <strong>Warning:</strong> Changing the BOL type will affect <strong>all loads</strong> on this weight sheet.
+                    </div>
+
+                    <!-- Yellow BOL section — matches NewWeightSheet style -->
+                    <div class="px-3 py-2 border border-2 border-warning rounded bg-warning bg-opacity-10">
+                        <label class="form-label fw-bold text-dark mb-1" style="font-size:1.05rem;">
+                            What is the BOL Type? <span class="text-danger">*</span>
+                        </label>
+                        <div style="max-width:360px;" class="mt-2">
+                            <div id="gdBolTypeSelect"></div>
+                        </div>
+                        <div id="gdBolTypeHint" class="text-muted small mt-1" hidden></div>
+
+                        <!-- A/F: Hauler + Miles + Calculated Rate -->
+                        <div id="gdBolHaulerMiles" class="mt-3" hidden>
+                            <div class="gm-gd-fields gm-gd-fields--2col">
+                                <div class="gm-gd-field">
+                                    <label class="form-label">Hauler <span class="text-danger">*</span></label>
+                                    <div id="gdBolHauler"></div>
+                                </div>
+                                <div class="gm-gd-field" style="max-width:120px;">
+                                    <label class="form-label">Miles <span class="text-danger">*</span></label>
+                                    <div id="gdBolMiles"></div>
+                                </div>
+                                <div class="gm-gd-field" id="gdBolCalcRateGroup" style="max-width:200px;" hidden>
+                                    <label class="form-label">Calculated Rate</label>
+                                    <input type="text" class="form-control" id="gdBolCalcRate" readonly style="text-align:right;" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- C: Hauler + Rate Desc + Rate -->
+                        <div id="gdBolCustom" class="mt-3" hidden>
+                            <div class="gm-gd-fields gm-gd-fields--2col">
+                                <div class="gm-gd-field">
+                                    <label class="form-label">Hauler <span class="text-danger">*</span></label>
+                                    <div id="gdBolCustomHauler"></div>
+                                </div>
+                                <div class="gm-gd-field">
+                                    <label class="form-label">Rate Description <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="gdBolCustomRateDesc" placeholder="Describe the custom rate..." />
+                                </div>
+                                <div class="gm-gd-field" style="max-width:120px;">
+                                    <label class="form-label">Rate <span class="text-danger">*</span></label>
+                                    <div id="gdBolCustomRate"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="gdBolError" class="text-danger small mt-2" hidden></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="gdBolSaveBtn">Update BOL Type</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Change Lot Modal ── -->
+    <div class="modal fade" id="gdLotChangeModal" tabindex="-1" aria-labelledby="gdLotChangeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="gdLotChangeModalLabel">Change Lot</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning mb-3" style="font-size:0.875rem;">
+                        <i class="dx-icon dx-icon-warning" style="margin-right:4px;"></i>
+                        <strong>Warning:</strong> Changing the lot will affect <strong>all loads</strong> on this weight sheet.
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="fw-semibold">Select a Lot</div>
+                        <a class="btn btn-outline-primary btn-sm" href="/GrowerDelivery/WeightSheetLots">
+                            <i class="dx-icon dx-icon-add"></i> New Lot
+                        </a>
+                    </div>
+
+                    <input type="text" class="form-control form-control-sm mb-2" id="gdLotChangeSearch" placeholder="Search lots..." />
+                    <div id="gdLotChangeGrid"></div>
+
+                    <div class="mt-3 d-flex align-items-end gap-3">
+                        <div>
+                            <label class="form-label mb-1">PIN <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="gdLotChangePin"
+                                   inputmode="numeric" maxlength="10" placeholder="Enter PIN"
+                                   autocomplete="off" data-lpignore="true" data-1p-ignore="true"
+                                   data-form-type="other"
+                                   style="max-width:160px; -webkit-text-security:disc;" />
+                        </div>
+                        <div id="gdLotChangeError" class="text-danger small" hidden></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="gdLotChangeSaveBtn" disabled>Change Lot</button>
+                </div>
             </div>
         </div>
     </div>
@@ -82,158 +236,230 @@
         <!-- ── Form body — hidden until a location is selected ────────── -->
         <div id="gdFormBody" hidden>
 
-            <!-- ── Section 1: Delivery Details ──────────────────────── -->
-            <div class="gm-gd-section">
-                <div class="gm-gd-section__title">Delivery Details</div>
-                <div class="gm-gd-fields gm-gd-fields--2col">
-
-                    <div class="gm-gd-field">
-                        <label class="form-label" for="gdAccount">Grower Account <span class="text-danger">*</span></label>
-                        <div id="gdAccount"></div>
-                        <input type="hidden" id="gdAccountId" name="AccountId" />
+            <!-- ── Section 1: Weight Capture ──────────────────────────── -->
+            <div class="gm-gd-section gm-gd-section--compact">
+                <!-- Method + Bin on same row -->
+                <div class="gm-gd-method-row">
+                    <div class="gm-gd-method-row__field">
+                        <label class="form-label">Weight Method</label>
+                        <div id="gdQtyMethod"></div>
+                        <input type="hidden" id="gdQtyMethodId" name="QtyMethodId" />
+                        <input type="hidden" id="gdQtyMethodCode" />
                     </div>
-
-                    <div class="gm-gd-field">
-                        <label class="form-label" for="gdProduct">Product <span class="text-danger">*</span></label>
-                        <div id="gdProduct"></div>
-                        <input type="hidden" id="gdProductId" name="ProductId" />
+                    <div class="gm-gd-method-row__field gm-gd-method-row__field--grow">
+                        <label class="form-label">Bin</label>
+                        <div id="gdContainer"></div>
+                        <input type="hidden" id="gdContainerId" name="ToContainerId" />
                     </div>
-
-                    <div class="gm-gd-field gm-gd-field--full">
-                        <label class="form-label">Lot <span class="text-danger">*</span></label>
-                        <div class="gm-gd-lot-row">
-                            <div id="gdLot" class="gm-gd-lot-select"></div>
-                            <button type="button" class="btn btn-outline-primary gm-gd-lot-new"
-                                    id="gdNewLotBtn" disabled title="Select a product first">
-                                + New Lot
-                            </button>
-                        </div>
-                        <input type="hidden" id="gdLotId" name="LotId" />
-                    </div>
-
-                    <div class="gm-gd-field">
-                        <label class="form-label" for="gdSplitGroup">Split Group</label>
-                        <div id="gdSplitGroup"></div>
-                        <input type="hidden" id="gdSplitGroupId" name="SplitGroupId" />
-                    </div>
-
                 </div>
-            </div>
 
-            <!-- ── Section 2: Weight Capture ──────────────────────────── -->
-            <div class="gm-gd-section">
-                <div class="gm-gd-section__title">Weights</div>
-
-                <div class="gm-gd-weight">
-
-                    <!-- Gross -->
-                    <div class="gm-gd-weight__row" id="gdGrossRow">
-                        <div class="gm-gd-weight__meta">
-                            <div class="gm-gd-weight__label">Gross</div>
-                            <div class="gm-gd-weight__time" id="gdGrossTime">—</div>
+                <!-- ══ Scale mode (TRUCK_SCALE): In / Out / Net in one row ══ -->
+                <div id="gdScaleMode" class="gm-gd-weight-row">
+                    <!-- In Weight -->
+                    <div class="gm-gd-weight-cell" id="gdGrossRow">
+                        <div class="gm-gd-weight-cell__head">
+                            <span class="gm-gd-weight-cell__label">In Weight <span class="badge bg-secondary" id="gdGrossManualBadge" hidden>Manual</span></span>
+                            <span class="gm-gd-weight-cell__time" id="gdGrossTime"></span>
                         </div>
-                        <div class="gm-gd-weight__value" id="gdGrossDisplay">— lbs</div>
-                        <button type="button" class="btn btn-outline-primary gm-gd-weight__capture" id="gdCaptureGross">
-                            Capture Gross
-                        </button>
+                        <div class="gm-gd-weight-cell__value" id="gdGrossDisplay">— lbs</div>
+                        <button type="button" class="btn btn-outline-primary btn-sm gm-gd-weight-cell__btn" id="gdCaptureGross">Capture</button>
                         <input type="hidden" id="gdStartQty" name="StartQty" />
                         <input type="hidden" id="gdStartedAt" name="StartedAt" />
+                        <input type="hidden" id="gdStartQtyIsManual" />
                     </div>
 
-                    <!-- Tare -->
-                    <div class="gm-gd-weight__row" id="gdTareRow">
-                        <div class="gm-gd-weight__meta">
-                            <div class="gm-gd-weight__label">Tare</div>
-                            <div class="gm-gd-weight__time" id="gdTareTime">—</div>
+                    <!-- Out Weight — hidden until In captured -->
+                    <div class="gm-gd-weight-cell" id="gdTareRow" hidden>
+                        <div class="gm-gd-weight-cell__head">
+                            <span class="gm-gd-weight-cell__label">Out Weight <span class="badge bg-secondary" id="gdTareManualBadge" hidden>Manual</span></span>
+                            <span class="gm-gd-weight-cell__time" id="gdTareTime"></span>
                         </div>
-                        <div class="gm-gd-weight__value" id="gdTareDisplay">— lbs</div>
-                        <button type="button" class="btn btn-outline-secondary gm-gd-weight__capture" id="gdCaptureTare" disabled>
-                            Capture Tare
-                        </button>
+                        <div class="gm-gd-weight-cell__value" id="gdTareDisplay">— lbs</div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm gm-gd-weight-cell__btn" id="gdCaptureTare" disabled>Capture</button>
                         <input type="hidden" id="gdEndQty" name="EndQty" />
                         <input type="hidden" id="gdCompletedAt" name="CompletedAt" />
+                        <input type="hidden" id="gdEndQtyIsManual" />
                     </div>
 
-                    <!-- Net -->
-                    <div class="gm-gd-weight__row gm-gd-weight__row--net">
-                        <div class="gm-gd-weight__meta">
-                            <div class="gm-gd-weight__label">Net</div>
+                    <!-- Net — shown once CompletedAt is set -->
+                    <div class="gm-gd-weight-cell gm-gd-weight-cell--net" id="gdScaleNetRow" hidden>
+                        <div class="gm-gd-weight-cell__head">
+                            <span class="gm-gd-weight-cell__label">Net</span>
                         </div>
-                        <div class="gm-gd-weight__value gm-gd-weight__value--net" id="gdNetDisplay">— lbs</div>
-                        <div class="gm-gd-weight__capture"></div><!-- spacer -->
+                        <div class="gm-gd-weight-cell__value gm-gd-weight-cell__value--net" id="gdNetDisplay">— lbs</div>
                     </div>
+                </div>
 
+                <!-- ══ DirectQty mode (MANUAL/RAIL/BULKLOAD) ══ -->
+                <div id="gdDirectMode" class="gm-gd-weight-row" hidden>
+                    <div class="gm-gd-weight-cell">
+                        <div class="gm-gd-weight-cell__head">
+                            <span class="gm-gd-weight-cell__label">Net Weight <span class="badge bg-secondary">Manual</span></span>
+                            <span class="gm-gd-weight-cell__time" id="gdDirectTime"></span>
+                        </div>
+                        <div class="gm-gd-weight-cell__value" id="gdDirectDisplay">— lbs</div>
+                        <button type="button" class="btn btn-outline-primary btn-sm gm-gd-weight-cell__btn" id="gdEnterAmountBtn">Enter Amount</button>
+                        <input type="hidden" id="gdDirectQty" name="DirectQty" />
+                        <input type="hidden" id="gdDirectStartedAt" />
+                        <input type="hidden" id="gdDirectCompletedAt" />
+                    </div>
                 </div>
             </div>
 
-            <!-- ── Section 3: Load Details ────────────────────────────── -->
-            <div class="gm-gd-section">
+            <!-- ── Load Details ──────────────────────────────────────── -->
+            <div class="gm-gd-section gm-gd-section--compact">
                 <div class="gm-gd-section__title">Load Details</div>
-                <div class="gm-gd-fields gm-gd-fields--3col">
 
-                    <div class="gm-gd-field">
-                        <label class="form-label" for="gdMoisture">Moisture (%)</label>
-                        <input type="number" class="form-control" id="gdMoisture" name="Moisture"
-                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                <!-- Row 1: Protein + Moisture + Image thumbnails -->
+                <div class="gm-gd-load-top">
+                    <div class="gm-gd-load-top__fields">
+                        <div class="gm-gd-field gm-gd-field--narrow">
+                            <label class="form-label" for="gdProtein">Protein (%)</label>
+                            <input type="number" class="form-control text-end" id="gdProtein" name="Protein"
+                                   min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" style="text-align:right;" />
+                        </div>
+                        <div class="gm-gd-field gm-gd-field--narrow">
+                            <label class="form-label" for="gdMoisture">Moisture (%)</label>
+                            <input type="number" class="form-control text-end" id="gdMoisture" name="Moisture"
+                                   min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" style="text-align:right;" />
+                        </div>
                     </div>
-
-                    <div class="gm-gd-field">
-                        <label class="form-label" for="gdProtein">Protein (%)</label>
-                        <input type="number" class="form-control" id="gdProtein" name="Protein"
-                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" />
+                    <div class="gm-gd-thumbs">
+                        <div class="gm-gd-thumb" id="gdThumbIn">
+                            <div class="gm-gd-thumb__placeholder">
+                                <i class="dx-icon dx-icon-photo" style="font-size:24px;opacity:.4;"></i>
+                            </div>
+                            <div class="gm-gd-thumb__label">In</div>
+                        </div>
+                        <div class="gm-gd-thumb" id="gdThumbOut">
+                            <div class="gm-gd-thumb__placeholder">
+                                <i class="dx-icon dx-icon-photo" style="font-size:24px;opacity:.4;"></i>
+                            </div>
+                            <div class="gm-gd-thumb__label">Out</div>
+                        </div>
+                        <div class="gm-gd-thumb" id="gdThumbBol">
+                            <div class="gm-gd-thumb__placeholder">
+                                <i class="dx-icon dx-icon-photo" style="font-size:24px;opacity:.4;"></i>
+                            </div>
+                            <div class="gm-gd-thumb__label">BOL</div>
+                        </div>
                     </div>
+                </div>
 
-                    <div class="gm-gd-field">
-                        <label class="form-label" for="gdBOL">BOL</label>
-                        <input type="text" class="form-control" id="gdBOL" name="BOL"
-                               maxlength="100" placeholder="Bill of Lading" />
+                <!-- Row 2: BOL + Truck ID + Driver -->
+                <div class="gm-gd-fields gm-gd-fields--load-row2">
+                    <div class="gm-gd-field gm-gd-field--bol">
+                        <label class="form-label" for="gdBOL">Bill of Lading</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="gdBOL" name="BOL"
+                                   maxlength="100" placeholder="Bill of Lading"
+                                   autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
+                            <button type="button" class="btn btn-outline-secondary" id="gdBolScanBtn" title="Scan BOL">
+                                <i class="dx-icon dx-icon-photo"></i> Scan
+                            </button>
+                        </div>
                     </div>
-
                     <div class="gm-gd-field">
                         <label class="form-label" for="gdTruckId">Truck ID</label>
                         <input type="text" class="form-control" id="gdTruckId" name="TruckId"
-                               maxlength="100" placeholder="Truck identifier" />
+                               maxlength="100" placeholder="Truck ID" />
                     </div>
-
                     <div class="gm-gd-field">
                         <label class="form-label" for="gdDriver">Driver</label>
                         <input type="text" class="form-control" id="gdDriver" name="Driver"
                                maxlength="100" placeholder="Driver name" />
                     </div>
-
                 </div>
-            </div>
 
-            <!-- ── Section 4: Container & Notes ──────────────────────── -->
-            <div class="gm-gd-section">
-                <div class="gm-gd-section__title">Additional Info</div>
-                <div class="gm-gd-fields gm-gd-fields--2col">
-
+                <!-- Row 3: Notes full width -->
+                <div style="margin-top:8px;">
                     <div class="gm-gd-field">
-                        <label class="form-label" for="gdContainer">Destination Container</label>
-                        <div id="gdContainer"></div>
-                        <input type="hidden" id="gdContainerId" name="ToContainerId" />
-                    </div>
-
-                    <div class="gm-gd-field gm-gd-field--full">
                         <label class="form-label" for="gdNotes">Notes</label>
                         <textarea class="form-control" id="gdNotes" name="Notes"
-                                  rows="3" maxlength="1000" placeholder="Optional delivery notes…"></textarea>
+                                  rows="1" maxlength="1000" placeholder="Optional"></textarea>
                     </div>
-
                 </div>
-            </div>
-
-            <!-- ── Submit ─────────────────────────────────────────────── -->
-            <div class="gm-gd-actions">
-                <button type="submit" class="btn btn-primary btn-lg" id="gmGdSubmit">
-                    Save Delivery
-                </button>
             </div>
 
         </div><!-- /#gdFormBody -->
 
     </form>
+
+    <!-- ── Enter Amount Modal (DirectQty mode) ───────────────── -->
+    <div class="modal fade" id="gdEnterAmountModal" tabindex="-1" aria-labelledby="gdEnterAmountModalLabel">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="gdEnterAmountModalLabel">Enter Weight</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Weight (lbs) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control text-end" id="gdDirectAmountInput"
+                               min="1" step="1" placeholder="0" inputmode="numeric" style="text-align:right;" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">PIN <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="gdDirectPinInput"
+                               inputmode="numeric" maxlength="10" placeholder="Enter PIN"
+                               autocomplete="off" data-lpignore="true" data-1p-ignore="true"
+                               data-form-type="other"
+                               style="max-width:160px; -webkit-text-security:disc;" />
+                    </div>
+                    <div id="gdDirectAmountError" class="text-danger small" hidden></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="gdDirectAmountConfirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Capture Weight Modal (Scale mode) ─────────────────── -->
+    <div class="modal fade" id="gdCaptureWeightModal" tabindex="-1" aria-labelledby="gdCaptureWeightModalLabel">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="gdCaptureWeightModalLabel">Select Scale</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="gdCaptureScaleList" class="d-grid gap-2 mb-3">
+                        <span class="text-muted small">Loading scales...</span>
+                    </div>
+                    <hr />
+                    <button type="button" class="btn btn-outline-secondary w-100" id="gdCaptureManualBtn">
+                        <i class="dx-icon dx-icon-edit"></i> Manual Entry
+                    </button>
+
+                    <!-- Manual entry sub-panel (hidden until Manual clicked) -->
+                    <div id="gdCaptureManualPanel" class="mt-3" hidden>
+                        <div class="mb-2">
+                            <label class="form-label">Weight (lbs) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control text-end" id="gdCaptureManualInput"
+                                   min="0" step="1" placeholder="0" inputmode="numeric" style="text-align:right;" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">PIN <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="gdCapturePinInput"
+                                   inputmode="numeric" maxlength="10" placeholder="Enter PIN"
+                                   autocomplete="off" data-lpignore="true" data-1p-ignore="true"
+                                   data-form-type="other"
+                                   style="max-width:160px; -webkit-text-security:disc;" />
+                        </div>
+                        <button type="button" class="btn btn-primary w-100" id="gdCaptureManualConfirm">
+                            Confirm Manual Weight
+                        </button>
+                    </div>
+
+                    <div id="gdCaptureWeightError" class="text-danger small mt-2" hidden></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 @section Scripts {

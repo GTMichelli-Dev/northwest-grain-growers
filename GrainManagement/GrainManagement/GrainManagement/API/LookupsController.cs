@@ -168,6 +168,27 @@ namespace GrainManagement.API
             return Ok(data);
         }
 
+        // GET /api/Lookups/ContainerBins?locationId={id}
+        // Active containers for a location, with storage location and notes.
+        [HttpGet("ContainerBins")]
+        public async Task<IActionResult> ContainerBins(int locationId, CancellationToken ct)
+        {
+            var data = await _ctx.Containers
+                .AsNoTracking()
+                .Where(c => c.LocationId == locationId && c.IsActive == true && c.Destroyed != true)
+                .OrderBy(c => c.ContainerLocation != null ? c.ContainerLocation.Description : "")
+                .ThenBy(c => c.Description)
+                .Select(c => new {
+                    ContainerId           = c.ContainerId,
+                    ContainerDescription  = c.Description,
+                    LocationDescription   = c.ContainerLocation != null ? c.ContainerLocation.Description : null,
+                    Notes                 = c.Notes
+                })
+                .ToListAsync(ct);
+
+            return Ok(data);
+        }
+
         // GET /api/Lookups/Containers
         // Active, undestroyed containers.
         [HttpGet("Containers")]
@@ -370,6 +391,73 @@ namespace GrainManagement.API
                 return NotFound(new { message = "No rate tier covers the specified mileage." });
 
             return Ok(rate);
+        }
+
+        // GET /api/Lookups/QuantityMethods?locationId={id}
+        // Active quantity methods configured for a location via LocationQuantityMethods.
+        // Falls back to all active methods if the table is empty or not yet created.
+        [HttpGet("QuantityMethods")]
+        public async Task<IActionResult> QuantityMethods([FromQuery] int locationId, CancellationToken ct)
+        {
+            if (locationId <= 0)
+                return BadRequest(new { message = "locationId is required." });
+
+            try
+            {
+                var data = await _ctx.LocationQuantityMethods
+                    .AsNoTracking()
+                    .Where(lqm => lqm.LocationId == locationId && lqm.QuantityMethod.IsActive)
+                    .OrderBy(lqm => lqm.QuantityMethod.Code)
+                    .Select(lqm => new
+                    {
+                        lqm.QuantityMethod.QuantityMethodId,
+                        lqm.QuantityMethod.Code,
+                        lqm.QuantityMethod.Description
+                    })
+                    .ToListAsync(ct);
+
+                if (data.Count > 0)
+                    return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "LocationQuantityMethods query failed (table may not exist yet). Falling back to all active methods.");
+            }
+
+            // Fallback: return all active quantity methods
+            var fallback = await _ctx.QuantityMethods
+                .AsNoTracking()
+                .Where(m => m.IsActive)
+                .OrderBy(m => m.Code)
+                .Select(m => new
+                {
+                    m.QuantityMethodId,
+                    m.Code,
+                    m.Description
+                })
+                .ToListAsync(ct);
+
+            return Ok(fallback);
+        }
+
+        // GET /api/Lookups/QuantitySourceTypes
+        // All active quantity source types.
+        [HttpGet("QuantitySourceTypes")]
+        public async Task<IActionResult> QuantitySourceTypes(CancellationToken ct)
+        {
+            var data = await _ctx.QuantitySourceTypes
+                .AsNoTracking()
+                .Where(q => q.IsActive)
+                .OrderBy(q => q.Code)
+                .Select(q => new
+                {
+                    q.QuantitySourceTypeId,
+                    q.Code,
+                    q.Description
+                })
+                .ToListAsync(ct);
+
+            return Ok(data);
         }
 
         // GET /api/Lookups/StatesWithCounties

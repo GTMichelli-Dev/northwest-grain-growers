@@ -1,0 +1,662 @@
+@{
+    ViewData["Title"] = "Camera Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h3 class="mb-0">Camera Management</h3>
+    <a href="/Setup" class="btn btn-outline-secondary btn-sm"><i class="fa fa-arrow-left"></i> Back to Setup</a>
+</div>
+
+<!-- Camera Assignments -->
+<div class="card mb-3">
+    <div class="card-header py-2"><strong>Camera Assignments</strong></div>
+    <div class="card-body py-2">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label mb-0 small fw-bold">Inbound Camera</label>
+                <select id="inboundCameraSelect" class="form-select form-select-sm" onchange="saveAssignments()">
+                    <option value="">-- None --</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label mb-0 small fw-bold">Outbound Camera</label>
+                <select id="outboundCameraSelect" class="form-select form-select-sm" onchange="saveAssignments()">
+                    <option value="">-- None --</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <span id="assignmentStatus" class="small"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status bar -->
+<div id="serviceStatusBar" class="alert alert-warning py-2 mb-3 d-flex align-items-center">
+    <i class="fa fa-spinner fa-spin me-2"></i> Checking camera services...
+</div>
+
+<!-- Toast container for CRUD results -->
+<div id="cameraToastContainer" style="position:fixed;top:70px;right:20px;z-index:9999;min-width:350px;max-width:500px;"></div>
+
+<!-- Services container — one card per connected service -->
+<div id="servicesContainer"></div>
+
+<!-- No services message -->
+<div id="noServicesMessage" class="text-center text-muted py-5" style="display:none;">
+    <i class="fa fa-video-camera fa-3x mb-3 d-block"></i>
+    <h5>No Camera Services Connected</h5>
+    <p>Start a Camera Capture Service and point it to this server's SignalR hub.</p>
+</div>
+
+<!-- Add/Edit Camera Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cameraModalTitle">Add Camera</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="camModalServiceId" />
+                <input type="hidden" id="camModalMode" value="add" />
+                <input type="hidden" id="camModalOriginalId" />
+                <div class="mb-2">
+                    <label class="form-label mb-0 small">Camera ID</label>
+                    <input type="text" class="form-control form-control-sm" id="camCameraId" placeholder="e.g. scale-cam-1" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label mb-0 small">Display Name</label>
+                    <input type="text" class="form-control form-control-sm" id="camDisplayName" placeholder="e.g. Scale Camera" />
+                </div>
+                <div class="row g-2 mb-2">
+                    <div id="brandCol" class="col-12">
+                        <label class="form-label mb-0 small">Brand</label>
+                        <select class="form-select form-select-sm" id="camBrand" onchange="toggleBrandFields()">
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+                    <div id="customTypeCol" class="col-4" style="display:none;">
+                        <label class="form-label mb-0 small">Connection Type</label>
+                        <select class="form-select form-select-sm" id="camCustomType" onchange="toggleBrandFields()">
+                            <option value="IP">IP Camera</option>
+                            <option value="USB">USB Camera</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- IP fields -->
+                <div id="ipFields">
+                    <div class="mb-2">
+                        <label class="form-label mb-0 small">Camera IP</label>
+                        <input type="text" class="form-control form-control-sm" id="camIp" placeholder="Enter IP address" autocomplete="off" />
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label mb-0 small">Username</label>
+                            <input type="text" class="form-control form-control-sm" id="camUser" placeholder="Enter username" autocomplete="off" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label mb-0 small">Password</label>
+                            <input type="text" class="form-control form-control-sm" id="camPassword" autocomplete="new-password" data-lpignore="true" />
+                        </div>
+                    </div>
+                </div>
+                <!-- USB fields -->
+                <div id="usbFields" style="display:none;">
+                    <div class="mb-2">
+                        <label class="form-label mb-0 small">USB Device Name</label>
+                        <input type="text" class="form-control form-control-sm" id="camUsbDevice" placeholder="HD USB Camera" />
+                    </div>
+                </div>
+                <!-- Custom fields -->
+                <div id="customUrlField" style="display:none;">
+                    <div class="mb-2">
+                        <label class="form-label mb-0 small">Custom Snapshot URL</label>
+                        <input type="text" class="form-control form-control-sm" id="camCustomUrl" placeholder="http://..." />
+                    </div>
+                </div>
+                <div id="customUsbCmdField" style="display:none;">
+                    <div class="mb-2">
+                        <label class="form-label mb-0 small">Custom USB Command</label>
+                        <input type="text" class="form-control form-control-sm" id="camUsbCommand" />
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-4">
+                        <label class="form-label mb-0 small">Timeout (s)</label>
+                        <input type="number" class="form-control form-control-sm" id="camTimeout" value="10" min="1" max="60" />
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label mb-0 small">Active</label>
+                        <select class="form-select form-select-sm" id="camActive">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="camIsDefault" value="false" />
+                </div>
+                <div id="brandNotes" class="small text-muted" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnSaveCamera" onclick="saveCamera()">
+                    <i class="fa fa-save"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Capture Modal -->
+<div class="modal fade" id="testCaptureModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Test Capture — <span id="testCaptureCamera"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="testCaptureSpinner">
+                    <i class="fa fa-spinner fa-spin fa-3x mb-2"></i>
+                    <p>Capturing image...</p>
+                </div>
+                <div id="testCaptureResult" style="display:none;">
+                    <img id="testCaptureImage" class="img-fluid rounded" style="max-height:500px;" />
+                </div>
+                <div id="testCaptureError" style="display:none;padding:12px 16px;border:2px solid #dc3545;border-radius:6px;background:#f8d7da;color:#842029;text-align:left;font-weight:500;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Camera</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Delete camera <strong id="deleteCameraName"></strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger btn-sm" id="btnConfirmDelete" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/signalr/signalr.min.js"></script>
+<script>
+    var connection = new signalR.HubConnectionBuilder()
+        .withUrl('/scaleHub')
+        .withAutomaticReconnect()
+        .build();
+
+    var connectedServices = {};  // serviceId -> { cameras: [] }
+    var cameraBrands = [];       // CameraBrandDefinition[]
+    var savedInboundCameraId = '@(ViewBag.InboundCameraId ?? "")';
+    var savedOutboundCameraId = '@(ViewBag.OutboundCameraId ?? "")';
+    var pendingTestServiceId = '';
+    var pendingTestCameraId = '';
+    var pendingDeleteServiceId = '';
+    var pendingDeleteCameraId = '';
+
+    // ===== SIGNALR EVENT HANDLERS =====
+
+    connection.on('CameraServiceStatusChanged', function (serviceIds) {
+        console.log('[Camera] CameraServiceStatusChanged:', JSON.stringify(serviceIds));
+        updateStatusBar(serviceIds || []);
+        // Remove services no longer in the list
+        Object.keys(connectedServices).forEach(function (sid) {
+            if (serviceIds.indexOf(sid) < 0) {
+                delete connectedServices[sid];
+            }
+        });
+        renderServices();
+    });
+
+    connection.on('CameraServiceReady', function (data) {
+        connectedServices[data.serviceId] = { cameras: data.cameras || [] };
+        renderServices();
+        updateStatusBar(Object.keys(connectedServices));
+    });
+
+    connection.on('CameraServiceDisconnected', function (serviceId) {
+        delete connectedServices[serviceId];
+        renderServices();
+        updateStatusBar(Object.keys(connectedServices));
+    });
+
+    connection.on('CameraListReceived', function (data) {
+        connectedServices[data.serviceId] = { cameras: data.cameras || [] };
+        renderServices();
+    });
+
+    connection.on('CameraBrandsReceived', function (brands) {
+        cameraBrands = brands || [];
+        populateBrandDropdown();
+    });
+
+    connection.on('CameraCrudResult', function (result) {
+        if (result.success) {
+            showToast('success', capitalize(result.operation) + ' camera "' + result.cameraId + '" succeeded.');
+            bootstrap.Modal.getInstance(document.getElementById('cameraModal'))?.hide();
+        } else {
+            showToast('danger', capitalize(result.operation) + ' failed: ' + result.error);
+        }
+    });
+
+    connection.on('TestCaptureResult', function (result) {
+        if (testCaptureTimer) clearTimeout(testCaptureTimer);
+        document.getElementById('testCaptureSpinner').style.display = 'none';
+        if (result.success) {
+            document.getElementById('testCaptureImage').src = 'data:' + result.contentType + ';base64,' + result.image;
+            document.getElementById('testCaptureResult').style.display = '';
+            // retry removed
+        } else {
+            var errEl = document.getElementById('testCaptureError');
+            errEl.innerHTML = '<i class="fa fa-exclamation-triangle"></i> <strong>Test Capture Failed:</strong> ' + escHtml(result.error);
+            errEl.style.display = '';
+            // retry removed
+        }
+    });
+
+    // ===== CONNECTION START =====
+
+    connection.start().then(function () {
+        return connection.invoke('GetConnectedCameraServices');
+    }).then(function (services) {
+        updateStatusBar(services);
+        if (services.length > 0) {
+            connection.invoke('RequestCameraList');
+            connection.invoke('RequestCameraBrands');
+        }
+    }).catch(function (err) {
+        console.error('SignalR error:', err);
+        updateStatusBar([]);
+    });
+
+    // ===== UI RENDERING =====
+
+    function updateStatusBar(serviceIds) {
+        var bar = document.getElementById('serviceStatusBar');
+        var noMsg = document.getElementById('noServicesMessage');
+        if (serviceIds && serviceIds.length > 0) {
+            bar.style.cssText = 'background-color:#d1e7dd !important;border-color:#badbcc !important;color:#0f5132 !important;padding:8px 16px !important;margin-bottom:12px !important;border-radius:6px !important;display:flex !important;align-items:center !important;';
+            bar.innerHTML = '<i class="fa fa-check-circle me-2"></i> <strong>' + serviceIds.length +
+                ' Camera Service(s) Connected</strong>';
+            noMsg.style.display = 'none';
+        } else {
+            bar.style.cssText = 'background-color:#f8d7da !important;border-color:#f5c2c7 !important;color:#842029 !important;padding:8px 16px !important;margin-bottom:12px !important;border-radius:6px !important;display:flex !important;align-items:center !important;';
+            bar.innerHTML = '<i class="fa fa-times-circle me-2"></i> <strong>No Camera Services Connected</strong>' +
+                ' &mdash; Start a Camera Capture Service and point it to this server.';
+            noMsg.style.display = '';
+        }
+    }
+
+    function renderServices() {
+        var container = document.getElementById('servicesContainer');
+        var noMsg = document.getElementById('noServicesMessage');
+        var keys = Object.keys(connectedServices);
+
+        if (keys.length === 0) {
+            container.innerHTML = '';
+            noMsg.style.display = '';
+            return;
+        }
+        noMsg.style.display = 'none';
+
+        var html = '';
+        keys.forEach(function (serviceId) {
+            var svc = connectedServices[serviceId];
+            var cameras = svc.cameras || [];
+            html += '<div class="card mb-3">';
+            html += '<div class="card-header d-flex justify-content-between align-items-center py-2">';
+            html += '<div><span class="badge bg-success me-2">Connected</span> <strong>' + escHtml(serviceId) + '</strong>';
+            html += ' <span class="text-muted small">(' + cameras.length + ' camera' + (cameras.length !== 1 ? 's' : '') + ')</span></div>';
+            html += '<button class="btn btn-outline-primary btn-sm" onclick="addCamera(\'' + escAttr(serviceId) + '\')">';
+            html += '<i class="fa fa-plus"></i> Add Camera</button>';
+            html += '</div>';
+            html += '<div class="card-body p-0">';
+            if (cameras.length === 0) {
+                html += '<p class="text-muted text-center py-3 mb-0">No cameras configured on this service.</p>';
+            } else {
+                html += '<div class="table-responsive"><table class="table table-sm table-hover mb-0">';
+                html += '<thead><tr><th>Camera ID</th><th>Display Name</th><th>Brand</th><th>IP / Device</th>';
+                html += '<th>Service</th><th>Active</th><th style="width:170px;">Actions</th></tr></thead><tbody>';
+                cameras.forEach(function (cam) {
+                    var ipOrDevice = cam.cameraIp || cam.usbDeviceName || cam.cameraUrl || '-';
+                    html += '<tr>';
+                    html += '<td>' + escHtml(cam.cameraId) + '</td>';
+                    html += '<td>' + escHtml(cam.displayName || '') + '</td>';
+                    html += '<td>' + escHtml(cam.cameraBrand) + '</td>';
+                    html += '<td class="small">' + escHtml(ipOrDevice) + '</td>';
+                    html += '<td class="small text-muted">' + escHtml(serviceId) + '</td>';
+                    html += '<td>' + (cam.active ? '<span class="text-success fw-bold">&#10003;</span>' : '<span class="text-muted">&#10007;</span>') + '</td>';
+                    html += '<td>';
+                    html += '<button class="btn btn-outline-info btn-sm me-1" onclick="testCapture(\'' + escAttr(serviceId) + '\',\'' + escAttr(cam.cameraId) + '\')">Test</button>';
+                    html += '<button class="btn btn-outline-secondary btn-sm me-1" onclick="editCamera(\'' + escAttr(serviceId) + '\',\'' + escAttr(cam.cameraId) + '\')">Edit</button>';
+                    html += '<button class="btn btn-outline-danger btn-sm" onclick="deleteCamera(\'' + escAttr(serviceId) + '\',\'' + escAttr(cam.cameraId) + '\')">Delete</button>';
+                    html += '</td></tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            html += '</div></div>';
+        });
+        container.innerHTML = html;
+        // Update assignment dropdowns whenever services change
+        updateAssignmentDropdowns();
+    }
+
+    function updateAssignmentDropdowns() {
+        var inSel = document.getElementById('inboundCameraSelect');
+        var outSel = document.getElementById('outboundCameraSelect');
+        var inVal = inSel.value || savedInboundCameraId;
+        var outVal = outSel.value || savedOutboundCameraId;
+
+        // Build flat list of all cameras across all services
+        var options = '<option value="">-- None --</option>';
+        Object.keys(connectedServices).forEach(function (sid) {
+            var cams = connectedServices[sid].cameras || [];
+            cams.forEach(function (cam) {
+                if (!cam.active) return;
+                var val = sid + ':' + cam.cameraId;
+                var label = cam.displayName || cam.cameraId;
+                if (Object.keys(connectedServices).length > 1) {
+                    label += ' (' + sid + ')';
+                }
+                options += '<option value="' + escAttr(val) + '">' + escHtml(label) + '</option>';
+            });
+        });
+
+        inSel.innerHTML = options;
+        outSel.innerHTML = options;
+        inSel.value = inVal;
+        outSel.value = outVal;
+    }
+
+    function saveAssignments() {
+        var inVal = document.getElementById('inboundCameraSelect').value;
+        var outVal = document.getElementById('outboundCameraSelect').value;
+        var status = document.getElementById('assignmentStatus');
+        status.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving...';
+        status.className = 'small text-muted';
+
+        fetch('/api/cameras/assignments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inboundCameraId: inVal, outboundCameraId: outVal })
+        }).then(function (r) {
+            if (r.ok) {
+                savedInboundCameraId = inVal;
+                savedOutboundCameraId = outVal;
+                status.innerHTML = '<span class="text-success">&#10003; Saved</span>';
+                setTimeout(function () { status.innerHTML = ''; }, 2000);
+            } else {
+                status.innerHTML = '<span class="text-danger">Failed to save</span>';
+            }
+        }).catch(function () {
+            status.innerHTML = '<span class="text-danger">Failed to save</span>';
+        });
+    }
+
+    // ===== CAMERA CRUD =====
+
+    function addCamera(serviceId) {
+        document.getElementById('camModalServiceId').value = serviceId;
+        document.getElementById('camModalMode').value = 'add';
+        document.getElementById('camModalOriginalId').value = '';
+        document.getElementById('cameraModalTitle').textContent = 'Add Camera to ' + serviceId;
+        clearCameraForm();
+        // Request brands if not loaded
+        if (cameraBrands.length === 0) connection.invoke('RequestCameraBrands');
+        new bootstrap.Modal(document.getElementById('cameraModal')).show();
+    }
+
+    function editCamera(serviceId, cameraId) {
+        var svc = connectedServices[serviceId];
+        if (!svc) return;
+        var cam = svc.cameras.find(function (c) { return c.cameraId === cameraId; });
+        if (!cam) return;
+
+        document.getElementById('camModalServiceId').value = serviceId;
+        document.getElementById('camModalMode').value = 'edit';
+        document.getElementById('camModalOriginalId').value = cameraId;
+        document.getElementById('cameraModalTitle').textContent = 'Edit Camera — ' + cameraId;
+
+        document.getElementById('camCameraId').value = cam.cameraId;
+        document.getElementById('camDisplayName').value = cam.displayName || '';
+        document.getElementById('camBrand').value = cam.cameraBrand || 'Custom';
+        // For Custom brand, detect if USB based on existing data
+        if ((cam.cameraBrand || 'Custom') === 'Custom') {
+            var isUsb = !!(cam.usbDeviceName || cam.usbCommand);
+            document.getElementById('camCustomType').value = isUsb ? 'USB' : 'IP';
+        }
+        document.getElementById('camIp').value = cam.cameraIp || '';
+        document.getElementById('camUser').value = cam.cameraUser || '';
+        document.getElementById('camPassword').value = cam.cameraPassword || '';
+        document.getElementById('camUsbDevice').value = cam.usbDeviceName || '';
+        document.getElementById('camCustomUrl').value = cam.cameraUrl || '';
+        document.getElementById('camUsbCommand').value = cam.usbCommand || '';
+        document.getElementById('camTimeout').value = cam.timeoutSeconds || 10;
+        document.getElementById('camActive').value = cam.active ? 'true' : 'false';
+        document.getElementById('camIsDefault').value = cam.isDefault ? 'true' : 'false';
+        toggleBrandFields();
+
+        if (cameraBrands.length === 0) connection.invoke('RequestCameraBrands');
+        new bootstrap.Modal(document.getElementById('cameraModal')).show();
+    }
+
+    function saveCamera() {
+        var serviceId = document.getElementById('camModalServiceId').value;
+        var mode = document.getElementById('camModalMode').value;
+        var config = {
+            cameraId: document.getElementById('camCameraId').value.trim(),
+            displayName: document.getElementById('camDisplayName').value.trim(),
+            cameraBrand: document.getElementById('camBrand').value,
+            cameraIp: document.getElementById('camIp').value.trim(),
+            cameraUser: document.getElementById('camUser').value.trim(),
+            cameraPassword: document.getElementById('camPassword').value,
+            usbDeviceName: document.getElementById('camUsbDevice').value.trim(),
+            cameraUrl: document.getElementById('camCustomUrl').value.trim(),
+            usbCommand: document.getElementById('camUsbCommand').value.trim(),
+            timeoutSeconds: parseInt(document.getElementById('camTimeout').value) || 10,
+            active: document.getElementById('camActive').value === 'true',
+            isDefault: document.getElementById('camIsDefault').value === 'true'
+        };
+
+        if (!config.cameraId) {
+            showToast('danger', 'Camera ID is required.');
+            return;
+        }
+
+        var btn = document.getElementById('btnSaveCamera');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving...';
+
+        if (mode === 'add') {
+            connection.invoke('AddCameraToService', serviceId, config).catch(function (err) {
+                showToast('danger', 'Error: ' + err);
+            }).finally(function () {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-save"></i> Save';
+            });
+        } else {
+            var originalId = document.getElementById('camModalOriginalId').value;
+            connection.invoke('UpdateCameraOnService', serviceId, originalId, config).catch(function (err) {
+                showToast('danger', 'Error: ' + err);
+            }).finally(function () {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-save"></i> Save';
+            });
+        }
+    }
+
+    function deleteCamera(serviceId, cameraId) {
+        pendingDeleteServiceId = serviceId;
+        pendingDeleteCameraId = cameraId;
+        document.getElementById('deleteCameraName').textContent = cameraId;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+
+    function confirmDelete() {
+        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+        connection.invoke('DeleteCameraFromService', pendingDeleteServiceId, pendingDeleteCameraId).catch(function (err) {
+            showToast('danger', 'Delete failed: ' + err);
+        });
+    }
+
+    // ===== TEST CAPTURE =====
+
+    var testCaptureTimer = null;
+
+    function testCapture(serviceId, cameraId) {
+        pendingTestServiceId = serviceId;
+        pendingTestCameraId = cameraId;
+        document.getElementById('testCaptureCamera').textContent = cameraId;
+        document.getElementById('testCaptureResult').style.display = 'none';
+        document.getElementById('testCaptureError').style.display = 'none';
+        document.getElementById('testCaptureSpinner').style.display = 'none';
+
+        var modal = new bootstrap.Modal(document.getElementById('testCaptureModal'));
+
+        // Check client-side if any camera service is connected
+        var connected = Object.keys(connectedServices).length > 0;
+        if (!connected) {
+            var errEl = document.getElementById('testCaptureError');
+            errEl.innerHTML = '<i class="fa fa-exclamation-triangle"></i> <strong>No Camera Service Connected</strong> — Start a Camera Capture Service and point it to this server.';
+            errEl.style.display = '';
+            // retry removed
+            modal.show();
+            return;
+        }
+
+        document.getElementById('testCaptureSpinner').style.display = '';
+        modal.show();
+
+        // Timeout after 10 seconds if no response
+        if (testCaptureTimer) clearTimeout(testCaptureTimer);
+        testCaptureTimer = setTimeout(function () {
+            if (document.getElementById('testCaptureSpinner').style.display !== 'none') {
+                document.getElementById('testCaptureSpinner').style.display = 'none';
+                var errEl = document.getElementById('testCaptureError');
+                errEl.innerHTML = '<i class="fa fa-clock-o"></i> <strong>Test Capture Timed Out:</strong> No response from camera service after 10 seconds. Check the Camera Service logs for errors.';
+                errEl.style.display = '';
+                // retry removed
+            }
+        }, 10000);
+
+        connection.invoke('TestCameraCapture', serviceId, cameraId).catch(function (err) {
+            clearTimeout(testCaptureTimer);
+            document.getElementById('testCaptureSpinner').style.display = 'none';
+            var errEl = document.getElementById('testCaptureError');
+            errEl.innerHTML = '<i class="fa fa-exclamation-triangle"></i> <strong>Test Capture Error:</strong> ' + escHtml(String(err));
+            errEl.style.display = '';
+            // retry removed
+        });
+    }
+
+    // ===== BRAND DROPDOWN =====
+
+    function populateBrandDropdown() {
+        var sel = document.getElementById('camBrand');
+        var currentVal = sel.value;
+        sel.innerHTML = '';
+        cameraBrands.forEach(function (b) {
+            var opt = document.createElement('option');
+            opt.value = b.brand;
+            opt.textContent = b.brand + ' (' + b.type + ')';
+            sel.appendChild(opt);
+        });
+        // Add Custom if not in list
+        if (!cameraBrands.find(function (b) { return b.brand === 'Custom'; })) {
+            var opt = document.createElement('option');
+            opt.value = 'Custom';
+            opt.textContent = 'Custom';
+            sel.appendChild(opt);
+        }
+        if (currentVal) sel.value = currentVal;
+        toggleBrandFields();
+    }
+
+    document.getElementById('camBrand').addEventListener('change', toggleBrandFields);
+
+    function toggleBrandFields() {
+        var brand = document.getElementById('camBrand').value;
+        var def = cameraBrands.find(function (b) { return b.brand === brand; });
+        var isCustom = brand === 'Custom';
+        var type = isCustom
+            ? document.getElementById('camCustomType').value
+            : (def ? def.type : 'IP');
+
+        // Show/hide custom type selector — shrink brand col to make room
+        document.getElementById('customTypeCol').style.display = isCustom ? '' : 'none';
+        document.getElementById('brandCol').className = isCustom ? 'col-8' : 'col-12';
+
+        // Show fields based on type
+        var isIP = type === 'IP';
+        document.getElementById('ipFields').style.display = isIP ? '' : 'none';
+        document.getElementById('usbFields').style.display = !isIP ? '' : 'none';
+
+        // Custom URL/Command only for Custom brand
+        document.getElementById('customUrlField').style.display = (isCustom && isIP) ? '' : 'none';
+        document.getElementById('customUsbCmdField').style.display = (isCustom && !isIP) ? '' : 'none';
+
+        var notesEl = document.getElementById('brandNotes');
+        if (def && def.notes) {
+            notesEl.textContent = def.notes;
+            notesEl.style.display = '';
+        } else {
+            notesEl.style.display = 'none';
+        }
+    }
+
+    // ===== HELPERS =====
+
+    function clearCameraForm() {
+        ['camCameraId', 'camDisplayName', 'camIp', 'camUser', 'camPassword',
+         'camUsbDevice', 'camCustomUrl', 'camUsbCommand'].forEach(function (id) {
+            document.getElementById(id).value = '';
+        });
+        document.getElementById('camTimeout').value = 10;
+        document.getElementById('camActive').value = 'true';
+        document.getElementById('camIsDefault').value = 'false';
+        document.getElementById('camCustomType').value = 'IP';
+        document.getElementById('camBrand').value = cameraBrands.length > 0 ? cameraBrands[0].brand : 'Custom';
+        toggleBrandFields();
+    }
+
+    function showToast(type, message) {
+        var colors = {
+            danger:  { bg: '#f8d7da', border: '#f5c2c7', text: '#842029' },
+            success: { bg: '#d1e7dd', border: '#badbcc', text: '#0f5132' },
+            warning: { bg: '#fff3cd', border: '#ffecb5', text: '#664d03' },
+            info:    { bg: '#cff4fc', border: '#b6effb', text: '#055160' }
+        };
+        var c = colors[type] || colors.info;
+        var id = 'toast-' + Date.now();
+        var html = '<div id="' + id + '" style="padding:12px 40px 12px 16px !important;margin-bottom:8px !important;border:1px solid ' +
+            c.border + ' !important;border-radius:6px !important;background-color:' + c.bg + ' !important;background:' + c.bg + ' !important;color:' + c.text + ' !important;position:relative !important;">' +
+            message +
+            '<button type="button" onclick="this.parentElement.remove()" style="position:absolute !important;top:8px !important;right:12px !important;background:none !important;border:none !important;font-size:18px !important;cursor:pointer;color:' + c.text + ' !important;">&times;</button></div>';
+        document.getElementById('cameraToastContainer').insertAdjacentHTML('beforeend', html);
+        if (type !== 'danger') {
+            setTimeout(function () {
+                var el = document.getElementById(id);
+                if (el) el.remove();
+            }, 5000);
+        }
+    }
+
+    function escHtml(s) { return s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
+    function escAttr(s) { return escHtml(s).replace(/'/g, '&#39;'); }
+    function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+</script>
+}

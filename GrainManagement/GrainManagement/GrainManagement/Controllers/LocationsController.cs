@@ -34,11 +34,21 @@ namespace GrainManagement.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-
             return View();
         }
 
+        [HttpGet]
+        public IActionResult Storage(int locationId)
+        {
+            if (!_me.IsManager && !_me.IsAdmin)
+                return RedirectToAction("Index", "Home");
 
+            var location = _context.Locations.Find(locationId);
+            if (location == null) return NotFound();
 
+            ViewBag.LocationId = locationId;
+            ViewBag.LocationName = location.Name;
+            return View();
+        }
     }
 }

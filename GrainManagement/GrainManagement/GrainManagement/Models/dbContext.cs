@@ -31,6 +31,8 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<Container> Containers { get; set; }
 
+    public virtual DbSet<ContainerLocation> ContainerLocations { get; set; }
+
     public virtual DbSet<ContainerLotLayer> ContainerLotLayers { get; set; }
 
     public virtual DbSet<ContainerType> ContainerTypes { get; set; }
@@ -143,8 +145,6 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<State> States { get; set; }
 
-    public virtual DbSet<StorageLocation> StorageLocations { get; set; }
-
     public virtual DbSet<Trait> Traits { get; set; }
 
     public virtual DbSet<TraitType> TraitTypes { get; set; }
@@ -152,6 +152,16 @@ public partial class dbContext : DbContext
     public virtual DbSet<TransactionAttribute> TransactionAttributes { get; set; }
 
     public virtual DbSet<TransactionAttributeType> TransactionAttributeTypes { get; set; }
+
+    public virtual DbSet<TransactionQuantitySource> TransactionQuantitySources { get; set; }
+
+    public virtual DbSet<QuantitySourceType> QuantitySourceTypes { get; set; }
+
+    public virtual DbSet<QuantityMethod> QuantityMethods { get; set; }
+
+    public virtual DbSet<QuantityMethodSource> QuantityMethodSources { get; set; }
+
+    public virtual DbSet<LocationQuantityMethod> LocationQuantityMethods { get; set; }
 
     public virtual DbSet<Truck> Trucks { get; set; }
 
@@ -389,8 +399,14 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Notes).HasMaxLength(1000);
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
 
+            entity.HasOne(d => d.ContainerLocation).WithMany(p => p.Containers)
+                .HasForeignKey(d => d.ContainerLocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Containers_ContainerLocations");
+
             entity.HasOne(d => d.ContainerType).WithMany(p => p.Containers)
                 .HasForeignKey(d => d.ContainerTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Containers_ContainerTypes");
 
             entity.HasOne(d => d.Location).WithMany(p => p.Containers)
@@ -402,10 +418,29 @@ public partial class dbContext : DbContext
                 .HasForeignKey(d => d.ServerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Containers_Servers");
+        });
 
-            entity.HasOne(d => d.StorageLocation).WithMany(p => p.Containers)
-                .HasForeignKey(d => d.StorageLocationId)
-                .HasConstraintName("FK_Containers_StorageLocations");
+        modelBuilder.Entity<ContainerLocation>(entity =>
+        {
+            entity.HasKey(e => e.ContainerLocationId).HasName("PK_StorageLocations");
+
+            entity.ToTable("ContainerLocation", "container");
+
+            entity.HasIndex(e => new { e.LocationId, e.Description }, "IX_ContainerLocation").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_container_StorageLocations_CreatedAt");
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.Location).WithMany(p => p.ContainerLocations)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StorageLocations_Locations");
         });
 
         modelBuilder.Entity<ContainerLotLayer>(entity =>
@@ -671,7 +706,6 @@ public partial class dbContext : DbContext
             entity.Property(e => e.DirectQty).HasColumnType("decimal(18, 6)");
             entity.Property(e => e.DurationMinutes).HasComputedColumnSql("(case when [StartedAt] IS NOT NULL AND [CompletedAt] IS NOT NULL then datediff(minute,[StartedAt],[CompletedAt])  end)", true);
             entity.Property(e => e.EndQty).HasColumnType("decimal(18, 6)");
-            entity.Property(e => e.EndScaleDescription).HasMaxLength(50);
             entity.Property(e => e.IsVoided).HasAnnotation("Relational:DefaultConstraintName", "DF_InventoryTransactions_IsVoided");
             entity.Property(e => e.NetQty)
                 .HasComputedColumnSql("(case when [StartQty] IS NOT NULL AND [EndQty] IS NOT NULL then abs([EndQty]-[StartQty]) else [DirectQty] end)", true)
@@ -679,7 +713,6 @@ public partial class dbContext : DbContext
             entity.Property(e => e.Notes).HasMaxLength(1000);
             entity.Property(e => e.RefType).HasMaxLength(50);
             entity.Property(e => e.StartQty).HasColumnType("decimal(18, 6)");
-            entity.Property(e => e.StartScaleDescription).HasMaxLength(50);
             entity.Property(e => e.StartedAt).HasPrecision(0);
             entity.Property(e => e.TxnAt)
                 .HasPrecision(0)
@@ -1944,25 +1977,6 @@ public partial class dbContext : DbContext
                 .HasMaxLength(2);
         });
 
-        modelBuilder.Entity<StorageLocation>(entity =>
-        {
-            entity.ToTable("StorageLocations", "container");
-
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_container_StorageLocations_CreatedAt");
-            entity.Property(e => e.Description)
-                .IsRequired()
-                .HasMaxLength(100);
-            entity.Property(e => e.UpdatedAt).HasPrecision(0);
-
-            entity.HasOne(d => d.Location).WithMany(p => p.StorageLocations)
-                .HasForeignKey(d => d.LocationId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_StorageLocations_Locations");
-        });
-
         modelBuilder.Entity<Trait>(entity =>
         {
             entity.ToTable("Traits", "product");
@@ -2270,6 +2284,138 @@ public partial class dbContext : DbContext
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_purchase_WeightSheetLoadLotAllocations_CreatedAt");
             entity.Property(e => e.QtyLb).HasColumnType("decimal(18, 3)");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+        });
+
+        // ── QuantitySourceTypes (lookup) ─────────────────────────────────
+        modelBuilder.Entity<QuantitySourceType>(entity =>
+        {
+            entity.HasKey(e => e.QuantitySourceTypeId);
+
+            entity.ToTable("QuantitySourceTypes", "Inventory");
+
+            entity.HasIndex(e => e.Code, "UX_QuantitySourceTypes_Code").IsUnique();
+
+            entity.Property(e => e.Code)
+                .IsRequired()
+                .HasMaxLength(30);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_QuantitySourceTypes_CreatedAt");
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_QuantitySourceTypes_IsActive");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+        });
+
+        // ── QuantityMethods (lookup — operation type) ─────────────────────
+        modelBuilder.Entity<QuantityMethod>(entity =>
+        {
+            entity.HasKey(e => e.QuantityMethodId);
+
+            entity.ToTable("QuantityMethods", "Inventory");
+
+            entity.HasIndex(e => e.Code, "UX_QuantityMethods_Code").IsUnique();
+
+            entity.Property(e => e.Code)
+                .IsRequired()
+                .HasMaxLength(30);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_QuantityMethods_CreatedAt");
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_QuantityMethods_IsActive");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+        });
+
+        // ── QuantityMethodSources (cross-ref: allowed source types per method) ──
+        modelBuilder.Entity<QuantityMethodSource>(entity =>
+        {
+            entity.HasKey(e => new { e.QuantityMethodId, e.QuantitySourceTypeId })
+                  .HasName("PK_QuantityMethodSources");
+
+            entity.ToTable("QuantityMethodSources", "Inventory");
+
+            entity.HasOne(d => d.QuantityMethod)
+                .WithMany(p => p.QuantityMethodSources)
+                .HasForeignKey(d => d.QuantityMethodId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_QtyMethodSources_Method");
+
+            entity.HasOne(d => d.QuantitySourceType)
+                .WithMany(p => p.QuantityMethodSources)
+                .HasForeignKey(d => d.QuantitySourceTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_QtyMethodSources_SourceType");
+        });
+
+        // ── LocationQuantityMethods (which methods are available per location) ──
+        modelBuilder.Entity<LocationQuantityMethod>(entity =>
+        {
+            entity.HasKey(e => new { e.LocationId, e.QuantityMethodId })
+                  .HasName("PK_LocationQuantityMethods");
+
+            entity.ToTable("LocationQuantityMethods", "Inventory");
+
+            entity.HasOne(d => d.Location)
+                .WithMany()
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LQM_Location");
+
+            entity.HasOne(d => d.QuantityMethod)
+                .WithMany()
+                .HasForeignKey(d => d.QuantityMethodId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LQM_QuantityMethod");
+        });
+
+        // ── TransactionQuantitySources (per-qty source tracking) ─────────
+        modelBuilder.Entity<TransactionQuantitySource>(entity =>
+        {
+            entity.HasKey(e => new { e.TransactionId, e.QuantityField })
+                  .HasName("PK_TransactionQuantitySources");
+
+            entity.ToTable("TransactionQuantitySources", "Inventory");
+
+            entity.Property(e => e.QuantityField)
+                .IsRequired()
+                .HasMaxLength(10);
+            entity.Property(e => e.SourceDescription)
+                .IsRequired()
+                .HasMaxLength(200);
+            entity.Property(e => e.Location)
+                .HasMaxLength(200);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_TxnQtySources_CreatedAt");
+
+            entity.HasOne(d => d.Transaction)
+                .WithMany(p => p.TransactionQuantitySources)
+                .HasForeignKey(d => d.TransactionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TxnQtySources_TransactionDetail");
+
+            entity.HasOne(d => d.SourceType)
+                .WithMany(p => p.TransactionQuantitySources)
+                .HasForeignKey(d => d.SourceTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TxnQtySources_SourceType");
+
+            entity.HasOne(d => d.Method)
+                .WithMany(p => p.TransactionQuantitySources)
+                .HasForeignKey(d => d.MethodId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TxnQtySources_Method");
         });
 
         OnModelCreatingGeneratedFunctions(modelBuilder);

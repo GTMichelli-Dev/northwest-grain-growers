@@ -8,9 +8,5 @@ namespace GrainManagement.Models
 {
     public partial class usp_ApplySeedTreatmentResult
     {
-        public long? ApplicationId { get; set; }
-        [Column("ChemicalUsedQty_InLotUom", TypeName = "decimal(18,6)")]
-        public decimal? ChemicalUsedQty_InLotUom { get; set; }
-        public int? LotUomId { get; set; }
     }
 }

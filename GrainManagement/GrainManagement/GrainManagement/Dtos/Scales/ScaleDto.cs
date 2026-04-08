@@ -22,6 +22,24 @@ namespace GrainManagement.Dtos.Scales
         [MaxLength(100)]
         public string? Status { get; set; }
 
+        /// <summary>Raw TCP response from the scale indicator.</summary>
+        public string? RawResponse { get; set; }
+
         public DateTime LastUpdate { get; set; }
+
+        /// <summary>Service ID that owns this scale.</summary>
+        public string? ServiceId { get; set; }
+
+        /// <summary>
+        /// Location ID from system.Locations — identifies which facility the scale is at.
+        /// </summary>
+        public int LocationId { get; set; }
+
+        /// <summary>
+        /// Human-readable location description (e.g. "Endicott Elevator").
+        /// </summary>
+        [MaxLength(200)]
+        public string LocationDescription { get; set; } = string.Empty;
+
     }
 }

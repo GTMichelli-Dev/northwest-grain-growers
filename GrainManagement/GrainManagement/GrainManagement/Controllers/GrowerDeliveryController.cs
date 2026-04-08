@@ -17,5 +17,12 @@ namespace GrainManagement.Controllers
 
         [HttpGet]
         public IActionResult WeightSheetDeliveryLoads() => View();
+
+        [HttpGet]
+        public IActionResult WeightSheetTransferLoads()
+        {
+            ViewData["WsType"] = "transfer";
+            return View("WeightSheetDeliveryLoads");
+        }
     }
 }

@@ -114,7 +114,11 @@
             ],
             onRowClick: function (e) {
                 if (e.rowType === "data") {
-                    window.location.href = "/GrowerDelivery/WeightSheetDeliveryLoads?wsId=" + e.data.WeightSheetId;
+                    var type = (e.data.WeightSheetType || "").toLowerCase();
+                    var page = type === "delivery"
+                        ? "/GrowerDelivery/WeightSheetDeliveryLoads"
+                        : "/GrowerDelivery/WeightSheetTransferLoads";
+                    window.location.href = page + "?wsId=" + e.data.WeightSheetId;
                 }
             },
             onRowPrepared: function (e) {

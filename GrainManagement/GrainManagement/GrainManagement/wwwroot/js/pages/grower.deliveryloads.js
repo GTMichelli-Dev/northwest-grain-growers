@@ -14,8 +14,16 @@
         wsCrop:      "#dlWsCrop",
         wsSplit:     "#dlWsSplit",
         wsAccount:   "#dlWsAccount",
-        wsHauler:    "#dlWsHauler",
-        wsRateType:  "#dlWsRateType",
+        wsHauler:         "#dlWsHauler",
+        wsRateType:       "#dlWsRateType",
+        wsMilesDetail:    "#dlWsMilesDetail",
+        wsMiles:          "#dlWsMiles",
+        wsCalcRateDetail: "#dlWsCalcRateDetail",
+        wsCalcRate:       "#dlWsCalcRate",
+        wsCustomDescDetail: "#dlWsCustomDescDetail",
+        wsCustomDesc:     "#dlWsCustomDesc",
+        wsCustomRateDetail: "#dlWsCustomRateDetail",
+        wsCustomRate:     "#dlWsCustomRate",
         wsComment:   "#dlWsComment",
         editLotBtn:  "#dlEditLotBtn",
         editHaulerBtn: "#dlEditHaulerBtn",
@@ -53,8 +61,11 @@
     var _modal = null;
     var _haulerModal = null;
     var _lotModal = null;
-    var _wsHeader = null; // weight sheet header data from first row
-    var _selectedLotId = null; // lot selected in the reassign grid
+    var _binModal = null;
+    var _wsHeader = null;
+    var _selectedLotId = null;
+    var _binTargetRow = null;   // load row currently being assigned a bin
+    var _selectedBinId = null;
 
     // ── Init ─────────────────────────────────────────────────────────────────
     $(function () {
@@ -75,6 +86,8 @@
         _modal = new bootstrap.Modal(document.getElementById("dlAttrModal"));
         _haulerModal = new bootstrap.Modal(document.getElementById("dlHaulerModal"));
         _lotModal = new bootstrap.Modal(document.getElementById("dlLotModal"));
+        _binModal = new bootstrap.Modal(document.getElementById("dlBinModal"));
+        initBinGrid();
 
         initGrid();
         initHaulerSelect();
@@ -142,12 +155,34 @@
             $(sel.wsLotNumber).text("—");
         }
         $(sel.wsCrop).text(row.CropName || "—");
+        $("#dlWsSplitId").text(row.SplitGroupId || "—");
         $(sel.wsSplit).text(row.SplitName || "—");
         $(sel.wsAccount).text(row.PrimaryAccountName || "—");
 
-        // Hauler details
-        $(sel.wsHauler).text(row.HaulerName || "Grower");
-        $(sel.wsRateType).text(row.CustomRateDescription || row.RateType || "—");
+        // BOL / Hauler details
+        var rt = row.RateType;
+        $(sel.wsRateType).text(BOL_LABELS[rt] || rt || "—");
+        $(sel.wsHauler).text(row.HaulerName || (rt === "U" ? "N/A" : "—"));
+
+        var isAF = rt === "A" || rt === "F";
+        var isC  = rt === "C";
+
+        $(sel.wsMilesDetail).prop("hidden", !isAF);
+        $(sel.wsMiles).text(row.Miles != null ? row.Miles : "—");
+
+        $(sel.wsCalcRateDetail).prop("hidden", true); // fetched async below
+        if (isAF && row.Miles) {
+            $.getJSON("/api/Lookups/HaulerRateForMiles?rateType=" + rt + "&miles=" + row.Miles)
+                .done(function (data) {
+                    $(sel.wsCalcRate).text("$" + data.Rate.toFixed(2) + " (up to " + data.MaxDistance + " mi)");
+                    $(sel.wsCalcRateDetail).prop("hidden", false);
+                });
+        }
+
+        $(sel.wsCustomDescDetail).prop("hidden", !isC);
+        $(sel.wsCustomDesc).text(row.CustomRateDescription || "—");
+        $(sel.wsCustomRateDetail).prop("hidden", !isC);
+        $(sel.wsCustomRate).text(row.Rate != null ? "$" + Number(row.Rate).toFixed(2) : "—");
 
         // Comment (textarea)
         $(sel.wsComment).val(row.WsNotes || "");
@@ -180,25 +215,61 @@
             filterRow: { visible: true },
             headerFilter: { visible: true },
             sorting: { mode: "multiple" },
+            editing: {
+                mode: "cell",
+                allowUpdating: true,
+                selectTextOnEditStart: true,
+            },
+            onRowUpdating: function (e) {
+                e.cancel = true; // handled manually via cellTemplate edit
+            },
             columns: [
+                // Complete checkbox
+                {
+                    caption: "✓",
+                    width: 40,
+                    alignment: "center",
+                    allowFiltering: false,
+                    allowSorting: false,
+                    cellTemplate: function (container, options) {
+                        var d = options.data;
+                        var complete = !!d.OutWeight && !!d.ContainerDescription &&
+                                       d.Attr1Value > 0 && d.Attr2Value > 0;
+                        $("<input>").attr({ type: "checkbox", disabled: true })
+                            .prop("checked", complete)
+                            .appendTo(container);
+                    },
+                },
                 {
                     dataField: "TransactionId",
-                    caption: "Txn ID",
+                    caption: "Load ID",
                     width: 100,
                     dataType: "number",
                     sortOrder: "desc",
                     sortIndex: 0,
+                    allowEditing: false,
                 },
                 {
                     dataField: "CreationDate",
                     caption: "Date",
                     width: 100,
                     dataType: "string",
+                    allowEditing: false,
                 },
+                // Bin — click to open bin picker
                 {
                     dataField: "ContainerDescription",
                     caption: "Bin",
                     width: 140,
+                    allowEditing: false,
+                    cellTemplate: function (container, options) {
+                        var val = options.data.ContainerDescription;
+                        var $cell = $("<span>").text(val || "— select —")
+                            .css({ cursor: "pointer", textDecoration: "underline dotted" })
+                            .on("click", function () { openBinModal(options.data); });
+                        if (!val) $cell.css("background-color", "#ffc0cb");
+                        container.append($cell);
+                    },
                 },
                 {
                     dataField: "InWeight",
@@ -206,6 +277,7 @@
                     width: 110,
                     dataType: "number",
                     format: { type: "fixedPoint", precision: 0 },
+                    allowEditing: false,
                 },
                 {
                     dataField: "OutWeight",
@@ -213,59 +285,74 @@
                     width: 110,
                     dataType: "number",
                     format: { type: "fixedPoint", precision: 0 },
+                    allowEditing: false,
+                    cellTemplate: function (container, options) {
+                        var val = options.data.OutWeight;
+                        var $cell = $("<span>").text(val != null ? Number(val).toLocaleString() : "");
+                        if (!val) $cell.css("background-color", "#ffc0cb");
+                        container.append($cell);
+                    },
                 },
                 {
                     dataField: "Net",
                     caption: "Net",
-                    width: 110,
+                    width: 100,
                     dataType: "number",
                     format: { type: "fixedPoint", precision: 0 },
                     cssClass: "fw-bold",
+                    allowEditing: false,
                 },
+                // Protein — inline editable, pink if null/0
                 {
                     dataField: "Attr1Value",
                     caption: "Protein",
                     width: 90,
                     dataType: "number",
-                    format: { type: "fixedPoint", precision: 2 },
-                    calculateCellValue: function (row) {
-                        return row.Attr1Value || null;
+                    allowEditing: true,
+                    editorOptions: { min: 0, max: 40, format: "#0.00", step: 0 },
+                    cellTemplate: function (container, options) {
+                        var val = options.data.Attr1Value;
+                        var display = (val != null && val > 0) ? Number(val).toFixed(2) : "";
+                        var $cell = $("<span>").text(display)
+                            .css({ display: "block", textAlign: "right", cursor: "pointer" });
+                        if (!val || val <= 0) $cell.css("background-color", "#ffc0cb");
+                        $cell.on("click", function () {
+                            openAttrInlineEdit(options.data, 1, container);
+                        });
+                        container.append($cell);
                     },
                 },
+                // Moisture — inline editable, pink if null/0
                 {
                     dataField: "Attr2Value",
                     caption: "Moisture",
                     width: 90,
                     dataType: "number",
-                    format: { type: "fixedPoint", precision: 2 },
-                    calculateCellValue: function (row) {
-                        return row.Attr2Value || null;
+                    allowEditing: true,
+                    editorOptions: { min: 0, max: 40, format: "#0.00", step: 0 },
+                    cellTemplate: function (container, options) {
+                        var val = options.data.Attr2Value;
+                        var display = (val != null && val > 0) ? Number(val).toFixed(2) : "";
+                        var $cell = $("<span>").text(display)
+                            .css({ display: "block", textAlign: "right", cursor: "pointer" });
+                        if (!val || val <= 0) $cell.css("background-color", "#ffc0cb");
+                        $cell.on("click", function () {
+                            openAttrInlineEdit(options.data, 2, container);
+                        });
+                        container.append($cell);
                     },
                 },
                 {
                     dataField: "Notes",
                     caption: "Notes",
                     width: 160,
-                },
-                {
-                    caption: "",
-                    width: 80,
-                    alignment: "center",
-                    cellTemplate: function (container, options) {
-                        $("<a>")
-                            .addClass("btn btn-outline-primary btn-sm")
-                            .text("Edit")
-                            .on("click", function () {
-                                openAttrModal(options.data);
-                            })
-                            .appendTo(container);
-                    },
+                    allowEditing: false,
                 },
             ],
             summary: {
                 totalItems: [
                     { column: "Net", summaryType: "sum", valueFormat: { type: "fixedPoint", precision: 0 }, displayFormat: "Total: {0}" },
-                    { column: "LoadId", summaryType: "count", displayFormat: "Loads: {0}" },
+                    { column: "TransactionId", summaryType: "count", displayFormat: "Loads: {0}" },
                 ],
             },
             onRowPrepared: function (e) {
@@ -294,6 +381,7 @@
             var grid = $(sel.grid).dxDataGrid("instance");
             grid.option("dataSource", data);
             grid.refresh();
+            updateStats(data);
         })
         .fail(function (xhr) {
             var msg = xhr.responseJSON && xhr.responseJSON.message
@@ -303,27 +391,227 @@
         });
     }
 
-    // ── Hauler select (DevExtreme) ───────────────────────────────────────────
-    function initHaulerSelect() {
-        $(sel.haulerSelect).dxSelectBox({
-            dataSource: {
-                store: {
-                    type: "array",
-                    key: "Id",
-                    data: [],
-                },
+    // ── Stats badges ─────────────────────────────────────────────────────────
+    function updateStats(data) {
+        if (!data || !data.length) {
+            $("#dlStatTotal").text("0 loads");
+            $("#dlStatComplete").text("0 complete");
+            return;
+        }
+        // filter to current wsId rows only (data may contain multiple sheets when wsId=0)
+        var rows = _wsId > 0 ? data.filter(function (r) { return r.WeightSheetId === _wsId; }) : data;
+        var total = rows.length;
+        var complete = rows.filter(function (r) {
+            return !!r.OutWeight && !!r.ContainerDescription && r.Attr1Value > 0 && r.Attr2Value > 0;
+        }).length;
+        $("#dlStatTotal").text(total + " load" + (total !== 1 ? "s" : ""));
+        $("#dlStatComplete").text(complete + " complete");
+    }
+
+    // ── Inline attribute edit (Protein / Moisture) ───────────────────────────
+    function openAttrInlineEdit(rowData, attrTypeId, cellContainer) {
+        var currentVal = attrTypeId === 1 ? rowData.Attr1Value : rowData.Attr2Value;
+        var label = attrTypeId === 1 ? "Protein" : "Moisture";
+
+        // Replace cell content with a small input
+        cellContainer.empty();
+        var $input = $("<input>")
+            .attr({ type: "number", min: 0, max: 40, step: 0.01 })
+            .val(currentVal > 0 ? currentVal : "")
+            .css({ width: "100%", fontSize: "13px", padding: "2px 4px", textAlign: "right" })
+            .appendTo(cellContainer)
+            .focus()
+            .on("blur keydown", function (e) {
+                if (e.type === "keydown" && e.key !== "Enter" && e.key !== "Escape") return;
+                if (e.type === "keydown" && e.key === "Escape") { loadData(); return; }
+
+                var newVal = parseFloat($input.val());
+                if (isNaN(newVal) || newVal < 0 || newVal > 40) {
+                    loadData(); return;
+                }
+                var saveVal = newVal === 0 ? null : newVal;
+                $.ajax({
+                    url: "/api/GrowerDelivery/WeightSheetDeliveryLoads/UpdateAttribute",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        TransactionId: rowData.TransactionId,
+                        AttributeTypeId: attrTypeId,
+                        DecimalValue: saveVal
+                    })
+                }).always(function () { loadData(); });
+            });
+    }
+
+    // ── Bin selection modal ───────────────────────────────────────────────────
+    function initBinGrid() {
+        $("#dlBinGrid").dxDataGrid({
+            dataSource: [],
+            keyExpr: "ContainerId",
+            height: 320,
+            showBorders: true,
+            columnAutoWidth: true,
+            rowAlternationEnabled: true,
+            hoverStateEnabled: true,
+            selection: { mode: "single" },
+            filterRow: { visible: true },
+            columns: [
+                { dataField: "LocationDescription", caption: "Storage Location", width: 180 },
+                { dataField: "ContainerDescription", caption: "Bin", width: 160 },
+                { dataField: "Notes", caption: "Notes" },
+            ],
+            onSelectionChanged: function (e) {
+                var rows = e.selectedRowsData;
+                _selectedBinId = rows.length > 0 ? rows[0].ContainerId : null;
+                $("#dlBinSaveBtn").prop("disabled", !_selectedBinId);
             },
-            displayExpr: "Description",
-            valueExpr: "Id",
-            placeholder: "Select hauler…",
-            searchEnabled: true,
-            showClearButton: true,
         });
 
-        // Load hauler list
-        $.getJSON("/api/Lookups/Haulers").done(function (data) {
-            var sb = $(sel.haulerSelect).dxSelectBox("instance");
-            sb.option("dataSource", data);
+        $("#dlBinSaveBtn").on("click", saveBin);
+    }
+
+    function openBinModal(rowData) {
+        _binTargetRow = rowData;
+        _selectedBinId = null;
+        $("#dlBinSaveBtn").prop("disabled", true);
+        $("#dlBinError").prop("hidden", true);
+
+        $.getJSON("/api/Lookups/ContainerBins?locationId=" + _locationId)
+            .done(function (data) {
+                var grid = $("#dlBinGrid").dxDataGrid("instance");
+                grid.option("dataSource", data);
+                // Pre-select current bin if set
+                if (rowData.ContainerId) {
+                    grid.option("selectedRowKeys", [rowData.ContainerId]);
+                    _selectedBinId = rowData.ContainerId;
+                    $("#dlBinSaveBtn").prop("disabled", false);
+                }
+                _binModal.show();
+            })
+            .fail(function () {
+                showAlert("Failed to load bins.", "danger");
+            });
+    }
+
+    function saveBin() {
+        if (!_binTargetRow || !_selectedBinId) return;
+
+        $("#dlBinSaveBtn").prop("disabled", true).text("Saving…");
+        $("#dlBinError").prop("hidden", true);
+
+        $.ajax({
+            url: "/api/GrowerDelivery/WeightSheetDeliveryLoads/UpdateBin",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                LoadId: _binTargetRow.LoadId,
+                ContainerId: _selectedBinId
+            })
+        })
+        .done(function () {
+            _binModal.hide();
+            loadData();
+        })
+        .fail(function (xhr) {
+            var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : "Failed to assign bin.";
+            $("#dlBinError").text(msg).prop("hidden", false);
+        })
+        .always(function () {
+            $("#dlBinSaveBtn").prop("disabled", false).text("Assign Bin");
+        });
+    }
+
+    // ── BOL Type modal (DevExtreme) ──────────────────────────────────────────
+    var BOL_LABELS = { U: "Universal", A: "Along Side the Field", F: "Farm Storage", C: "Custom" };
+
+    function initHaulerSelect() {
+        var haulerDs = new DevExpress.data.DataSource({
+            store: new DevExpress.data.CustomStore({
+                key: "Id",
+                load: function () { return $.getJSON("/api/Lookups/Haulers"); }
+            })
+        });
+
+        // BOL type dropdown
+        $("#dlBolTypeSelect").dxSelectBox({
+            items: [
+                { value: "U", text: "Universal" },
+                { value: "A", text: "Along Side the Field" },
+                { value: "F", text: "Farm Storage" },
+                { value: "C", text: "Custom" }
+            ],
+            valueExpr: "value",
+            displayExpr: "text",
+            placeholder: "Select BOL type…",
+            onValueChanged: function (e) {
+                var val = e.value;
+                var hints = {
+                    U: "Universal BOL — no hauler or rate needed.",
+                    A: "Along Side the Field — hauler and miles required.",
+                    F: "Farm Storage — hauler and miles required.",
+                    C: "Custom — hauler, rate description, and rate required."
+                };
+                $("#dlBolTypeHint").text(hints[val] || "").prop("hidden", !val);
+                $("#dlBolHaulerMiles").prop("hidden", val !== "A" && val !== "F");
+                $("#dlBolCustom").prop("hidden", val !== "C");
+                $("#dlBolCalcRate").val("");
+                $("#dlBolCalcRateGroup").prop("hidden", true);
+            }
+        });
+
+        // Hauler for A/F
+        $("#dlBolHauler").dxSelectBox({
+            dataSource: haulerDs,
+            valueExpr: "Id",
+            displayExpr: "Description",
+            searchEnabled: true,
+            placeholder: "Select hauler…"
+        });
+
+        // Miles for A/F
+        $("#dlBolMiles").dxNumberBox({
+            min: 0,
+            format: "#0",
+            placeholder: "Miles…",
+            inputAttr: { style: "text-align:right;font-size:15px;" },
+            onValueChanged: async function (e) {
+                if (e.value === null || e.value === undefined) {
+                    $("#dlBolCalcRate").val("");
+                    $("#dlBolCalcRateGroup").prop("hidden", true);
+                    return;
+                }
+                var rt = $("#dlBolTypeSelect").dxSelectBox("instance").option("value");
+                try {
+                    var data = await $.getJSON("/api/Lookups/HaulerRateForMiles?rateType=" + rt + "&miles=" + e.value);
+                    $("#dlBolCalcRate").val("$" + data.Rate.toFixed(2) + " (up to " + data.MaxDistance + " mi)");
+                    $("#dlBolCalcRateGroup").prop("hidden", false);
+                } catch (_) {
+                    $("#dlBolCalcRate").val("No rate found for this mileage");
+                    $("#dlBolCalcRateGroup").prop("hidden", false);
+                }
+            }
+        });
+
+        // Custom hauler
+        $("#dlBolCustomHauler").dxSelectBox({
+            dataSource: new DevExpress.data.DataSource({
+                store: new DevExpress.data.CustomStore({
+                    key: "Id",
+                    load: function () { return $.getJSON("/api/Lookups/Haulers"); }
+                })
+            }),
+            valueExpr: "Id",
+            displayExpr: "Description",
+            searchEnabled: true,
+            placeholder: "Select hauler…"
+        });
+
+        // Custom rate
+        $("#dlBolCustomRate").dxNumberBox({
+            min: 0,
+            format: "#,##0.00",
+            placeholder: "0.00",
+            inputAttr: { style: "text-align:right;font-size:15px;" }
         });
     }
 
@@ -378,17 +666,59 @@
         });
     }
 
-    // ── Hauler edit modal ────────────────────────────────────────────────────
+    // ── BOL Type modal open / save ────────────────────────────────────────────
     function openHaulerModal() {
         $(sel.haulerError).attr("hidden", true);
-        var sb = $(sel.haulerSelect).dxSelectBox("instance");
-        sb.option("value", _wsHeader ? _wsHeader.HaulerId : null);
+        // Pre-fill current values
+        var rt = _wsHeader ? _wsHeader.RateType : null;
+        $("#dlBolTypeSelect").dxSelectBox("instance").option("value", rt);
+        if (rt === "A" || rt === "F") {
+            $("#dlBolHauler").dxSelectBox("instance").option("value", _wsHeader.HaulerId || null);
+            $("#dlBolMiles").dxNumberBox("instance").option("value", _wsHeader.Miles || null);
+        } else if (rt === "C") {
+            $("#dlBolCustomHauler").dxSelectBox("instance").option("value", _wsHeader.HaulerId || null);
+            $("#dlBolCustomRateDesc").val(_wsHeader.CustomRateDescription || "");
+            $("#dlBolCustomRate").dxNumberBox("instance").option("value", _wsHeader.Rate || null);
+        }
         _haulerModal.show();
     }
 
     function saveHauler() {
-        var sb = $(sel.haulerSelect).dxSelectBox("instance");
-        var haulerId = sb.option("value") || 0;
+        var bolType = $("#dlBolTypeSelect").dxSelectBox("instance").option("value");
+        if (!bolType) {
+            $(sel.haulerError).text("Please select a BOL type.").removeAttr("hidden");
+            return;
+        }
+
+        var payload = { RateType: bolType };
+
+        if (bolType === "U") {
+            payload.HaulerId = 0;
+            payload.Miles = 0;
+            payload.Rate = 0;
+            payload.CustomRateDescription = "Universal";
+        } else if (bolType === "A" || bolType === "F") {
+            var haulerId = $("#dlBolHauler").dxSelectBox("instance").option("value");
+            var miles = $("#dlBolMiles").dxNumberBox("instance").option("value");
+            if (!haulerId || !miles) {
+                $(sel.haulerError).text("Hauler and miles are required.").removeAttr("hidden");
+                return;
+            }
+            payload.HaulerId = haulerId;
+            payload.Miles = miles;
+            payload.CustomRateDescription = bolType === "A" ? "Along Side the Field" : "Farm Storage";
+        } else if (bolType === "C") {
+            var cHaulerId = $("#dlBolCustomHauler").dxSelectBox("instance").option("value");
+            var cRateDesc = $("#dlBolCustomRateDesc").val();
+            var cRate = $("#dlBolCustomRate").dxNumberBox("instance").option("value");
+            if (!cHaulerId || !cRateDesc || !cRate) {
+                $(sel.haulerError).text("Hauler, rate description, and rate are all required.").removeAttr("hidden");
+                return;
+            }
+            payload.HaulerId = cHaulerId;
+            payload.CustomRateDescription = cRateDesc;
+            payload.Rate = cRate;
+        }
 
         $(sel.haulerSaveBtn).prop("disabled", true).text("Saving…");
         $(sel.haulerError).attr("hidden", true);
@@ -397,22 +727,18 @@
             url: "/api/GrowerDelivery/WeightSheet/" + _wsId,
             method: "PATCH",
             contentType: "application/json",
-            data: JSON.stringify({ HaulerId: haulerId }),
+            data: JSON.stringify(payload),
         })
-        .done(function (resp) {
+        .done(function () {
             _haulerModal.hide();
-            $(sel.wsHauler).text(resp.HaulerName || "Grower");
-            if (_wsHeader) {
-                _wsHeader.HaulerId = haulerId;
-                _wsHeader.HaulerName = resp.HaulerName;
-            }
-            showAlert("Hauler updated.", "success");
+            loadWsHeader();
+            showAlert("BOL type updated.", "success");
         })
         .fail(function () {
-            $(sel.haulerError).text("Failed to save hauler.").removeAttr("hidden");
+            $(sel.haulerError).text("Failed to save BOL type.").removeAttr("hidden");
         })
         .always(function () {
-            $(sel.haulerSaveBtn).prop("disabled", false).text("Save");
+            $(sel.haulerSaveBtn).prop("disabled", false).text("Update BOL Type");
         });
     }
 

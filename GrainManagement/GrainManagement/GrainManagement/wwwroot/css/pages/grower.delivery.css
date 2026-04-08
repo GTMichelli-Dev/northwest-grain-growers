@@ -6,10 +6,10 @@
 .gm-gd {
     max-width: 1060px;
     margin: 0 auto;
-    padding: 16px 0 40px;
+    padding: 10px 0 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
 }
 
 /* ---------------------------------------------------------
@@ -20,14 +20,21 @@
     background: #fff;
     border-radius: var(--radius, 12px);
     box-shadow: var(--shadow-sm, 0 6px 12px rgba(0,0,0,.06));
-    padding: 16px 20px;
+    padding: 10px 16px;
 }
 
 .gm-dl-header__title {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+}
+
+#gmGdSubmitTop {
+    font-weight: 800;
+    padding: 8px 24px;
+    font-size: 0.95rem;
+    white-space: nowrap;
 }
 
 .gm-dl-header__label {
@@ -472,16 +479,16 @@
     background: #fff;
     border-radius: var(--radius, 12px);
     box-shadow: var(--shadow-sm, 0 6px 12px rgba(0,0,0,.06));
-    padding: 20px 20px 24px;
+    padding: 14px 16px 16px;
 }
 
 .gm-gd-section__title {
     font-weight: 900;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: .06em;
     color: var(--muted, #6c757d);
-    margin-bottom: 16px;
+    margin-bottom: 10px;
 }
 
 /* ---------------------------------------------------------
@@ -490,7 +497,7 @@
 
 .gm-gd-fields {
     display: grid;
-    gap: 14px 20px;
+    gap: 8px 16px;
 }
 
 .gm-gd-fields--2col {
@@ -519,6 +526,39 @@
     grid-column: 1 / -1;
 }
 
+/* Narrow field sized for values like 99.00 */
+.gm-gd-field--narrow {
+    flex: 0 0 auto;
+    width: 100px;
+}
+
+/* Grow to fill remaining space */
+.gm-gd-field--grow {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+/* Load details first row: protein, moisture (narrow) + truck + driver */
+.gm-gd-fields--load-row1 {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+}
+
+/* Load details second row: BOL (33%) + Truck ID + Driver */
+.gm-gd-fields--load-row2 {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    margin-top: 8px;
+}
+
+/* BOL field capped at 33% width */
+.gm-gd-field--bol {
+    flex: 0 0 33%;
+    max-width: 33%;
+}
+
 /* Lot row: SelectBox + New Lot button side by side */
 .gm-gd-lot-row {
     display: flex;
@@ -538,81 +578,201 @@
 }
 
 /* ---------------------------------------------------------
-   Weight capture rows
+   Method row — label + dropdown inline
    --------------------------------------------------------- */
 
-.gm-gd-weight {
+.gm-gd-method-row {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    gap: 16px;
+    margin-bottom: 10px;
 }
 
-.gm-gd-weight__row {
-    display: grid;
-    grid-template-columns: 90px 1fr auto;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border-radius: 10px;
+.gm-gd-method-row__field {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 200px;
+}
+
+.gm-gd-method-row__field--grow {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 33%;
+}
+
+.gm-gd-method-row__field .form-label {
+    font-weight: 700;
+    font-size: 0.82rem;
+    margin-bottom: 0;
+    color: var(--text, #202124);
+}
+
+/* ---------------------------------------------------------
+   Compact section (less padding for weight card)
+   --------------------------------------------------------- */
+
+.gm-gd-section--compact {
+    padding: 12px 16px 14px;
+}
+
+/* ---------------------------------------------------------
+   Weight capture — horizontal row layout
+   --------------------------------------------------------- */
+
+.gm-gd-weight-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.gm-gd-weight-cell {
+    flex: 0 0 calc((100% - 20px) / 3);
+    min-width: 0;
+    max-width: calc((100% - 20px) / 3);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 8px;
     background: #f8f9fa;
     border: 2px solid rgba(0,0,0,.06);
     transition: border-color .15s ease;
 }
 
-.gm-gd-weight__row--captured {
+.gm-gd-weight-cell--captured {
     border-color: rgba(46, 125, 50, .35);
     background: rgba(46, 125, 50, .04);
 }
 
-.gm-gd-weight__row--net {
-    background: transparent;
-    border-color: transparent;
-    border-top: 2px solid rgba(0,0,0,.10);
-    border-radius: 0;
-    margin-top: 4px;
-    padding-top: 14px;
+.gm-gd-weight-cell--net {
+    background: rgba(47, 93, 58, .06);
+    border-color: rgba(47, 93, 58, .18);
 }
 
-.gm-gd-weight__meta {
+.gm-gd-weight-cell__head {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: baseline;
+    gap: 6px;
 }
 
-.gm-gd-weight__label {
+.gm-gd-weight-cell__label {
     font-weight: 900;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: .04em;
     color: var(--muted, #6c757d);
 }
 
-.gm-gd-weight__time {
-    font-size: 0.75rem;
+.gm-gd-weight-cell__time {
+    font-size: 0.7rem;
     font-weight: 600;
     color: var(--muted, #6c757d);
     white-space: nowrap;
 }
 
-.gm-gd-weight__value {
-    font-size: 1.6rem;
+.gm-gd-weight-cell__value {
+    font-size: 1.4rem;
     font-weight: 900;
     font-variant-numeric: tabular-nums;
     letter-spacing: -.01em;
-    line-height: 1;
+    line-height: 1.1;
     text-align: right;
     white-space: nowrap;
 }
 
-.gm-gd-weight__value--net {
+.gm-gd-weight-cell__value--net {
     color: var(--brand-primary, #2f5d3a);
-    font-size: 1.9rem;
+    font-size: 1.6rem;
 }
 
-.gm-gd-weight__capture {
+.gm-gd-weight-cell__btn {
     white-space: nowrap;
     font-weight: 700;
-    min-width: 130px;
+    font-size: 0.82rem;
+    margin-top: auto;
+    align-self: stretch;
+}
+
+/* ---------------------------------------------------------
+   Submit area
+   --------------------------------------------------------- */
+
+/* ---------------------------------------------------------
+   Load top row — fields left, thumbnails right
+   --------------------------------------------------------- */
+
+.gm-gd-load-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.gm-gd-load-top__fields {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+}
+
+/* ---------------------------------------------------------
+   Image thumbnail placeholders
+   --------------------------------------------------------- */
+
+.gm-gd-thumbs {
+    display: flex;
+    gap: 8px;
+}
+
+.gm-gd-thumb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+}
+
+.gm-gd-thumb__placeholder {
+    width: 72px;
+    height: 72px;
+    border: 2px solid #212529;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    transition: border-color .15s, background .15s;
+}
+
+.gm-gd-thumb__placeholder:hover {
+    border-color: var(--brand-primary, #2f5d3a);
+    background: rgba(47, 93, 58, .04);
+}
+
+.gm-gd-thumb__placeholder img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.gm-gd-thumb__label {
+    font-weight: 800;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--muted, #6c757d);
+}
+
+@media (max-width: 640px) {
+    .gm-gd-load-top {
+        flex-direction: column;
+    }
+
+    .gm-gd-thumbs {
+        justify-content: center;
+    }
 }
 
 /* ---------------------------------------------------------
@@ -622,13 +782,13 @@
 .gm-gd-actions {
     display: flex;
     justify-content: flex-end;
-    padding-top: 4px;
+    padding-top: 0;
 }
 
 .gm-gd-actions .btn {
-    min-width: 160px;
+    min-width: 140px;
     font-weight: 800;
-    padding: 12px 28px;
+    padding: 8px 24px;
 }
 
 /* ---------------------------------------------------------
@@ -648,7 +808,7 @@
 
 @media (max-width: 640px) {
     .gm-gd {
-        padding: 12px 0 32px;
+        padding: 8px 0 20px;
     }
 
     .gm-gd-fields--2col,
@@ -656,20 +816,17 @@
         grid-template-columns: 1fr;
     }
 
-    .gm-gd-weight__row {
-        grid-template-columns: 76px 1fr auto;
+    .gm-gd-weight-row {
+        flex-direction: column;
+    }
+
+    .gm-gd-method-row {
+        flex-direction: column;
         gap: 8px;
-        padding: 10px 10px;
     }
 
-    .gm-gd-weight__value {
-        font-size: 1.3rem;
-    }
-
-    .gm-gd-weight__capture {
+    .gm-gd-method-row__field {
         min-width: 0;
-        font-size: 0.85rem;
-        padding-left: 10px;
-        padding-right: 10px;
+        width: 100%;
     }
 }

@@ -58,25 +58,32 @@ namespace ScaleSimulatorWinForm
                         if (request.Contains("W") )
                         {
 
+                            // SMA Standard Response: <LF><s><r><n><m><f><XXXXXX.XXX><uuu><CR>
+                            // <s> = Scale Status: Z=Center of Zero, O=Over, U=Under, E=Zero Error, T=Tare Error, space=None
+                            // <r> = Range: always '1'
+                            // <n> = Gross/Net: G=Gross, T=Tare, N=Net
+                            // <m> = Motion: M=in motion, space=stable
+                            // <f> = Future: always space
                             int weight = (int)numericUpDown.Value;
                             string weightString = weight.ToString().PadLeft(9);
-                            string sCode = " ";
-                            string mCode = " ";
-
+                            char sCode = ' ';   // scale status
+                            char mCode = ' ';   // motion status
 
                             if (errorCheckbox.Checked)
                             {
-                                sCode = "O";
+                                sCode = 'O';    // Over Capacity
                             }
                             else if (weight == 0)
                             {
-                                sCode = "Z";
+                                sCode = 'Z';    // Center of Zero
                             }
                             if (motionCheckBox.Checked)
                             {
-                                mCode = "M";
+                                mCode = 'M';
                             }
-                            string response = $"\n {sCode}1G{mCode} {weightString}lb \r";
+
+                            // <LF><s><r><n><m><f><weight><unit><CR>
+                            string response = $"\n{sCode}1G{mCode} {weightString}lb\r";
 
                             byte[] responseBytes = Encoding.UTF8.GetBytes(response);
                             stream.Write(responseBytes, 0, responseBytes.Length);

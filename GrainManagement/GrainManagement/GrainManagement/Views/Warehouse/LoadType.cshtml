@@ -8,33 +8,27 @@
     <span class="gm-module-bar__label">NEW WEIGHTSHEET</span>
 </a>
 
-<div class="gm-loadType">
-    <div class="gm-loadType__stack">
+<h3 class="text-center mt-4 mb-3 fw-semibold" style="font-size:2rem;">Select Weight Sheet Type</h3>
+<div class="row g-4 justify-content-center">
 
-        <div class="gm-loadType__header">
-            <div class="gm-loadType__title">New WeightSheet</div>
-            <div class="gm-loadType__subtitle">Choose the type of weight sheet</div>
-        </div>
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link gm-tile--intake" href="/GrowerDelivery/NewWeightSheet">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-tile__icon--bold gm-icon gm-icon--delivery" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Grower Delivery</h2>
+            </div>
+            <p class="gm-tile__text">Inbound from a grower</p>
+        </a>
+    </div>
 
-        <div class="gm-loadType__grid">
-            <!-- Grower Delivery -->
-            <a class="gm-loadType__btn gm-loadType__btn--grower" href="/GrowerDelivery/NewWeightSheet">
-                <div class="gm-loadType__icon gm-icon gm-icon--delivery" aria-hidden="true"></div>
-                <div class="gm-loadType__text">
-                    <div class="gm-loadType__label">Grower Delivery</div>
-                    <div class="gm-loadType__hint">Inbound from a grower</div>
-                </div>
-            </a>
-
-            <!-- Transfer -->
-            <a class="gm-loadType__btn gm-loadType__btn--transferIn" href="/Warehouse/TransferIn">
-                <div class="gm-loadType__icon gm-icon gm-icon--transfer gm-icon--flip" aria-hidden="true"></div>
-                <div class="gm-loadType__text">
-                    <div class="gm-loadType__label">Transfer</div>
-                    <div class="gm-loadType__hint">Inbound from another location</div>
-                </div>
-            </a>
-        </div>
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link gm-tile--transfer" href="/Warehouse/TransferIn">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-tile__icon--bold gm-icon gm-icon--transfer gm-icon--flip" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Transfer</h2>
+            </div>
+            <p class="gm-tile__text">Inbound from another location</p>
+        </a>
     </div>
 
 </div>

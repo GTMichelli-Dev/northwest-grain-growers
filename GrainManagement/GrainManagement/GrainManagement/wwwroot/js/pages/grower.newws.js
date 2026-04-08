@@ -169,7 +169,8 @@
     }
 
     function showStep3(wsId) {
-        // Auto-redirect to new load entry after weight sheet creation
+        // Store the weight sheet ID in a cookie so the delivery page auto-selects it
+        document.cookie = "GrainMgmt_WsId=" + wsId + ";path=/;max-age=86400;SameSite=Lax";
         window.location.href = '/GrowerDelivery/Index';
     }
 
@@ -217,12 +218,8 @@
                     caption: 'Item',
                 },
                 {
-                    dataField: 'SplitGroupDescription',
-                    caption: 'Split Group',
-                },
-                {
                     dataField: 'AccountName',
-                    caption: 'Account',
+                    caption: 'Primary Account',
                 },
                 {
                     caption: '',
@@ -243,6 +240,33 @@
                     },
                 },
             ],
+            masterDetail: {
+                enabled: true,
+                template: function (container, options) {
+                    var lotId = options.data.LotId;
+                    var $detail = $('<div>').appendTo(container);
+                    $('<div>').addClass('fw-semibold mb-1').css('font-size', '0.85rem')
+                        .text('Split Group — ' + (options.data.SplitGroupDescription || 'N/A')).appendTo($detail);
+                    var $grid = $('<div>').appendTo($detail);
+                    $.getJSON('/api/GrowerDelivery/LotSplitGroup/' + lotId).done(function (data) {
+                        $grid.dxDataGrid({
+                            dataSource: data,
+                            showBorders: true,
+                            showRowLines: true,
+                            columnAutoWidth: true,
+                            paging: { enabled: false },
+                            columns: [
+                                { dataField: 'AccountName', caption: 'Account' },
+                                { dataField: 'SplitPercent', caption: '%', width: 80,
+                                    format: { type: 'percent', precision: 2 },
+                                    alignment: 'right' },
+                                { dataField: 'PrimaryAccount', caption: 'Primary', width: 80,
+                                    dataType: 'boolean' },
+                            ],
+                        });
+                    });
+                },
+            },
         });
     }
 
@@ -423,6 +447,15 @@
                 if (!_populating) {
                     $(SEL.sgShortcut).val(e.value || '');
                     updateLotDescription();
+                }
+                // Show split description below the selector
+                var inst = $(SEL.splitGroup).dxSelectBox('instance');
+                var item = inst && inst.option('selectedItem');
+                var descEl = $('#nwsSplitDesc');
+                if (item && item.SplitGroupDescription) {
+                    descEl.text(item.SplitGroupDescription).prop('hidden', false);
+                } else {
+                    descEl.text('').prop('hidden', true);
                 }
             },
             onFocusOut: function (e) {
@@ -798,7 +831,8 @@
             value: undefined,
             min: 0,
             format: '#0.##',
-            placeholder: 'Enter miles\u2026',
+            placeholder: 'Miles\u2026',
+            inputAttr: { style: 'text-align:right;font-size:15px;' },
             onValueChanged: async function (e) {
                 _milesEntered = (e.value !== null && e.value !== undefined);
                 if (!_milesEntered) { $(SEL.calcRate).val(''); $(SEL.calcRateGroup).prop('hidden', true); return; }
@@ -832,7 +866,8 @@
         $(SEL.customRate).dxNumberBox({
             min: 0,
             format: '#0.00',
-            placeholder: 'Rate amount\u2026',
+            placeholder: 'Rate\u2026',
+            inputAttr: { style: 'text-align:right' },
         });
 
         // Create Weight Sheet button
@@ -849,6 +884,20 @@
         $(SEL.haulerError).prop('hidden', true).text('');
         $(SEL.bolTypeHint).prop('hidden', true);
         $(SEL.createWsBtn).prop('disabled', true);
+
+        // Reset all BOL-related fields
+        var haulerInst = dxInstance(SEL.hauler);
+        if (haulerInst) haulerInst.reset();
+        var milesInst = dxNumberInstance(SEL.miles);
+        if (milesInst) milesInst.reset();
+        $(SEL.calcRate).val('');
+        _milesEntered = false;
+
+        var customHaulerInst = dxInstance(SEL.customHauler);
+        if (customHaulerInst) customHaulerInst.reset();
+        $('#nwsCustomRateDesc').val('');
+        var customRateInst = dxNumberInstance(SEL.customRate);
+        if (customRateInst) customRateInst.reset();
 
         if (!val) return;
 

@@ -1,11 +1,14 @@
-﻿(function () {
+(function () {
     "use strict";
 
     const connStatus = document.getElementById("connStatus");
     const body = document.getElementById("scalesBody");
+    const STALE_MS = 5000; // 5 seconds
 
     // Track rows by scale Id
     const rowById = new Map();
+    // Track last update time per scale
+    const lastUpdateById = new Map();
 
     function setConnStatus(text) {
         if (connStatus) connStatus.textContent = text;
@@ -31,12 +34,20 @@
     function upsertRow(dto) {
         if (!dto || !dto.Id) return;
 
-        let tr = rowById.get(dto.Id);
+        // Record when we received this update
+        lastUpdateById.set(dto.Id, Date.now());
+
+        renderRow(dto.Id, dto);
+    }
+
+    function renderRow(id, dto) {
+        let tr = rowById.get(id);
         if (!tr) {
             tr = document.createElement("tr");
-            tr.dataset.id = dto.Id;
+            tr.dataset.id = id;
             tr.innerHTML = `
                 <td class="c-id"></td>
+                <td class="c-location"></td>
                 <td class="c-desc"></td>
                 <td class="c-weight"></td>
                 <td class="c-ok"></td>
@@ -44,22 +55,32 @@
                 <td class="c-status"></td>
                 <td class="c-last"></td>
             `;
-            rowById.set(dto.Id, tr);
+            rowById.set(id, tr);
             body.appendChild(tr);
         }
 
-        tr.querySelector(".c-id").textContent = dto.Id;
+        // Store the latest dto on the row for staleness checks
+        tr._dto = dto;
+
+        var isStale = (Date.now() - (lastUpdateById.get(id) || 0)) > STALE_MS;
+        var ok = isStale ? false : dto.Ok;
+        var motion = isStale ? false : dto.Motion;
+        var statusText = isStale ? "Not Connected" : (ok === false ? "Error" : (motion ? "Motion" : "Ok"));
+        var weightText = (ok === false || isStale) ? "0" : (dto.Weight ?? 0).toString();
+
+        tr.querySelector(".c-id").textContent = id;
+        tr.querySelector(".c-location").textContent = dto.LocationDescription ?? "";
         tr.querySelector(".c-desc").textContent = dto.Description ?? "";
-        tr.querySelector(".c-weight").textContent = (dto.Weight ?? 0).toString();
-        tr.querySelector(".c-ok").textContent = fmtBool(dto.Ok);
-        tr.querySelector(".c-motion").textContent = fmtBool(dto.Motion);
-        tr.querySelector(".c-status").textContent = dto.Status ?? "";
+        tr.querySelector(".c-weight").textContent = weightText;
+        tr.querySelector(".c-ok").textContent = isStale ? "No" : fmtBool(dto.Ok);
+        tr.querySelector(".c-motion").textContent = isStale ? "No" : fmtBool(dto.Motion);
+        tr.querySelector(".c-status").textContent = statusText;
         tr.querySelector(".c-last").textContent = fmtDate(dto.LastUpdate);
 
-
-        // Highlight row pink when scale is NOT OK, yellow when in motion
-        tr.classList.toggle("scale-error", dto.Ok === false);
-        tr.classList.toggle("scale-motion", dto.Ok !== false && dto.Motion === true);
+        // Row highlighting: pink=error/stale, yellow=motion, light green=ok
+        tr.classList.toggle("scale-error", ok === false || isStale);
+        tr.classList.toggle("scale-motion", ok === true && motion === true);
+        tr.classList.toggle("scale-ok", ok === true && motion !== true);
     }
 
     function sortRows() {
@@ -69,14 +90,22 @@
         for (const r of rows) body.appendChild(r);
     }
 
+    // Check for stale scales every second
+    function checkStaleness() {
+        rowById.forEach(function (tr, id) {
+            if (tr._dto) renderRow(id, tr._dto);
+        });
+    }
+
     async function loadInitial() {
         body.innerHTML = "";
         rowById.clear();
+        lastUpdateById.clear();
 
         try {
             const resp = await fetch("/api/Scale/CachedScales", { cache: "no-store" });
             if (!resp.ok) {
-                body.innerHTML = `<tr><td colspan="7">Failed to load scales.</td></tr>`;
+                body.innerHTML = `<tr><td colspan="8">Failed to load scales.</td></tr>`;
                 return;
             }
 
@@ -85,11 +114,11 @@
             sortRows();
 
             if (!list || list.length === 0) {
-                body.innerHTML = `<tr><td colspan="7">No scales found.</td></tr>`;
+                body.innerHTML = `<tr><td colspan="8">No scales found.</td></tr>`;
             }
         } catch (err) {
             console.error(err);
-            body.innerHTML = `<tr><td colspan="7">Error loading scales.</td></tr>`;
+            body.innerHTML = `<tr><td colspan="8">Error loading scales.</td></tr>`;
         }
     }
 
@@ -104,9 +133,7 @@
             .withAutomaticReconnect()
             .build();
 
-        // Receive updates for ALL scales
         connection.on("ScaleUpdated", (dto) => {
-            // DTO fields are PascalCase (matches your JSON config)
             upsertRow(dto);
             sortRows();
         });
@@ -125,7 +152,10 @@
         await loadInitial();
         await startSignalR();
 
-        // Optional safety refresh in case a SignalR message is missed
+        // Check staleness every second
+        setInterval(checkStaleness, 1000);
+
+        // Safety refresh every 30 seconds
         setInterval(loadInitial, 30000);
     })().catch(err => {
         console.error(err);

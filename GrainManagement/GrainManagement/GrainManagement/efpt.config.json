@@ -55,15 +55,15 @@
          "ObjectType": 0
       },
       {
+         "Name": "[container].[ContainerLocation]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[container].[Containers]",
          "ObjectType": 0
       },
       {
          "Name": "[container].[ContainerTypes]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[container].[StorageLocations]",
          "ObjectType": 0
       },
       {

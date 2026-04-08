@@ -108,7 +108,7 @@ namespace GrainManagement.Models
             return _;
         }
 
-        public virtual async Task<int> SetLotConditionAsync(long? lotId, string conditionCode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<SetLotConditionResult>> SetLotConditionAsync(long? lotId, string conditionCode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -134,14 +134,14 @@ namespace GrainManagement.Models
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [Inventory].[SetLotCondition] @LotId = @LotId, @ConditionCode = @ConditionCode", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<SetLotConditionResult>("EXEC @returnValue = [Inventory].[SetLotCondition] @LotId = @LotId, @ConditionCode = @ConditionCode", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;
         }
 
-        public virtual async Task<int> SetLotTraitAsync(long? lotId, int? traitId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<SetLotTraitResult>> SetLotTraitAsync(long? lotId, int? traitId, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -166,7 +166,7 @@ namespace GrainManagement.Models
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [Inventory].[SetLotTrait] @LotId = @LotId, @TraitId = @TraitId", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<SetLotTraitResult>("EXEC @returnValue = [Inventory].[SetLotTrait] @LotId = @LotId, @TraitId = @TraitId", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

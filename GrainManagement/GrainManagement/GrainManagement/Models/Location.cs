@@ -27,6 +27,8 @@ public partial class Location
 
     public virtual ICollection<ChemicalLot> ChemicalLots { get; set; } = new List<ChemicalLot>();
 
+    public virtual ICollection<ContainerLocation> ContainerLocations { get; set; } = new List<ContainerLocation>();
+
     public virtual ICollection<Container> Containers { get; set; } = new List<Container>();
 
     public virtual ICollection<CustomerPriceOverride> CustomerPriceOverrides { get; set; } = new List<CustomerPriceOverride>();
@@ -62,6 +64,4 @@ public partial class Location
     public virtual ICollection<SalesInvoice> SalesInvoices { get; set; } = new List<SalesInvoice>();
 
     public virtual ICollection<SalesOrder> SalesOrders { get; set; } = new List<SalesOrder>();
-
-    public virtual ICollection<StorageLocation> StorageLocations { get; set; } = new List<StorageLocation>();
 }

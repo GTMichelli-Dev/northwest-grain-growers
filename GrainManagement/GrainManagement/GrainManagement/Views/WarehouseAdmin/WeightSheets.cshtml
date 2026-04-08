@@ -1,0 +1,17 @@
+@{
+    ViewData["Title"] = "Weight Sheets — Warehouse Admin";
+}
+
+<a href="/WarehouseAdmin/Intake" class="gm-module-bar gm-module-bar--intake gm-module-bar--link" title="Back to Intake Weight Sheets">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--weightsheet" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">INTAKE WEIGHT SHEETS</span>
+</a>
+
+<div class="mt-3">
+    <div id="waWeightSheetsGrid"></div>
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/warehouseadmin.weightsheets.js" asp-append-version="true"></script>
+}

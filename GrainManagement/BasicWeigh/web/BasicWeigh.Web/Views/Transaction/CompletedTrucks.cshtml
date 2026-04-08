@@ -1,0 +1,662 @@
+@{
+    ViewData["Title"] = "Completed Trucks";
+    var kioskCount = (int)(ViewBag.KioskCount ?? 0);
+    var demoMode = (bool)(ViewBag.DemoMode ?? false);
+    var remotePrintMode = ViewBag.RemotePrintMode as string ?? "None";
+    var useQuickBooks = (bool)(ViewBag.UseQuickBooks ?? false);
+    var savePicture = (bool)(ViewBag.SavePicture ?? false);
+}
+
+<style>
+    .ticket-thumb {
+        width: 40px; height: 40px; object-fit: cover; border-radius: 4px;
+        cursor: pointer; transition: transform 0.2s ease;
+    }
+    .ticket-thumb:hover { transform: scale(2); z-index: 100; position: relative; }
+    .grid-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 70px;
+        padding: 4px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border-radius: 8px;
+        border: 2px solid var(--bw-btn-action-border);
+        background: var(--bw-btn-action-bg);
+        color: var(--bw-btn-action-text);
+        text-decoration: none;
+        transition: background 0.15s ease, transform 0.1s ease, color 0.15s ease;
+        cursor: pointer;
+        line-height: 1.4;
+    }
+    .grid-action-btn:hover {
+        background: var(--bw-primary);
+        color: var(--bw-text-on-primary);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+    .grid-action-btn:active {
+        transform: translateY(0);
+    }
+    .grid-action-btn.btn-void {
+        border-color: #c53030;
+        color: #c53030;
+    }
+    .grid-action-btn.btn-void:hover {
+        background: #fee2e2;
+    }
+    .grid-action-btn.btn-restore {
+        border-color: #2f855a;
+        color: #2f855a;
+    }
+    .grid-action-btn.btn-restore:hover {
+        background: #dcfce7;
+    }
+    .notes-cell {
+        white-space: normal !important;
+        word-wrap: break-word;
+        max-height: 60px;
+        overflow: hidden;
+    }
+</style>
+
+<h3>Completed Trucks</h3>
+
+<div id="completedGrid"></div>
+
+<!-- Print Options Modal -->
+<div class="modal fade" id="printModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title fw-bold">Print Ticket</h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="printModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Lightbox Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="imageModalTitle"></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body d-flex gap-3 p-3" style="background:#f8f9fa;">
+                <div style="flex:1;min-width:0;text-align:center;background:#000;border-radius:4px;overflow:hidden;">
+                    <img id="imageModalImg" src="" class="img-fluid" style="max-height:70vh;" />
+                </div>
+                <div id="imageModalInfo" style="min-width:250px;max-width:280px;font-family:'Courier New',monospace;font-size:13px;border:2px solid #000;padding:16px;background:#fff;border-radius:4px;align-self:flex-start;"></div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-sm btn-primary" onclick="downloadTicketImage(window._currentTicket, window._currentDirection)"><i class="fa fa-download"></i> Download</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/signalr/signalr.min.js"></script>
+<script src="~/js/ticket-image-download.js"></script>
+<script>
+    function printTicketPdf(ticketId) {
+        $.getJSON('/api/ticket/' + ticketId, function (t) {
+            var doc = new jspdf.jsPDF({ unit: 'mm', format: [100, 200] });
+            var x = 10, y = 12, w = 80;
+
+            doc.setFont('courier', 'bold');
+            doc.setFontSize(12);
+
+            // Headers (centered)
+            var headers = [t.header1, t.header2, t.header3, t.header4].filter(function (h) { return h; });
+            headers.forEach(function (h) {
+                doc.text(h, 50, y, { align: 'center' });
+                y += 5;
+            });
+
+            // Dashed line
+            y += 2;
+            doc.setLineDashPattern([1, 1], 0);
+            doc.line(x, y, x + w, y);
+            y += 5;
+
+            // Detail rows
+            doc.setFontSize(9);
+            function addRow(label, value) {
+                doc.setFont('courier', 'bold');
+                doc.text(label, x, y);
+                doc.setFont('courier', 'normal');
+                doc.text(value || '', x + 35, y);
+                y += 5;
+            }
+
+            addRow('Ticket #:', t.ticket);
+            addRow('Date In:', t.dateIn);
+            if (t.dateOut) addRow('Date Out:', t.dateOut);
+            addRow('Customer:', t.customer);
+            addRow('Carrier:', t.carrier);
+            addRow('Truck ID:', t.truckId);
+            addRow('Commodity:', t.commodity);
+            addRow('Location:', t.location);
+            addRow('Destination:', t.destination);
+
+            // Weights section
+            y += 2;
+            doc.line(x, y, x + w, y);
+            y += 5;
+
+            doc.setFontSize(10);
+            addRow('Gross Weight:', t.grossWeight.toLocaleString() + ' lb');
+            addRow('Tare Weight:', t.tareWeight.toLocaleString() + ' lb');
+
+            doc.setFontSize(13);
+            doc.setFont('courier', 'bold');
+            doc.text('Net Weight:', x, y);
+            doc.text(t.netWeight.toLocaleString() + ' lb', x + 35, y);
+            y += 6;
+
+            doc.setFontSize(9);
+            doc.line(x, y, x + w, y);
+            y += 5;
+
+            // Notes
+            if (t.notes) {
+                doc.setFont('courier', 'normal');
+                addRow('Notes:', t.notes);
+            }
+
+            // Void stamp
+            if (t.isVoid) {
+                y += 5;
+                doc.setFontSize(20);
+                doc.setFont('courier', 'bold');
+                doc.setTextColor(255, 0, 0);
+                doc.text('*** VOID ***', 50, y, { align: 'center' });
+                doc.setTextColor(0, 0, 0);
+            }
+
+            // Open PDF in new tab for printing
+            var pdfBlob = doc.output('blob');
+            var url = URL.createObjectURL(pdfBlob);
+            window.open(url, '_blank');
+        });
+    }
+
+    var savePicture = @(savePicture ? "true" : "false");
+
+    function showTicketImage(ticket, direction, data) {
+        window._currentTicket = ticket;
+        window._currentDirection = direction;
+        var url = '/api/ticket/' + ticket + '/image?direction=' + direction;
+        $('#imageModalTitle').text('Ticket #' + ticket + ' (' + (direction === 'in' ? 'Inbound' : 'Outbound') + ')');
+        $('#imageModalImg').attr('src', url);
+
+        var label = direction === 'in' ? 'Inbound Ticket' : 'Completed Ticket';
+        var info = '<div style="text-align:center;font-weight:bold;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #333;padding-bottom:4px;margin-bottom:8px;font-size:11px;">' + label + '</div>';
+
+        function row(lbl, val) {
+            return '<div style="display:flex;justify-content:space-between;padding:2px 0;"><span style="font-weight:bold;">' + lbl + '</span><span>' + (val || '-') + '</span></div>';
+        }
+
+        info += row('Ticket #:', ticket);
+        if (data) {
+            if (data.dateIn) info += row('Date In:', new Date(data.dateIn).toLocaleString());
+            if (direction === 'out' && data.dateOut) info += row('Date Out:', new Date(data.dateOut).toLocaleString());
+            info += row('Customer:', data.customer);
+            info += row('Carrier:', data.carrier);
+            info += row('Truck:', data.truckId);
+            info += row('Commodity:', data.commodity);
+            if (data.location) info += row('Location:', data.location);
+            if (data.destination) info += row('Destination:', data.destination);
+
+            info += '<div style="border-top:1px dashed #000;border-bottom:1px dashed #000;margin:6px 0;padding:6px 0;">';
+            if (direction === 'in') {
+                info += '<div style="font-size:16px;font-weight:bold;display:flex;justify-content:space-between;"><span>Weight:</span><span>' + (data.inWeight || 0).toLocaleString() + ' lb</span></div>';
+            } else {
+                info += row('Gross:', (data.outWeight || 0).toLocaleString() + ' lb');
+                info += row('Tare:', (data.inWeight || 0).toLocaleString() + ' lb');
+                info += '<div style="font-size:16px;font-weight:bold;display:flex;justify-content:space-between;"><span>Net:</span><span>' + (data.netWeight || 0).toLocaleString() + ' lb</span></div>';
+            }
+            info += '</div>';
+
+            if (data.notes) info += row('Notes:', data.notes);
+        }
+        $('#imageModalInfo').html(info);
+        new bootstrap.Modal('#imageModal').show();
+    }
+
+    $(function () {
+        var useQuickBooks = @(useQuickBooks ? "true" : "false");
+        var storageKey = 'completedTrucks_dates';
+        var defaultStart = new Date(new Date().setDate(new Date().getDate() - 30));
+        var defaultEnd = new Date();
+
+        // Check for reset param (from weigh-out redirect)
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('reset') === 'true') {
+            sessionStorage.removeItem(storageKey);
+            // Clean up the URL without reloading
+            window.history.replaceState({}, '', window.location.pathname);
+        } else {
+            // Restore from sessionStorage if available
+            var saved = sessionStorage.getItem(storageKey);
+            if (saved) {
+                try {
+                    var parsed = JSON.parse(saved);
+                    defaultStart = new Date(parsed.start);
+                    defaultEnd = new Date(parsed.end);
+                } catch (e) { }
+            }
+        }
+
+        var startVal = defaultStart;
+        var endVal = defaultEnd;
+        var startDateBox, endDateBox;
+
+        function saveDates() {
+            sessionStorage.setItem(storageKey, JSON.stringify({
+                start: startVal.toISOString(),
+                end: endVal.toISOString()
+            }));
+        }
+
+        function resetDates() {
+            startVal = new Date(new Date().setDate(new Date().getDate() - 30));
+            endVal = new Date();
+            startDateBox.option('value', startVal);
+            endDateBox.option('value', endVal);
+            saveDates();
+            grid.refresh();
+        }
+
+        var grid = $('#completedGrid').dxDataGrid({
+            hoverStateEnabled: true,
+            remoteOperations: false,
+            dataSource: new DevExpress.data.CustomStore({
+                key: 'ticket',
+                load: function () {
+                    var s = DevExpress.localization.formatDate(startVal, 'yyyy-MM-dd');
+                    var e = DevExpress.localization.formatDate(endVal, 'yyyy-MM-dd');
+                    return $.getJSON('/api/transactions/completed?startDate=' + s + '&endDate=' + e);
+                }
+            }),
+            toolbar: {
+                items: [
+                    {
+                        location: 'before',
+                        template: function () {
+                            var container = $('<div>').css({ display: 'flex', alignItems: 'center', gap: '8px' });
+                            container.append($('<span>').css({ fontWeight: '600', whiteSpace: 'nowrap' }).text('Start Date:'));
+                            var dateDiv = $('<div>').appendTo(container);
+                            startDateBox = dateDiv.dxDateBox({
+                                value: startVal,
+                                type: 'date',
+                                displayFormat: 'MM/dd/yyyy',
+                                width: 160,
+                                onValueChanged: function (e) { startVal = e.value; saveDates(); grid.refresh(); }
+                            }).dxDateBox('instance');
+                            return container;
+                        }
+                    },
+                    {
+                        location: 'before',
+                        template: function () {
+                            var container = $('<div>').css({ display: 'flex', alignItems: 'center', gap: '8px' });
+                            container.append($('<span>').css({ fontWeight: '600', whiteSpace: 'nowrap' }).text('End Date:'));
+                            var dateDiv = $('<div>').appendTo(container);
+                            endDateBox = dateDiv.dxDateBox({
+                                value: endVal,
+                                type: 'date',
+                                displayFormat: 'MM/dd/yyyy',
+                                width: 160,
+                                onValueChanged: function (e) { endVal = e.value; saveDates(); grid.refresh(); }
+                            }).dxDateBox('instance');
+                            return container;
+                        }
+                    },
+                    {
+                        location: 'before',
+                        widget: 'dxButton',
+                        options: {
+                            icon: 'revert',
+                            text: 'Reset',
+                            hint: 'Reset to today and 30 days prior',
+                            onClick: function () { resetDates(); }
+                        }
+                    },
+                    {
+                        location: 'after',
+                        widget: 'dxButton',
+                        options: {
+                            icon: 'detailslayout',
+                            text: 'Paging: On',
+                            hint: 'Toggle paging on/off',
+                            onClick: function (e) {
+                                var pagingEnabled = grid.option('paging.enabled');
+                                grid.option('paging.enabled', !pagingEnabled);
+                                e.component.option('text', !pagingEnabled ? 'Paging: On' : 'Paging: Off');
+                            }
+                        }
+                    },
+                    useQuickBooks ? {
+                        location: 'after',
+                        widget: 'dxButton',
+                        options: {
+                            icon: 'upload',
+                            text: 'Send to QuickBooks',
+                            type: 'success',
+                            onClick: function () { sendUnsentToQB(); }
+                        }
+                    } : null
+                ].filter(Boolean)
+            },
+
+            columns: (function () {
+                var cols = [
+                    { dataField: 'ticket', caption: '#', width: 60, sortOrder: 'desc', sortIndex: 0 },
+                    { dataField: 'customer', caption: 'Customer' },
+                    { dataField: 'carrier', caption: 'Carrier' },
+                    { dataField: 'truckId', caption: 'Truck ID' },
+                    { dataField: 'commodity', caption: 'Commodity' },
+                    { dataField: 'inWeight', caption: 'In (lbs)', dataType: 'number', format: '#,##0', width: 90 },
+                    { dataField: 'outWeight', caption: 'Out (lbs)', dataType: 'number', format: '#,##0', width: 90 },
+                    { dataField: 'netWeight', caption: 'Net (lbs)', dataType: 'number', format: '#,##0', width: 90 },
+                    { dataField: 'dateIn', caption: 'Date In', dataType: 'datetime', format: 'MM/dd/yyyy hh:mm a', width: 155 },
+                    { dataField: 'dateOut', caption: 'Date Out', dataType: 'datetime', format: 'MM/dd/yyyy hh:mm a', width: 155 },
+                    { dataField: 'notes', caption: 'Notes', cssClass: 'notes-cell' },
+                    {
+                        dataField: 'void', caption: 'Voided', dataType: 'boolean', width: 75,
+                        cellTemplate: function (container, options) {
+                            if (options.value) {
+                                $('<span>').css({ fontStyle: 'italic', color: '#c53030', fontWeight: 'bold' }).text('Voided').appendTo(container);
+                            }
+                        }
+                    }
+                ];
+                if (useQuickBooks) {
+                    cols.push({
+                        dataField: 'sentToQuickBooks', caption: 'Sent to QB', dataType: 'boolean', width: 90,
+                        filterValue: false,
+                        cellTemplate: function (container, options) {
+                            if (options.value) {
+                                $('<span>').css({ color: '#2f855a', fontWeight: 'bold' }).text('Sent').appendTo(container);
+                            }
+                        }
+                    });
+                }
+                if (savePicture) {
+                    cols.push({
+                        caption: 'In Photo', width: 55, allowFiltering: false, allowSorting: false,
+                        cellTemplate: function (container, options) {
+                            if (options.data.hasInImage) {
+                                $('<img>').addClass('ticket-thumb')
+                                    .attr('src', '/api/ticket/' + options.data.ticket + '/image?direction=in')
+                                    .on('click', function () { showTicketImage(options.data.ticket, 'in', options.data); })
+                                    .appendTo(container);
+                            }
+                        }
+                    });
+                    cols.push({
+                        caption: 'Out Photo', width: 55, allowFiltering: false, allowSorting: false,
+                        cellTemplate: function (container, options) {
+                            if (options.data.hasOutImage) {
+                                $('<img>').addClass('ticket-thumb')
+                                    .attr('src', '/api/ticket/' + options.data.ticket + '/image?direction=out')
+                                    .on('click', function () { showTicketImage(options.data.ticket, 'out', options.data); })
+                                    .appendTo(container);
+                            }
+                        }
+                    });
+                }
+                cols.push({
+                    caption: '',
+                    width: 175,
+                    minWidth: 175,
+                    allowFiltering: false,
+                    allowSorting: false,
+                    allowExporting: false,
+                    allowResizing: false,
+                    cellTemplate: function (container, options) {
+                        $('<a>')
+                            .addClass('grid-action-btn me-1')
+                            .attr('href', '/Transaction/Edit/' + options.data.ticket)
+                            .text('Edit')
+                            .appendTo(container);
+
+                        $('<button>')
+                            .addClass('grid-action-btn')
+                            .text('Print')
+                            .on('click', function () { showPrintOptions(options.data.ticket); })
+                            .appendTo(container);
+                    }
+                });
+                return cols;
+            })(),
+            showBorders: true,
+            filterRow: { visible: true },
+            headerFilter: { visible: true },
+            filterPanel: { visible: true },
+            sorting: { mode: 'multiple' },
+            columnAutoWidth: true,
+            columnMinWidth: 50,
+            allowColumnReordering: true,
+            allowColumnResizing: true,
+            columnChooser: { enabled: true, mode: 'select' },
+            stateStoring: {
+                enabled: true,
+                type: 'localStorage',
+                storageKey: 'completedTrucksGrid_v2'
+            },
+            paging: { pageSize: 20 },
+            pager: { showPageSizeSelector: true, allowedPageSizes: [10, 20, 50] },
+            onRowPrepared: function (e) {
+                if (e.rowType === 'data' && e.data.void) {
+                    e.rowElement.css('background-color', 'var(--bw-grid-void-bg)');
+                }
+            },
+            export: { enabled: false }
+        }).dxDataGrid('instance');
+        // ===== BOOTSTRAP ALERT HELPER =====
+        function showAlert(message, type, autoDismiss) {
+            type = type || 'info';
+            var alertId = 'qb-alert-' + Date.now();
+            var colors = {
+                danger:  { bg: '#f8d7da', border: '#f5c2c7', text: '#842029' },
+                success: { bg: '#d1e7dd', border: '#badbcc', text: '#0f5132' },
+                warning: { bg: '#fff3cd', border: '#ffecb5', text: '#664d03' },
+                info:    { bg: '#cff4fc', border: '#b6effb', text: '#055160' }
+            };
+            var c = colors[type] || colors.info;
+            var html = '<div id="' + alertId + '" data-alert-type="' + type + '" style="' +
+                'padding:12px 40px 12px 16px !important;margin-bottom:8px !important;border:1px solid ' + c.border + ' !important;border-radius:6px !important;' +
+                'background-color:' + c.bg + ' !important;background:' + c.bg + ' !important;color:' + c.text + ' !important;position:relative !important;'  +
+                '">' +
+                message +
+                '<button type="button" onclick="this.parentElement.remove()" style="position:absolute !important;top:8px !important;right:12px !important;background:none !important;border:none !important;font-size:18px !important;cursor:pointer;color:' + c.text + ' !important;">&times;</button>' +
+                '</div>';
+            var $container = $('#qb-alert-container');
+            if ($container.length === 0) {
+                $container = $('<div id="qb-alert-container" style="position:fixed;top:70px;right:20px;z-index:9999;min-width:350px;max-width:500px;"></div>');
+                $('body').append($container);
+            }
+            $container.append(html);
+            if (autoDismiss !== false) {
+                setTimeout(function () { $('#' + alertId).fadeOut(300, function() { $(this).remove(); }); }, 5000);
+            }
+        }
+
+        // ===== SEND TO QUICKBOOKS =====
+        function sendUnsentToQB() {
+            // First check if QB service is connected
+            connection.invoke('CheckQBServiceConnected').then(function (connected) {
+                if (!connected) {
+                    showAlert('<i class="bi bi-exclamation-triangle"></i> QuickBooks Sync Service is not connected. Please start the QBSyncService and try again.', 'danger');
+                    return;
+                }
+                doSendToQB();
+            }).catch(function (err) {
+                showAlert('<i class="bi bi-x-circle"></i> Error checking QB service: ' + err, 'danger');
+            });
+        }
+
+        function doSendToQB() {
+            var dataSource = grid.getDataSource();
+            dataSource.load().done(function (data) {
+                var unsent = data.filter(function (t) { return !t.void && !t.sentToQuickBooks; });
+                if (unsent.length === 0) {
+                    showAlert('No unsent tickets to send.', 'info');
+                    return;
+                }
+
+                var $modal = $('<div class="modal fade" tabindex="-1"><div class="modal-dialog"><div class="modal-content">' +
+                    '<div class="modal-header"><h5 class="modal-title">Send to QuickBooks</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>' +
+                    '<div class="modal-body"><p>Send <strong>' + unsent.length + '</strong> ticket(s) to QuickBooks?</p></div>' +
+                    '<div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>' +
+                    '<button type="button" class="btn btn-success" id="confirmSendQB">Send</button></div>' +
+                    '</div></div></div>');
+                $('body').append($modal);
+                var modal = new bootstrap.Modal($modal[0]);
+                modal.show();
+
+                $modal.find('#confirmSendQB').on('click', function () {
+                    modal.hide();
+
+                    var ticketData = unsent.map(function (t) {
+                        return {
+                            ticket: String(t.ticket),
+                            customer: t.customer,
+                            commodity: t.commodity,
+                            netWeight: Math.abs(t.netWeight),
+                            dateOut: t.dateOut,
+                            notes: t.notes
+                        };
+                    });
+
+                    showAlert('<i class="bi bi-hourglass-split"></i> Sending ' + unsent.length + ' ticket(s) to QuickBooks...', 'warning', false);
+
+                    connection.invoke('SendTicketsToQB', ticketData).catch(function (err) {
+                        showAlert('<i class="bi bi-x-circle"></i> Failed to send to QuickBooks: ' + err, 'danger');
+                    });
+                });
+
+                $modal.on('hidden.bs.modal', function () { $modal.remove(); });
+            });
+        }
+
+        // ===== PRINT OPTIONS =====
+        var availablePrinters = {}; // serviceId -> [{ printerId, status, enabled }]
+
+        function showPrintOptions(ticketId) {
+            var $modal = $('#printModal');
+            var $body = $('#printModalBody');
+            $body.empty();
+
+            // Browser option (always available)
+            $body.append(
+                $('<button>').addClass('btn btn-outline-primary w-100 mb-2 py-2')
+                    .html('<i class="fa fa-globe"></i> Print to Browser')
+                    .on('click', function () {
+                        window.open('/Ticket/View/' + ticketId, '_blank');
+                        bootstrap.Modal.getInstance($modal[0]).hide();
+                    })
+            );
+
+            // Add buttons for each available printer
+            var hasPrinters = false;
+            Object.keys(availablePrinters).forEach(function (sid) {
+                var printers = availablePrinters[sid] || [];
+                printers.forEach(function (p) {
+                    if (!p.enabled) return;
+                    hasPrinters = true;
+                    var label = p.printerId;
+                    if (Object.keys(availablePrinters).length > 1) label += ' (' + sid + ')';
+                    $body.append(
+                        $('<button>').addClass('btn btn-outline-success w-100 mb-2 py-2')
+                            .html('<i class="fa fa-print"></i> ' + $('<span>').text(label).html())
+                            .on('click', function () {
+                                sendToPrinter(ticketId, sid, p.printerId);
+                                bootstrap.Modal.getInstance($modal[0]).hide();
+                            })
+                    );
+                });
+            });
+
+            if (!hasPrinters) {
+                $body.append('<p class="text-muted small text-center mb-0">No print services connected.</p>');
+            }
+
+            new bootstrap.Modal($modal[0]).show();
+        }
+
+        function sendToPrinter(ticketId, serviceId, printerId) {
+            $.ajax({
+                url: '/api/kiosk/reprint/' + encodeURIComponent(ticketId) + '?printerId=' + encodeURIComponent(serviceId + ':' + printerId),
+                method: 'POST',
+                success: function () {
+                    showAlert('<i class="bi bi-check-circle"></i> Print sent to ' + printerId, 'success');
+                },
+                error: function () {
+                    showAlert('<i class="bi bi-x-circle"></i> Failed to send print', 'danger');
+                }
+            });
+        }
+
+        // SignalR: auto-refresh when tickets are completed
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl('/scaleHub')
+            .withAutomaticReconnect()
+            .build();
+        connection.on('TicketCompleted', function () { grid.refresh(); });
+        connection.on('ImageCaptured', function () { grid.refresh(); });
+        connection.on('PrintConfirmed', function (data) {
+            DevExpress.ui.notify('Ticket #' + data.ticketId + ' printed by ' + data.printer, 'success', 3000);
+        });
+        // Listen for QB sync completion — refresh grid and show result
+        connection.on('QBSyncComplete', function (message) {
+            qbErrorReceived = false;
+            // Only remove non-danger alerts (keep error messages visible)
+            $('#qb-alert-container > div').not('[data-alert-type="danger"]').remove();
+            if (message && message.toLowerCase().indexOf('fail') >= 0) {
+                showAlert('<i class="bi bi-x-circle"></i> ' + message, 'danger');
+            } else {
+                showAlert('<i class="bi bi-check-circle"></i> ' + message, 'success');
+            }
+            grid.refresh();
+        });
+        var qbErrorReceived = false;
+        connection.on('QBSyncStatus', function (message) {
+            if (!qbErrorReceived) {
+                showAlert('<i class="bi bi-info-circle"></i> ' + message, 'info');
+            }
+        });
+        connection.on('QBNotRunning', function (message) {
+            qbErrorReceived = true;
+            // Remove non-danger alerts but keep any existing errors
+            $('#qb-alert-container > div').not('[data-alert-type="danger"]').remove();
+            showAlert('<i class="bi bi-exclamation-triangle"></i> ' + message, 'danger', false);
+            setTimeout(function () { qbErrorReceived = false; }, 15000);
+        });
+        // Track available printers
+        connection.on('PrintServiceReady', function (data) {
+            availablePrinters[data.serviceId] = data.printers || [];
+        });
+        connection.on('PrinterListReceived', function (data) {
+            availablePrinters[data.serviceId] = data.printers || [];
+        });
+        connection.on('PrintServiceStatusChanged', function () {
+            // Request updated printer list
+            connection.invoke('RequestPrinterList').catch(function () {});
+        });
+
+        connection.start().then(function () {
+            // Request printer list on connect
+            connection.invoke('RequestPrinterList').catch(function () {});
+        }).catch(function (err) { console.error('SignalR error:', err); });
+    });
+</script>
+}
