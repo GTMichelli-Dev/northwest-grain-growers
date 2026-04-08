@@ -253,19 +253,19 @@ public class PrintWorker : BackgroundService
             _restart.TriggerRestart();
         });
 
-        // Test print
+        // Test print — downloads test page PDF from the web server (same DevExpress report as real tickets)
         conn.On<string>("TestPrint", async (printerId) =>
         {
             _log.LogInformation("Received TestPrint for printer: {Printer}", printerId);
             try
             {
-                var testFile = Path.Combine(Path.GetTempPath(), $"testprint_{Guid.NewGuid():N}.txt");
-                await File.WriteAllTextAsync(testFile,
-                    $"Web Print Service Test Page\n\nServiceId: {_options.ServiceId}\nPrinter: {printerId}\nDate: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n\nIf you can read this, printing is working!");
+                var serverUrl = _options.ServerUrls.FirstOrDefault()?.TrimEnd('/') ?? "http://localhost:5000";
+                var testPdfUrl = $"{serverUrl}/api/printjobs/test-page/pdf";
 
-                var (success, message) = await _printer.PrintFileAsync(printerId, testFile, "Test Page");
+                _log.LogInformation("Downloading test page from {Url}", testPdfUrl);
 
-                try { File.Delete(testFile); } catch { }
+                var http = _httpFactory.CreateClient();
+                var (success, message) = await _printer.PrintFromUrlAsync(printerId, testPdfUrl, "Test Page", http);
 
                 await conn.InvokeAsync("TestPrintResult", new
                 {
@@ -313,6 +313,7 @@ public class PrintWorker : BackgroundService
         }
         _connections.Clear();
     }
+
 }
 
 /// <summary>

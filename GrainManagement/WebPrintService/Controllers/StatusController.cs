@@ -55,13 +55,12 @@ public class StatusController : ControllerBase
     [HttpPost("api/printers/{printerId}/test")]
     public async Task<IActionResult> TestPrint(string printerId)
     {
-        var testFile = Path.Combine(Path.GetTempPath(), $"testprint_{Guid.NewGuid():N}.txt");
-        await System.IO.File.WriteAllTextAsync(testFile,
-            $"Print Service Test Page\n\nPrinter: {printerId}\nDate: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPlatform: {(OperatingSystem.IsWindows() ? "Windows" : "Linux/macOS")}\n\nIf you can read this, printing is working!");
+        // Download test page PDF from the web server (same DevExpress report as real tickets)
+        var serverUrl = _options.ServerUrls.FirstOrDefault()?.TrimEnd('/') ?? "http://localhost:5000";
+        var testPdfUrl = $"{serverUrl}/api/printjobs/test-page/pdf";
 
-        var (success, message) = await _printer.PrintFileAsync(printerId, testFile, "Test Page");
-
-        try { System.IO.File.Delete(testFile); } catch { }
+        var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        var (success, message) = await _printer.PrintFromUrlAsync(printerId, testPdfUrl, "Test Page", http);
 
         return Ok(new { success, message });
     }

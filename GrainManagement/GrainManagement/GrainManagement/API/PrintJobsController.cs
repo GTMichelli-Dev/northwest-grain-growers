@@ -103,5 +103,43 @@ namespace GrainManagement.Api
 
             return File(ms.ToArray(), "application/pdf", $"LoadTicket-{ticket}.pdf");
         }
+
+        /// <summary>
+        /// Generates a test page PDF using the same LoadTicketReport with sample data.
+        /// Used by WebPrintService for test prints — same format as real tickets.
+        /// </summary>
+        [HttpGet("test-page/pdf")]
+        public IActionResult GetTestPagePdf()
+        {
+            var dto = new LoadTicketPrintDto
+            {
+                Ticket = "TEST-PAGE",
+                Location = "Test Location",
+                DateTimeIn = DateTime.Now.AddMinutes(-15),
+                DateTimeOut = DateTime.Now,
+                Customer = "TEST CUSTOMER",
+                WeightSheetId = 99999,
+                Commodity = "TEST",
+                Hauler = "TEST HAULER",
+                TruckId = "TEST-TRUCK",
+                Bin = "Test Bin",
+                Protein = 10.5m,
+                Gross = 80000,
+                Tare = 30000,
+                Net = 50000
+            };
+
+            var report = new LoadTicketReport();
+            report.DataSource = new[] { dto };
+            report.CreateDocument();
+
+            if (report.Pages.Count == 0)
+                return Problem("Report rendered zero pages.");
+
+            using var ms = new MemoryStream();
+            report.ExportToPdf(ms);
+
+            return File(ms.ToArray(), "application/pdf", "TestPage.pdf");
+        }
     }
 }
