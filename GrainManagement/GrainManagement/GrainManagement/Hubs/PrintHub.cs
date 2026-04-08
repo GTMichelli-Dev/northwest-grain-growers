@@ -1,17 +1,30 @@
-﻿#nullable enable
+#nullable enable
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 
 namespace GrainManagement.Hubs
 {
+    /// <summary>
+    /// SignalR hub for print service communication.
+    /// External WebPrintService instances connect here to receive print commands,
+    /// and the embedded PrintWorker can also connect as a local client.
+    ///
+    /// Protocol mirrors BasicWeigh's ScaleHub print methods so the same
+    /// WebPrintService binary can connect to either app.
+    /// </summary>
     public class PrintHub : Hub
     {
-        // deviceId -> connectionId
-        private static readonly ConcurrentDictionary<string, string> Devices = new();
-
-        // connectionId -> serviceId
+        // connectionId -> serviceId  (WebPrintService group connections)
         private static readonly ConcurrentDictionary<string, string> PrintConnections = new();
 
+        // deviceId -> connectionId  (legacy kiosk / embedded PrintWorker)
+        private static readonly ConcurrentDictionary<string, string> Devices = new();
+
+        // ===== Device registration (embedded PrintWorker / kiosk) =====
+
+        /// <summary>
+        /// Called by the embedded PrintWorker to register by device ID.
+        /// </summary>
         public Task Register(string deviceId)
         {
             Devices[deviceId] = Context.ConnectionId;
@@ -23,8 +36,10 @@ namespace GrainManagement.Hubs
         /// </summary>
         public Task RegisterPrinter(string printerId) => Register(printerId);
 
+        // ===== WebPrintService protocol (matches BasicWeigh ScaleHub) =====
+
         /// <summary>
-        /// Called by web print agents to join PrintClients + a service-specific group.
+        /// Called by WebPrintService to join the PrintClients group.
         /// </summary>
         public async Task JoinPrintGroup(string serviceId = "default")
         {
@@ -40,26 +55,45 @@ namespace GrainManagement.Hubs
         public Task<List<string>> GetConnectedPrintServices()
             => Task.FromResult(GetConnectedPrintServiceIds());
 
+        /// <summary>
+        /// Called by WebPrintService to announce available printers.
+        /// </summary>
         public Task PrintServiceReady(object announcement)
             => Clients.All.SendAsync("PrintServiceReady", announcement);
 
+        /// <summary>
+        /// Called by WebPrintService to send printer list back to web clients.
+        /// </summary>
         public Task PrinterListResponse(object printers)
             => Clients.All.SendAsync("PrinterListReceived", printers);
 
+        /// <summary>
+        /// Called by web UI to request printer list from all connected print services.
+        /// </summary>
         public Task RequestPrinterList()
             => Clients.Group("PrintClients").SendAsync("GetPrinterList");
 
+        /// <summary>
+        /// Called by WebPrintService to report print job result.
+        /// </summary>
         public Task PrintResult(object result)
             => Clients.All.SendAsync("PrintResult", result);
 
+        /// <summary>
+        /// Called by WebPrintService to report test print result.
+        /// </summary>
         public Task TestPrintResult(object result)
             => Clients.All.SendAsync("TestPrintResult", result);
 
+        /// <summary>
+        /// Called by web UI to send a test page to a specific printer on a specific service.
+        /// </summary>
         public Task TestPrint(string serviceId, string printerId)
             => Clients.Group($"Print_{serviceId}").SendAsync("TestPrint", printerId);
 
         /// <summary>
-        /// Routes print commands to a specific print service, or all print clients.
+        /// Called by web UI (or API) to print a ticket.
+        /// Routes to a specific print service by serviceId, or broadcasts to all if not specified.
         /// </summary>
         public Task PrintTicket(string? serviceId, object ticketData)
         {
@@ -68,6 +102,8 @@ namespace GrainManagement.Hubs
 
             return Clients.Group("PrintClients").SendAsync("PrintTicket", ticketData);
         }
+
+        // ===== Disconnect handling =====
 
         public override Task OnDisconnectedAsync(Exception? exception)
         {
@@ -80,6 +116,8 @@ namespace GrainManagement.Hubs
             }
             return base.OnDisconnectedAsync(exception);
         }
+
+        // ===== Helpers =====
 
         internal static bool TryGetConnection(string deviceId, out string connectionId)
             => Devices.TryGetValue(deviceId, out connectionId!);

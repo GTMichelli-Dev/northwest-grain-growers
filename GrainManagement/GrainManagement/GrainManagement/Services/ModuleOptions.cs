@@ -39,6 +39,9 @@ public class ModuleOptions
     // Local system settings for field location servers.
     public bool System => IsRemote;
 
+    // ── Printer management (available on Remote) ───────────────────
+    public bool Printers => IsRemote;
+
     // ── Shared modules ──────────────────────────────────────────────
     // Reporting is available on Central, Remote, and Reporting modes.
     public bool Reporting => IsCentral || IsRemote || IsReporting;
@@ -71,6 +74,7 @@ public class ModuleOptions
         nameof(Locations) => Locations,
         nameof(System) => System,
         nameof(Users) => Users,
+        nameof(Printers) => Printers,
         _ => false
     };
 }

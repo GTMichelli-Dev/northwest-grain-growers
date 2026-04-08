@@ -10,6 +10,7 @@ namespace GrainManagement.Services.Print.Data
     public class PrintDbContext : DbContext
     {
         public DbSet<ServiceSettings> Settings { get; set; } = null!;
+        public DbSet<PrinterAssignment> PrinterAssignments { get; set; } = null!;
 
         private readonly string _dbPath;
 
@@ -45,6 +46,12 @@ namespace GrainManagement.Services.Print.Data
                     DefaultPrinter = "Kiosk",
                     IsEnabled = true
                 });
+            });
+
+            modelBuilder.Entity<PrinterAssignment>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Role).IsUnique();
             });
         }
 
@@ -99,6 +106,53 @@ namespace GrainManagement.Services.Print.Data
 
             SaveChanges();
         }
+
+        /// <summary>
+        /// Gets the printer assignment for the given role (e.g. "Inbound", "Outbound").
+        /// Returns null if no assignment exists.
+        /// </summary>
+        public PrinterAssignment? GetAssignment(string role)
+        {
+            Database.EnsureCreated();
+            return PrinterAssignments.FirstOrDefault(a =>
+                a.Role == role);
+        }
+
+        /// <summary>
+        /// Gets all printer assignments.
+        /// </summary>
+        public List<PrinterAssignment> GetAllAssignments()
+        {
+            Database.EnsureCreated();
+            return PrinterAssignments.ToList();
+        }
+
+        /// <summary>
+        /// Saves a printer assignment for the given role.
+        /// Upserts: updates if the role already exists, inserts otherwise.
+        /// </summary>
+        public void SaveAssignment(string role, string serviceId, string printerId)
+        {
+            Database.EnsureCreated();
+
+            var existing = PrinterAssignments.FirstOrDefault(a => a.Role == role);
+            if (existing != null)
+            {
+                existing.ServiceId = serviceId;
+                existing.PrinterId = printerId;
+            }
+            else
+            {
+                PrinterAssignments.Add(new PrinterAssignment
+                {
+                    Role = role,
+                    ServiceId = serviceId,
+                    PrinterId = printerId
+                });
+            }
+
+            SaveChanges();
+        }
     }
 
     /// <summary>
@@ -136,5 +190,30 @@ namespace GrainManagement.Services.Print.Data
         /// When false, the worker will not connect to the hub.
         /// </summary>
         public bool IsEnabled { get; set; } = true;
+    }
+
+    /// <summary>
+    /// Maps a print role (e.g. "Inbound", "Outbound") to a specific
+    /// printer on a specific WebPrintService instance.
+    /// Format matches BasicWeigh's "serviceId:printerId" pattern.
+    /// </summary>
+    public class PrinterAssignment
+    {
+        public int Id { get; set; }
+
+        /// <summary>
+        /// Role name, e.g. "Inbound" or "Outbound".
+        /// </summary>
+        public string Role { get; set; } = "";
+
+        /// <summary>
+        /// The WebPrintService instance ID (e.g. "default", "office").
+        /// </summary>
+        public string ServiceId { get; set; } = "";
+
+        /// <summary>
+        /// The printer ID on that service (e.g. "HP_LaserJet_Pro").
+        /// </summary>
+        public string PrinterId { get; set; } = "";
     }
 }

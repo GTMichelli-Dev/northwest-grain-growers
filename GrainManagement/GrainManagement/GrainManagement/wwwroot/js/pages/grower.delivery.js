@@ -928,8 +928,19 @@
                 });
 
                 if (resp.ok) {
+                    const result = await resp.json();
                     showAlert('Delivery saved successfully.', 'success');
-                    // TODO: optionally redirect or reset form for next delivery
+
+                    // Trigger print via the print service (if a printer is assigned)
+                    if (result && result.id) {
+                        try {
+                            await fetch('/api/printing/print-ticket/' + encodeURIComponent(result.id) + '?role=Inbound', {
+                                method: 'POST'
+                            });
+                        } catch (printErr) {
+                            console.warn('Print request failed:', printErr);
+                        }
+                    }
                 } else {
                     const detail = await tryParseError(resp);
                     showAlert('Save failed: ' + detail, 'danger');
