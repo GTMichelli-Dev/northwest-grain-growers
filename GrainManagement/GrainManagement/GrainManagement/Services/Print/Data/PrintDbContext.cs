@@ -56,12 +56,43 @@ namespace GrainManagement.Services.Print.Data
         }
 
         /// <summary>
+        /// Ensures the PrinterAssignments table exists in an already-created database.
+        /// EnsureCreated() is a no-op when the DB already exists, so we must
+        /// create new tables manually for existing databases.
+        /// </summary>
+        private void EnsureSchemaUpToDate()
+        {
+            Database.EnsureCreated();
+
+            // Check if PrinterAssignments table exists; create if missing
+            try
+            {
+                Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS PrinterAssignments (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Role TEXT NOT NULL DEFAULT '',
+                        ServiceId TEXT NOT NULL DEFAULT '',
+                        PrinterId TEXT NOT NULL DEFAULT ''
+                    )");
+
+                // Ensure unique index on Role (ignore if already exists)
+                Database.ExecuteSqlRaw(@"
+                    CREATE UNIQUE INDEX IF NOT EXISTS IX_PrinterAssignments_Role
+                    ON PrinterAssignments (Role)");
+            }
+            catch
+            {
+                // Table/index already exists or other non-critical error
+            }
+        }
+
+        /// <summary>
         /// Ensures the database and tables exist, then returns the current settings row.
         /// Creates a default row if none exists.
         /// </summary>
         public ServiceSettings GetSettings()
         {
-            Database.EnsureCreated();
+            EnsureSchemaUpToDate();
 
             var settings = Settings.FirstOrDefault(s => s.Id == 1);
             if (settings == null)
@@ -87,7 +118,7 @@ namespace GrainManagement.Services.Print.Data
         /// </summary>
         public void UpdateSettings(ServiceSettings settings)
         {
-            Database.EnsureCreated();
+            EnsureSchemaUpToDate();
 
             var existing = Settings.FirstOrDefault(s => s.Id == 1);
             if (existing != null)
@@ -113,7 +144,7 @@ namespace GrainManagement.Services.Print.Data
         /// </summary>
         public PrinterAssignment? GetAssignment(string role)
         {
-            Database.EnsureCreated();
+            EnsureSchemaUpToDate();
             return PrinterAssignments.FirstOrDefault(a =>
                 a.Role == role);
         }
@@ -123,7 +154,7 @@ namespace GrainManagement.Services.Print.Data
         /// </summary>
         public List<PrinterAssignment> GetAllAssignments()
         {
-            Database.EnsureCreated();
+            EnsureSchemaUpToDate();
             return PrinterAssignments.ToList();
         }
 
@@ -133,7 +164,7 @@ namespace GrainManagement.Services.Print.Data
         /// </summary>
         public void SaveAssignment(string role, string serviceId, string printerId)
         {
-            Database.EnsureCreated();
+            EnsureSchemaUpToDate();
 
             var existing = PrinterAssignments.FirstOrDefault(a => a.Role == role);
             if (existing != null)
