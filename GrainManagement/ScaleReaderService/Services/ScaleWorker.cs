@@ -32,8 +32,10 @@ namespace ScaleReaderService.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _log.LogInformation("ScaleWorker starting. ServiceId={ServiceId}, Hub={HubUrl}",
-                _settings.ServiceId, _settings.HubUrl);
+            var hubUrls = _settings.HubUrls;
+
+            _log.LogInformation("ScaleWorker starting. ServiceId={ServiceId}, Hubs={HubUrls}",
+                _settings.ServiceId, string.Join(", ", hubUrls));
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -41,61 +43,85 @@ namespace ScaleReaderService.Services
                     stoppingToken, _restartSignal.Token);
                 var cycleToken = restartCts.Token;
 
-                HubConnection? hub = null;
+                var hubs = new List<HubConnection>();
                 try
                 {
-                    hub = new HubConnectionBuilder()
-                        .WithUrl(_settings.HubUrl)
-                        .AddJsonProtocol(o =>
+                    // ── Build and connect one hub per server URL ────────────────
+                    foreach (var hubUrl in hubUrls)
+                    {
+                        var hub = new HubConnectionBuilder()
+                            .WithUrl(hubUrl)
+                            .AddJsonProtocol(o =>
+                            {
+                                o.PayloadSerializerOptions.PropertyNamingPolicy = null;
+                            })
+                            .WithAutomaticReconnect(new ForeverRetryPolicy())
+                            .Build();
+
+                        var capturedUrl = hubUrl;
+
+                        hub.Closed += ex =>
                         {
-                            o.PayloadSerializerOptions.PropertyNamingPolicy = null;
-                        })
-                        .WithAutomaticReconnect(new ForeverRetryPolicy())
-                        .Build();
+                            if (ex != null) _log.LogWarning(ex, "SignalR connection to {HubUrl} closed with error.", capturedUrl);
+                            else _log.LogInformation("SignalR connection to {HubUrl} closed.", capturedUrl);
+                            return Task.CompletedTask;
+                        };
 
-                    hub.Closed += ex =>
-                    {
-                        if (ex != null) _log.LogWarning(ex, "SignalR connection closed with error.");
-                        else _log.LogInformation("SignalR connection closed.");
-                        return Task.CompletedTask;
-                    };
+                        hub.Reconnecting += ex =>
+                        {
+                            _log.LogWarning(ex, "SignalR reconnecting to {HubUrl}...", capturedUrl);
+                            return Task.CompletedTask;
+                        };
 
-                    hub.Reconnecting += ex =>
-                    {
-                        _log.LogWarning(ex, "SignalR reconnecting...");
-                        return Task.CompletedTask;
-                    };
+                        hub.Reconnected += connectionId =>
+                        {
+                            _log.LogInformation("SignalR reconnected to {HubUrl}. Re-joining group and re-announcing scales.", capturedUrl);
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    await hub.InvokeAsync("JoinScaleGroup", _settings.ServiceId, cycleToken);
+                                    await AnnounceScalesAsync(hub, capturedUrl, cycleToken);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _log.LogWarning(ex, "Failed to re-join/re-announce on {HubUrl} after reconnect.", capturedUrl);
+                                }
+                            });
+                            return Task.CompletedTask;
+                        };
 
-                    hub.Reconnected += connectionId =>
+                        // Register CRUD handlers only on the first hub (avoid duplicate triggers)
+                        if (hubs.Count == 0)
+                            RegisterCrudHandlers(hub);
+
+                        hubs.Add(hub);
+                    }
+
+                    // ── Connect each hub independently in background ────────────
+                    // Each hub connects on its own — one being unavailable does not block the others.
+                    for (int i = 0; i < hubs.Count; i++)
                     {
-                        _log.LogInformation("SignalR reconnected. Re-joining group and re-announcing scales.");
+                        var hub = hubs[i];
+                        var url = hubUrls[i];
                         _ = Task.Run(async () =>
                         {
                             try
                             {
+                                await ConnectWithRetryAsync(hub, url, cycleToken);
                                 await hub.InvokeAsync("JoinScaleGroup", _settings.ServiceId, cycleToken);
-                                await AnnounceScalesAsync(hub, cycleToken);
+                                await AnnounceScalesAsync(hub, url, cycleToken);
+                                _log.LogInformation("Connected and announced on {HubUrl}.", url);
                             }
+                            catch (OperationCanceledException) { }
                             catch (Exception ex)
                             {
-                                _log.LogWarning(ex, "Failed to re-join/re-announce after reconnect.");
+                                _log.LogWarning(ex, "Failed to connect/announce on {HubUrl}. Will retry on reconnect.", url);
                             }
-                        });
-                        return Task.CompletedTask;
-                    };
+                        }, cycleToken);
+                    }
 
-                    // Register CRUD handlers before connecting
-                    RegisterCrudHandlers(hub);
-
-                    // Connect
-                    await ConnectWithRetryAsync(hub, cycleToken);
-                    _log.LogInformation("SignalR connected to {HubUrl}.", _settings.HubUrl);
-
-                    // Join group and announce scales
-                    await hub.InvokeAsync("JoinScaleGroup", _settings.ServiceId, cycleToken);
-                    await AnnounceScalesAsync(hub, cycleToken);
-
-                    // Load scale configs and start polling
+                    // ── Load scale configs and start polling ────────────────────
                     var scales = LoadScaleConfigs();
 
                     if (scales.Count == 0)
@@ -106,10 +132,11 @@ namespace ScaleReaderService.Services
                         continue;
                     }
 
-                    _log.LogInformation("Starting {Count} scale pollers.", scales.Count);
+                    _log.LogInformation("Starting {Count} scale pollers across {HubCount} hub(s).",
+                        scales.Count, hubs.Count);
 
                     var tasks = scales
-                        .Select(s => Task.Run(() => PollScaleAsync(s, hub, cycleToken), cycleToken))
+                        .Select(s => Task.Run(() => PollScaleAsync(s, hubs, cycleToken), cycleToken))
                         .ToList();
 
                     await Task.WhenAll(tasks);
@@ -129,7 +156,7 @@ namespace ScaleReaderService.Services
                 }
                 finally
                 {
-                    if (hub != null)
+                    foreach (var hub in hubs)
                     {
                         try { await hub.DisposeAsync(); }
                         catch { /* best-effort cleanup */ }
@@ -148,7 +175,7 @@ namespace ScaleReaderService.Services
             hub.On("Announce", async () =>
             {
                 _log.LogInformation("Announce request received from web UI.");
-                await AnnounceScalesAsync(hub, default);
+                await AnnounceScalesAsync(hub, "primary", default);
             });
 
             // AddScale
@@ -245,9 +272,10 @@ namespace ScaleReaderService.Services
 
         // ── Scale Polling ─────────────────────────────────────────────────────
 
-        private async Task PollScaleAsync(ScaleConfigEntity config, HubConnection hub, CancellationToken ct)
+        private async Task PollScaleAsync(ScaleConfigEntity config, List<HubConnection> hubs, CancellationToken ct)
         {
             var backoff = _settings.ReconnectBackoffMs;
+            var wasDown = false;
 
             while (!ct.IsCancellationRequested)
             {
@@ -255,6 +283,13 @@ namespace ScaleReaderService.Services
                 {
                     var (ok, weight, motion, status, rawResponse) =
                         await _smaClient.QueryOnceAsync(config, _settings.TimeoutMs, ct);
+
+                    if (wasDown)
+                    {
+                        _log.LogInformation("Scale '{Desc}' reconnected. Weight={Weight} Status={Status}",
+                            config.Description, weight, status);
+                        wasDown = false;
+                    }
 
                     var dto = new
                     {
@@ -271,15 +306,20 @@ namespace ScaleReaderService.Services
                         ServiceId = _settings.ServiceId
                     };
 
-                    if (hub.State == HubConnectionState.Connected)
+                    // Push to all connected hubs
+                    foreach (var hub in hubs)
                     {
-                        try
+                        if (hub.State == HubConnectionState.Connected)
                         {
-                            await hub.InvokeAsync("UpdateScale", dto, ct);
-                        }
-                        catch (Exception ex)
-                        {
-                            _log.LogWarning(ex, "Failed to push update for scale '{Desc}'.", config.Description);
+                            try
+                            {
+                                await hub.InvokeAsync("UpdateScale", dto, ct);
+                            }
+                            catch (Exception ex)
+                            {
+                                _log.LogWarning(ex, "Failed to push update for scale '{Desc}' to hub.",
+                                    config.Description);
+                            }
                         }
                     }
 
@@ -292,6 +332,7 @@ namespace ScaleReaderService.Services
                 }
                 catch (Exception ex)
                 {
+                    wasDown = true;
                     _log.LogWarning(ex, "Scale '{Desc}' poll failed. Backing off {Backoff}ms.",
                         config.Description, backoff);
                     await Task.Delay(backoff, ct);
@@ -302,7 +343,7 @@ namespace ScaleReaderService.Services
 
         // ── Announce Scales ───────────────────────────────────────────────────
 
-        private async Task AnnounceScalesAsync(HubConnection hub, CancellationToken ct)
+        private async Task AnnounceScalesAsync(HubConnection hub, string hubUrl, CancellationToken ct)
         {
             if (hub.State != HubConnectionState.Connected) return;
 
@@ -326,18 +367,18 @@ namespace ScaleReaderService.Services
                 await hub.InvokeAsync("AnnounceScales", _settings.ServiceId,
                     _settings.LocationId, _settings.LocationDescription, configs, ct);
 
-                _log.LogInformation("Announced {Count} scales for service '{ServiceId}'.",
-                    configs.Count, _settings.ServiceId);
+                _log.LogInformation("Announced {Count} scales for service '{ServiceId}' on {HubUrl}.",
+                    configs.Count, _settings.ServiceId, hubUrl);
             }
             catch (Exception ex)
             {
-                _log.LogWarning(ex, "Failed to announce scales.");
+                _log.LogWarning(ex, "Failed to announce scales on {HubUrl}.", hubUrl);
             }
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
 
-        private async Task ConnectWithRetryAsync(HubConnection hub, CancellationToken ct)
+        private async Task ConnectWithRetryAsync(HubConnection hub, string hubUrl, CancellationToken ct)
         {
             var delay = 1000;
             while (!ct.IsCancellationRequested)
@@ -350,7 +391,7 @@ namespace ScaleReaderService.Services
                 catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
                 catch (Exception ex)
                 {
-                    _log.LogWarning(ex, "SignalR connection failed. Retrying in {Delay}ms.", delay);
+                    _log.LogWarning(ex, "SignalR connection to {HubUrl} failed. Retrying in {Delay}ms.", hubUrl, delay);
                     await Task.Delay(delay, ct);
                     delay = Math.Min(delay * 2, _settings.MaxBackoffMs);
                 }

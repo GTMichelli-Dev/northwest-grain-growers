@@ -35,6 +35,18 @@ public partial class InventoryTransactionDetail
 
     public int? DurationMinutes { get; set; }
 
+    public int? StartQtyLocationQuantityMethodId { get; set; }
+
+    public string StartQtyLocationQuantityMethodDescription { get; set; }
+
+    public int? EndQtyLocationQuantityMethodId { get; set; }
+
+    public string EndQtyLocationQuantityMethodDescription { get; set; }
+
+    public int? DirectQtyLocationQuantityMethodId { get; set; }
+
+    public string DirectQtyLocationQuantityMethodDescription { get; set; }
+
     public long? AccountId { get; set; }
 
     public int? SplitGroupId { get; set; }
@@ -56,6 +68,12 @@ public partial class InventoryTransactionDetail
     public string VoidReason { get; set; }
 
     public virtual Account Account { get; set; }
+
+    public virtual QuantityMethod StartQtyLocationQuantityMethod { get; set; }
+
+    public virtual QuantityMethod EndQtyLocationQuantityMethod { get; set; }
+
+    public virtual QuantityMethod DirectQtyLocationQuantityMethod { get; set; }
 
     public virtual Item Item { get; set; }
 

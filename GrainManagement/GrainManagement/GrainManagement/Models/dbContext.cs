@@ -728,6 +728,10 @@ public partial class dbContext : DbContext
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
             entity.Property(e => e.VoidReason).HasMaxLength(200);
 
+            entity.Property(e => e.StartQtyLocationQuantityMethodDescription).HasMaxLength(200);
+            entity.Property(e => e.EndQtyLocationQuantityMethodDescription).HasMaxLength(200);
+            entity.Property(e => e.DirectQtyLocationQuantityMethodDescription).HasMaxLength(200);
+
             entity.HasOne(d => d.Account).WithMany(p => p.InventoryTransactionDetails)
                 .HasForeignKey(d => d.AccountId)
                 .HasConstraintName("FK_InventoryTransactionDetails_Accounts");
@@ -749,6 +753,18 @@ public partial class dbContext : DbContext
             entity.HasOne(d => d.SplitGroup).WithMany(p => p.InventoryTransactionDetails)
                 .HasForeignKey(d => d.SplitGroupId)
                 .HasConstraintName("FK_InventoryTransactionDetails_SplitGroups");
+
+            entity.HasOne(d => d.StartQtyLocationQuantityMethod).WithMany(p => p.InventoryTransactionDetailStartQty)
+                .HasForeignKey(d => d.StartQtyLocationQuantityMethodId)
+                .HasConstraintName("FK_InventoryTxn_StartQtyMethod");
+
+            entity.HasOne(d => d.EndQtyLocationQuantityMethod).WithMany(p => p.InventoryTransactionDetailEndQty)
+                .HasForeignKey(d => d.EndQtyLocationQuantityMethodId)
+                .HasConstraintName("FK_InventoryTxn_EndQtyMethod");
+
+            entity.HasOne(d => d.DirectQtyLocationQuantityMethod).WithMany(p => p.InventoryTransactionDetailDirectQty)
+                .HasForeignKey(d => d.DirectQtyLocationQuantityMethodId)
+                .HasConstraintName("FK_InventoryTxn_DirectQtyMethod");
 
             entity.HasOne(d => d.Transaction).WithOne(p => p.InventoryTransactionDetail)
                 .HasForeignKey<InventoryTransactionDetail>(d => d.TransactionId)

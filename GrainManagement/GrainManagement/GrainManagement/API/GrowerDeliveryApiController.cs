@@ -45,8 +45,6 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         // ── Required field validation ────────────────────────────────────────
         if (dto.LotId <= 0)
             return BadRequest(new { message = "LotId is required." });
-        if (dto.ProductId <= 0)
-            return BadRequest(new { message = "ProductId is required." });
         if (dto.LocationId <= 0)
             return BadRequest(new { message = "LocationId is required." });
 
@@ -60,18 +58,18 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         if (uomId == 0)
             return StatusCode(500, new { message = "LBS unit of measure is not configured in the database." });
 
-        // ── Quantity: must have scale pair OR direct, not both ───────────────
-        bool hasScale  = dto.StartQty.HasValue && dto.EndQty.HasValue;
+        // ── Quantity: must have truck flow (StartQty, optionally EndQty) OR direct, not both ──
+        bool isTruck   = dto.StartQty.HasValue;
         bool hasDirect = dto.DirectQty.HasValue;
 
-        if (!hasScale && !hasDirect)
-            return BadRequest(new { message = "Either gross/tare weights or a direct quantity is required." });
-        if (hasScale && hasDirect)
-            return BadRequest(new { message = "Provide scale weights OR a direct quantity, not both." });
+        if (!isTruck && !hasDirect)
+            return BadRequest(new { message = "Either a truck weight (StartQty) or a direct quantity is required." });
+        if (isTruck && hasDirect)
+            return BadRequest(new { message = "Provide truck weights OR a direct quantity, not both." });
 
         // ── Quantity source validation ──────────────────────────────────────────
-        // When StartQty or EndQty is provided, we require method + source type + location + description.
-        if (hasScale)
+        // Truck flow: StartQty source always required; EndQty source required only when EndQty provided.
+        if (isTruck)
         {
             if (!dto.StartQtyMethodId.HasValue)
                 return BadRequest(new { message = "StartQtyMethodId is required when StartQty is provided." });
@@ -82,14 +80,17 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             if (string.IsNullOrWhiteSpace(dto.StartQtySourceDescription))
                 return BadRequest(new { message = "StartQtySourceDescription is required when StartQty is provided." });
 
-            if (!dto.EndQtyMethodId.HasValue)
-                return BadRequest(new { message = "EndQtyMethodId is required when EndQty is provided." });
-            if (!dto.EndQtySourceTypeId.HasValue)
-                return BadRequest(new { message = "EndQtySourceTypeId is required when EndQty is provided." });
-            if (string.IsNullOrWhiteSpace(dto.EndQtyLocation))
-                return BadRequest(new { message = "EndQtyLocation is required when EndQty is provided." });
-            if (string.IsNullOrWhiteSpace(dto.EndQtySourceDescription))
-                return BadRequest(new { message = "EndQtySourceDescription is required when EndQty is provided." });
+            if (dto.EndQty.HasValue)
+            {
+                if (!dto.EndQtyMethodId.HasValue)
+                    return BadRequest(new { message = "EndQtyMethodId is required when EndQty is provided." });
+                if (!dto.EndQtySourceTypeId.HasValue)
+                    return BadRequest(new { message = "EndQtySourceTypeId is required when EndQty is provided." });
+                if (string.IsNullOrWhiteSpace(dto.EndQtyLocation))
+                    return BadRequest(new { message = "EndQtyLocation is required when EndQty is provided." });
+                if (string.IsNullOrWhiteSpace(dto.EndQtySourceDescription))
+                    return BadRequest(new { message = "EndQtySourceDescription is required when EndQty is provided." });
+            }
         }
 
         // When DirectQty is provided, require source tracking fields.
@@ -179,21 +180,24 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 return BadRequest(new { message = $"Source type {dto.DirectQtySourceTypeId} is not allowed for method {dto.DirectQtyMethodId} (DirectQty)." });
         }
 
-        // ── Lot Product/Item match validation (RECEIVE constraint) ────
+        // ── Resolve ProductId, ItemId, AccountId from the Lot ────────────────
         var lot = await _ctx.Lots
             .AsNoTracking()
             .Where(l => l.LotId == dto.LotId)
-            .Select(l => new { l.ProductId, l.ItemId })
+            .Select(l => new
+            {
+                l.ProductId,
+                l.ItemId,
+                l.SplitGroupId,
+                PrimaryAccountId = l.SplitGroup != null ? (long?)l.SplitGroup.PrimaryAccountId : null,
+            })
             .FirstOrDefaultAsync(ct);
 
         if (lot is null)
             return BadRequest(new { message = $"Lot {dto.LotId} not found." });
 
-        if (lot.ProductId.HasValue && lot.ProductId.Value != dto.ProductId)
-            return BadRequest(new { message = "ProductId must match the Lot's ProductId." });
-
-        if (lot.ItemId.HasValue && dto.ItemId.HasValue && lot.ItemId.Value != dto.ItemId.Value)
-            return BadRequest(new { message = "ItemId must match the Lot's ItemId." });
+        if (!lot.ProductId.HasValue)
+            return BadRequest(new { message = $"Lot {dto.LotId} does not have a ProductId configured." });
 
         // If either source is MANUAL, CreatedByUserId is required
         bool anyManual = sourceTypeMap.Values.Any(code => code == "MANUAL");
@@ -223,21 +227,34 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         if (toSplitError != null)
             return BadRequest(new { message = toSplitError });
 
+        // ── Resolve CompletedAt per truck vs non-truck rules ────────────────
+        // Truck: set CompletedAt only when EndQty is provided (scale-out)
+        // Non-truck: always set CompletedAt
+        DateTime? completedAt = isTruck
+            ? (dto.EndQty.HasValue ? dto.CompletedAt ?? DateTime.UtcNow : null)
+            : dto.CompletedAt ?? DateTime.UtcNow;
+
         txn.InventoryTransactionDetail = new InventoryTransactionDetail
         {
             LotId        = dto.LotId,
-            ProductId    = dto.ProductId,
-            ItemId       = dto.ItemId,
+            ProductId    = lot.ProductId.Value,
+            ItemId       = lot.ItemId,
             TxnType      = "RECEIVE",
             Direction    = 1,
             UomId        = uomId,
-            AccountId    = dto.AccountId,
-            SplitGroupId = dto.SplitGroupId,
-            StartQty     = dto.StartQty,
-            EndQty       = dto.EndQty,
-            DirectQty    = dto.DirectQty,
-            StartedAt    = dto.StartedAt,
-            CompletedAt  = dto.CompletedAt,
+            AccountId    = lot.PrimaryAccountId,
+            SplitGroupId = lot.SplitGroupId,
+            StartQty     = isTruck ? dto.StartQty : null,
+            EndQty       = isTruck ? dto.EndQty : null,
+            DirectQty    = hasDirect ? dto.DirectQty : null,
+            StartQtyLocationQuantityMethodId          = isTruck ? dto.StartQtyLocationQuantityMethodId : null,
+            StartQtyLocationQuantityMethodDescription = isTruck ? dto.StartQtyLocationQuantityMethodDescription?.Trim() : null,
+            EndQtyLocationQuantityMethodId            = isTruck && dto.EndQty.HasValue ? dto.EndQtyLocationQuantityMethodId : null,
+            EndQtyLocationQuantityMethodDescription   = isTruck && dto.EndQty.HasValue ? dto.EndQtyLocationQuantityMethodDescription?.Trim() : null,
+            DirectQtyLocationQuantityMethodId         = hasDirect ? dto.DirectQtyLocationQuantityMethodId : null,
+            DirectQtyLocationQuantityMethodDescription = hasDirect ? dto.DirectQtyLocationQuantityMethodDescription?.Trim() : null,
+            StartedAt    = isTruck ? dto.StartedAt : dto.StartedAt ?? DateTime.UtcNow,
+            CompletedAt  = completedAt,
             RefType      = dto.RefType,
             RefId        = dto.RefId,
             Notes        = dto.Notes,
@@ -369,6 +386,185 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         // if (dto.WeightSheetUid.HasValue) { ... }
 
         return Ok(new { id = txn.TransactionId });
+    }
+
+    // PUT /api/GrowerDelivery/{transactionId}
+    [HttpPut("{transactionId:long}")]
+    public async Task<IActionResult> Update(
+        long transactionId,
+        [FromBody] GrowerDeliveryDto dto,
+        CancellationToken ct)
+    {
+        if (dto is null)
+            return BadRequest(new { message = "Request body is required." });
+
+        if (dto.LotId <= 0)
+            return BadRequest(new { message = "LotId is required." });
+        if (dto.LocationId <= 0)
+            return BadRequest(new { message = "LocationId is required." });
+
+        // ── Load existing transaction with detail ────────────────────────────
+        var txn = await _ctx.InventoryTransactions
+            .Include(t => t.InventoryTransactionDetail)
+            .FirstOrDefaultAsync(t => t.TransactionId == transactionId, ct);
+
+        if (txn is null)
+            return NotFound(new { message = $"Transaction {transactionId} not found." });
+
+        var detail = txn.InventoryTransactionDetail;
+        if (detail is null)
+            return NotFound(new { message = $"Transaction detail for {transactionId} not found." });
+
+        if (detail.IsVoided)
+            return BadRequest(new { message = "Cannot edit a voided transaction." });
+
+        // ── Resolve lbs UOM ──────────────────────────────────────────────────
+        var uomId = await _ctx.UnitOfMeasures
+            .AsNoTracking()
+            .Where(u => u.IsActive == true && u.Code == "LBS")
+            .Select(u => u.UomId)
+            .FirstOrDefaultAsync(ct);
+
+        if (uomId == 0)
+            return StatusCode(500, new { message = "LBS unit of measure is not configured in the database." });
+
+        // ── Determine truck vs non-truck ────────────────────────────────────
+        bool isTruck   = dto.StartQty.HasValue;
+        bool hasDirect = dto.DirectQty.HasValue;
+
+        if (!isTruck && !hasDirect)
+            return BadRequest(new { message = "Either a truck weight (StartQty) or a direct quantity is required." });
+        if (isTruck && hasDirect)
+            return BadRequest(new { message = "Provide truck weights OR a direct quantity, not both." });
+
+        // ── Resolve ProductId, ItemId, AccountId from the Lot ───────────────
+        var lot = await _ctx.Lots
+            .AsNoTracking()
+            .Where(l => l.LotId == dto.LotId)
+            .Select(l => new
+            {
+                l.ProductId,
+                l.ItemId,
+                l.SplitGroupId,
+                PrimaryAccountId = l.SplitGroup != null ? (long?)l.SplitGroup.PrimaryAccountId : null,
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (lot is null)
+            return BadRequest(new { message = $"Lot {dto.LotId} not found." });
+
+        if (!lot.ProductId.HasValue)
+            return BadRequest(new { message = $"Lot {dto.LotId} does not have a ProductId configured." });
+
+        // ── Resolve CompletedAt per truck vs non-truck rules ────────────────
+        DateTime? completedAt = isTruck
+            ? (dto.EndQty.HasValue ? dto.CompletedAt ?? DateTime.UtcNow : null)
+            : dto.CompletedAt ?? DateTime.UtcNow;
+
+        // ── Update the detail record ─────────────────────────────────────────
+        detail.LotId        = dto.LotId;
+        detail.ProductId    = lot.ProductId.Value;
+        detail.ItemId       = lot.ItemId;
+        detail.TxnType      = "RECEIVE";
+        detail.Direction    = 1;
+        detail.UomId        = uomId;
+        detail.AccountId    = lot.PrimaryAccountId;
+        detail.SplitGroupId = lot.SplitGroupId;
+        detail.StartQty     = isTruck ? dto.StartQty : null;
+        detail.EndQty       = isTruck ? dto.EndQty : null;
+        detail.DirectQty    = hasDirect ? dto.DirectQty : null;
+        detail.StartQtyLocationQuantityMethodId          = isTruck ? dto.StartQtyLocationQuantityMethodId : null;
+        detail.StartQtyLocationQuantityMethodDescription = isTruck ? dto.StartQtyLocationQuantityMethodDescription?.Trim() : null;
+        detail.EndQtyLocationQuantityMethodId            = isTruck && dto.EndQty.HasValue ? dto.EndQtyLocationQuantityMethodId : null;
+        detail.EndQtyLocationQuantityMethodDescription   = isTruck && dto.EndQty.HasValue ? dto.EndQtyLocationQuantityMethodDescription?.Trim() : null;
+        detail.DirectQtyLocationQuantityMethodId         = hasDirect ? dto.DirectQtyLocationQuantityMethodId : null;
+        detail.DirectQtyLocationQuantityMethodDescription = hasDirect ? dto.DirectQtyLocationQuantityMethodDescription?.Trim() : null;
+        detail.StartedAt    = isTruck ? dto.StartedAt : dto.StartedAt ?? DateTime.UtcNow;
+        detail.CompletedAt  = completedAt;
+        detail.Notes        = dto.Notes;
+        detail.UpdatedAt    = DateTime.UtcNow;
+        detail.IsVoided     = false;
+        detail.CreatedByUserId = dto.CreatedByUserId ?? detail.CreatedByUserId;
+
+        // ── Update container splits ──────────────────────────────────────────
+        var toSplitError = ValidateContainerSplits(dto.ToContainers, "destination");
+        if (toSplitError != null)
+            return BadRequest(new { message = toSplitError });
+
+        var existingToContainers = await _ctx.InventoryTransactionDetailToContainers
+            .Where(tc => tc.TransactionId == transactionId)
+            .ToListAsync(ct);
+        _ctx.InventoryTransactionDetailToContainers.RemoveRange(existingToContainers);
+
+        if (dto.ToContainers?.Count > 0)
+        {
+            foreach (var split in dto.ToContainers)
+            {
+                _ctx.InventoryTransactionDetailToContainers.Add(new InventoryTransactionDetailToContainer
+                {
+                    TransactionId = transactionId,
+                    ContainerId   = split.ContainerId,
+                    Percent       = split.Percent,
+                });
+            }
+        }
+
+        // ── Update quantity source records ───────────────────────────────────
+        var existingSources = await _ctx.TransactionQuantitySources
+            .Where(s => s.TransactionId == transactionId)
+            .ToListAsync(ct);
+        _ctx.TransactionQuantitySources.RemoveRange(existingSources);
+
+        if (isTruck && dto.StartQtySourceTypeId.HasValue)
+        {
+            _ctx.TransactionQuantitySources.Add(new TransactionQuantitySource
+            {
+                TransactionId     = transactionId,
+                QuantityField     = "START",
+                MethodId          = dto.StartQtyMethodId,
+                SourceTypeId      = dto.StartQtySourceTypeId.Value,
+                Location          = dto.StartQtyLocation?.Trim(),
+                SourceDescription = dto.StartQtySourceDescription?.Trim() ?? string.Empty,
+            });
+        }
+
+        if (isTruck && dto.EndQty.HasValue && dto.EndQtySourceTypeId.HasValue)
+        {
+            _ctx.TransactionQuantitySources.Add(new TransactionQuantitySource
+            {
+                TransactionId     = transactionId,
+                QuantityField     = "END",
+                MethodId          = dto.EndQtyMethodId,
+                SourceTypeId      = dto.EndQtySourceTypeId.Value,
+                Location          = dto.EndQtyLocation?.Trim(),
+                SourceDescription = dto.EndQtySourceDescription?.Trim() ?? string.Empty,
+            });
+        }
+
+        if (hasDirect && dto.DirectQtySourceTypeId.HasValue)
+        {
+            _ctx.TransactionQuantitySources.Add(new TransactionQuantitySource
+            {
+                TransactionId     = transactionId,
+                QuantityField     = "DIRECT",
+                MethodId          = dto.DirectQtyMethodId,
+                SourceTypeId      = dto.DirectQtySourceTypeId.Value,
+                Location          = dto.DirectQtyLocation?.Trim(),
+                SourceDescription = dto.DirectQtySourceDescription?.Trim() ?? string.Empty,
+            });
+        }
+
+        try
+        {
+            await _ctx.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Failed to update GrowerDelivery TransactionId={TxnId}", transactionId);
+            return StatusCode(500, new { message = "Database error while updating delivery." });
+        }
+
+        return Ok(new { id = transactionId });
     }
 
     // GET /api/GrowerDelivery/ValidatePin?pin=

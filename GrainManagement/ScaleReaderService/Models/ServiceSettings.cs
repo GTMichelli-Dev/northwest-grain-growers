@@ -8,10 +8,10 @@ namespace ScaleReaderService.Models
         /// <summary>Unique identifier for this service instance (e.g. "endicott", "colfax").</summary>
         public string ServiceId { get; set; } = "default";
 
-        /// <summary>Base URL of the GrainManagement web server.</summary>
-        public string ServerUrl { get; set; } = "http://localhost:5000";
+        /// <summary>Server base URLs. Each URL gets its own SignalR connection.</summary>
+        public List<string> ServerUrls { get; set; } = new() { "http://localhost:5000" };
 
-        /// <summary>SignalR hub path appended to ServerUrl.</summary>
+        /// <summary>SignalR hub path appended to each server URL.</summary>
         public string SignalRHub { get; set; } = "/hubs/scale";
 
         /// <summary>Location ID from system.Locations.</summary>
@@ -27,12 +27,15 @@ namespace ScaleReaderService.Models
         public int TimeoutMs { get; set; } = 1000;
 
         /// <summary>Initial reconnect backoff (ms).</summary>
-        public int ReconnectBackoffMs { get; set; } = 2000;
+        public int ReconnectBackoffMs { get; set; } = 500;
 
         /// <summary>Maximum backoff ceiling (ms).</summary>
-        public int MaxBackoffMs { get; set; } = 30000;
+        public int MaxBackoffMs { get; set; } = 5000;
 
-        /// <summary>Full hub URL.</summary>
-        public string HubUrl => ServerUrl.TrimEnd('/') + SignalRHub;
+        /// <summary>Resolved list of hub URLs built from ServerUrls + SignalRHub.</summary>
+        public List<string> HubUrls =>
+            (ServerUrls?.Where(u => !string.IsNullOrWhiteSpace(u)).ToList() ?? new List<string> { "http://localhost:5000" })
+            .Select(u => u.TrimEnd('/') + SignalRHub)
+            .ToList();
     }
 }

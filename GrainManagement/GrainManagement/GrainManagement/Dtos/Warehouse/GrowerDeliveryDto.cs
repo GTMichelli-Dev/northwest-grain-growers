@@ -69,6 +69,26 @@ namespace GrainManagement.Dtos.Warehouse
         /// <summary>Description of the EndQty source — user full name (manual), scale description, or pump description.</summary>
         public string EndQtySourceDescription { get; set; }
 
+        // ── Quantity method snapshot (persisted at time of entry) ────────────────
+
+        /// <summary>QuantityMethodId used for StartQty (from LocationQuantityMethods).</summary>
+        public int? StartQtyLocationQuantityMethodId { get; set; }
+
+        /// <summary>Display description at time of entry: scale description if scale-based, else QuantityMethod.Description.</summary>
+        public string StartQtyLocationQuantityMethodDescription { get; set; }
+
+        /// <summary>QuantityMethodId used for EndQty (from LocationQuantityMethods).</summary>
+        public int? EndQtyLocationQuantityMethodId { get; set; }
+
+        /// <summary>Display description at time of entry: scale description if scale-based, else QuantityMethod.Description.</summary>
+        public string EndQtyLocationQuantityMethodDescription { get; set; }
+
+        /// <summary>QuantityMethodId used for DirectQty (from LocationQuantityMethods).</summary>
+        public int? DirectQtyLocationQuantityMethodId { get; set; }
+
+        /// <summary>Display description at time of entry: scale description if scale-based, else QuantityMethod.Description.</summary>
+        public string DirectQtyLocationQuantityMethodDescription { get; set; }
+
         // ── Timing ──────────────────────────────────────────────────────────────
 
         /// <summary>When the truck pulled onto the scale (scale-in time).</summary>

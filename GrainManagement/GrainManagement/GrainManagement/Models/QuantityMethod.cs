@@ -22,4 +22,10 @@ public partial class QuantityMethod
     public virtual ICollection<QuantityMethodSource> QuantityMethodSources { get; set; } = new List<QuantityMethodSource>();
 
     public virtual ICollection<TransactionQuantitySource> TransactionQuantitySources { get; set; } = new List<TransactionQuantitySource>();
+
+    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetailStartQty { get; set; } = new List<InventoryTransactionDetail>();
+
+    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetailEndQty { get; set; } = new List<InventoryTransactionDetail>();
+
+    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetailDirectQty { get; set; } = new List<InventoryTransactionDetail>();
 }

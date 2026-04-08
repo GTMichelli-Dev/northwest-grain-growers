@@ -58,7 +58,7 @@
         startQty:       '#gdStartQty',
         startedAt:      '#gdStartedAt',
         startQtyIsManual:'#gdStartQtyIsManual',
-        grossManualBadge:'#gdGrossManualBadge',
+        grossSourceBadge:'#gdGrossSourceBadge',
 
         captureTare:    '#gdCaptureTare',
         tareDisplay:    '#gdTareDisplay',
@@ -67,7 +67,7 @@
         endQty:         '#gdEndQty',
         completedAt:    '#gdCompletedAt',
         endQtyIsManual: '#gdEndQtyIsManual',
-        tareManualBadge:'#gdTareManualBadge',
+        tareSourceBadge:'#gdTareSourceBadge',
 
         scaleNetRow:    '#gdScaleNetRow',
         netDisplay:     '#gdNetDisplay',
@@ -143,6 +143,8 @@
     let locationName          = null;   // location description for source tracking
     let lastPinUserId         = null;   // user ID from last successful PIN validation
     let lastPinUserName       = null;   // user name from last successful PIN validation
+    let lastStartScaleDesc    = null;   // scale description used for StartQty capture
+    let lastEndScaleDesc      = null;   // scale description used for EndQty capture
 
     // ── Cookie helper for WsId ──────────────────────────────────────────────
 
@@ -520,6 +522,11 @@
         return s ? s.QuantitySourceTypeId : null;
     }
 
+    function currentMethodDescription() {
+        var m = quantityMethods.find(function (x) { return x.QuantityMethodId === currentQtyMethodId; });
+        return m ? m.Description : null;
+    }
+
     function switchWeightMode(code) {
         $(SEL.submit).prop('hidden', true);
         if (DIRECT_CODES.indexOf(code) >= 0) {
@@ -539,6 +546,8 @@
 
     function resetScaleFields() {
         grossCaptured = false;
+        lastStartScaleDesc = null;
+        lastEndScaleDesc   = null;
         $(SEL.startQty).val('');
         $(SEL.endQty).val('');
         $(SEL.startedAt).val('');
@@ -554,8 +563,8 @@
         $(SEL.tareRow).prop('hidden', true).removeClass('gm-gd-weight-cell--captured');
         $(SEL.scaleNetRow).prop('hidden', true);
         $(SEL.captureTare).prop('disabled', true);
-        $(SEL.grossManualBadge).prop('hidden', true);
-        $(SEL.tareManualBadge).prop('hidden', true);
+        $(SEL.grossSourceBadge).prop('hidden', true).text('');
+        $(SEL.tareSourceBadge).prop('hidden', true).text('');
     }
 
     function resetDirectFields() {
@@ -584,9 +593,10 @@
         });
     }
 
-    function applyScaleWeight(weight, isManual) {
+    function applyScaleWeight(weight, isManual, scaleDesc) {
         var now = new Date();
         if (captureTarget === 'start') {
+            lastStartScaleDesc = isManual ? null : (scaleDesc || null);
             if (weight <= 0) {
                 showAlert('Inbound weight must be greater than 0.', 'danger');
                 return false;
@@ -597,7 +607,8 @@
             $(SEL.grossTime).text(fmtTime(now));
             $(SEL.grossRow).addClass('gm-gd-weight-cell--captured');
             $(SEL.startQtyIsManual).val(isManual ? '1' : '');
-            $(SEL.grossManualBadge).prop('hidden', !isManual);
+            var grossBadgeText = isManual ? 'Manual' : (scaleDesc || '');
+            $(SEL.grossSourceBadge).text(grossBadgeText).prop('hidden', !grossBadgeText);
 
             grossCaptured = true;
             $(SEL.tareRow).prop('hidden', false);
@@ -607,6 +618,7 @@
             // Recalculate net if outbound was already captured
             updateScaleNet();
         } else {
+            lastEndScaleDesc = isManual ? null : (scaleDesc || null);
             var startQty = parseInt($(SEL.startQty).val(), 10);
             if (isManual) {
                 if (weight > startQty) {
@@ -624,7 +636,8 @@
             $(SEL.tareTime).text(fmtTime(now));
             $(SEL.tareRow).addClass('gm-gd-weight-cell--captured');
             $(SEL.endQtyIsManual).val(isManual ? '1' : '');
-            $(SEL.tareManualBadge).prop('hidden', !isManual);
+            var tareBadgeText = isManual ? 'Manual' : (scaleDesc || '');
+            $(SEL.tareSourceBadge).text(tareBadgeText).prop('hidden', !tareBadgeText);
 
             updateScaleNet();
         }
@@ -739,7 +752,7 @@
             lastPinUserId   = pinResult.userId;
             lastPinUserName = pinResult.userName;
 
-            var ok = applyScaleWeight(weight, true);
+            var ok = applyScaleWeight(weight, true, null);
             if (ok) {
                 captureWeightModalInst.hide();
             }
@@ -767,82 +780,109 @@
         return 'ok';
     }
 
+    var _scalePollTimer = null;
+
+    function renderScaleList() {
+        var listEl = $(SEL.captureScaleList);
+        listEl.empty();
+
+        if (cachedScales.length === 0) {
+            listEl.html('<span class="text-muted small">No scales available at this location.</span>');
+            return;
+        }
+
+        cachedScales.forEach(function (s) {
+            var status = getScaleStatus(s);
+            var style  = SCALE_STYLES[status];
+            var weight = Math.round(s.Weight || 0);
+
+            // Disable if: error, motion, or weight < 1000
+            var isDisabled = status !== 'ok' || weight < 1000;
+            var disabledReason = '';
+
+            if (status === 'motion') {
+                isDisabled = true;
+                // Motion: still show weight but don't allow selection
+            }
+
+            if (status === 'ok' && weight < 1000) {
+                isDisabled = true;
+                disabledReason = '<span style="color:#c62828;font-size:0.8em;">Below 1,000 lbs minimum</span>';
+            }
+
+            // For outbound capture: also disable if weight > inbound weight
+            if (captureTarget === 'end' && status === 'ok') {
+                var inboundWeight = parseInt($(SEL.startQty).val(), 10);
+                if (!isNaN(inboundWeight) && weight > inboundWeight) {
+                    isDisabled = true;
+                    disabledReason = '<span style="color:#c62828;font-size:0.8em;">Exceeds inbound weight (' + fmtWeight(inboundWeight) + ')</span>';
+                }
+            }
+
+            // Build button content — always show weight unless error/no connection
+            var descSpan  = '<strong>' + escapeHtml(s.Description) + '</strong>';
+            var weightSpan = status === 'error'
+                ? '<span>—</span>'
+                : '<span style="font-size:1.1em;font-weight:600;">' + fmtWeight(weight) + '</span>';
+            var statusSpan = '<span style="color:' + style.labelColor + ';font-weight:600;font-size:0.85em;">' + style.label + '</span>';
+
+            var btn = $('<button type="button" class="btn text-start w-100"></button>')
+                .css({
+                    'background-color': style.bg,
+                    'border': '1px solid ' + style.border,
+                    'color': style.color,
+                    'padding': '10px 14px',
+                    'display': 'flex',
+                    'justify-content': 'space-between',
+                    'align-items': 'center',
+                    'gap': '12px',
+                    'opacity': isDisabled ? '0.65' : '1'
+                })
+                .html(
+                    '<div>' + descSpan + '<br/>' + statusSpan +
+                    (disabledReason ? '<br/>' + disabledReason : '') +
+                    '</div>' +
+                    '<div style="text-align:right;">' + weightSpan + '</div>'
+                )
+                .prop('disabled', isDisabled)
+                .on('click', function () {
+                    var ok = applyScaleWeight(weight, false, s.Description);
+                    if (ok) captureWeightModalInst.hide();
+                });
+
+            listEl.append(btn);
+        });
+    }
+
+    function stopScalePoll() {
+        if (_scalePollTimer) {
+            clearInterval(_scalePollTimer);
+            _scalePollTimer = null;
+        }
+    }
+
     async function openCaptureWeightModal() {
         if (!captureWeightModalInst) {
             captureWeightModalInst = new bootstrap.Modal(document.querySelector(SEL.captureWeightModal));
+
+            // Stop polling when the modal is closed by any means (X, backdrop, ESC, programmatic)
+            document.querySelector(SEL.captureWeightModal).addEventListener('hidden.bs.modal', stopScalePoll);
         }
         $(SEL.captureManualPanel).prop('hidden', true);
         $(SEL.captureWeightError).prop('hidden', true);
         $(SEL.captureManualInput).val('');
         $(SEL.capturePinInput).val('');
 
-        // Refresh scales each time modal opens for live readings
+        // Initial load and render
         await loadCachedScales();
+        renderScaleList();
 
-        // Build scale buttons with status colors
-        var listEl = $(SEL.captureScaleList);
-        listEl.empty();
-
-        if (cachedScales.length === 0) {
-            listEl.html('<span class="text-muted small">No scales available at this location.</span>');
-        } else {
-            cachedScales.forEach(function (s) {
-                var status = getScaleStatus(s);
-                var style  = SCALE_STYLES[status];
-                var weight = Math.round(s.Weight || 0);
-
-                // Disable if: error, motion, or weight < 1000
-                var isDisabled = status !== 'ok' || weight < 1000;
-                var disabledReason = '';
-
-                if (status === 'ok' && weight < 1000) {
-                    isDisabled = true;
-                    disabledReason = '<span style="color:#c62828;font-size:0.8em;">Below 1,000 lbs minimum</span>';
-                }
-
-                // For outbound capture: also disable if weight > inbound weight
-                if (captureTarget === 'end' && status === 'ok') {
-                    var inboundWeight = parseInt($(SEL.startQty).val(), 10);
-                    if (!isNaN(inboundWeight) && weight > inboundWeight) {
-                        isDisabled = true;
-                        disabledReason = '<span style="color:#c62828;font-size:0.8em;">Exceeds inbound weight (' + fmtWeight(inboundWeight) + ')</span>';
-                    }
-                }
-
-                // Build button content
-                var descSpan  = '<strong>' + escapeHtml(s.Description) + '</strong>';
-                var weightSpan = status === 'ok'
-                    ? '<span style="font-size:1.1em;font-weight:600;">' + fmtWeight(weight) + '</span>'
-                    : '<span>—</span>';
-                var statusSpan = '<span style="color:' + style.labelColor + ';font-weight:600;font-size:0.85em;">' + style.label + '</span>';
-
-                var btn = $('<button type="button" class="btn text-start w-100"></button>')
-                    .css({
-                        'background-color': style.bg,
-                        'border': '1px solid ' + style.border,
-                        'color': style.color,
-                        'padding': '10px 14px',
-                        'display': 'flex',
-                        'justify-content': 'space-between',
-                        'align-items': 'center',
-                        'gap': '12px',
-                        'opacity': isDisabled ? '0.65' : '1'
-                    })
-                    .html(
-                        '<div>' + descSpan + '<br/>' + statusSpan +
-                        (disabledReason ? '<br/>' + disabledReason : '') +
-                        '</div>' +
-                        '<div style="text-align:right;">' + weightSpan + '</div>'
-                    )
-                    .prop('disabled', isDisabled)
-                    .on('click', function () {
-                        var ok = applyScaleWeight(weight, false);
-                        if (ok) captureWeightModalInst.hide();
-                    });
-
-                listEl.append(btn);
-            });
-        }
+        // Start live polling while modal is open
+        stopScalePoll();
+        _scalePollTimer = setInterval(async function () {
+            await loadCachedScales();
+            renderScaleList();
+        }, 1000);
 
         captureWeightModalInst.show();
     }
@@ -938,6 +978,8 @@
         var manualSourceTypeId = findSourceTypeIdByCode('MANUAL');
         var scaleSourceTypeId  = findSourceTypeIdByCode('SCALE');
 
+        var methodDesc = currentMethodDescription();
+
         if (isDirectMode()) {
             // DirectQty mode
             payload.DirectQty                = numOrNull('gdDirectQty') || null;
@@ -948,6 +990,10 @@
             payload.DirectQtyLocation        = locationName;
             payload.DirectQtySourceDescription = lastPinUserName || 'Manual Entry';
             payload.CreatedByUserId          = lastPinUserId;
+
+            // Quantity method snapshot — direct modes are never scale-based
+            payload.DirectQtyLocationQuantityMethodId          = currentQtyMethodId;
+            payload.DirectQtyLocationQuantityMethodDescription = methodDesc;
         } else {
             // Scale mode (TRUCK_SCALE)
             payload.StartQty    = numOrNull('gdStartQty') || null;
@@ -967,6 +1013,13 @@
             payload.EndQtySourceTypeId      = endIsManual ? manualSourceTypeId : scaleSourceTypeId;
             payload.EndQtyLocation          = locationName;
             payload.EndQtySourceDescription = endIsManual ? (lastPinUserName || 'Manual Entry') : 'Scale';
+
+            // Quantity method snapshot — use scale description if from scale, else method description
+            payload.StartQtyLocationQuantityMethodId          = currentQtyMethodId;
+            payload.StartQtyLocationQuantityMethodDescription = startIsManual ? methodDesc : (lastStartScaleDesc || methodDesc);
+
+            payload.EndQtyLocationQuantityMethodId            = currentQtyMethodId;
+            payload.EndQtyLocationQuantityMethodDescription   = endIsManual ? methodDesc : (lastEndScaleDesc || methodDesc);
 
             if (startIsManual || endIsManual) {
                 payload.CreatedByUserId = lastPinUserId;
