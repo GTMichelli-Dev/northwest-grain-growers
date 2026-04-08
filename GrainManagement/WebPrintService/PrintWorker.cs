@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.EntityFrameworkCore;
-using WebPrintService.Data;
+using Microsoft.Extensions.Options;
 using WebPrintService.Services;
 using System.Text.Json;
 
@@ -14,23 +13,25 @@ namespace WebPrintService;
 /// </summary>
 public class PrintWorker : BackgroundService
 {
-    private readonly IServiceProvider _sp;
     private readonly ILogger<PrintWorker> _log;
     private readonly IPrintClient _printer;
     private readonly RestartSignal _restart;
     private readonly IHttpClientFactory _httpFactory;
+    private readonly PrintServiceOptions _options;
     private readonly List<HubConnection> _connections = new();
-    private string _serviceId = "default";
-    private ServiceSettings? _settings;
 
-    public PrintWorker(IServiceProvider sp, ILogger<PrintWorker> log, IPrintClient printer,
-        RestartSignal restart, IHttpClientFactory httpFactory)
+    public PrintWorker(
+        ILogger<PrintWorker> log,
+        IPrintClient printer,
+        RestartSignal restart,
+        IHttpClientFactory httpFactory,
+        IOptions<PrintServiceOptions> options)
     {
-        _sp = sp;
         _log = log;
         _printer = printer;
         _restart = restart;
         _httpFactory = httpFactory;
+        _options = options.Value;
     }
 
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -40,14 +41,12 @@ public class PrintWorker : BackgroundService
             try
             {
                 _restart.Reset();
-                _settings = await LoadSettings();
-                _serviceId = _settings.ServiceId;
 
-                var hubUrls = _settings.HubUrls;
+                var hubUrls = _options.HubUrls;
                 var version = typeof(PrintWorker).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 
-                _log.LogInformation("WebPrintService v{Version} — ServiceId={ServiceId}, {Count} server(s) configured",
-                    version, _serviceId, hubUrls.Count);
+                _log.LogInformation("WebPrintService v{Version} — ServiceId={ServiceId}, {Count} server(s): {Urls}",
+                    version, _options.ServiceId, hubUrls.Count, string.Join(", ", hubUrls));
 
                 // Build a connection for each hub URL
                 _connections.Clear();
@@ -94,10 +93,11 @@ public class PrintWorker : BackgroundService
             {
                 _log.LogInformation("Connecting to {HubUrl}...", hubUrl);
                 await conn.StartAsync(ct);
-                _log.LogInformation("Connected to {HubUrl}. Joining print group (ServiceId={ServiceId})...", hubUrl, _serviceId);
+                _log.LogInformation("Connected to {HubUrl}. Joining print group (ServiceId={ServiceId})...",
+                    hubUrl, _options.ServiceId);
                 await JoinGroups(conn);
                 await AnnouncePrinters(conn);
-                return; // Success
+                return;
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }
             catch (Exception ex)
@@ -124,20 +124,12 @@ public class PrintWorker : BackgroundService
         };
     }
 
-    private async Task<ServiceSettings> LoadSettings()
-    {
-        using var scope = _sp.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<PrintDbContext>();
-        var settings = await db.Settings.OrderBy(s => s.Id).FirstOrDefaultAsync();
-        return settings ?? new ServiceSettings();
-    }
-
     private async Task JoinGroups(HubConnection conn)
     {
         if (conn.State != HubConnectionState.Connected) return;
         try
         {
-            await conn.InvokeAsync("JoinPrintGroup", _serviceId);
+            await conn.InvokeAsync("JoinPrintGroup", _options.ServiceId);
         }
         catch (Exception ex)
         {
@@ -154,7 +146,7 @@ public class PrintWorker : BackgroundService
             var printers = await _printer.GetPrintersAsync();
             await conn.InvokeAsync("PrintServiceReady", new
             {
-                serviceId = _serviceId,
+                serviceId = _options.ServiceId,
                 printerCount = printers.Count,
                 printers = printers.Select(p => new
                 {
@@ -211,8 +203,8 @@ public class PrintWorker : BackgroundService
                     cupsPrinterId = defaultPrinter.PrinterId;
                 }
 
-                // Build PDF URL from the first configured server (the one hosting the PDF endpoint)
-                var serverUrl = _settings?.ServerUrls.FirstOrDefault()?.TrimEnd('/') ?? "http://localhost:5000";
+                // Build PDF URL from the first configured server
+                var serverUrl = _options.ServerUrls.FirstOrDefault()?.TrimEnd('/') ?? "http://localhost:5000";
                 var pdfUrl = $"{serverUrl}/api/printjobs/load-ticket/{ticketId}/pdf";
 
                 _log.LogInformation("Printing ticket {Ticket} to {Printer} from {Url}", ticketId, cupsPrinterId, pdfUrl);
@@ -237,7 +229,7 @@ public class PrintWorker : BackgroundService
                 var printers = await _printer.GetPrintersAsync();
                 await conn.InvokeAsync("PrinterListResponse", new
                 {
-                    serviceId = _serviceId,
+                    serviceId = _options.ServiceId,
                     printers = printers.Select(p => new
                     {
                         p.PrinterId,
@@ -269,7 +261,7 @@ public class PrintWorker : BackgroundService
             {
                 var testFile = Path.Combine(Path.GetTempPath(), $"testprint_{Guid.NewGuid():N}.txt");
                 await File.WriteAllTextAsync(testFile,
-                    $"Web Print Service Test Page\n\nServiceId: {_serviceId}\nPrinter: {printerId}\nDate: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n\nIf you can read this, printing is working!");
+                    $"Web Print Service Test Page\n\nServiceId: {_options.ServiceId}\nPrinter: {printerId}\nDate: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n\nIf you can read this, printing is working!");
 
                 var (success, message) = await _printer.PrintFileAsync(printerId, testFile, "Test Page");
 
@@ -277,7 +269,7 @@ public class PrintWorker : BackgroundService
 
                 await conn.InvokeAsync("TestPrintResult", new
                 {
-                    serviceId = _serviceId,
+                    serviceId = _options.ServiceId,
                     printerId,
                     success,
                     message
@@ -287,7 +279,7 @@ public class PrintWorker : BackgroundService
             {
                 await conn.InvokeAsync("TestPrintResult", new
                 {
-                    serviceId = _serviceId,
+                    serviceId = _options.ServiceId,
                     printerId,
                     success = false,
                     message = ex.Message
@@ -304,7 +296,7 @@ public class PrintWorker : BackgroundService
             {
                 await conn.InvokeAsync("PrintResult", new
                 {
-                    serviceId = _serviceId,
+                    serviceId = _options.ServiceId,
                     success,
                     message
                 });
