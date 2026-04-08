@@ -16,7 +16,8 @@ public sealed class ReportStorageService : ReportStorageWebExtension
     // Registry of all known reports: key = display name, value = factory + module gate
     private static readonly Dictionary<string, ReportDefinition> AllReports = new()
     {
-        ["Load Ticket"] = new("Warehouse", () => new LoadTicketReport())
+        ["Load Ticket"] = new("Warehouse", () => new LoadTicketReport()),
+        ["Test Ticket"] = new("Master", () => new TestTicketReport())
     };
 
     public ReportStorageService(IOptions<ModuleOptions> modules)
