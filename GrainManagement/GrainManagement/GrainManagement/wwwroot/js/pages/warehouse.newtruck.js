@@ -254,17 +254,17 @@
     async function printTicket(btnEl, ticket) {
       const deviceId = btnEl?.dataset?.deviceId;
 
-     // if (!deviceId) {
-      //  alert("Print device not set (data-device-id missing).");
-        //return;
-      //}
+      if (!deviceId) {
+        alert("Print device not set (data-device-id missing).");
+        return;
+      }
 
-      //if (!ticket) {
-        //alert("No ticket number available to print.");
-        //return;
-      //}
+      if (!ticket) {
+        alert("No ticket number available to print.");
+        return;
+      }
 
-      const url = `/api/printing/printer/1/print-ticket/123456`;
+      const url = `/api/printing/printer/${encodeURIComponent(deviceId)}/print-ticket/${encodeURIComponent(ticket)}`;
 
       btnEl.disabled = true;
 

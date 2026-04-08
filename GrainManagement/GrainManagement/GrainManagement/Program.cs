@@ -81,6 +81,9 @@ builder.Services.AddSingleton<GrainManagement.Services.Print.CupsClient>();
 builder.Services.AddSingleton<GrainManagement.Services.Print.RestartSignal>();
 builder.Services.AddSingleton<GrainManagement.Services.Print.Data.PrintDbContext>();
 builder.Services.AddHostedService<GrainManagement.Services.Print.PrintWorker>();
+builder.Services.Configure<GrainManagement.Services.Print.PrintDispatchOptions>(
+    builder.Configuration.GetSection(GrainManagement.Services.Print.PrintDispatchOptions.SectionName));
+builder.Services.AddScoped<GrainManagement.Services.Print.IPrintDispatchService, GrainManagement.Services.Print.PrintDispatchService>();
 
 
 
