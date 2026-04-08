@@ -102,6 +102,13 @@
         </div>
     </nav>
 
+    <!-- Global print alert bar (shown/hidden by gm.print-alerts.js via SignalR) -->
+    <div id="gm-print-alert" style="display:none;" class="alert alert-danger alert-dismissible mb-0 rounded-0 py-2 text-center">
+        <strong id="gm-print-alert-icon">&#9888;</strong>
+        <span id="gm-print-alert-msg"></span>
+        <button type="button" class="btn-close btn-close-sm" aria-label="Close"></button>
+    </div>
+
     <main class="container-fluid" style="margin-top: 1.5rem;">
 
         @RenderBody()
@@ -149,6 +156,8 @@
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/gm.cookies.js" asp-append-version="true"></script>
     <script src="~/js/location-selector.js" asp-append-version="true"></script>
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script src="~/js/gm.print-alerts.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
 
