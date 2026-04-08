@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace GrainManagement.Dtos.Warehouse
 {
     /// <summary>
@@ -81,7 +83,13 @@ namespace GrainManagement.Dtos.Warehouse
         public int LocationId { get; set; }
 
         /// <summary>Container (bin, tank, etc.) grain is deposited into.</summary>
-        public long? ToContainerId { get; set; }
+        /// <summary>
+        /// Container splits for the destination side.
+        /// Each entry specifies a container and its percentage share.
+        /// Single-container deliveries send one element at 100%.
+        /// Null or empty means no container assigned.
+        /// </summary>
+        public List<ContainerSplitDto> ToContainers { get; set; }
 
         // ── Who ─────────────────────────────────────────────────────────────────
 

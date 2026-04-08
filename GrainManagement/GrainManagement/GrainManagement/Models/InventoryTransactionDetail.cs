@@ -35,10 +35,6 @@ public partial class InventoryTransactionDetail
 
     public int? DurationMinutes { get; set; }
 
-    public long? FromContainerId { get; set; }
-
-    public long? ToContainerId { get; set; }
-
     public long? AccountId { get; set; }
 
     public int? SplitGroupId { get; set; }
@@ -61,8 +57,6 @@ public partial class InventoryTransactionDetail
 
     public virtual Account Account { get; set; }
 
-    public virtual Container FromContainer { get; set; }
-
     public virtual Item Item { get; set; }
 
     public virtual Lot Lot { get; set; }
@@ -70,8 +64,6 @@ public partial class InventoryTransactionDetail
     public virtual Product Product { get; set; }
 
     public virtual SplitGroup SplitGroup { get; set; }
-
-    public virtual Container ToContainer { get; set; }
 
     public virtual InventoryTransaction Transaction { get; set; }
 

@@ -438,7 +438,10 @@
             AccountId:      intOrNull(SEL.accountId),
             LocationId:     intOrNull(SEL.locationId),
             SplitGroupId:   intOrNull(SEL.splitGroupId) || null,
-            ToContainerId:  intOrNull(SEL.containerId)  || null,
+            ToContainers:   (function () {
+                var cid = intOrNull(SEL.containerId);
+                return cid ? [{ ContainerId: cid, Percent: 100 }] : null;
+            })(),
             WeightSheetUid: $(SEL.weightSheetUid).val() || null,
             StartQty:      numOrNull('gdStartQty')     || null,
             EndQty:        numOrNull('gdEndQty')        || null,

@@ -41,9 +41,9 @@ public partial class Container
 
     public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
 
-    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetailFromContainers { get; set; } = new List<InventoryTransactionDetail>();
+    public virtual ICollection<InventoryTransactionDetailFromContainer> InventoryTransactionDetailFromContainers { get; set; } = new List<InventoryTransactionDetailFromContainer>();
 
-    public virtual ICollection<InventoryTransactionDetail> InventoryTransactionDetailToContainers { get; set; } = new List<InventoryTransactionDetail>();
+    public virtual ICollection<InventoryTransactionDetailToContainer> InventoryTransactionDetailToContainers { get; set; } = new List<InventoryTransactionDetailToContainer>();
 
     public virtual Location Location { get; set; }
 

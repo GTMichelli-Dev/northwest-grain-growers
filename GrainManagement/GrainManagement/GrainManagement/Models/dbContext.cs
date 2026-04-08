@@ -51,6 +51,10 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<InventoryTransactionDetail> InventoryTransactionDetails { get; set; }
 
+    public virtual DbSet<InventoryTransactionDetailFromContainer> InventoryTransactionDetailFromContainers { get; set; }
+
+    public virtual DbSet<InventoryTransactionDetailToContainer> InventoryTransactionDetailToContainers { get; set; }
+
     public virtual DbSet<Item> Items { get; set; }
 
     public virtual DbSet<ItemTrait> ItemTraits { get; set; }
@@ -728,10 +732,6 @@ public partial class dbContext : DbContext
                 .HasForeignKey(d => d.AccountId)
                 .HasConstraintName("FK_InventoryTransactionDetails_Accounts");
 
-            entity.HasOne(d => d.FromContainer).WithMany(p => p.InventoryTransactionDetailFromContainers)
-                .HasForeignKey(d => d.FromContainerId)
-                .HasConstraintName("FK_InventoryTransactionDetails_Containers1");
-
             entity.HasOne(d => d.Item).WithMany(p => p.InventoryTransactionDetails)
                 .HasForeignKey(d => d.ItemId)
                 .HasConstraintName("FK_InventoryTxn_Item");
@@ -750,10 +750,6 @@ public partial class dbContext : DbContext
                 .HasForeignKey(d => d.SplitGroupId)
                 .HasConstraintName("FK_InventoryTransactionDetails_SplitGroups");
 
-            entity.HasOne(d => d.ToContainer).WithMany(p => p.InventoryTransactionDetailToContainers)
-                .HasForeignKey(d => d.ToContainerId)
-                .HasConstraintName("FK_InventoryTransactionDetails_Containers");
-
             entity.HasOne(d => d.Transaction).WithOne(p => p.InventoryTransactionDetail)
                 .HasForeignKey<InventoryTransactionDetail>(d => d.TransactionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -763,6 +759,50 @@ public partial class dbContext : DbContext
                 .HasForeignKey(d => d.UomId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_InventoryTxn_Uom");
+        });
+
+        modelBuilder.Entity<InventoryTransactionDetailFromContainer>(entity =>
+        {
+            entity.HasKey(e => new { e.TransactionId, e.ContainerId })
+                .HasName("PK_InventoryTransactionDetailFromContainers");
+
+            entity.ToTable("InventoryTransactionDetailFromContainers", "Inventory");
+
+            entity.HasIndex(e => e.ContainerId, "IX_ITDFromContainers_ContainerId");
+
+            entity.Property(e => e.Percent).HasColumnType("decimal(10, 7)");
+
+            entity.HasOne(d => d.Transaction).WithMany(p => p.FromContainers)
+                .HasForeignKey(d => d.TransactionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ITDFromContainers_TransactionDetail");
+
+            entity.HasOne(d => d.Container).WithMany(p => p.InventoryTransactionDetailFromContainers)
+                .HasForeignKey(d => d.ContainerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ITDFromContainers_Container");
+        });
+
+        modelBuilder.Entity<InventoryTransactionDetailToContainer>(entity =>
+        {
+            entity.HasKey(e => new { e.TransactionId, e.ContainerId })
+                .HasName("PK_InventoryTransactionDetailToContainers");
+
+            entity.ToTable("InventoryTransactionDetailToContainers", "Inventory");
+
+            entity.HasIndex(e => e.ContainerId, "IX_ITDToContainers_ContainerId");
+
+            entity.Property(e => e.Percent).HasColumnType("decimal(10, 7)");
+
+            entity.HasOne(d => d.Transaction).WithMany(p => p.ToContainers)
+                .HasForeignKey(d => d.TransactionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ITDToContainers_TransactionDetail");
+
+            entity.HasOne(d => d.Container).WithMany(p => p.InventoryTransactionDetailToContainers)
+                .HasForeignKey(d => d.ContainerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ITDToContainers_Container");
         });
 
         modelBuilder.Entity<Item>(entity =>

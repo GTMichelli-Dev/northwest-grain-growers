@@ -179,7 +179,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 return BadRequest(new { message = $"Source type {dto.DirectQtySourceTypeId} is not allowed for method {dto.DirectQtyMethodId} (DirectQty)." });
         }
 
-        // ── Lot Product/Item match validation (WAREHOUSE_RECEIVE constraint) ────
+        // ── Lot Product/Item match validation (RECEIVE constraint) ────
         var lot = await _ctx.Lots
             .AsNoTracking()
             .Where(l => l.LotId == dto.LotId)
@@ -218,17 +218,21 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             CreatedAt    = DateTime.UtcNow,
         };
 
+        // ── Validate container splits (if provided) ────────────────────────────
+        var toSplitError = ValidateContainerSplits(dto.ToContainers, "destination");
+        if (toSplitError != null)
+            return BadRequest(new { message = toSplitError });
+
         txn.InventoryTransactionDetail = new InventoryTransactionDetail
         {
             LotId        = dto.LotId,
             ProductId    = dto.ProductId,
             ItemId       = dto.ItemId,
-            TxnType      = "WAREHOUSE_RECEIVE",
+            TxnType      = "RECEIVE",
             Direction    = 1,
             UomId        = uomId,
             AccountId    = dto.AccountId,
             SplitGroupId = dto.SplitGroupId,
-            ToContainerId  = dto.ToContainerId,
             StartQty     = dto.StartQty,
             EndQty       = dto.EndQty,
             DirectQty    = dto.DirectQty,
@@ -252,6 +256,30 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         {
             _logger.LogError(ex, "Failed to save GrowerDelivery for LotId={LotId}", dto.LotId);
             return StatusCode(500, new { message = "Database error while saving delivery." });
+        }
+
+        // ── Save destination container splits ────────────────────────────────────
+        if (dto.ToContainers?.Count > 0)
+        {
+            foreach (var split in dto.ToContainers)
+            {
+                _ctx.InventoryTransactionDetailToContainers.Add(new InventoryTransactionDetailToContainer
+                {
+                    TransactionId = txn.TransactionId,
+                    ContainerId   = split.ContainerId,
+                    Percent       = split.Percent,
+                });
+            }
+
+            try
+            {
+                await _ctx.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Failed to save container splits for TransactionId={TxnId}", txn.TransactionId);
+                return StatusCode(500, new { message = "Database error while saving container splits." });
+            }
         }
 
         // ── Save quantity source records ────────────────────────────────────────
@@ -925,8 +953,9 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 itd.NetQty              AS Net,
                 itd.TxnAt,
                 itd.Notes,
-                itd.ToContainerId       AS ContainerId,
+                tc.ContainerId          AS ContainerId,
                 c.Description           AS ContainerDescription,
+                tc.[Percent]            AS ContainerPercent,
                 attr1.DecimalValue      AS Attr1Value,
                 attr1.StringValue       AS Attr1String,
                 at1.Description         AS Attr1Description,
@@ -942,8 +971,10 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 ON wsl.WeightSheetUid = ws.RowUid
             INNER JOIN [Inventory].[InventoryTransactionDetails] itd
                 ON itd.RefId = wsl.Id
+            LEFT JOIN [Inventory].[InventoryTransactionDetailToContainers] tc
+                ON tc.TransactionId = itd.TransactionId
             LEFT JOIN [container].[Containers] c
-                ON c.ContainerId = itd.ToContainerId
+                ON c.ContainerId = tc.ContainerId
             LEFT JOIN [Inventory].[TransactionAttributes] attr1
                 ON attr1.TransactionId = itd.TransactionId AND attr1.AttributeTypeId = 1
             LEFT JOIN [Inventory].[TransactionAttributeTypes] at1
@@ -991,6 +1022,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 Notes                  = reader.IsDBNull(reader.GetOrdinal("Notes")) ? null : reader.GetString(reader.GetOrdinal("Notes")),
                 ContainerId            = reader.IsDBNull(reader.GetOrdinal("ContainerId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("ContainerId")),
                 ContainerDescription   = reader.IsDBNull(reader.GetOrdinal("ContainerDescription")) ? null : reader.GetString(reader.GetOrdinal("ContainerDescription")),
+                ContainerPercent       = reader.IsDBNull(reader.GetOrdinal("ContainerPercent")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("ContainerPercent")),
                 Attr1Value             = reader.IsDBNull(reader.GetOrdinal("Attr1Value")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Attr1Value")),
                 Attr1String            = reader.IsDBNull(reader.GetOrdinal("Attr1String")) ? null : reader.GetString(reader.GetOrdinal("Attr1String")),
                 Attr1Description       = reader.IsDBNull(reader.GetOrdinal("Attr1Description")) ? null : reader.GetString(reader.GetOrdinal("Attr1Description")),
@@ -1020,10 +1052,33 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         if (load == null)
             return NotFound(new { message = "Load not found." });
 
-        // Update ToContainerId on the linked InventoryTransactionDetail
-        await _ctx.Database.ExecuteSqlAsync(
-            $"UPDATE [Inventory].[InventoryTransactionDetails] SET ToContainerId = {dto.ContainerId} WHERE RefId = {dto.LoadId}", ct);
+        // Find the linked TransactionId
+        var transactionId = await _ctx.InventoryTransactionDetails
+            .Where(d => d.RefId == dto.LoadId)
+            .Select(d => d.TransactionId)
+            .FirstOrDefaultAsync(ct);
 
+        if (transactionId == 0)
+            return NotFound(new { message = "No inventory transaction found for this load." });
+
+        // Remove existing destination container splits
+        var existing = await _ctx.InventoryTransactionDetailToContainers
+            .Where(tc => tc.TransactionId == transactionId)
+            .ToListAsync(ct);
+        _ctx.InventoryTransactionDetailToContainers.RemoveRange(existing);
+
+        // Insert new single-container split at 100%
+        if (dto.ContainerId > 0)
+        {
+            _ctx.InventoryTransactionDetailToContainers.Add(new InventoryTransactionDetailToContainer
+            {
+                TransactionId = transactionId,
+                ContainerId   = dto.ContainerId,
+                Percent       = 100m,
+            });
+        }
+
+        await _ctx.SaveChangesAsync(ct);
         return Ok();
     }
 
@@ -1424,5 +1479,27 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         AddString ("DRIVER",        dto.Driver);
 
         return list;
+    }
+
+    /// <summary>
+    /// Validates a list of container split rows. Returns an error message or null if valid.
+    /// Null/empty splits are allowed (container assignment is optional).
+    /// </summary>
+    private static string ValidateContainerSplits(List<ContainerSplitDto> splits, string side)
+    {
+        if (splits == null || splits.Count == 0)
+            return null;
+
+        if (splits.Any(s => s.Percent <= 0))
+            return $"All {side} container percentages must be greater than zero.";
+
+        if (splits.Select(s => s.ContainerId).Distinct().Count() != splits.Count)
+            return $"Duplicate container IDs in {side} container splits.";
+
+        var sum = splits.Sum(s => s.Percent);
+        if (Math.Abs(sum - 100m) > 0.0001m)
+            return $"The {side} container percentages must total 100 (got {sum}).";
+
+        return null;
     }
 }
