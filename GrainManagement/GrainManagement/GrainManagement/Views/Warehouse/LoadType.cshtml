@@ -9,10 +9,12 @@
 </a>
 
 <h3 class="text-center mt-4 mb-3 fw-semibold" style="font-size:2rem;">Select Weight Sheet Type</h3>
-<div class="row g-4 justify-content-center">
+
+<!-- Tiles hidden until PIN is entered -->
+<div id="ltTiles" class="row g-4 justify-content-center" hidden>
 
     <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link gm-tile--intake" href="/GrowerDelivery/NewWeightSheet">
+        <a class="gm-tile gm-tile--link gm-tile--intake" id="ltDeliveryTile" href="#">
             <div class="gm-tile__header">
                 <div class="gm-tile__icon gm-tile__icon--bold gm-icon gm-icon--delivery" aria-hidden="true"></div>
                 <h2 class="gm-tile__title">Grower Delivery</h2>
@@ -22,7 +24,7 @@
     </div>
 
     <div class="col-12 col-lg-4">
-        <a class="gm-tile gm-tile--link gm-tile--transfer" href="/Warehouse/TransferIn">
+        <a class="gm-tile gm-tile--link gm-tile--transfer" id="ltTransferTile" href="#">
             <div class="gm-tile__header">
                 <div class="gm-tile__icon gm-tile__icon--bold gm-icon gm-icon--transfer gm-icon--flip" aria-hidden="true"></div>
                 <h2 class="gm-tile__title">Transfer</h2>
@@ -32,3 +34,86 @@
     </div>
 
 </div>
+
+<!-- Authenticated user display -->
+<div id="ltAuthInfo" class="text-center mt-3 text-muted" hidden></div>
+
+<!-- ── PIN popup ──────────────────────────────────────────────────── -->
+<div class="modal fade" id="ltPinModal" tabindex="-1" aria-labelledby="ltPinModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ltPinModalLabel">Enter PIN</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-2">Enter your PIN to create a new weight sheet.</p>
+                <div>
+                    <label class="form-label">PIN <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="ltPinInput"
+                           inputmode="numeric" maxlength="10" placeholder="Enter PIN"
+                           autocomplete="off" data-lpignore="true" data-1p-ignore="true"
+                           data-form-type="other"
+                           style="max-width:160px; -webkit-text-security:disc;" />
+                </div>
+                <div id="ltPinError" class="text-danger small mt-2" hidden></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="ltPinConfirmBtn">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    'use strict';
+    var _pin = null;
+    var _userName = null;
+
+    $(function () {
+        var pinModal = new bootstrap.Modal(document.getElementById('ltPinModal'));
+        setTimeout(function () { pinModal.show(); setTimeout(function () { $('#ltPinInput').focus(); }, 500); }, 300);
+
+        $('#ltPinInput').on('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('#ltPinConfirmBtn').click(); } });
+        $('#ltPinConfirmBtn').on('click', function () {
+            var pin = parseInt($('#ltPinInput').val(), 10);
+            if (!pin || pin <= 0) {
+                $('#ltPinError').text('A valid PIN is required.').removeAttr('hidden');
+                return;
+            }
+            $.ajax({
+                url: '/api/GrowerDelivery/ValidatePin?pin=' + pin,
+                method: 'GET',
+                dataType: 'json',
+            })
+            .done(function (data) {
+                _pin = pin;
+                _userName = data.UserName;
+                pinModal.hide();
+                // Show tiles and auth info
+                $('#ltTiles').removeAttr('hidden');
+                $('#ltAuthInfo').html('<i class="dx-icon dx-icon-user"></i> Weighed by: <strong>' + _userName + '</strong>').removeAttr('hidden');
+                // Set tile hrefs with PIN as query param so the next page can use it
+                $('#ltDeliveryTile').attr('href', '/GrowerDelivery/NewWeightSheet?pin=' + _pin);
+                $('#ltTransferTile').attr('href', '/Warehouse/TransferIn?pin=' + _pin);
+            })
+            .fail(function (xhr) {
+                var msg = xhr.responseJSON && xhr.responseJSON.message
+                    ? xhr.responseJSON.message : 'Invalid PIN.';
+                $('#ltPinError').text(msg).removeAttr('hidden');
+            });
+        });
+
+        // If modal dismissed without PIN, go back
+        document.getElementById('ltPinModal').addEventListener('hidden.bs.modal', function () {
+            if (!_pin) {
+                window.location.href = '/Warehouse';
+            }
+        });
+    });
+})();
+</script>
+}

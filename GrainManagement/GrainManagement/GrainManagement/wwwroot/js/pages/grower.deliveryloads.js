@@ -54,6 +54,26 @@
         newLotBtn:          "#dlNewLotBtn",
         editLotLink:        "#dlEditLotLink",
         saveCommentBtn:     "#dlSaveCommentBtn",
+        // reprint modal
+        reprintModal:       "#dlReprintModal",
+        reprintTxnId:       "#dlReprintTxnId",
+        reprintPrinterSel:  "#dlReprintPrinterSelect",
+        reprintSendBtn:     "#dlReprintSendBtn",
+        reprintError:       "#dlReprintError",
+        browserPrintBtn:    "#dlBrowserPrintBtn",
+        // void modal
+        voidModal:    "#dlVoidModal",
+        voidTxnId:    "#dlVoidTxnId",
+        voidReason:   "#dlVoidReason",
+        voidPin:      "#dlVoidPin",
+        voidError:    "#dlVoidError",
+        voidSaveBtn:  "#dlVoidSaveBtn",
+        // restore modal
+        restoreModal:   "#dlRestoreModal",
+        restoreTxnId:   "#dlRestoreTxnId",
+        restorePin:     "#dlRestorePin",
+        restoreError:   "#dlRestoreError",
+        restoreSaveBtn: "#dlRestoreSaveBtn",
     };
 
     var _locationId = 0;
@@ -66,6 +86,10 @@
     var _selectedLotId = null;
     var _binTargetRow = null;   // load row currently being assigned a bin
     var _selectedBinId = null;
+    var _voidModal = null;
+    var _restoreModal = null;
+    var _reprintModal = null;
+    var _connectedPrinters = [];  // populated via SignalR
 
     // ── Init ─────────────────────────────────────────────────────────────────
     $(function () {
@@ -87,7 +111,19 @@
         _haulerModal = new bootstrap.Modal(document.getElementById("dlHaulerModal"));
         _lotModal = new bootstrap.Modal(document.getElementById("dlLotModal"));
         _binModal = new bootstrap.Modal(document.getElementById("dlBinModal"));
+        _voidModal = new bootstrap.Modal(document.getElementById("dlVoidModal"));
+        _restoreModal = new bootstrap.Modal(document.getElementById("dlRestoreModal"));
+        _reprintModal = new bootstrap.Modal(document.getElementById("dlReprintModal"));
         initBinGrid();
+        initVoidRestore();
+        initReprint();
+
+        // Print Summary button
+        $("#dlPrintSummaryBtn").on("click", function () {
+            if (_wsId > 0) {
+                window.open("/api/printjobs/weight-sheet-summary/" + _wsId + "/pdf", "_blank");
+            }
+        });
 
         initGrid();
         initHaulerSelect();
@@ -103,6 +139,7 @@
         $(sel.editLotBtn).on("click", openLotModal);
         $(sel.haulerSaveBtn).on("click", saveHauler);
         $(sel.lotSaveBtn).on("click", saveLot);
+        $(sel.lotPin).on("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $(sel.lotSaveBtn).click(); } });
         $(sel.saveCommentBtn).on("click", saveComment);
 
         // Show save button when comment text changes
@@ -145,12 +182,12 @@
 
         _wsHeader = row;
 
-        var fmtId = formatId(row.WeightSheetId);
+        var fmtId = row.WsAs400Id ? String(row.WsAs400Id) : formatId(row.WeightSheetId);
         $(sel.wsIdFmt).text(fmtId);
 
-        // Lot details
+        // Lot details — show As400Id if available
         if (row.LotId && row.LotServerId && row.LotLocationId) {
-            $(sel.wsLotNumber).text(formatId(row.LotId));
+            $(sel.wsLotNumber).text(row.LotAs400Id ? String(row.LotAs400Id) : formatId(row.LotId));
         } else {
             $(sel.wsLotNumber).text("—");
         }
@@ -159,9 +196,13 @@
         $(sel.wsSplit).text(row.SplitName || "—");
         $(sel.wsAccount).text(row.PrimaryAccountName || "—");
 
+        // Weightmaster & Date
+        $("#dlWsWeightmaster").text(row.WeightmasterName || "—");
+        $("#dlWsDate").text(row.CreationDate || "—");
+
         // BOL / Hauler details
-        var rt = row.RateType;
-        $(sel.wsRateType).text(BOL_LABELS[rt] || rt || "—");
+        var rt = row.RateType || "N";
+        $(sel.wsRateType).text(BOL_LABELS[rt] || BOL_LABELS["N"] || "None");
         $(sel.wsHauler).text(row.HaulerName || (rt === "U" ? "N/A" : "—"));
 
         var isAF = rt === "A" || rt === "F";
@@ -195,14 +236,28 @@
     }
 
     // ── Grid ─────────────────────────────────────────────────────────────────
+    function formatId(id) {
+        var s = String(id);
+        if (s.length < 7) return s;
+        return s.substring(0, 3) + '-' + s.substring(3, 6) + '-' + s.substring(6);
+    }
+
+    function isRowComplete(d) {
+        return !!d.OutWeight && !!d.ContainerDescription && d.Attr1Value > 0;
+    }
+
+    function isRowCompleteMissingProtein(d) {
+        return !!d.OutWeight && !!d.ContainerDescription && !(d.Attr1Value > 0);
+    }
+
     function initGrid() {
         $(sel.grid).dxDataGrid({
             dataSource: [],
-            keyExpr: "LoadId",
-            height: "calc(100vh - 280px)",
+            keyExpr: "TransactionId",
+            height: "calc(100vh - 210px)",
             showBorders: true,
             columnAutoWidth: true,
-            rowAlternationEnabled: true,
+            rowAlternationEnabled: false,
             hoverStateEnabled: true,
             wordWrapEnabled: false,
             allowColumnResizing: true,
@@ -224,141 +279,246 @@
                 e.cancel = true; // handled manually via cellTemplate edit
             },
             columns: [
-                // Complete checkbox
+                // Completed status
                 {
-                    caption: "✓",
-                    width: 40,
+                    caption: "Completed",
+                    width: 120,
                     alignment: "center",
-                    allowFiltering: false,
-                    allowSorting: false,
+                    allowFiltering: true,
+                    allowSorting: true,
+                    allowEditing: false,
                     cellTemplate: function (container, options) {
                         var d = options.data;
-                        var complete = !!d.OutWeight && !!d.ContainerDescription &&
-                                       d.Attr1Value > 0 && d.Attr2Value > 0;
-                        $("<input>").attr({ type: "checkbox", disabled: true })
-                            .prop("checked", complete)
+                        var complete = isRowComplete(d);
+                        var missingProtein = isRowCompleteMissingProtein(d);
+                        var cls, text;
+                        if (complete) {
+                            cls = "bg-success"; text = "Completed";
+                        } else if (missingProtein) {
+                            cls = "bg-warning text-dark"; text = "Completed";
+                        } else {
+                            cls = "bg-danger"; text = "Not Complete";
+                        }
+                        $("<span>").addClass("badge " + cls).css({ "font-size": "0.8em", "display": "inline-block", "min-width": "90px", "text-align": "center" }).text(text)
                             .appendTo(container);
                     },
                 },
                 {
                     dataField: "TransactionId",
                     caption: "Load ID",
-                    width: 100,
                     dataType: "number",
                     sortOrder: "desc",
                     sortIndex: 0,
                     allowEditing: false,
+                    cellTemplate: function (container, options) {
+                        $("<a>")
+                            .attr("href", "/GrowerDelivery/Index?wsId=" + _wsId + "&txnId=" + options.data.TransactionId)
+                            .text(formatId(options.data.TransactionId))
+                            .css({ color: "#0d6efd", textDecoration: "underline", cursor: "pointer" })
+                            .appendTo(container);
+                    },
                 },
                 {
-                    dataField: "CreationDate",
-                    caption: "Date",
-                    width: 100,
-                    dataType: "string",
+                    dataField: "StartedAt",
+                    caption: "Time In",
+                    width: 130,
+                    dataType: "datetime",
                     allowEditing: false,
+                    cellTemplate: function (container, options) {
+                        var val = options.data.StartedAt;
+                        if (val) {
+                            var d = new Date(val);
+                            $("<span>").text(d.toLocaleString(undefined, { month: "2-digit", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }))
+                                .css("font-size", "0.85em").appendTo(container);
+                        }
+                    },
                 },
-                // Bin — click to open bin picker
+                {
+                    dataField: "CompletedAt",
+                    caption: "Time Out",
+                    width: 130,
+                    dataType: "datetime",
+                    allowEditing: false,
+                    cellTemplate: function (container, options) {
+                        var val = options.data.CompletedAt;
+                        if (val) {
+                            var d = new Date(val);
+                            $("<span>").text(d.toLocaleString(undefined, { month: "2-digit", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }))
+                                .css("font-size", "0.85em").appendTo(container);
+                        }
+                    },
+                },
+                // Bin — click to open bin picker, yellow if not set
                 {
                     dataField: "ContainerDescription",
                     caption: "Bin",
-                    width: 140,
                     allowEditing: false,
                     cellTemplate: function (container, options) {
                         var val = options.data.ContainerDescription;
                         var $cell = $("<span>").text(val || "— select —")
-                            .css({ cursor: "pointer", textDecoration: "underline dotted" })
-                            .on("click", function () { openBinModal(options.data); });
-                        if (!val) $cell.css("background-color", "#ffc0cb");
+                            .css({ cursor: "pointer", textDecoration: "underline dotted", display: "block", padding: "2px 4px" })
+                            .on("click", function (e) { e.stopPropagation(); openBinModal(options.data); });
+                        if (!val) container.css("background-color", "#fff9c4");
                         container.append($cell);
                     },
                 },
                 {
                     dataField: "InWeight",
-                    caption: "In Weight",
-                    width: 110,
+                    caption: "In Wt",
+                    width: 80,
                     dataType: "number",
                     format: { type: "fixedPoint", precision: 0 },
                     allowEditing: false,
+                    cellTemplate: function (container, options) {
+                        var val = options.data.InWeight;
+                        var manual = options.data.StartIsManual ? " M" : "";
+                        $("<span>").text(val != null ? Number(val).toLocaleString() + manual : "").appendTo(container);
+                    },
                 },
                 {
                     dataField: "OutWeight",
-                    caption: "Out Weight",
-                    width: 110,
+                    caption: "Out Wt",
+                    width: 80,
                     dataType: "number",
                     format: { type: "fixedPoint", precision: 0 },
                     allowEditing: false,
                     cellTemplate: function (container, options) {
                         var val = options.data.OutWeight;
-                        var $cell = $("<span>").text(val != null ? Number(val).toLocaleString() : "");
-                        if (!val) $cell.css("background-color", "#ffc0cb");
-                        container.append($cell);
+                        var manual = options.data.EndIsManual ? " M" : "";
+                        $("<span>").text(val != null ? Number(val).toLocaleString() + manual : "").appendTo(container);
                     },
                 },
                 {
                     dataField: "Net",
                     caption: "Net",
-                    width: 100,
+                    width: 80,
                     dataType: "number",
                     format: { type: "fixedPoint", precision: 0 },
                     cssClass: "fw-bold",
                     allowEditing: false,
                 },
-                // Protein — inline editable, pink if null/0
+                // Protein — inline editable, highlighted if not set
                 {
                     dataField: "Attr1Value",
                     caption: "Protein",
                     width: 90,
                     dataType: "number",
-                    allowEditing: true,
-                    editorOptions: { min: 0, max: 40, format: "#0.00", step: 0 },
+                    allowEditing: false,
                     cellTemplate: function (container, options) {
-                        var val = options.data.Attr1Value;
+                        var d = options.data;
+                        var val = d.Attr1Value;
                         var display = (val != null && val > 0) ? Number(val).toFixed(2) : "";
                         var $cell = $("<span>").text(display)
-                            .css({ display: "block", textAlign: "right", cursor: "pointer" });
-                        if (!val || val <= 0) $cell.css("background-color", "#ffc0cb");
-                        $cell.on("click", function () {
-                            openAttrInlineEdit(options.data, 1, container);
-                        });
+                            .css({ display: "block", textAlign: "right", cursor: "pointer", padding: "2px 4px" })
+                            .on("click", function (e) { e.stopPropagation(); openAttrInlineEdit(d, 1, container); });
+                        if (!val || val <= 0) {
+                            // Orange highlight if row is otherwise complete, yellow if not
+                            var urgent = isRowCompleteMissingProtein(d);
+                            container.css({
+                                "background-color": urgent ? "#ffcc80" : "#fff9c4",
+                                "border": urgent ? "2px solid #e65100" : "none",
+                            });
+                            if (!display) $cell.text("*").css({ color: "#e65100", fontWeight: "bold", fontSize: "1.2em" });
+                        }
                         container.append($cell);
                     },
                 },
-                // Moisture — inline editable, pink if null/0
+                // Moisture — inline editable
                 {
                     dataField: "Attr2Value",
                     caption: "Moisture",
                     width: 90,
                     dataType: "number",
-                    allowEditing: true,
-                    editorOptions: { min: 0, max: 40, format: "#0.00", step: 0 },
+                    allowEditing: false,
                     cellTemplate: function (container, options) {
                         var val = options.data.Attr2Value;
                         var display = (val != null && val > 0) ? Number(val).toFixed(2) : "";
                         var $cell = $("<span>").text(display)
-                            .css({ display: "block", textAlign: "right", cursor: "pointer" });
-                        if (!val || val <= 0) $cell.css("background-color", "#ffc0cb");
-                        $cell.on("click", function () {
-                            openAttrInlineEdit(options.data, 2, container);
-                        });
+                            .css({ display: "block", textAlign: "right", cursor: "pointer", padding: "2px 4px" })
+                            .on("click", function (e) { e.stopPropagation(); openAttrInlineEdit(options.data, 2, container); });
                         container.append($cell);
                     },
                 },
                 {
                     dataField: "Notes",
                     caption: "Notes",
-                    width: 160,
+                    minWidth: 200,
                     allowEditing: false,
+                    cellTemplate: function (container, options) {
+                        var val = options.data.Notes;
+                        $("<span>").text(val || "")
+                            .css({ display: "block", cursor: "pointer", padding: "2px 4px", fontStyle: val ? "normal" : "italic", color: val ? "inherit" : "#999" })
+                            .appendTo(container);
+                    },
+                },
+                // Print button
+                {
+                    caption: "Print",
+                    width: 70,
+                    alignment: "center",
+                    allowFiltering: false,
+                    allowSorting: false,
+                    allowEditing: false,
+                    cellTemplate: function (container, options) {
+                        $("<button>")
+                            .addClass("btn btn-outline-primary btn-sm")
+                            .attr("title", "Print / Reprint ticket")
+                            .html('<i class="dx-icon dx-icon-print"></i>')
+                            .on("click", function (e) { e.stopPropagation(); openReprintModal(options.data); })
+                            .appendTo(container);
+                    },
                 },
             ],
-            summary: {
-                totalItems: [
-                    { column: "Net", summaryType: "sum", valueFormat: { type: "fixedPoint", precision: 0 }, displayFormat: "Total: {0}" },
-                    { column: "TransactionId", summaryType: "count", displayFormat: "Loads: {0}" },
-                ],
+            onCellClick: function (e) {
+                if (e.rowType !== "data") return;
+
+                var col = e.column;
+                var df = col ? (col.dataField || "") : "";
+                var caption = col ? (col.caption || "") : "";
+                var tag = (e.event.target.tagName || "").toLowerCase();
+
+                // Protein — open inline edit
+                if (df === "Attr1Value" || caption === "Protein") {
+                    openAttrInlineEdit(e.data, 1, $(e.cellElement));
+                    return;
+                }
+                // Moisture — open inline edit
+                if (df === "Attr2Value" || caption === "Moisture") {
+                    openAttrInlineEdit(e.data, 2, $(e.cellElement));
+                    return;
+                }
+                // Bin — open bin picker
+                if (df === "ContainerDescription" || caption === "Bin") {
+                    openBinModal(e.data);
+                    return;
+                }
+                // Notes — open inline edit
+                if (df === "Notes" || caption === "Notes") {
+                    openNotesInlineEdit(e.data, $(e.cellElement));
+                    return;
+                }
+                // Print, Completed — no navigation
+                if (caption === "Print" || caption === "Completed") return;
+
+                // Skip if clicking buttons/inputs
+                if (tag === "button" || tag === "input" || tag === "i" ||
+                    $(e.event.target).closest("button").length > 0) return;
+
+                var d = e.data;
+                var url = "/GrowerDelivery/Index?wsId=" + _wsId + "&txnId=" + d.TransactionId;
+                window.location.href = url;
             },
             onRowPrepared: function (e) {
                 if (e.rowType !== "data") return;
-                if (e.data && e.data.ClosedAt) {
-                    e.rowElement.css({ opacity: 0.6 });
+                var d = e.data;
+                if (d && d._isVoided) {
+                    e.rowElement.css({ opacity: 0.45, textDecoration: "line-through" });
+                } else if (d && isRowComplete(d)) {
+                    e.rowElement.css("background-color", "#e8f5e9"); // light green
+                } else if (d && isRowCompleteMissingProtein(d)) {
+                    e.rowElement.css("background-color", "#fff9c4"); // light yellow
+                } else if (d) {
+                    e.rowElement.css("background-color", "#fce4ec"); // light pink
                 }
             },
         });
@@ -378,10 +538,44 @@
             dataType: "json",
         })
         .done(function (data) {
-            var grid = $(sel.grid).dxDataGrid("instance");
-            grid.option("dataSource", data);
-            grid.refresh();
-            updateStats(data);
+            // Fetch void eligibility for each unique TransactionId
+            var txnIds = [];
+            var txnIdSet = {};
+            (data || []).forEach(function (r) {
+                if (r.TransactionId && !txnIdSet[r.TransactionId]) {
+                    txnIdSet[r.TransactionId] = true;
+                    txnIds.push(r.TransactionId);
+                }
+            });
+
+            var eligibilityMap = {};
+            var promises = txnIds.map(function (txnId) {
+                return $.ajax({
+                    url: "/api/GrowerDelivery/" + txnId + "/void-eligibility",
+                    method: "GET",
+                    dataType: "json",
+                }).done(function (elig) {
+                    eligibilityMap[txnId] = elig;
+                }).fail(function () {
+                    // If eligibility check fails, hide buttons
+                    eligibilityMap[txnId] = { CanVoid: false, CanRestore: false, IsVoided: false };
+                });
+            });
+
+            $.when.apply($, promises).always(function () {
+                // Enrich rows with void eligibility flags
+                (data || []).forEach(function (r) {
+                    var e = eligibilityMap[r.TransactionId] || {};
+                    r._canVoid   = !!e.CanVoid;
+                    r._canRestore = !!e.CanRestore;
+                    r._isVoided  = !!e.IsVoided;
+                });
+
+                var grid = $(sel.grid).dxDataGrid("instance");
+                grid.option("dataSource", data);
+                grid.refresh();
+                updateStats(data);
+            });
         })
         .fail(function (xhr) {
             var msg = xhr.responseJSON && xhr.responseJSON.message
@@ -396,51 +590,128 @@
         if (!data || !data.length) {
             $("#dlStatTotal").text("0 loads");
             $("#dlStatComplete").text("0 complete");
+            $("#dlStatTotalNet").text("Net: 0 lbs");
             return;
         }
-        // filter to current wsId rows only (data may contain multiple sheets when wsId=0)
         var rows = _wsId > 0 ? data.filter(function (r) { return r.WeightSheetId === _wsId; }) : data;
         var total = rows.length;
         var complete = rows.filter(function (r) {
-            return !!r.OutWeight && !!r.ContainerDescription && r.Attr1Value > 0 && r.Attr2Value > 0;
+            return isRowComplete(r) || isRowCompleteMissingProtein(r);
         }).length;
+        var totalNet = rows.reduce(function (sum, r) {
+            // Only count loads that have a completed weight (OutWeight or DirectQty)
+            if (r.OutWeight == null && r.Net == null) return sum;
+            return sum + (r.Net || 0);
+        }, 0);
         $("#dlStatTotal").text(total + " load" + (total !== 1 ? "s" : ""));
         $("#dlStatComplete").text(complete + " complete");
+        $("#dlStatTotalNet").text("Net: " + Number(totalNet).toLocaleString(undefined, { maximumFractionDigits: 0 }) + " lbs");
     }
 
     // ── Inline attribute edit (Protein / Moisture) ───────────────────────────
     function openAttrInlineEdit(rowData, attrTypeId, cellContainer) {
         var currentVal = attrTypeId === 1 ? rowData.Attr1Value : rowData.Attr2Value;
-        var label = attrTypeId === 1 ? "Protein" : "Moisture";
+        var maxVal = attrTypeId === 1 ? 20 : 50;
+        var saving = false;
 
-        // Replace cell content with a small input
         cellContainer.empty();
         var $input = $("<input>")
-            .attr({ type: "number", min: 0, max: 40, step: 0.01 })
+            .attr({ type: "number", min: 0, max: maxVal, step: 0.01 })
             .val(currentVal > 0 ? currentVal : "")
             .css({ width: "100%", fontSize: "13px", padding: "2px 4px", textAlign: "right" })
-            .appendTo(cellContainer)
-            .focus()
-            .on("blur keydown", function (e) {
-                if (e.type === "keydown" && e.key !== "Enter" && e.key !== "Escape") return;
-                if (e.type === "keydown" && e.key === "Escape") { loadData(); return; }
+            .appendTo(cellContainer);
 
-                var newVal = parseFloat($input.val());
-                if (isNaN(newVal) || newVal < 0 || newVal > 40) {
-                    loadData(); return;
-                }
-                var saveVal = newVal === 0 ? null : newVal;
-                $.ajax({
-                    url: "/api/GrowerDelivery/WeightSheetDeliveryLoads/UpdateAttribute",
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        TransactionId: rowData.TransactionId,
-                        AttributeTypeId: attrTypeId,
-                        DecimalValue: saveVal
-                    })
-                }).always(function () { loadData(); });
-            });
+        // Defer focus to next tick so the grid doesn't steal it
+        setTimeout(function () { $input.focus().select(); }, 0);
+
+        function commitValue() {
+            if (saving) return;
+            saving = true;
+
+            var newVal = parseFloat($input.val());
+            if (isNaN(newVal) || newVal < 0 || newVal > maxVal) {
+                loadData();
+                return;
+            }
+            var saveVal = newVal === 0 ? null : newVal;
+            $.ajax({
+                url: "/api/GrowerDelivery/WeightSheetDeliveryLoads/UpdateAttribute",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    TransactionId: rowData.TransactionId,
+                    AttributeTypeId: attrTypeId,
+                    DecimalValue: saveVal
+                })
+            })
+            .done(function () { console.log("[DeliveryLoads] Attribute saved."); })
+            .fail(function (xhr) { console.error("[DeliveryLoads] Attribute save failed:", xhr.status, xhr.responseText); })
+            .always(function () { loadData(); });
+        }
+
+        $input.on("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                $input.off("blur"); // prevent blur from double-firing
+                commitValue();
+            } else if (e.key === "Escape") {
+                e.preventDefault();
+                $input.off("blur");
+                loadData();
+            }
+        });
+
+        $input.on("blur", function () {
+            commitValue();
+        });
+    }
+
+    // ── Inline notes edit ─────────────────────────────────────────────────────
+    function openNotesInlineEdit(rowData, cellContainer) {
+        var currentVal = rowData.Notes || "";
+        var saving = false;
+
+        cellContainer.empty();
+        var $input = $("<input>")
+            .attr({ type: "text", maxlength: 500, placeholder: "Add notes…" })
+            .val(currentVal)
+            .css({ width: "100%", fontSize: "13px", padding: "2px 4px" })
+            .appendTo(cellContainer);
+
+        setTimeout(function () { $input.focus().select(); }, 0);
+
+        function commitNotes() {
+            if (saving) return;
+            saving = true;
+            var newVal = ($input.val() || "").trim();
+            // Skip save if unchanged
+            if (newVal === (currentVal || "").trim()) { loadData(); return; }
+            $.ajax({
+                url: "/api/GrowerDelivery/WeightSheetDeliveryLoads/UpdateNotes",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    TransactionId: rowData.TransactionId,
+                    Notes: newVal || null
+                })
+            })
+            .fail(function (xhr) { console.error("[DeliveryLoads] Notes save failed:", xhr.status, xhr.responseText); })
+            .always(function () { loadData(); });
+        }
+
+        $input.on("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                $input.off("blur");
+                commitNotes();
+            } else if (e.key === "Escape") {
+                e.preventDefault();
+                $input.off("blur");
+                loadData();
+            }
+        });
+
+        $input.on("blur", function () { commitNotes(); });
     }
 
     // ── Bin selection modal ───────────────────────────────────────────────────
@@ -505,7 +776,8 @@
             contentType: "application/json",
             data: JSON.stringify({
                 LoadId: _binTargetRow.LoadId,
-                ContainerId: _selectedBinId
+                ContainerId: _selectedBinId,
+                TransactionId: _binTargetRow.TransactionId
             })
         })
         .done(function () {
@@ -522,7 +794,7 @@
     }
 
     // ── BOL Type modal (DevExtreme) ──────────────────────────────────────────
-    var BOL_LABELS = { U: "Universal", A: "Along Side the Field", F: "Farm Storage", C: "Custom" };
+    var BOL_LABELS = { N: "None", U: "Universal", A: "Along Side the Field", F: "Farm Storage", C: "Custom" };
 
     function initHaulerSelect() {
         var haulerDs = new DevExpress.data.DataSource({
@@ -797,6 +1069,7 @@
         if (grid) grid.clearSelection();
 
         _lotModal.show();
+        setTimeout(function () { $(sel.lotPin).focus(); }, 500);
     }
 
     // ── Update Edit Lot Properties link in header ─────────────────────────
@@ -940,6 +1213,255 @@
             .always(function () {
                 $(sel.attrSaveBtn).prop("disabled", false).text("Save");
             });
+    }
+
+    // ── Void / Restore ─────────────────────────────────────────────────────
+
+    function initVoidRestore() {
+        $(sel.voidSaveBtn).on("click", submitVoid);
+        $(sel.restoreSaveBtn).on("click", submitRestore);
+        $(sel.voidPin).on("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $(sel.voidSaveBtn).click(); } });
+        $(sel.restorePin).on("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $(sel.restoreSaveBtn).click(); } });
+    }
+
+    function openVoidModal(rowData) {
+        $(sel.voidTxnId).val(rowData.TransactionId);
+        $(sel.voidReason).val("");
+        $(sel.voidPin).val("");
+        $(sel.voidError).attr("hidden", true);
+        $(sel.voidSaveBtn).prop("disabled", false).text("Void Ticket");
+        _voidModal.show();
+        setTimeout(function () { $(sel.voidPin).focus(); }, 500);
+    }
+
+    function openRestoreModal(rowData) {
+        $(sel.restoreTxnId).val(rowData.TransactionId);
+        $(sel.restorePin).val("");
+        $(sel.restoreError).attr("hidden", true);
+        $(sel.restoreSaveBtn).prop("disabled", false).text("Restore Ticket");
+        _restoreModal.show();
+        setTimeout(function () { $(sel.restorePin).focus(); }, 500);
+    }
+
+    function submitVoid() {
+        var txnId  = $(sel.voidTxnId).val();
+        var reason = $(sel.voidReason).val().trim();
+        var pin    = parseInt($(sel.voidPin).val(), 10);
+
+        if (!reason) {
+            $(sel.voidError).text("Void reason is required.").removeAttr("hidden");
+            return;
+        }
+        if (!pin || pin <= 0) {
+            $(sel.voidError).text("A valid PIN is required.").removeAttr("hidden");
+            return;
+        }
+
+        $(sel.voidSaveBtn).prop("disabled", true).text("Voiding…");
+        $(sel.voidError).attr("hidden", true);
+
+        $.ajax({
+            url: "/api/GrowerDelivery/" + txnId + "/void",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ Pin: pin, VoidReason: reason }),
+        })
+        .done(function () {
+            _voidModal.hide();
+            showAlert("Ticket " + txnId + " has been voided.", "success");
+            loadData();
+        })
+        .fail(function (xhr) {
+            var msg = xhr.responseJSON && xhr.responseJSON.message
+                ? xhr.responseJSON.message : "Failed to void ticket.";
+            $(sel.voidError).text(msg).removeAttr("hidden");
+        })
+        .always(function () {
+            $(sel.voidSaveBtn).prop("disabled", false).text("Void Ticket");
+        });
+    }
+
+    function submitRestore() {
+        var txnId = $(sel.restoreTxnId).val();
+        var pin   = parseInt($(sel.restorePin).val(), 10);
+
+        if (!pin || pin <= 0) {
+            $(sel.restoreError).text("A valid PIN is required.").removeAttr("hidden");
+            return;
+        }
+
+        $(sel.restoreSaveBtn).prop("disabled", true).text("Restoring…");
+        $(sel.restoreError).attr("hidden", true);
+
+        $.ajax({
+            url: "/api/GrowerDelivery/" + txnId + "/restore",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ Pin: pin }),
+        })
+        .done(function () {
+            _restoreModal.hide();
+            showAlert("Ticket " + txnId + " has been restored.", "success");
+            loadData();
+        })
+        .fail(function (xhr) {
+            var msg = xhr.responseJSON && xhr.responseJSON.message
+                ? xhr.responseJSON.message : "Failed to restore ticket.";
+            $(sel.restoreError).text(msg).removeAttr("hidden");
+        })
+        .always(function () {
+            $(sel.restoreSaveBtn).prop("disabled", false).text("Restore Ticket");
+        });
+    }
+
+    // ── Reprint ──────────────────────────────────────────────────────────────
+
+    function initReprint() {
+        $(sel.reprintSendBtn).on("click", submitReprint);
+        $(sel.browserPrintBtn).on("click", browserPrint);
+        loadPrinterList();
+    }
+
+    var _printConn = null;
+    var _printConnReady = false;
+    var _printersLoaded = false;
+
+    function loadPrinterList() {
+        if (typeof signalR === "undefined") return;
+
+        _printConn = new signalR.HubConnectionBuilder()
+            .withUrl("/hubs/print")
+            .withAutomaticReconnect()
+            .build();
+
+        _printConn.on("PrinterListReceived", function (data) {
+            var printers = (data.printers || []).map(function (p) {
+                return { id: data.serviceId + ":" + p.printerId, name: p.displayName || p.printerId };
+            });
+            _connectedPrinters = _connectedPrinters.concat(printers);
+            _printersLoaded = true;
+            populatePrinterDropdown();
+        });
+
+        _printConn.on("PrintServiceStatusChanged", function () {
+            // If no services connected, mark as loaded (empty)
+            if (_printConn) {
+                _printConn.invoke("GetConnectedPrintServices").then(function (ids) {
+                    if (!ids || ids.length === 0) {
+                        _printersLoaded = true;
+                        populatePrinterDropdown();
+                    }
+                }).catch(function () {});
+            }
+        });
+
+        _printConn.start().then(function () {
+            _printConnReady = true;
+        }).catch(function () {
+            console.warn("[DeliveryLoads] Could not connect to PrintHub.");
+            _printConnReady = true;
+            _printersLoaded = true;
+        });
+    }
+
+    function populatePrinterDropdown() {
+        var $sel = $(sel.reprintPrinterSel);
+        $sel.empty();
+        $sel.append('<option value="__default__">Default (Inbound role)</option>');
+        _connectedPrinters.forEach(function (p) {
+            $sel.append($("<option>").val(p.id).text(p.name));
+        });
+        // Enable controls
+        $(sel.reprintSendBtn).prop("disabled", false);
+        $(sel.browserPrintBtn).prop("disabled", false);
+    }
+
+    function showPrinterSpinner() {
+        var $sel = $(sel.reprintPrinterSel);
+        $sel.empty().append('<option value="">Loading printers…</option>');
+        $(sel.reprintSendBtn).prop("disabled", true);
+    }
+
+    function openReprintModal(rowData) {
+        $(sel.reprintTxnId).val(rowData.TransactionId);
+        $(sel.reprintError).attr("hidden", true);
+        $(sel.reprintSendBtn).prop("disabled", true).text("Print");
+
+        if (_printersLoaded) {
+            // Already have printer list
+            populatePrinterDropdown();
+            _reprintModal.show();
+            return;
+        }
+
+        // Show spinner while waiting for printers
+        showPrinterSpinner();
+        _reprintModal.show();
+
+        // Request printer list if connection is ready
+        if (_printConnReady && _printConn) {
+            _connectedPrinters = [];
+            _printConn.invoke("RequestPrinterList").catch(function () {});
+        }
+
+        // Poll until printers arrive or timeout (5s)
+        var attempts = 0;
+        var maxAttempts = 25; // 25 x 200ms = 5s
+        var poll = setInterval(function () {
+            attempts++;
+            if (_printersLoaded) {
+                clearInterval(poll);
+                populatePrinterDropdown();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(poll);
+                _printersLoaded = true;
+                populatePrinterDropdown();
+                if (_connectedPrinters.length === 0) {
+                    $(sel.reprintError).text("No print services responded. You can still use Browser Print or the default printer.").removeAttr("hidden");
+                }
+            }
+        }, 200);
+    }
+
+    function submitReprint() {
+        var txnId = $(sel.reprintTxnId).val();
+        var printerId = $(sel.reprintPrinterSel).val();
+
+        $(sel.reprintSendBtn).prop("disabled", true).text("Printing…");
+        $(sel.reprintError).attr("hidden", true);
+
+        var url;
+        if (!printerId || printerId === "__default__") {
+            // Use the role-based default printer
+            url = "/api/printing/reprint/" + encodeURIComponent(txnId) + "?role=Inbound";
+        } else {
+            url = "/api/printing/printer/" + encodeURIComponent(printerId) + "/print-ticket/" + encodeURIComponent(txnId);
+        }
+
+        $.ajax({
+            url: url,
+            method: "POST",
+        })
+        .done(function () {
+            _reprintModal.hide();
+            showAlert("Print job sent for ticket " + txnId + ".", "success");
+        })
+        .fail(function (xhr) {
+            var msg = xhr.responseJSON && xhr.responseJSON.error
+                ? xhr.responseJSON.error : "Print failed.";
+            $(sel.reprintError).text(msg).removeAttr("hidden");
+        })
+        .always(function () {
+            $(sel.reprintSendBtn).prop("disabled", false).text("Print");
+        });
+    }
+
+    function browserPrint() {
+        var txnId = $(sel.reprintTxnId).val();
+        if (!txnId) return;
+        // Open the PDF in a new tab — the browser's native print dialog will handle it
+        window.open("/api/printjobs/load-ticket/" + encodeURIComponent(txnId) + "/pdf", "_blank");
+        _reprintModal.hide();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

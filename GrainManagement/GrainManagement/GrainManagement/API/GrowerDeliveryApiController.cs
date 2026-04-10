@@ -215,17 +215,48 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 return BadRequest(new { message = $"CreatedByUserId {dto.CreatedByUserId.Value} is not valid or not active." });
         }
 
-        // ── Build the transaction (header + detail) ────────────────────────────
-        var txn = new InventoryTransaction
-        {
-            LocationId   = dto.LocationId,
-            CreatedAt    = DateTime.UtcNow,
-        };
-
         // ── Validate container splits (if provided) ────────────────────────────
         var toSplitError = ValidateContainerSplits(dto.ToContainers, "destination");
         if (toSplitError != null)
             return BadRequest(new { message = toSplitError });
+
+        // ── TruckId uniqueness check for truck loads ─────────────────────────
+        if (isTruck && !string.IsNullOrWhiteSpace(dto.TruckId))
+        {
+            var normalizedTruckId = dto.TruckId.Trim().ToUpperInvariant();
+            dto.TruckId = normalizedTruckId;
+
+            // Find the TRUCK_ID attribute type ID
+            var truckIdAttrTypeId = await _ctx.TransactionAttributeTypes
+                .AsNoTracking()
+                .Where(t => t.Code == "TRUCK_ID" && t.IsActive == true)
+                .Select(t => t.Id)
+                .FirstOrDefaultAsync(ct);
+
+            if (truckIdAttrTypeId > 0)
+            {
+                // Check for any incomplete load with the same TruckId at this location+server
+                var duplicateExists = await _ctx.TransactionAttributes
+                    .AsNoTracking()
+                    .Where(ta => ta.AttributeTypeId == truckIdAttrTypeId
+                              && ta.StringValue == normalizedTruckId)
+                    .Join(_ctx.InventoryTransactionDetails.AsNoTracking(),
+                          ta => ta.TransactionId,
+                          itd => itd.TransactionId,
+                          (ta, itd) => new { ta, itd })
+                    .Join(_ctx.InventoryTransactions.AsNoTracking(),
+                          x => x.itd.TransactionId,
+                          txn => txn.TransactionId,
+                          (x, txn) => new { x.itd, txn })
+                    .Where(x => x.txn.LocationId == dto.LocationId
+                              && x.itd.CompletedAt == null
+                              && x.itd.IsVoided == false)
+                    .AnyAsync(ct);
+
+                if (duplicateExists)
+                    return BadRequest(new { message = $"Truck ID '{normalizedTruckId}' already has an incomplete load at this location. Complete or void the existing load first." });
+            }
+        }
 
         // ── Resolve CompletedAt per truck vs non-truck rules ────────────────
         // Truck: set CompletedAt only when EndQty is provided (scale-out)
@@ -234,8 +265,53 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             ? (dto.EndQty.HasValue ? dto.CompletedAt ?? DateTime.UtcNow : null)
             : dto.CompletedAt ?? DateTime.UtcNow;
 
-        txn.InventoryTransactionDetail = new InventoryTransactionDetail
+        // ── Insert transaction header via raw SQL (INSTEAD OF INSERT trigger) ──
+        var now = DateTime.UtcNow;
+        var txnRowUid = Guid.NewGuid();
+        long transactionId;
+
+        try
         {
+            var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+            if (conn.State != System.Data.ConnectionState.Open)
+                await conn.OpenAsync(ct);
+
+            // Use a single command to insert and retrieve the trigger-generated TransactionId.
+            // The INSTEAD OF trigger intercepts the INSERT and generates the real row.
+            // We retrieve it by querying the max TransactionId for this location immediately after.
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = _ctx.Database.CurrentTransaction?.GetDbTransaction() as SqlTransaction;
+                cmd.CommandText = @"
+                    DECLARE @uid UNIQUEIDENTIFIER = @rowUid;
+
+                    INSERT INTO [Inventory].[InventoryTransactions] (LocationId, CreatedAt, RowUid)
+                    VALUES (@locId, @created, @uid);
+
+                    -- Try RowUid first (if trigger preserves it), then fall back to MAX
+                    SELECT TOP 1 TransactionId
+                    FROM [Inventory].[InventoryTransactions]
+                    WHERE RowUid = @uid
+                       OR (LocationId = @locId AND CreatedAt = @created)
+                    ORDER BY TransactionId DESC;";
+                cmd.Parameters.AddWithValue("@locId", dto.LocationId);
+                cmd.Parameters.AddWithValue("@created", now);
+                cmd.Parameters.AddWithValue("@rowUid", txnRowUid);
+                var result = await cmd.ExecuteScalarAsync(ct)
+                    ?? throw new InvalidOperationException("Failed to retrieve TransactionId after insert.");
+                transactionId = (long)result;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save GrowerDelivery header for LotId={LotId}", dto.LotId);
+            return StatusCode(500, new { message = "Database error while saving delivery." });
+        }
+
+        // ── Insert transaction detail ───────────────────────────────────────────
+        var detail = new InventoryTransactionDetail
+        {
+            TransactionId = transactionId,
             LotId        = dto.LotId,
             ProductId    = lot.ProductId.Value,
             ItemId       = lot.ItemId,
@@ -253,17 +329,17 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             EndQtyLocationQuantityMethodDescription   = isTruck && dto.EndQty.HasValue ? dto.EndQtyLocationQuantityMethodDescription?.Trim() : null,
             DirectQtyLocationQuantityMethodId         = hasDirect ? dto.DirectQtyLocationQuantityMethodId : null,
             DirectQtyLocationQuantityMethodDescription = hasDirect ? dto.DirectQtyLocationQuantityMethodDescription?.Trim() : null,
-            StartedAt    = isTruck ? dto.StartedAt : dto.StartedAt ?? DateTime.UtcNow,
+            StartedAt    = isTruck ? dto.StartedAt : dto.StartedAt ?? now,
             CompletedAt  = completedAt,
             RefType      = dto.RefType,
             RefId        = dto.RefId,
             Notes        = dto.Notes,
-            TxnAt        = DateTime.UtcNow,
+            TxnAt        = now,
             IsVoided     = false,
             CreatedByUserId = dto.CreatedByUserId,
         };
 
-        _ctx.InventoryTransactions.Add(txn);
+        _ctx.InventoryTransactionDetails.Add(detail);
 
         try
         {
@@ -282,7 +358,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             {
                 _ctx.InventoryTransactionDetailToContainers.Add(new InventoryTransactionDetailToContainer
                 {
-                    TransactionId = txn.TransactionId,
+                    TransactionId = transactionId,
                     ContainerId   = split.ContainerId,
                     Percent       = split.Percent,
                 });
@@ -294,7 +370,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             }
             catch (DbUpdateException ex)
             {
-                _logger.LogError(ex, "Failed to save container splits for TransactionId={TxnId}", txn.TransactionId);
+                _logger.LogError(ex, "Failed to save container splits for TransactionId={TxnId}", transactionId);
                 return StatusCode(500, new { message = "Database error while saving container splits." });
             }
         }
@@ -304,7 +380,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         {
             _ctx.TransactionQuantitySources.Add(new TransactionQuantitySource
             {
-                TransactionId     = txn.TransactionId,
+                TransactionId     = transactionId,
                 QuantityField     = "START",
                 MethodId          = dto.StartQtyMethodId,
                 SourceTypeId      = dto.StartQtySourceTypeId.Value,
@@ -317,7 +393,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         {
             _ctx.TransactionQuantitySources.Add(new TransactionQuantitySource
             {
-                TransactionId     = txn.TransactionId,
+                TransactionId     = transactionId,
                 QuantityField     = "END",
                 MethodId          = dto.EndQtyMethodId,
                 SourceTypeId      = dto.EndQtySourceTypeId.Value,
@@ -330,7 +406,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         {
             _ctx.TransactionQuantitySources.Add(new TransactionQuantitySource
             {
-                TransactionId     = txn.TransactionId,
+                TransactionId     = transactionId,
                 QuantityField     = "DIRECT",
                 MethodId          = dto.DirectQtyMethodId,
                 SourceTypeId      = dto.DirectQtySourceTypeId.Value,
@@ -347,7 +423,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             }
             catch (DbUpdateException ex)
             {
-                _logger.LogError(ex, "Failed to save quantity sources for TransactionId={TxnId}", txn.TransactionId);
+                _logger.LogError(ex, "Failed to save quantity sources for TransactionId={TxnId}", transactionId);
                 return StatusCode(500, new { message = "Database error while saving quantity sources." });
             }
         }
@@ -372,20 +448,44 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                     continue;
                 }
 
-                var now = DateTime.UtcNow;
+                var attrNow = DateTime.UtcNow;
                 await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
                     INSERT INTO [Inventory].[TransactionAttributes]
                         (TransactionId, AttributeTypeId, DecimalValue, StringValue, IntValue, BoolValue, CreatedAt)
-                    VALUES ({txn.TransactionId}, {typeId}, {attr.DecimalValue}, {attr.StringValue}, {(int?)null}, {(bool?)null}, {now})",
+                    VALUES ({transactionId}, {typeId}, {attr.DecimalValue}, {attr.StringValue}, {(int?)null}, {(bool?)null}, {attrNow})",
                     ct);
             }
         }
 
-        // TODO: WeightSheetLoad linking needs rework — WeightSheetLoad.InventoryTransactionId
-        // is Guid but InventoryTransaction.TransactionId is now long. Schema mismatch after DB refactor.
-        // if (dto.WeightSheetUid.HasValue) { ... }
+        // ── Link to weight sheet directly via RefId ────────────────────────────
+        if (dto.WeightSheetUid.HasValue)
+        {
+            detail.RefType = "WeightSheet";
+            detail.RefId   = dto.WeightSheetUid.Value;
 
-        return Ok(new { id = txn.TransactionId });
+            try
+            {
+                await _ctx.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Failed to link delivery to weight sheet for TransactionId={TxnId}", transactionId);
+                return StatusCode(500, new { message = "Database error while linking to weight sheet." });
+            }
+        }
+
+        // ── Completion status ───────────────────────────────────────────────────
+        bool hasQty       = isTruck ? dto.EndQty.HasValue : hasDirect;
+        bool hasContainer = dto.ToContainers?.Count > 0;
+        bool isComplete   = hasQty && hasContainer;
+
+        return Ok(new
+        {
+            id         = transactionId,
+            isComplete,
+            hasQuantity  = hasQty,
+            hasContainer,
+        });
     }
 
     // PUT /api/GrowerDelivery/{transactionId}
@@ -417,6 +517,30 @@ public sealed class GrowerDeliveryApiController : ControllerBase
 
         if (detail.IsVoided)
             return BadRequest(new { message = "Cannot edit a voided transaction." });
+
+        // ── Detect weight changes on previously recorded values ─────────────
+        bool startQtyChanged = detail.StartQty.HasValue && dto.StartQty != detail.StartQty;
+        bool endQtyChanged   = detail.EndQty.HasValue   && dto.EndQty != detail.EndQty;
+        bool weightsModified = startQtyChanged || endQtyChanged;
+
+        string weightEditUserName = null;
+        if (weightsModified)
+        {
+            if (!dto.WeightEditPin.HasValue || dto.WeightEditPin.Value <= 0)
+                return BadRequest(new { message = "PIN is required to modify previously recorded weights.", requirePin = true });
+
+            var pinUser = await _ctx.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Pin == dto.WeightEditPin.Value && u.IsActive, ct);
+
+            if (pinUser is null)
+                return Unauthorized(new { message = "Invalid or inactive PIN." });
+
+            weightEditUserName = pinUser.UserName;
+        }
+
+        // Snapshot old weights for audit (before update)
+        var oldWeights = new { detail.StartQty, detail.EndQty, detail.DirectQty };
 
         // ── Resolve lbs UOM ──────────────────────────────────────────────────
         var uomId = await _ctx.UnitOfMeasures
@@ -564,7 +688,128 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             return StatusCode(500, new { message = "Database error while updating delivery." });
         }
 
-        return Ok(new { id = transactionId });
+        // ── Audit trail for weight modifications ────────────────────────────────
+        if (weightsModified && weightEditUserName != null)
+        {
+            var newWeights = new { detail.StartQty, detail.EndQty, detail.DirectQty };
+            string oldJson   = JsonSerializer.Serialize(oldWeights);
+            string newJson   = JsonSerializer.Serialize(newWeights);
+            string keyJson   = JsonSerializer.Serialize(new { TransactionId = transactionId });
+            string tableName = "Inventory.InventoryTransactionDetails";
+            string action    = "WT_EDIT";
+            int locationId   = txn.LocationId;
+
+            await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                INSERT INTO [system].[AuditTrail] (LocationId, UserName, TableName, Action, KeyJson, OldJson, NewJson)
+                VALUES ({locationId}, {weightEditUserName}, {tableName}, {action}, {keyJson}, {oldJson}, {newJson})",
+                ct);
+        }
+
+        // ── Completion status ───────────────────────────────────────────────────
+        bool hasQty       = isTruck ? dto.EndQty.HasValue : hasDirect;
+        bool hasContainer = dto.ToContainers?.Count > 0;
+        bool isComplete   = hasQty && hasContainer;
+
+        return Ok(new
+        {
+            id = transactionId,
+            isComplete,
+            hasQuantity  = hasQty,
+            hasContainer,
+        });
+    }
+
+    // GET /api/GrowerDelivery/{transactionId}
+    // Returns a single delivery transaction with detail, containers, and attributes for edit mode.
+    [HttpGet("{transactionId:long}")]
+    public async Task<IActionResult> Get(long transactionId, CancellationToken ct)
+    {
+        var detail = await _ctx.InventoryTransactionDetails
+            .AsNoTracking()
+            .Include(d => d.Transaction)
+            .FirstOrDefaultAsync(d => d.TransactionId == transactionId, ct);
+
+        if (detail is null)
+            return NotFound(new { message = $"Transaction {transactionId} not found." });
+
+        // Container splits
+        var containers = await _ctx.InventoryTransactionDetailToContainers
+            .AsNoTracking()
+            .Where(tc => tc.TransactionId == transactionId)
+            .Select(tc => new { tc.ContainerId, tc.Percent })
+            .ToListAsync(ct);
+
+        // Quantity sources
+        var sources = await _ctx.TransactionQuantitySources
+            .AsNoTracking()
+            .Where(s => s.TransactionId == transactionId)
+            .Select(s => new { s.QuantityField, s.MethodId, s.SourceTypeId, s.Location, s.SourceDescription })
+            .ToListAsync(ct);
+
+        // Attributes (grain quality)
+        var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open)
+            await conn.OpenAsync(ct);
+
+        var attrSql = @"
+            SELECT at.Code, ta.DecimalValue, ta.StringValue
+            FROM [Inventory].[TransactionAttributes] ta
+            INNER JOIN [Inventory].[TransactionAttributeTypes] at ON at.Id = ta.AttributeTypeId
+            WHERE ta.TransactionId = @txnId";
+
+        using var attrCmd = conn.CreateCommand();
+        attrCmd.Transaction = _ctx.Database.CurrentTransaction?.GetDbTransaction() as SqlTransaction;
+        attrCmd.CommandText = attrSql;
+        attrCmd.Parameters.AddWithValue("@txnId", transactionId);
+
+        var attributes = new Dictionary<string, object>();
+        using (var reader = await attrCmd.ExecuteReaderAsync(ct))
+        {
+            while (await reader.ReadAsync(ct))
+            {
+                var code = reader.GetString(0);
+                if (!reader.IsDBNull(1))
+                    attributes[code] = reader.GetDecimal(1);
+                else if (!reader.IsDBNull(2))
+                    attributes[code] = reader.GetString(2);
+            }
+        }
+
+        bool isTruck = detail.StartQty.HasValue;
+
+        return Ok(new
+        {
+            detail.TransactionId,
+            detail.LotId,
+            detail.ProductId,
+            detail.ItemId,
+            LocationId = detail.Transaction.LocationId,
+            detail.AccountId,
+            detail.SplitGroupId,
+            detail.StartQty,
+            detail.EndQty,
+            detail.DirectQty,
+            detail.StartedAt,
+            detail.CompletedAt,
+            detail.Notes,
+            detail.RefType,
+            detail.RefId,
+            detail.IsVoided,
+            detail.VoidReason,
+            detail.CreatedByUserId,
+            IsTruck = isTruck,
+            // Quantity method snapshots
+            detail.StartQtyLocationQuantityMethodId,
+            detail.StartQtyLocationQuantityMethodDescription,
+            detail.EndQtyLocationQuantityMethodId,
+            detail.EndQtyLocationQuantityMethodDescription,
+            detail.DirectQtyLocationQuantityMethodId,
+            detail.DirectQtyLocationQuantityMethodDescription,
+            // Related
+            ToContainers = containers,
+            Sources = sources,
+            Attributes = attributes,
+        });
     }
 
     // GET /api/GrowerDelivery/ValidatePin?pin=
@@ -630,7 +875,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 HaulerName = ws.HaulerId != null
                     ? _ctx.Haulers.Where(h => h.Id == ws.HaulerId).Select(h => h.Description).FirstOrDefault()
                     : null,
-                LoadCount = _ctx.WeightSheetLoads.Count(wsl => wsl.WeightSheetUid == ws.RowUid),
+                LoadCount = _ctx.InventoryTransactionDetails.Count(itd => itd.RefId == ws.RowUid && itd.RefType == "WeightSheet"),
             })
             .ToListAsync(ct);
 
@@ -1079,6 +1324,17 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         if (dto.LocationId <= 0)
             return BadRequest(new { message = "LocationId is required." });
 
+        // ── PIN validation ──────────────────────────────────────────────────
+        if (!dto.Pin.HasValue || dto.Pin.Value <= 0)
+            return BadRequest(new { message = "PIN is required to create a weight sheet." });
+
+        var pinUser = await _ctx.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Pin == dto.Pin.Value && u.IsActive, ct);
+
+        if (pinUser is null)
+            return Unauthorized(new { message = "Invalid or inactive PIN." });
+
         // WeightSheet is a keyless entity — must use raw SQL for inserts
         try
         {
@@ -1090,9 +1346,9 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             var wsRowUid = Guid.NewGuid();
             await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
                 INSERT INTO [warehouse].[WeightSheets]
-                    (LocationId, LotId, WeightSheetType, RateType, HaulerId, Miles, CustomRateDescription, Rate, CreationDate, CreatedAt, RowUid)
+                    (LocationId, LotId, WeightSheetType, RateType, HaulerId, Miles, CustomRateDescription, Rate, CreationDate, CreatedAt, RowUid, WeightmasterName)
                 VALUES
-                    ({dto.LocationId}, {dto.LotId}, {sheetType}, {dto.RateType}, {dto.HaulerId}, {dto.Miles}, {dto.CustomRateDescription}, {dto.Rate}, {creationDate}, {now}, {wsRowUid})",
+                    ({dto.LocationId}, {dto.LotId}, {sheetType}, {dto.RateType}, {dto.HaulerId}, {dto.Miles}, {dto.CustomRateDescription}, {dto.Rate}, {creationDate}, {now}, {wsRowUid}, {pinUser.UserName})",
                 ct);
 
             // Retrieve the trigger-generated WeightSheetId via the known RowUid
@@ -1142,12 +1398,13 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 ws.Notes                AS WsNotes,
                 ws.HaulerId,
                 h.Description           AS HaulerName,
-                wsl.Id                  AS LoadId,
                 itd.TransactionId,
                 itd.StartQty            AS InWeight,
                 itd.EndQty              AS OutWeight,
                 itd.NetQty              AS Net,
                 itd.TxnAt,
+                itd.StartedAt,
+                itd.CompletedAt,
                 itd.Notes,
                 tc.ContainerId          AS ContainerId,
                 c.Description           AS ContainerDescription,
@@ -1159,14 +1416,14 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 attr2.StringValue       AS Attr2String,
                 at2.Description         AS Attr2Description,
                 lot.LotDescription,
-                lot.LotId
+                lot.LotId,
+                CASE WHEN startSrcType.Code = 'MANUAL' THEN 1 ELSE 0 END AS StartIsManual,
+                CASE WHEN endSrcType.Code = 'MANUAL' THEN 1 ELSE 0 END AS EndIsManual
             FROM [warehouse].[WeightSheets] ws
             LEFT JOIN [account].[Haulers] h
                 ON h.Id = ws.HaulerId
-            INNER JOIN [warehouse].[WeightSheetLoads] wsl
-                ON wsl.WeightSheetUid = ws.RowUid
             INNER JOIN [Inventory].[InventoryTransactionDetails] itd
-                ON itd.RefId = wsl.Id
+                ON itd.RefId = ws.RowUid AND itd.RefType = 'WeightSheet'
             LEFT JOIN [Inventory].[InventoryTransactionDetailToContainers] tc
                 ON tc.TransactionId = itd.TransactionId
             LEFT JOIN [container].[Containers] c
@@ -1181,6 +1438,14 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 ON at2.Id = 2
             LEFT JOIN [Inventory].[Lots] lot
                 ON lot.LotId = itd.LotId
+            LEFT JOIN [Inventory].[TransactionQuantitySources] startSrc
+                ON startSrc.TransactionId = itd.TransactionId AND startSrc.QuantityField = 'START'
+            LEFT JOIN [Inventory].[TransactionQuantitySources] endSrc
+                ON endSrc.TransactionId = itd.TransactionId AND endSrc.QuantityField = 'END'
+            LEFT JOIN [Inventory].[QuantitySourceTypes] startSrcType
+                ON startSrcType.QuantitySourceTypeId = startSrc.SourceTypeId
+            LEFT JOIN [Inventory].[QuantitySourceTypes] endSrcType
+                ON endSrcType.QuantitySourceTypeId = endSrc.SourceTypeId
             WHERE ws.LocationId = @locationId
               AND ws.ServerId   = @serverId
               AND ws.WeightSheetType = 'Delivery'
@@ -1209,14 +1474,15 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 WsNotes                = reader.IsDBNull(reader.GetOrdinal("WsNotes")) ? null : reader.GetString(reader.GetOrdinal("WsNotes")),
                 HaulerId               = reader.IsDBNull(reader.GetOrdinal("HaulerId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("HaulerId")),
                 HaulerName             = reader.IsDBNull(reader.GetOrdinal("HaulerName")) ? null : reader.GetString(reader.GetOrdinal("HaulerName")),
-                LoadId                 = reader.GetGuid(reader.GetOrdinal("LoadId")),
                 TransactionId          = reader.GetInt64(reader.GetOrdinal("TransactionId")),
                 InWeight               = reader.IsDBNull(reader.GetOrdinal("InWeight")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("InWeight")),
                 OutWeight              = reader.IsDBNull(reader.GetOrdinal("OutWeight")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("OutWeight")),
                 Net                    = reader.IsDBNull(reader.GetOrdinal("Net")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Net")),
                 TxnAt                  = reader.GetDateTime(reader.GetOrdinal("TxnAt")),
+                StartedAt              = reader.IsDBNull(reader.GetOrdinal("StartedAt")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("StartedAt")),
+                CompletedAt            = reader.IsDBNull(reader.GetOrdinal("CompletedAt")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("CompletedAt")),
                 Notes                  = reader.IsDBNull(reader.GetOrdinal("Notes")) ? null : reader.GetString(reader.GetOrdinal("Notes")),
-                ContainerId            = reader.IsDBNull(reader.GetOrdinal("ContainerId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("ContainerId")),
+                ContainerId            = reader.IsDBNull(reader.GetOrdinal("ContainerId")) ? (long?)null : reader.GetInt64(reader.GetOrdinal("ContainerId")),
                 ContainerDescription   = reader.IsDBNull(reader.GetOrdinal("ContainerDescription")) ? null : reader.GetString(reader.GetOrdinal("ContainerDescription")),
                 ContainerPercent       = reader.IsDBNull(reader.GetOrdinal("ContainerPercent")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("ContainerPercent")),
                 Attr1Value             = reader.IsDBNull(reader.GetOrdinal("Attr1Value")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Attr1Value")),
@@ -1227,6 +1493,8 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 Attr2Description       = reader.IsDBNull(reader.GetOrdinal("Attr2Description")) ? null : reader.GetString(reader.GetOrdinal("Attr2Description")),
                 LotDescription         = reader.IsDBNull(reader.GetOrdinal("LotDescription")) ? null : reader.GetString(reader.GetOrdinal("LotDescription")),
                 LotId                  = reader.IsDBNull(reader.GetOrdinal("LotId")) ? (long?)null : reader.GetInt64(reader.GetOrdinal("LotId")),
+                StartIsManual          = reader.GetInt32(reader.GetOrdinal("StartIsManual")) == 1,
+                EndIsManual            = reader.GetInt32(reader.GetOrdinal("EndIsManual")) == 1,
             });
         }
 
@@ -1239,23 +1507,10 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         [FromBody] UpdateLoadBinDto dto,
         CancellationToken ct)
     {
-        if (dto.LoadId == Guid.Empty)
-            return BadRequest(new { message = "LoadId is required." });
+        if (dto.TransactionId <= 0)
+            return BadRequest(new { message = "TransactionId is required." });
 
-        var load = await _ctx.WeightSheetLoads
-            .FirstOrDefaultAsync(l => l.Id == dto.LoadId, ct);
-
-        if (load == null)
-            return NotFound(new { message = "Load not found." });
-
-        // Find the linked TransactionId
-        var transactionId = await _ctx.InventoryTransactionDetails
-            .Where(d => d.RefId == dto.LoadId)
-            .Select(d => d.TransactionId)
-            .FirstOrDefaultAsync(ct);
-
-        if (transactionId == 0)
-            return NotFound(new { message = "No inventory transaction found for this load." });
+        var transactionId = dto.TransactionId;
 
         // Remove existing destination container splits
         var existing = await _ctx.InventoryTransactionDetailToContainers
@@ -1330,6 +1585,28 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         return Ok(new { success = true });
     }
 
+    // POST /api/GrowerDelivery/WeightSheetDeliveryLoads/UpdateNotes
+    [HttpPost("WeightSheetDeliveryLoads/UpdateNotes")]
+    public async Task<IActionResult> UpdateDeliveryLoadNotes(
+        [FromBody] UpdateLoadNotesDto dto,
+        CancellationToken ct)
+    {
+        if (dto.TransactionId <= 0)
+            return BadRequest(new { message = "TransactionId is required." });
+
+        var detail = await _ctx.InventoryTransactionDetails
+            .FirstOrDefaultAsync(d => d.TransactionId == dto.TransactionId, ct);
+
+        if (detail is null)
+            return NotFound(new { message = "Transaction not found." });
+
+        detail.Notes     = string.IsNullOrWhiteSpace(dto.Notes) ? null : dto.Notes.Trim();
+        detail.UpdatedAt = DateTime.UtcNow;
+
+        await _ctx.SaveChangesAsync(ct);
+        return Ok(new { success = true });
+    }
+
     // GET /api/GrowerDelivery/LotSplitGroup/{lotId} — split group accounts + percentages
     [HttpGet("LotSplitGroup/{lotId:long}")]
     public async Task<IActionResult> GetLotSplitGroup(long lotId, CancellationToken ct)
@@ -1362,6 +1639,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         var sql = @"
             SELECT
                 ws.WeightSheetId,
+                ws.As400Id      AS WsAs400Id,
                 ws.ServerId,
                 ws.LocationId,
                 ws.Notes        AS WsNotes,
@@ -1372,12 +1650,15 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 ws.Miles,
                 ws.Rate,
                 ws.LotId,
+                lot.As400Id     AS LotAs400Id,
                 lot.LotDescription,
                 lot.ServerId    AS LotServerId,
                 lot.LocationId  AS LotLocationId,
                 p.Description   AS CropName,
                 sg.SplitGroupId,
                 sg.SplitGroupDescription AS SplitName,
+                ws.WeightmasterName,
+                ws.CreationDate,
                 COALESCE(
                     NULLIF(lsgAcct.EntityName, ''), lsgAcct.LookupName,
                     NULLIF(sgAcct.EntityName, ''), sgAcct.LookupName
@@ -1407,6 +1688,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         return Ok(new
         {
             WeightSheetId      = reader.GetInt64(reader.GetOrdinal("WeightSheetId")),
+            WsAs400Id          = reader.IsDBNull(reader.GetOrdinal("WsAs400Id")) ? (long?)null : reader.GetInt64(reader.GetOrdinal("WsAs400Id")),
             ServerId           = reader.GetInt32(reader.GetOrdinal("ServerId")),
             LocationId         = reader.GetInt32(reader.GetOrdinal("LocationId")),
             WsNotes            = reader.IsDBNull(reader.GetOrdinal("WsNotes")) ? null : reader.GetString(reader.GetOrdinal("WsNotes")),
@@ -1417,6 +1699,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             Miles              = reader.IsDBNull(reader.GetOrdinal("Miles")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Miles")),
             Rate               = reader.IsDBNull(reader.GetOrdinal("Rate")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Rate")),
             LotId              = reader.IsDBNull(reader.GetOrdinal("LotId")) ? (long?)null : reader.GetInt64(reader.GetOrdinal("LotId")),
+            LotAs400Id         = reader.IsDBNull(reader.GetOrdinal("LotAs400Id")) ? (long?)null : reader.GetInt64(reader.GetOrdinal("LotAs400Id")),
             LotDescription     = reader.IsDBNull(reader.GetOrdinal("LotDescription")) ? null : reader.GetString(reader.GetOrdinal("LotDescription")),
             LotServerId        = reader.IsDBNull(reader.GetOrdinal("LotServerId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("LotServerId")),
             LotLocationId      = reader.IsDBNull(reader.GetOrdinal("LotLocationId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("LotLocationId")),
@@ -1424,6 +1707,8 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             SplitGroupId       = reader.IsDBNull(reader.GetOrdinal("SplitGroupId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("SplitGroupId")),
             SplitName          = reader.IsDBNull(reader.GetOrdinal("SplitName")) ? null : reader.GetString(reader.GetOrdinal("SplitName")),
             PrimaryAccountName = reader.IsDBNull(reader.GetOrdinal("PrimaryAccountName")) ? null : reader.GetString(reader.GetOrdinal("PrimaryAccountName")),
+            WeightmasterName   = reader.IsDBNull(reader.GetOrdinal("WeightmasterName")) ? null : reader.GetString(reader.GetOrdinal("WeightmasterName")),
+            CreationDate       = reader.GetDateTime(reader.GetOrdinal("CreationDate")).ToString("MM/dd/yyyy"),
         });
     }
 
@@ -1650,7 +1935,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
 
         void AddDecimal(string code, decimal? value)
         {
-            if (value.HasValue)
+            if (value.HasValue && value.Value != 0m)
                 list.Add(new AttributeEntry(code, value, null));
         }
 
@@ -1697,5 +1982,236 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             return $"The {side} container percentages must total 100 (got {sum}).";
 
         return null;
+    }
+
+    // GET /api/GrowerDelivery/{transactionId}/void-eligibility
+    // Returns whether this delivery ticket can be voided or restored.
+    [HttpGet("{transactionId:long}/void-eligibility")]
+    public async Task<IActionResult> GetVoidEligibility(long transactionId, CancellationToken ct)
+    {
+        var detail = await _ctx.InventoryTransactionDetails
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.TransactionId == transactionId, ct);
+
+        if (detail is null)
+            return NotFound(new { message = $"Transaction {transactionId} not found." });
+
+        bool createdToday = detail.TxnAt.Date == DateTime.UtcNow.Date;
+
+        return Ok(new
+        {
+            TransactionId = transactionId,
+            IsVoided      = detail.IsVoided,
+            CanVoid       = !detail.IsVoided && createdToday,
+            CanRestore    = detail.IsVoided,
+            Reason        = !createdToday && !detail.IsVoided
+                ? "Ticket can only be voided on the same calendar day it was created."
+                : null,
+        });
+    }
+
+    // POST /api/GrowerDelivery/{transactionId}/void
+    // Voids a delivery ticket. Requires PIN, void reason, and same-day creation.
+    [HttpPost("{transactionId:long}/void")]
+    public async Task<IActionResult> VoidDelivery(
+        long transactionId,
+        [FromBody] VoidDeliveryDto dto,
+        CancellationToken ct)
+    {
+        if (dto is null)
+            return BadRequest(new { message = "Request body is required." });
+        if (dto.Pin <= 0)
+            return BadRequest(new { message = "PIN is required." });
+        if (string.IsNullOrWhiteSpace(dto.VoidReason))
+            return BadRequest(new { message = "Void reason is required." });
+
+        // PIN validation
+        var pinUser = await _ctx.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Pin == dto.Pin && u.IsActive, ct);
+
+        if (pinUser is null)
+            return Unauthorized(new { message = "Invalid or inactive PIN." });
+
+        // Load transaction detail
+        var txn = await _ctx.InventoryTransactions
+            .Include(t => t.InventoryTransactionDetail)
+            .FirstOrDefaultAsync(t => t.TransactionId == transactionId, ct);
+
+        if (txn is null)
+            return NotFound(new { message = $"Transaction {transactionId} not found." });
+
+        var detail = txn.InventoryTransactionDetail;
+        if (detail is null)
+            return NotFound(new { message = $"Transaction detail for {transactionId} not found." });
+
+        if (detail.IsVoided)
+            return BadRequest(new { message = "Transaction is already voided." });
+
+        // Same-day check
+        bool createdToday = detail.TxnAt.Date == DateTime.UtcNow.Date;
+        if (!createdToday)
+            return BadRequest(new { message = "Ticket can only be voided on the same calendar day it was created." });
+
+        // Snapshot old values for audit
+        string oldJson = JsonSerializer.Serialize(new
+        {
+            detail.IsVoided,
+            detail.VoidReason,
+            detail.VoidedByUserName,
+        });
+
+        // Apply void
+        detail.IsVoided          = true;
+        detail.VoidReason        = dto.VoidReason.Trim();
+        detail.VoidedByUserName  = pinUser.UserName;
+        detail.UpdatedAt         = DateTime.UtcNow;
+
+        try
+        {
+            await _ctx.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Failed to void delivery TransactionId={TxnId}", transactionId);
+            return StatusCode(500, new { message = "Database error while voiding delivery." });
+        }
+
+        // Audit trail
+        string newJson = JsonSerializer.Serialize(new
+        {
+            detail.IsVoided,
+            detail.VoidReason,
+            detail.VoidedByUserName,
+        });
+        string keyJson   = JsonSerializer.Serialize(new { TransactionId = transactionId });
+        string tableName = "Inventory.InventoryTransactionDetails";
+        string action    = "VOID";
+        int locationId   = txn.LocationId;
+
+        await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+            INSERT INTO [system].[AuditTrail] (LocationId, UserName, TableName, Action, KeyJson, OldJson, NewJson)
+            VALUES ({locationId}, {pinUser.UserName}, {tableName}, {action}, {keyJson}, {oldJson}, {newJson})",
+            ct);
+
+        return Ok(new { id = transactionId, isVoided = true });
+    }
+
+    // POST /api/GrowerDelivery/{transactionId}/restore
+    // Restores (unvoids) a previously voided delivery ticket.
+    [HttpPost("{transactionId:long}/restore")]
+    public async Task<IActionResult> RestoreDelivery(
+        long transactionId,
+        [FromBody] RestoreDeliveryDto dto,
+        CancellationToken ct)
+    {
+        if (dto is null)
+            return BadRequest(new { message = "Request body is required." });
+        if (dto.Pin <= 0)
+            return BadRequest(new { message = "PIN is required." });
+
+        // PIN validation
+        var pinUser = await _ctx.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Pin == dto.Pin && u.IsActive, ct);
+
+        if (pinUser is null)
+            return Unauthorized(new { message = "Invalid or inactive PIN." });
+
+        // Load transaction detail
+        var txn = await _ctx.InventoryTransactions
+            .Include(t => t.InventoryTransactionDetail)
+            .FirstOrDefaultAsync(t => t.TransactionId == transactionId, ct);
+
+        if (txn is null)
+            return NotFound(new { message = $"Transaction {transactionId} not found." });
+
+        var detail = txn.InventoryTransactionDetail;
+        if (detail is null)
+            return NotFound(new { message = $"Transaction detail for {transactionId} not found." });
+
+        if (!detail.IsVoided)
+            return BadRequest(new { message = "Transaction is not voided." });
+
+        // Snapshot old values for audit
+        string oldJson = JsonSerializer.Serialize(new
+        {
+            detail.IsVoided,
+            detail.VoidReason,
+            detail.VoidedByUserName,
+        });
+
+        // Restore
+        detail.IsVoided          = false;
+        detail.VoidReason        = null;
+        detail.VoidedByUserName  = null;
+        detail.UpdatedAt         = DateTime.UtcNow;
+
+        try
+        {
+            await _ctx.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Failed to restore delivery TransactionId={TxnId}", transactionId);
+            return StatusCode(500, new { message = "Database error while restoring delivery." });
+        }
+
+        // Audit trail
+        string newJson = JsonSerializer.Serialize(new
+        {
+            detail.IsVoided,
+            detail.VoidReason,
+            VoidedByUserName = (string)null,
+            RestoredByUserName = pinUser.UserName,
+        });
+        string keyJson   = JsonSerializer.Serialize(new { TransactionId = transactionId });
+        string tableName = "Inventory.InventoryTransactionDetails";
+        string action    = "RESTORE";
+        int locationId   = txn.LocationId;
+
+        await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+            INSERT INTO [system].[AuditTrail] (LocationId, UserName, TableName, Action, KeyJson, OldJson, NewJson)
+            VALUES ({locationId}, {pinUser.UserName}, {tableName}, {action}, {keyJson}, {oldJson}, {newJson})",
+            ct);
+
+        return Ok(new { id = transactionId, isVoided = false });
+    }
+
+    // GET /api/GrowerDelivery/{transactionId}/completion-status
+    // Returns whether a delivery load is complete (quantity + container requirements met).
+    [HttpGet("{transactionId:long}/completion-status")]
+    public async Task<IActionResult> GetCompletionStatus(long transactionId, CancellationToken ct)
+    {
+        var detail = await _ctx.InventoryTransactionDetails
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.TransactionId == transactionId, ct);
+
+        if (detail is null)
+            return NotFound(new { message = $"Transaction {transactionId} not found." });
+
+        bool isTruck       = detail.StartQty.HasValue;
+        bool hasQuantity   = isTruck ? detail.EndQty.HasValue : detail.DirectQty.HasValue;
+        bool hasContainer  = await _ctx.InventoryTransactionDetailToContainers
+            .AsNoTracking()
+            .AnyAsync(tc => tc.TransactionId == transactionId, ct);
+
+        bool isComplete = hasQuantity && hasContainer;
+
+        var messages = new List<string>();
+        if (!hasQuantity)
+            messages.Add(isTruck ? "EndQty (scale-out weight) is required to complete the load." : "DirectQty is required to complete the load.");
+        if (!hasContainer)
+            messages.Add("At least one container must be selected to complete the load.");
+
+        return Ok(new
+        {
+            TransactionId = transactionId,
+            IsComplete    = isComplete,
+            HasQuantity   = hasQuantity,
+            HasContainer  = hasContainer,
+            IsTruck       = isTruck,
+            Messages      = messages,
+        });
     }
 }

@@ -185,9 +185,9 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<WeightSheetHaulerRate> WeightSheetHaulerRates { get; set; }
 
-    public virtual DbSet<WeightSheetLoad> WeightSheetLoads { get; set; }
-
-    public virtual DbSet<WeightSheetLoadLotAllocation> WeightSheetLoadLotAllocations { get; set; }
+    // Removed: WeightSheetLoads table eliminated — loads link directly via InventoryTransactionDetail.RefId → WeightSheet.RowUid
+    // public virtual DbSet<WeightSheetLoad> WeightSheetLoads { get; set; }
+    // public virtual DbSet<WeightSheetLoadLotAllocation> WeightSheetLoadLotAllocations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -428,7 +428,7 @@ public partial class dbContext : DbContext
         {
             entity.HasKey(e => e.ContainerLocationId).HasName("PK_StorageLocations");
 
-            entity.ToTable("ContainerLocation", "container");
+            entity.ToTable("ContainerLocations", "container");
 
             entity.HasIndex(e => new { e.LocationId, e.Description }, "IX_ContainerLocation").IsUnique();
 
@@ -2315,32 +2315,8 @@ public partial class dbContext : DbContext
                 .IsFixedLength();
         });
 
-        modelBuilder.Entity<WeightSheetLoad>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK_WeightSheetLoads_1");
-
-            entity.ToTable("WeightSheetLoads", "warehouse");
-
-            entity.Property(e => e.Id)
-                .HasDefaultValueSql("(newid())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_WeightSheetLoads_Id");
-            entity.Property(e => e.WeightSheetUid).HasColumnName("WeightSheetUID");
-        });
-
-        modelBuilder.Entity<WeightSheetLoadLotAllocation>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK_WeightSheetLoadLotAlloc");
-
-            entity.ToTable("WeightSheetLoadLotAllocations", "warehouse");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysutcdatetime())")
-                .HasAnnotation("Relational:DefaultConstraintName", "DF_purchase_WeightSheetLoadLotAllocations_CreatedAt");
-            entity.Property(e => e.QtyLb).HasColumnType("decimal(18, 3)");
-            entity.Property(e => e.UpdatedAt).HasPrecision(0);
-        });
+        // Removed: WeightSheetLoad and WeightSheetLoadLotAllocation entity configs
+        // Tables dropped — loads now link directly via InventoryTransactionDetail.RefId → WeightSheet.RowUid
 
         // ── QuantitySourceTypes (lookup) ─────────────────────────────────
         modelBuilder.Entity<QuantitySourceType>(entity =>

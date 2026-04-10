@@ -102,6 +102,7 @@
 
     // Wizard state
     var _selectedLot = null;         // { LotId, LotDescription, SplitGroupDescription, SplitGroupId, ... }
+    var _wsPin = null;               // PIN captured from modal before WS creation
     var _createdWsId = null;
     var _milesEntered = false;       // tracks whether user explicitly entered miles
 
@@ -113,7 +114,57 @@
         initCreateLotForm();
         initHaulerStep();
         wireNavigation();
+        wirePinModal();
     });
+
+    // ── PIN modal ────────────────────────────────────────────────────────────
+
+    function wirePinModal() {
+        // Read PIN from URL query param (passed from LoadType page)
+        var urlPin = parseInt(new URLSearchParams(window.location.search).get('pin'), 10) || 0;
+        if (urlPin > 0) {
+            _wsPin = urlPin;
+            return; // PIN already validated on LoadType page
+        }
+
+        // Fallback: show PIN modal if no PIN in URL
+        var pinModalEl = document.getElementById('nwsPinModal');
+        if (!pinModalEl) {
+            // No modal on page — redirect to LoadType
+            window.location.href = '/Warehouse/LoadType';
+            return;
+        }
+
+        var pinModal = new bootstrap.Modal(pinModalEl);
+        setTimeout(function () { pinModal.show(); setTimeout(function () { $('#nwsPinInput').focus(); }, 500); }, 300);
+
+        $('#nwsPinInput').on('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('#nwsPinConfirmBtn').click(); } });
+        $('#nwsPinConfirmBtn').on('click', function () {
+            var pin = parseInt($('#nwsPinInput').val(), 10);
+            if (!pin || pin <= 0) {
+                $('#nwsPinError').text('A valid PIN is required.').removeAttr('hidden');
+                return;
+            }
+            $.ajax({
+                url: '/api/GrowerDelivery/ValidatePin?pin=' + pin,
+                method: 'GET',
+                dataType: 'json',
+            })
+            .done(function (data) {
+                _wsPin = pin;
+                pinModal.hide();
+            })
+            .fail(function (xhr) {
+                var msg = xhr.responseJSON && xhr.responseJSON.message
+                    ? xhr.responseJSON.message : 'Invalid PIN.';
+                $('#nwsPinError').text(msg).removeAttr('hidden');
+            });
+        });
+
+        pinModalEl.addEventListener('hidden.bs.modal', function () {
+            if (!_wsPin) window.location.href = '/Warehouse';
+        });
+    }
 
     // ── Location ─────────────────────────────────────────────────────────────
 
@@ -985,10 +1036,16 @@
             return;
         }
 
+        if (!_wsPin) {
+            $(SEL.haulerError).text('PIN is required. Please go back and enter your PIN.').prop('hidden', false);
+            return;
+        }
+
         var payload = {
             LocationId: currentLocationId,
             LotId:      _selectedLot.LotId,
             RateType:   bolType,
+            Pin:        _wsPin,
         };
 
         // ── Universal: Rate = 0, no hauler, store description ──

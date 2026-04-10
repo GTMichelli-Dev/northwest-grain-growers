@@ -129,6 +129,9 @@
     let selectedNwsLotId      = null;   // lot selected in the New WS panel
     let selectedNwsLotDesc    = null;
     let activeWsId            = null;   // the weight sheet loaded from cookie/URL
+    let _nwsPin               = null;  // PIN captured from popup for new WS creation
+    let editTxnId             = null;   // set when editing an existing delivery
+    let editOriginalWeights   = null;  // { StartQty, EndQty, DirectQty } at load time
     let bolModalInstance      = null;
 
     // Weight method state
@@ -182,6 +185,10 @@
             refreshWeightSheets(locationId);
         }
 
+        // Check for edit mode early so init functions can detect it
+        var txnId = parseInt(new URLSearchParams(window.location.search).get('txnId'), 10) || 0;
+        if (txnId > 0) editTxnId = txnId;
+
         // Preload bins in parallel with everything else
         var binPromise = $.getJSON('/api/locations/' + locationId + '/Containers').catch(function () { return []; });
 
@@ -196,6 +203,12 @@
         wireWeightSheetPanel();
         wireBolChangeModal();
         wireSubmit();
+
+        // ── Edit mode: load existing transaction if txnId is in URL ─────────
+        // Defer until async inits (qty method picker, selectboxes) have resolved
+        if (editTxnId) {
+            setTimeout(function () { loadExistingDelivery(editTxnId); }, 500);
+        }
     });
 
     // ── Weight sheet header (shown when wsId is in URL) ─────────────────────
@@ -206,7 +219,7 @@
         return s.substring(0, 3) + '-' + s.substring(3, 6) + '-' + s.substring(6);
     }
 
-    var BOL_LABELS = { U: 'Universal', A: 'Along Side Field', F: 'Farm Storage', C: 'Custom' };
+    var BOL_LABELS = { N: 'None', U: 'Universal', A: 'Along Side Field', F: 'Farm Storage', C: 'Custom' };
 
     function loadWsHeader(locationId, wsId) {
         $.ajax({
@@ -216,9 +229,9 @@
         })
         .done(function (ws) {
             if (!ws) return;
-            var fmtId = formatWsId(ws.WeightSheetId);
+            var fmtId = ws.WsAs400Id ? String(ws.WsAs400Id) : formatWsId(ws.WeightSheetId);
             $(SEL.wsIdFmt).text(fmtId);
-            $('#gdWsLotId').text(ws.LotId ? formatLotId(ws.LotId) : '\u2014');
+            $('#gdWsLotId').text(ws.LotId ? (ws.LotAs400Id ? String(ws.LotAs400Id) : formatLotId(ws.LotId)) : '\u2014');
             $('#gdWsCrop').text(ws.CropName || '\u2014');
             $('#gdWsAccount').text(ws.PrimaryAccountName || '\u2014');
             $('#gdWsSplit').text(ws.SplitName || '\u2014');
@@ -251,6 +264,10 @@
             $('.gm-module-bar--intake').attr('href', backUrl);
 
             $(SEL.wsHeader).removeAttr('hidden');
+
+            // Pre-fill hidden form fields from the weight sheet
+            if (ws.LotId) $(SEL.lotId).val(ws.LotId);
+            if (ws.LocationId) $(SEL.locationId).val(ws.LocationId);
 
             // Store the WS RowUid for load submission — fetch from open weight sheets
             $.getJSON('/api/GrowerDelivery/OpenWeightSheets', { locationId: locationId })
@@ -528,6 +545,17 @@
     }
 
     function switchWeightMode(code) {
+        if (editTxnId) {
+            // In edit mode, just show/hide the right panel — don't reset values
+            if (DIRECT_CODES.indexOf(code) >= 0) {
+                $(SEL.scaleMode).prop('hidden', true);
+                $(SEL.directMode).prop('hidden', false);
+            } else {
+                $(SEL.scaleMode).prop('hidden', false);
+                $(SEL.directMode).prop('hidden', true);
+            }
+            return;
+        }
         $(SEL.submit).prop('hidden', true);
         if (DIRECT_CODES.indexOf(code) >= 0) {
             // DirectQty mode
@@ -905,7 +933,27 @@
 
     // ── Form submission ──────────────────────────────────────────────────────
 
+    var _weightEditPinModal = null;
+    var _pendingSubmitPayload = null;
+
     function wireSubmit() {
+        _weightEditPinModal = new bootstrap.Modal(document.getElementById('gdWeightEditPinModal'));
+
+        $('#gdWeightEditPin').on('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('#gdWeightEditPinConfirm').click(); } });
+        $('#gdWeightEditPinConfirm').on('click', function () {
+            var pin = parseInt($('#gdWeightEditPin').val(), 10);
+            if (!pin || pin <= 0) {
+                $('#gdWeightEditPinError').text('A valid PIN is required.').removeAttr('hidden');
+                return;
+            }
+            _weightEditPinModal.hide();
+            if (_pendingSubmitPayload) {
+                _pendingSubmitPayload.WeightEditPin = pin;
+                doSubmit(_pendingSubmitPayload);
+                _pendingSubmitPayload = null;
+            }
+        });
+
         $(SEL.form).on('submit', async function (e) {
             e.preventDefault();
             hideAlert();
@@ -917,22 +965,58 @@
                 return;
             }
 
+            // Check if existing weights were modified — require PIN
+            if (editTxnId && editOriginalWeights) {
+                var startChanged = editOriginalWeights.StartQty != null && (payload.StartQty || null) != editOriginalWeights.StartQty;
+                var endChanged   = editOriginalWeights.EndQty != null && (payload.EndQty || null) != editOriginalWeights.EndQty;
+                if (startChanged || endChanged) {
+                    // Show changes to the operator
+                    var changes = [];
+                    if (startChanged) changes.push('In Weight: ' + (editOriginalWeights.StartQty || 0).toLocaleString() + ' → ' + (payload.StartQty || 0).toLocaleString());
+                    if (endChanged) changes.push('Out Weight: ' + (editOriginalWeights.EndQty || 0).toLocaleString() + ' → ' + (payload.EndQty || 0).toLocaleString());
+                    $('#gdWeightEditPinChanges').html('<strong>Changes:</strong><br>' + changes.join('<br>'));
+                    $('#gdWeightEditPin').val('');
+                    $('#gdWeightEditPinError').attr('hidden', true);
+                    _pendingSubmitPayload = payload;
+                    _weightEditPinModal.show();
+                    setTimeout(function () { $('#gdWeightEditPin').focus(); }, 500);
+                    return;
+                }
+            }
+
+            doSubmit(payload);
+        });
+    }
+
+    async function doSubmit(payload) {
             const btn = $(SEL.submit);
             btn.prop('disabled', true).text('Saving…');
 
             try {
-                const resp = await fetch('/api/GrowerDelivery', {
-                    method:  'POST',
+                var url = editTxnId
+                    ? '/api/GrowerDelivery/' + editTxnId
+                    : '/api/GrowerDelivery';
+                var method = editTxnId ? 'PUT' : 'POST';
+
+                const resp = await fetch(url, {
+                    method:  method,
                     headers: { 'Content-Type': 'application/json' },
                     body:    JSON.stringify(payload)
                 });
 
                 if (resp.ok) {
                     const result = await resp.json();
-                    showAlert('Delivery saved successfully.', 'success');
 
-                    // Trigger print via the print service (if a printer is assigned)
-                    if (result && result.id) {
+                    // Only print on new creates, or edits where weights changed
+                    var shouldPrint = !editTxnId; // always print new
+                    if (editTxnId && editOriginalWeights) {
+                        var p = payload;
+                        shouldPrint = (p.StartQty || null) !== (editOriginalWeights.StartQty || null)
+                                   || (p.EndQty || null) !== (editOriginalWeights.EndQty || null)
+                                   || (p.DirectQty || null) !== (editOriginalWeights.DirectQty || null);
+                    }
+
+                    if (shouldPrint && result && result.id) {
                         try {
                             await fetch('/api/printing/print-ticket/' + encodeURIComponent(result.id) + '?role=Inbound', {
                                 method: 'POST'
@@ -941,6 +1025,12 @@
                             console.warn('Print request failed:', printErr);
                         }
                     }
+
+                    // Navigate back to the weight sheet delivery loads page
+                    if (activeWsId) {
+                        window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + activeWsId;
+                        return;
+                    }
                 } else {
                     const detail = await tryParseError(resp);
                     showAlert('Save failed: ' + detail, 'danger');
@@ -948,8 +1038,105 @@
             } catch (ex) {
                 showAlert('Network error: ' + ex.message, 'danger');
             } finally {
-                btn.prop('disabled', false).text('Save Delivery');
+                btn.prop('disabled', false).text(editTxnId ? 'Update Delivery' : 'Save Delivery');
             }
+    }
+
+    // ── Edit mode: populate form from existing transaction ─────────────────
+
+    function loadExistingDelivery(txnId) {
+        $.ajax({
+            url: '/api/GrowerDelivery/' + txnId,
+            method: 'GET',
+            dataType: 'json',
+        })
+        .done(function (d) {
+            // Hidden FK fields
+            $(SEL.lotId).val(d.LotId || '');
+            $(SEL.locationId).val(d.LocationId || '');
+
+            // Notes
+            $('#gdNotes').val(d.Notes || '');
+
+            // Quantities
+            if (d.IsTruck) {
+                // Scale mode — populate hidden inputs + display elements
+                if (d.StartQty != null) {
+                    $(SEL.startQty).val(d.StartQty);
+                    $(SEL.grossDisplay).text(fmtWeight(d.StartQty));
+                    $(SEL.grossRow).addClass('gm-gd-weight-cell--captured');
+                    if (d.StartedAt) {
+                        $(SEL.startedAt).val(d.StartedAt);
+                        $(SEL.grossTime).text(new Date(d.StartedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                    }
+                    if (d.StartQtyLocationQuantityMethodDescription)
+                        $(SEL.grossSourceBadge).text(d.StartQtyLocationQuantityMethodDescription).prop('hidden', false);
+                    grossCaptured = true;
+                    $(SEL.tareRow).prop('hidden', false);
+                    $(SEL.captureTare).prop('disabled', false);
+                }
+                if (d.EndQty != null) {
+                    $(SEL.endQty).val(d.EndQty);
+                    $(SEL.tareDisplay).text(fmtWeight(d.EndQty));
+                    $(SEL.tareRow).addClass('gm-gd-weight-cell--captured');
+                    if (d.CompletedAt) {
+                        $(SEL.completedAt).val(d.CompletedAt);
+                        $(SEL.tareTime).text(new Date(d.CompletedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                    }
+                    if (d.EndQtyLocationQuantityMethodDescription)
+                        $(SEL.tareSourceBadge).text(d.EndQtyLocationQuantityMethodDescription).prop('hidden', false);
+                }
+                // Show net if both weights present
+                updateScaleNet();
+            } else {
+                // Direct mode
+                if (d.DirectQty != null) {
+                    $(SEL.directQty).val(d.DirectQty);
+                    $(SEL.directDisplay).text(fmtWeight(d.DirectQty));
+                }
+                if (d.StartedAt) $(SEL.directStartedAt).val(d.StartedAt);
+                if (d.CompletedAt) $(SEL.directCompletedAt).val(d.CompletedAt);
+            }
+
+            // Container — set first container if present
+            if (d.ToContainers && d.ToContainers.length > 0) {
+                var cid = d.ToContainers[0].ContainerId;
+                $(SEL.containerId).val(cid);
+                var binInstance = $('#gdContainer').data('dxSelectBox');
+                if (binInstance) binInstance.option('value', cid);
+            }
+
+            // Grain quality attributes
+            var attrs = d.Attributes || {};
+            if (attrs.MOISTURE != null) $('#gdMoisture').val(attrs.MOISTURE);
+            if (attrs.PROTEIN != null) $('#gdProtein').val(attrs.PROTEIN);
+
+            // Transport attributes
+            if (attrs.BOL != null) $('#gdBOL').val(attrs.BOL);
+            if (attrs.TRUCK_ID != null) $('#gdTruckId').val(attrs.TRUCK_ID);
+            if (attrs.DRIVER != null) $('#gdDriver').val(attrs.DRIVER);
+
+            // Quantity method snapshots
+            if (d.StartQtyLocationQuantityMethodId)
+                currentQtyMethodId = d.StartQtyLocationQuantityMethodId;
+            else if (d.DirectQtyLocationQuantityMethodId)
+                currentQtyMethodId = d.DirectQtyLocationQuantityMethodId;
+
+            // Store original weights to detect changes for print logic
+            editOriginalWeights = {
+                StartQty:  d.StartQty,
+                EndQty:    d.EndQty,
+                DirectQty: d.DirectQty,
+            };
+
+            // Update submit button text
+            $(SEL.submit).text('Update Delivery').prop('hidden', false);
+        })
+        .fail(function (xhr) {
+            console.error('[GrowerDelivery] Edit load failed:', xhr.status, xhr.responseText);
+            var msg = xhr.responseJSON && xhr.responseJSON.message
+                ? xhr.responseJSON.message : 'Failed to load delivery for editing.';
+            showAlert(msg, 'danger');
         });
     }
 
@@ -977,12 +1164,12 @@
             Notes:         strOrNull('gdNotes')        || null,
 
             // Grain quality
-            Moisture:      numOrNull('gdMoisture'),
-            Protein:       numOrNull('gdProtein'),
+            Moisture:      numOrNull('gdMoisture') || null,
+            Protein:       numOrNull('gdProtein') || null,
 
             // Transport / load attributes
             BOL:           strOrNull('gdBOL'),
-            TruckId:       strOrNull('gdTruckId'),
+            TruckId:       (strOrNull('gdTruckId') || '').toUpperCase() || null,
             Driver:        strOrNull('gdDriver'),
         };
 
@@ -1046,8 +1233,6 @@
     }
 
     function validate(p) {
-        if (!p.AccountId)  return 'Grower Account is required.';
-        if (!p.ProductId)  return 'Product is required.';
         if (!p.LotId)      return 'Lot is required.';
         if (!p.LocationId) return 'Location is required.';
 
@@ -1057,11 +1242,13 @@
         } else {
             if (!p.StartQty || p.StartQty <= 0)
                 return 'Inbound weight must be captured before saving.';
-            if (p.EndQty === null || p.EndQty === undefined)
-                return 'Outbound weight must be captured before saving.';
-            if (p.StartQty < p.EndQty)
+            // EndQty is optional on save — only required for load completion
+            if (p.EndQty != null && p.StartQty < p.EndQty)
                 return 'Inbound weight must be greater than or equal to outbound weight.';
         }
+
+        // TruckId required for truck loads (not direct mode)
+        if (!isDirectMode() && !p.TruckId) return 'Truck ID is required.';
 
         return null;
     }
@@ -1176,14 +1363,45 @@
 
     function wireWeightSheetPanel() {
 
-        // ── Open the New WS panel ─────────────────────────────────────────────
+        // ── Open the New WS panel — show PIN popup first ──────────────────────
+        var newWsPinModal = new bootstrap.Modal(document.getElementById('gdNewWsPinModal'));
+
         $(SEL.newWsBtn).on('click', function () {
-            $(SEL.wsPanel).prop('hidden', true);
-            $(SEL.newWsPanel).prop('hidden', false);
-            setNwsLot(null, null);
-            resetNwsCreateForm();
-            const locationId = $(SEL.locationId).val();
-            if (locationId) refreshNwsLots(locationId);
+            _nwsPin = null;
+            $('#gdNewWsPinInput').val('');
+            $('#gdNewWsPinError').attr('hidden', true);
+            newWsPinModal.show();
+            setTimeout(function () { $('#gdNewWsPinInput').focus(); }, 500);
+        });
+
+        $('#gdNewWsPinInput').on('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('#gdNewWsPinConfirmBtn').click(); } });
+        $('#gdNewWsPinConfirmBtn').on('click', function () {
+            var pin = parseInt($('#gdNewWsPinInput').val(), 10);
+            if (!pin || pin <= 0) {
+                $('#gdNewWsPinError').text('A valid PIN is required.').removeAttr('hidden');
+                return;
+            }
+            $.ajax({
+                url: '/api/GrowerDelivery/ValidatePin?pin=' + pin,
+                method: 'GET',
+                dataType: 'json',
+            })
+            .done(function () {
+                _nwsPin = pin;
+                newWsPinModal.hide();
+                // Now show the New WS panel
+                $(SEL.wsPanel).prop('hidden', true);
+                $(SEL.newWsPanel).prop('hidden', false);
+                setNwsLot(null, null);
+                resetNwsCreateForm();
+                var locationId = $(SEL.locationId).val();
+                if (locationId) refreshNwsLots(locationId);
+            })
+            .fail(function (xhr) {
+                var msg = xhr.responseJSON && xhr.responseJSON.message
+                    ? xhr.responseJSON.message : 'Invalid PIN.';
+                $('#gdNewWsPinError').text(msg).removeAttr('hidden');
+            });
         });
 
         // ── Back to weight sheet list ─────────────────────────────────────────
@@ -1205,6 +1423,11 @@
                 return;
             }
 
+            if (!_nwsPin) {
+                $(SEL.newWsError).text('PIN is required. Please try again.').prop('hidden', false);
+                return;
+            }
+
             const btn = $(SEL.createWsBtn);
             btn.prop('disabled', true).text('Creating…');
             $(SEL.newWsError).prop('hidden', true);
@@ -1213,7 +1436,7 @@
                 const resp = await fetch('/api/GrowerDelivery/WeightSheets', {
                     method:  'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ LocationId: locationId, LotId: selectedNwsLotId }),
+                    body:    JSON.stringify({ LocationId: locationId, LotId: selectedNwsLotId, Pin: _nwsPin }),
                 });
 
                 if (!resp.ok) {
@@ -1545,6 +1768,7 @@
         // BOL Type select
         $('#gdBolTypeSelect').dxSelectBox({
             dataSource: [
+                { code: 'N', label: 'None' },
                 { code: 'U', label: 'Universal' },
                 { code: 'A', label: 'Along Side Field' },
                 { code: 'F', label: 'Farm Storage' },
@@ -1556,6 +1780,7 @@
             onValueChanged: function (e) {
                 var val = e.value;
                 var hints = {
+                    N: 'No BOL type — no hauler or rate needed.',
                     U: 'Universal BOL — no hauler or rate needed.',
                     A: 'Along Side Field — hauler and miles required.',
                     F: 'Farm Storage — hauler and miles required.',
@@ -1645,9 +1870,14 @@
                 return;
             }
 
-            var payload = { RateType: bolType };
+            var payload = { RateType: bolType === 'N' ? null : bolType };
 
-            if (bolType === 'U') {
+            if (bolType === 'N') {
+                payload.HaulerId = 0;
+                payload.Miles = 0;
+                payload.Rate = 0;
+                payload.CustomRateDescription = null;
+            } else if (bolType === 'U') {
                 payload.HaulerId = 0;
                 payload.Miles = 0;
                 payload.Rate = 0;

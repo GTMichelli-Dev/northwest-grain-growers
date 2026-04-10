@@ -67,6 +67,8 @@ public partial class InventoryTransactionDetail
 
     public string VoidReason { get; set; }
 
+    public string VoidedByUserName { get; set; }
+
     public virtual Account Account { get; set; }
 
     public virtual QuantityMethod StartQtyLocationQuantityMethod { get; set; }

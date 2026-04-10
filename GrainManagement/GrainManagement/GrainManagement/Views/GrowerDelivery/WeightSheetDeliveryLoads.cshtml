@@ -18,18 +18,18 @@
 <div class="gm-pagehead gm-pagehead--sticky">
 </div>
 
-<div class="gm-gd">
+<div class="gm-gd gm-gd--loads">
 
     <div id="dlAlert" class="alert" role="alert" hidden></div>
 
     <!-- ── Weight sheet details header ────────────────────────────────────── -->
-    <div id="dlWsHeader" class="gm-dl-header" hidden>
-        <div class="gm-dl-header__title">
-            <span class="gm-dl-header__label">Weight Sheet</span>
-            <span class="gm-dl-header__wsid" id="dlWsIdFormatted"></span>
-        </div>
-        <!-- Row 1 — Lot # & Crop -->
-        <div class="gm-dl-header__details">
+    <div id="dlWsHeader" class="gm-dl-header" style="padding:8px 14px;" hidden>
+        <!-- Row 1 — WS ID, Lot, Crop, Account, Split — all on one line -->
+        <div class="gm-dl-header__details" style="gap:16px;">
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">WS</span>
+                <span class="gm-dl-header__wsid" id="dlWsIdFormatted" style="font-size:1.05rem;"></span>
+            </div>
             <div class="gm-dl-header__detail">
                 <span class="gm-dl-header__detail-label">Lot #</span>
                 <span class="gm-dl-header__detail-value" id="dlWsLotNumber">—</span>
@@ -44,33 +44,35 @@
                 <span class="gm-dl-header__detail-label">Crop</span>
                 <span class="gm-dl-header__detail-value" id="dlWsCrop">—</span>
             </div>
-        </div>
-        <!-- Row 2 — Account & Split -->
-        <div class="gm-dl-header__details" style="margin-top:8px;">
             <div class="gm-dl-header__detail">
-                <span class="gm-dl-header__detail-label">Primary Account</span>
+                <span class="gm-dl-header__detail-label">Account</span>
                 <span class="gm-dl-header__detail-value" id="dlWsAccount">—</span>
             </div>
             <div class="gm-dl-header__detail">
-                <span class="gm-dl-header__detail-label">Split Group #</span>
+                <span class="gm-dl-header__detail-label">Split #</span>
                 <span class="gm-dl-header__detail-value fw-semibold" id="dlWsSplitId">—</span>
             </div>
             <div class="gm-dl-header__detail">
                 <span class="gm-dl-header__detail-label">Split</span>
                 <span class="gm-dl-header__detail-value" id="dlWsSplit">—</span>
             </div>
-        </div>
-        <!-- BOL Type separator row -->
-        <div style="margin-top:10px; border-top:1px solid #dee2e6; padding-top:8px;" class="d-flex align-items-center gap-2">
-            <span class="gm-dl-header__detail-label" style="font-size:0.7rem;letter-spacing:.08em;">BOL TYPE</span>
-            <button type="button" class="btn btn-outline-secondary btn-sm gm-dl-header__edit-btn" id="dlEditHaulerBtn" title="Change BOL Type">
-                <i class="dx-icon dx-icon-edit"></i>
-            </button>
-        </div>
-        <div class="gm-dl-header__details" style="margin-top:6px;">
             <div class="gm-dl-header__detail">
-                <span class="gm-dl-header__detail-label">Rate Type</span>
+                <span class="gm-dl-header__detail-label">Weighed By</span>
+                <span class="gm-dl-header__detail-value" id="dlWsWeightmaster">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Date</span>
+                <span class="gm-dl-header__detail-value" id="dlWsDate">—</span>
+            </div>
+        </div>
+        <!-- Row 2 — BOL: rate type, hauler, miles, rate + edit btn + comment inline -->
+        <div class="gm-dl-header__details" style="margin-top:4px; gap:16px; border-top:1px solid #eee; padding-top:4px;">
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">BOL</span>
                 <span class="gm-dl-header__detail-value" id="dlWsRateType">—</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm gm-dl-header__edit-btn" id="dlEditHaulerBtn" title="Change BOL Type">
+                    <i class="dx-icon dx-icon-edit"></i>
+                </button>
             </div>
             <div class="gm-dl-header__detail">
                 <span class="gm-dl-header__detail-label">Hauler</span>
@@ -81,28 +83,24 @@
                 <span class="gm-dl-header__detail-value" id="dlWsMiles">—</span>
             </div>
             <div class="gm-dl-header__detail" id="dlWsCalcRateDetail" hidden>
-                <span class="gm-dl-header__detail-label">Calculated Rate</span>
+                <span class="gm-dl-header__detail-label">Rate</span>
                 <span class="gm-dl-header__detail-value" id="dlWsCalcRate">—</span>
             </div>
             <div class="gm-dl-header__detail" id="dlWsCustomDescDetail" hidden>
-                <span class="gm-dl-header__detail-label">Rate Description</span>
+                <span class="gm-dl-header__detail-label">Desc</span>
                 <span class="gm-dl-header__detail-value" id="dlWsCustomDesc">—</span>
             </div>
             <div class="gm-dl-header__detail" id="dlWsCustomRateDetail" hidden>
                 <span class="gm-dl-header__detail-label">Rate</span>
                 <span class="gm-dl-header__detail-value" id="dlWsCustomRate">—</span>
             </div>
-        </div>
-        <!-- Row 4 — Comment (editable, full width) -->
-        <div style="margin-top:10px;">
-            <span class="gm-dl-header__detail-label">Comment</span>
-            <div class="d-flex align-items-start gap-2 mt-1">
-                <textarea class="form-control form-control-sm" id="dlWsComment" rows="2"
-                          placeholder="Add a comment…"
-                          style="font-size:0.85rem;resize:vertical;"></textarea>
+            <div class="gm-dl-header__detail" style="flex:1 1 auto; min-width:200px;">
+                <span class="gm-dl-header__detail-label">Comment</span>
+                <input type="text" class="form-control form-control-sm" id="dlWsComment"
+                       placeholder="Add a comment…" style="font-size:0.8rem; height:26px;" />
                 <button type="button" class="btn btn-outline-primary btn-sm" id="dlSaveCommentBtn"
-                        title="Save Comment" style="display:none;white-space:nowrap;">
-                    <i class="dx-icon dx-icon-save"></i> Save
+                        title="Save" style="display:none; padding:1px 8px; font-size:0.75rem;">
+                    Save
                 </button>
             </div>
         </div>
@@ -112,13 +110,17 @@
     <div id="dlListPanel" hidden>
         <div class="gm-gd-section">
 
-            <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
                 <div class="d-flex align-items-center gap-3">
                     <div class="gm-gd-section__title" style="margin-bottom:0">Weight Sheet Loads</div>
                     <span class="badge bg-secondary" id="dlStatTotal" title="Total loads">0 loads</span>
                     <span class="badge bg-success" id="dlStatComplete" title="Completed loads">0 complete</span>
+                    <span class="badge bg-primary" id="dlStatTotalNet" title="Total net weight">Net: 0 lbs</span>
                 </div>
-                <div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="dlPrintSummaryBtn" title="Print weight sheet">
+                        <i class="dx-icon dx-icon-print"></i> Print
+                    </button>
                     <a class="btn btn-primary btn-sm" id="dlNewLoadBtn" href="/GrowerDelivery/Index">
                         <i class="dx-icon dx-icon-add"></i> New Load
                     </a>
@@ -248,6 +250,101 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" id="dlBinSaveBtn" disabled>Assign Bin</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Reprint popup ────────────────────────────────────────────────── -->
+    <div class="modal fade" id="dlReprintModal" tabindex="-1" aria-labelledby="dlReprintModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dlReprintModalLabel">Print Ticket</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="dlReprintTxnId" />
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Send to Printer</label>
+                        <select class="form-select" id="dlReprintPrinterSelect">
+                            <option value="">Loading printers…</option>
+                        </select>
+                    </div>
+                    <div id="dlReprintError" class="text-danger small" hidden></div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" id="dlBrowserPrintBtn" title="Open PDF in browser">
+                        <i class="dx-icon dx-icon-print"></i> Browser Print
+                    </button>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="dlReprintSendBtn">Print</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Void delivery popup ───────────────────────────────────────────── -->
+    <div class="modal fade" id="dlVoidModal" tabindex="-1" aria-labelledby="dlVoidModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="dlVoidModalLabel">Void Ticket</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="dlVoidTxnId" />
+                    <div class="mb-3">
+                        <label class="form-label">Void Reason <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="dlVoidReason" rows="3"
+                                  placeholder="Enter reason for voiding this ticket…"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">PIN <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="dlVoidPin"
+                               inputmode="numeric" maxlength="10" placeholder="Enter PIN"
+                               autocomplete="off" data-lpignore="true" data-1p-ignore="true"
+                               data-form-type="other"
+                               style="max-width:160px; -webkit-text-security:disc;" />
+                    </div>
+                    <div id="dlVoidError" class="text-danger small" hidden></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="dlVoidSaveBtn">Void Ticket</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Restore delivery popup ─────────────────────────────────────────── -->
+    <div class="modal fade" id="dlRestoreModal" tabindex="-1" aria-labelledby="dlRestoreModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="dlRestoreModalLabel">Restore Ticket</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="dlRestoreTxnId" />
+                    <p class="text-muted" style="font-size:0.85rem;">
+                        This will un-void the ticket and restore it to active status.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label">PIN <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="dlRestorePin"
+                               inputmode="numeric" maxlength="10" placeholder="Enter PIN"
+                               autocomplete="off" data-lpignore="true" data-1p-ignore="true"
+                               data-form-type="other"
+                               style="max-width:160px; -webkit-text-security:disc;" />
+                    </div>
+                    <div id="dlRestoreError" class="text-danger small" hidden></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="dlRestoreSaveBtn">Restore Ticket</button>
                 </div>
             </div>
         </div>

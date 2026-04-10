@@ -14,8 +14,8 @@ namespace GrainManagement.Dtos.Warehouse
         /// <summary>Lot that receives this delivery.</summary>
         public long LotId { get; set; }
 
-        /// <summary>Product being delivered.</summary>
-        public int ProductId { get; set; }
+        /// <summary>Product being delivered. Optional — resolved from the Lot if omitted.</summary>
+        public int? ProductId { get; set; }
 
         /// <summary>Optional item variant of the product.</summary>
         public long? ItemId { get; set; }
@@ -124,18 +124,23 @@ namespace GrainManagement.Dtos.Warehouse
 
         // ── Source document reference ────────────────────────────────────────────
 
-        /// <summary>Originating document type (e.g. 'WeightSheetLoad'). Null for manual entries.</summary>
+        /// <summary>Originating document type (e.g. 'WeightSheet'). Null for manual entries.</summary>
         public string RefType { get; set; }
 
         /// <summary>Originating document ID. Null for manual entries.</summary>
         public Guid? RefId { get; set; }
 
-        /// <summary>Optional weight sheet to link this delivery to via WeightSheetLoad.</summary>
+        /// <summary>Optional weight sheet to link this delivery to via WeightSheet.</summary>
         public Guid? WeightSheetUid { get; set; }
 
         // ── Notes ───────────────────────────────────────────────────────────────
 
         public string Notes { get; set; }
+
+        // ── Weight edit authorization ──────────────────────────────────────────
+
+        /// <summary>PIN required when modifying previously recorded weights on an edit.</summary>
+        public int? WeightEditPin { get; set; }
 
         // ── Grain quality attributes (TransactionAttributeTypes seeds) ───────────
 

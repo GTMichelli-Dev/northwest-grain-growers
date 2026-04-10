@@ -9,4 +9,5 @@ public sealed class CreateWeightSheetDto
     public decimal? Miles             { get; set; }
     public string CustomRateDescription { get; set; }
     public decimal? Rate              { get; set; }
+    public int? Pin                   { get; set; }
 }

@@ -357,6 +357,18 @@
     padding-right: 20px;
 }
 
+/* ── Wider layout for delivery loads grid page ─────────────── */
+
+.gm-gd--loads {
+    max-width: none;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.gm-gd--loads #dlLoadsGrid {
+    width: 100%;
+}
+
 /* ── Inline edit mode ────────────────────────────────────────── */
 
 .gm-wsl-card--editing {
