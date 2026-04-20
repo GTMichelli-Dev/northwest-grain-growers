@@ -203,14 +203,25 @@ public class PrintWorker : BackgroundService
                     cupsPrinterId = defaultPrinter.PrinterId;
                 }
 
-                // Build PDF URL from the first configured server
+                // Build PDF URL from the first configured server — endpoint depends on job type
                 var serverUrl = _options.ServerUrls.FirstOrDefault()?.TrimEnd('/') ?? "http://localhost:5000";
-                var pdfUrl = $"{serverUrl}/api/printjobs/load-ticket/{ticketId}/pdf";
+                string pdfUrl = type switch
+                {
+                    "LotLabel"           => $"{serverUrl}/api/printjobs/lot-label/{ticketId}/pdf",
+                    "IntakeWeightSheet"  => $"{serverUrl}/api/printjobs/intake-weight-sheet/{ticketId}/pdf",
+                    _                    => $"{serverUrl}/api/printjobs/load-ticket/{ticketId}/pdf",
+                };
+                var jobLabel = type switch
+                {
+                    "LotLabel"          => $"LotLabel-{ticketId}",
+                    "IntakeWeightSheet" => $"WeightSheet-{ticketId}",
+                    _                   => $"Ticket-{ticketId}",
+                };
 
-                _log.LogInformation("Printing ticket {Ticket} to {Printer} from {Url}", ticketId, cupsPrinterId, pdfUrl);
+                _log.LogInformation("Printing {Type} {Ticket} to {Printer} from {Url}", type, ticketId, cupsPrinterId, pdfUrl);
 
                 var http = _httpFactory.CreateClient();
-                var (success, message) = await _printer.PrintFromUrlAsync(cupsPrinterId, pdfUrl, $"Ticket-{ticketId}", http);
+                var (success, message) = await _printer.PrintFromUrlAsync(cupsPrinterId, pdfUrl, jobLabel, http);
 
                 await ReportPrintResult(conn, success, success ? $"Ticket {ticketId} sent to {cupsPrinterId}" : message);
             }

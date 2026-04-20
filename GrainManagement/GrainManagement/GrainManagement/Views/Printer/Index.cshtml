@@ -25,23 +25,35 @@ else
 
 <!-- Printer Assignments -->
 <div class="card mb-3">
-    <div class="card-header py-2"><strong>Printer Assignments</strong></div>
+    <div class="card-header py-2 d-flex align-items-center justify-content-between">
+        <strong>Printer Assignments</strong>
+        <span id="assignmentStatus" class="small"></span>
+    </div>
     <div class="card-body py-2">
         <div class="row g-3 align-items-end">
-            <div class="col-md-5">
+            <div class="col-md-3">
                 <label class="form-label mb-0 small fw-bold">Inbound Printer</label>
                 <select id="inboundPrinterSelect" class="form-select form-select-sm">
                     <option value="">-- None --</option>
                 </select>
             </div>
-            <div class="col-md-5">
+            <div class="col-md-3">
                 <label class="form-label mb-0 small fw-bold">Outbound Printer</label>
                 <select id="outboundPrinterSelect" class="form-select form-select-sm">
                     <option value="">-- None --</option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <span id="assignmentStatus" class="small"></span>
+            <div class="col-md-3">
+                <label class="form-label mb-0 small fw-bold">Lot Printer</label>
+                <select id="lotPrinterSelect" class="form-select form-select-sm">
+                    <option value="">-- None --</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label mb-0 small fw-bold">Report Printer</label>
+                <select id="reportPrinterSelect" class="form-select form-select-sm">
+                    <option value="">-- None --</option>
+                </select>
             </div>
         </div>
     </div>

@@ -173,8 +173,10 @@ JOIN #BadGroups bg ON bg.SplitGroupId = v.SplitGroupId;
 
 
 --------------------------------------------------------------------------------
---Build one row per SplitGroupId for SplitGroups upsert
---PrimaryAccountId = IsPrimaryGrower row if present else lowest SqlAccountId
+-- Build one row per SplitGroupId for SplitGroups upsert
+-- PrimaryAccountId = IsPrimaryGrower ('G') row if present, otherwise NULL.
+-- A SplitGroup is allowed to have a NULL PrimaryAccountId when no detail row
+-- in COMDATA.U5SPLTS is flagged with SPDEL = 'G'.
 --------------------------------------------------------------------------------
 IF OBJECT_ID('tempdb..#SrcGroups') IS NOT NULL DROP TABLE #SrcGroups;
 
@@ -182,17 +184,18 @@ IF OBJECT_ID('tempdb..#SrcGroups') IS NOT NULL DROP TABLE #SrcGroups;
 (
     SELECT
         SplitGroupId,
-        COALESCE(
-            MAX(CASE WHEN IsPrimaryGrower = 1 THEN SqlAccountId END),
-            MIN(SqlAccountId)
-        ) AS PrimaryAccountId
+        MAX(CASE WHEN IsPrimaryGrower = 1 THEN SqlAccountId END) AS PrimaryAccountId
     FROM #ValidRows
     GROUP BY SplitGroupId
 )
 SELECT
     v.SplitGroupId,
     MAX(COALESCE(NULLIF(LTRIM(RTRIM(v.SplitGroupDescription)), ''), '')) AS SplitGroupDescription,
-    p.PrimaryAccountId AS PrimaryAccountId
+    p.PrimaryAccountId AS PrimaryAccountId,
+    CAST(CASE
+        WHEN UPPER(MAX(COALESCE(NULLIF(LTRIM(RTRIM(v.SplitGroupDescription)), ''), ''))) LIKE '%DO NOT USE%'
+        THEN 0 ELSE 1
+    END AS bit) AS IsActive
 INTO #SrcGroups
 FROM #ValidRows v
 JOIN PrimaryPick p ON p.SplitGroupId = v.SplitGroupId
@@ -206,17 +209,19 @@ USING #SrcGroups AS src
    ON tgt.SplitGroupId = src.SplitGroupId
 WHEN MATCHED AND
 (
-    tgt.PrimaryAccountId<> src.PrimaryAccountId
- OR tgt.SplitGroupDescription<> src.SplitGroupDescription
- OR tgt.IsActive<> 1
+       (tgt.PrimaryAccountId IS NULL AND src.PrimaryAccountId IS NOT NULL)
+    OR (tgt.PrimaryAccountId IS NOT NULL AND src.PrimaryAccountId IS NULL)
+    OR (tgt.PrimaryAccountId <> src.PrimaryAccountId)
+    OR tgt.SplitGroupDescription <> src.SplitGroupDescription
+    OR tgt.IsActive <> src.IsActive
 )
 THEN UPDATE SET
     tgt.PrimaryAccountId = src.PrimaryAccountId,
     tgt.SplitGroupDescription = src.SplitGroupDescription,
-    tgt.IsActive = 1
+    tgt.IsActive = src.IsActive
 WHEN NOT MATCHED BY TARGET THEN
     INSERT(SplitGroupId, PrimaryAccountId, SplitGroupDescription, IsActive, UseForSales, UseForReceive)
-    VALUES(src.SplitGroupId, src.PrimaryAccountId, src.SplitGroupDescription, 1, 1, 1);
+    VALUES(src.SplitGroupId, src.PrimaryAccountId, src.SplitGroupDescription, src.IsActive, 1, 1);
 
             --------------------------------------------------------------------------------
             --Sync percents(mirror AS400): update / insert / delete missing(scoped)

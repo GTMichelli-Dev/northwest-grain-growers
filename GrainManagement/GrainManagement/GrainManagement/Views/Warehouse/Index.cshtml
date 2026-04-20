@@ -1,6 +1,6 @@
 @inject GrainManagement.Services.ILocationContext LocationContext
 @{
-    ViewData["Title"] = "Warehouse Dashboard";
+    ViewData["Title"] = "Weight Sheets";
 }
 
 <link rel="stylesheet" href="~/css/pages/warehouse.dashboard.dx.css" asp-append-version="true" />
@@ -8,7 +8,7 @@
 <a href="/" class="gm-module-bar gm-module-bar--warehouse gm-module-bar--link" title="Back to Home">
     <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
     <span class="gm-module-bar__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
-    <span class="gm-module-bar__label">WAREHOUSE</span>
+    <span class="gm-module-bar__label">WEIGHT SHEETS</span>
 </a>
 
 <div class="gm-pagehead gm-pagehead--sticky">
@@ -21,10 +21,33 @@
     <p>Select a location above to view the warehouse dashboard.</p>
 </div>
 
-<!-- Dashboard content: open weight sheets grid -->
+<!-- Dashboard content: weight sheets grid with status filter bar -->
 <div id="gmWdContent" class="gm-wd-content" data-location-id="@(LocationContext.HasLocation ? LocationContext.LocationId : 0)" @(LocationContext.HasLocation ? "" : "hidden")>
     <div class="gm-wd-panel">
-        <div class="gm-wd-panel__title">Open Weight Sheets</div>
+        <div class="d-flex align-items-center justify-content-between mb-2" style="gap:12px;flex-wrap:wrap;">
+            <div class="gm-wd-panel__title" id="wdWsGridTitle" style="margin-bottom:0">Open Weight Sheets</div>
+            <div id="wdWsStatusToolbar" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <div class="btn-group" role="group" aria-label="Weight sheet status filter">
+                    <button type="button" class="btn btn-outline-secondary btn-sm active" data-wd-status="open">Open</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="pending">Pending</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="closed">Closed</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="all">All</button>
+                </div>
+                <select class="form-select form-select-sm" id="wdWsTypeFilter" style="width:auto;min-width:160px;">
+                    <option value="all" selected>All Types</option>
+                    <option value="seed-intake">Seed Intake</option>
+                    <option value="warehouse-intake">Warehouse Intake</option>
+                    <option value="seed-transfer">Seed Transfer</option>
+                    <option value="warehouse-transfer">Warehouse Transfer</option>
+                </select>
+                <div id="wdWsDateRange" style="display:none;align-items:center;gap:6px;">
+                    <label for="wdWsFromDate" class="form-label mb-0" style="font-weight:600;font-size:0.85rem;">From</label>
+                    <input type="date" class="form-control form-control-sm" id="wdWsFromDate" />
+                    <label for="wdWsToDate" class="form-label mb-0" style="font-weight:600;font-size:0.85rem;">To</label>
+                    <input type="date" class="form-control form-control-sm" id="wdWsToDate" />
+                </div>
+            </div>
+        </div>
         <div id="wdOpenWsGrid"></div>
     </div>
 </div>

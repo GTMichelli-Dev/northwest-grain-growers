@@ -41,6 +41,11 @@
 }
 
 
+.gm-icon--fob-delivery::before {
+    -webkit-mask-image: url('/assets/icons/fob-delivery.svg');
+    mask-image: url('/assets/icons/fob-delivery.svg');
+}
+
 .gm-icon--cancel::before {
     -webkit-mask-image: url('/assets/icons/cancel.svg');
     mask-image: url('/assets/icons/cancel.svg');

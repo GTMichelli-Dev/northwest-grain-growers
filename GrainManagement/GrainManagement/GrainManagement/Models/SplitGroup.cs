@@ -9,7 +9,7 @@ public partial class SplitGroup
 {
     public int SplitGroupId { get; set; }
 
-    public long PrimaryAccountId { get; set; }
+    public long? PrimaryAccountId { get; set; }
 
     public string SplitGroupDescription { get; set; }
 

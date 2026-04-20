@@ -11,12 +11,12 @@
     };
 
   const modePartials = {
-    intake: "/Warehouse/ModePartial?mode=intake",
-    transfer: "/Warehouse/ModePartial?mode=transfer",
-    outbound: "/Warehouse/ModePartial?mode=outbound",
-      kiosk: "/Warehouse/KioskCamera",
+    intake: "/WeightSheets/ModePartial?mode=intake",
+    transfer: "/WeightSheets/ModePartial?mode=transfer",
+    outbound: "/WeightSheets/ModePartial?mode=outbound",
+      kiosk: "/WeightSheets/KioskCamera",
 
-    newtruck: "/Warehouse/ModePartial?mode=newtruck"
+    newtruck: "/WeightSheets/ModePartial?mode=newtruck"
 };
 
 const modeScripts = {

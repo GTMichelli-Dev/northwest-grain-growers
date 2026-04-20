@@ -66,6 +66,28 @@
                     sorting: { mode: 'single' },
                     paging: { pageSize: 25 },
                     pager: { showPageSizeSelector: true, allowedPageSizes: [10, 25, 50, 100] },
+                    export: {
+                        enabled: true,
+                        allowExportSelectedData: false,
+                    },
+                    onExporting: function (e) {
+                        // Exports ALL rows matching the current search/filter state,
+                        // across every page — not just the visible page.
+                        var workbook = new ExcelJS.Workbook();
+                        var worksheet = workbook.addWorksheet('HaulerRates');
+                        DevExpress.excelExporter.exportDataGrid({
+                            component: e.component,
+                            worksheet: worksheet,
+                        }).then(function () {
+                            return workbook.xlsx.writeBuffer();
+                        }).then(function (buffer) {
+                            saveAs(
+                                new Blob([buffer], { type: 'application/octet-stream' }),
+                                'HaulerRates.xlsx'
+                            );
+                        });
+                        e.cancel = true;
+                    },
                     editing: {
                         mode: 'cell',
                         allowUpdating: true,

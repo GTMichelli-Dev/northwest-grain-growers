@@ -330,6 +330,12 @@
     flex: 0 0 110px;
 }
 
+/* ── Fixed action column — solid white so scrolling columns don't bleed through ── */
+
+.gm-wsl-actions-cell {
+    background-color: #fff !important;
+}
+
 /* ── Grid action buttons ──────────────────────────────────────── */
 
 .gm-wsl-grid-actions {

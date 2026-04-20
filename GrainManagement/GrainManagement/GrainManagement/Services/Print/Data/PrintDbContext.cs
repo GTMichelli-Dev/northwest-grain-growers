@@ -161,24 +161,40 @@ namespace GrainManagement.Services.Print.Data
         /// <summary>
         /// Saves a printer assignment for the given role.
         /// Upserts: updates if the role already exists, inserts otherwise.
+        /// If both serviceId and printerId are null/empty, the assignment is deleted
+        /// (equivalent to selecting "None" in the UI).
         /// </summary>
-        public void SaveAssignment(string role, string serviceId, string printerId)
+        public void SaveAssignment(string role, string? serviceId, string? printerId)
         {
             EnsureSchemaUpToDate();
 
             var existing = PrinterAssignments.FirstOrDefault(a => a.Role == role);
+
+            // None = delete the row so auto-print suppression works naturally
+            bool isNone = string.IsNullOrWhiteSpace(serviceId) && string.IsNullOrWhiteSpace(printerId);
+
+            if (isNone)
+            {
+                if (existing != null)
+                {
+                    PrinterAssignments.Remove(existing);
+                    SaveChanges();
+                }
+                return;
+            }
+
             if (existing != null)
             {
-                existing.ServiceId = serviceId;
-                existing.PrinterId = printerId;
+                existing.ServiceId = serviceId!;
+                existing.PrinterId = printerId!;
             }
             else
             {
                 PrinterAssignments.Add(new PrinterAssignment
                 {
                     Role = role,
-                    ServiceId = serviceId,
-                    PrinterId = printerId
+                    ServiceId = serviceId!,
+                    PrinterId = printerId!
                 });
             }
 

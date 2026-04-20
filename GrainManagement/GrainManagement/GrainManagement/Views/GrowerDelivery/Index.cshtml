@@ -4,7 +4,7 @@
 
 <link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
 
-<a href="/Warehouse/LoadType" class="gm-module-bar gm-module-bar--intake gm-module-bar--link" title="Back to Weight Sheet Type">
+<a href="/WeightSheets/LoadType" class="gm-module-bar gm-module-bar--intake gm-module-bar--link" title="Back to Weight Sheet Type">
     <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
     <span class="gm-module-bar__icon gm-icon gm-icon--delivery" aria-hidden="true"></span>
     <span class="gm-module-bar__label">GROWER DELIVERY</span>
@@ -19,6 +19,10 @@
         <div class="gm-dl-header__title">
             <span class="gm-dl-header__label">Weight Sheet</span>
             <span class="gm-dl-header__wsid" id="gdWsIdFormatted"></span>
+            <span class="gm-dl-header__loadid" id="gdLoadIdDisplay" hidden style="margin-left:12px; font-size:0.9em; color:#555;">
+                <span style="font-weight:600;">Load ID:</span>
+                <span id="gdLoadIdValue"></span>
+            </span>
             <button type="submit" form="gmGdForm" class="btn btn-primary ms-auto" id="gmGdSubmitTop" hidden>
                 Save Delivery
             </button>

@@ -55,11 +55,17 @@ namespace GrainManagement.Reporting
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            DevExpress.XtraPrinting.BarCode.Code128Generator code128Generator2 = new DevExpress.XtraPrinting.BarCode.Code128Generator();
+            DevExpress.XtraPrinting.BarCode.Code128Generator code128Generator3 = new DevExpress.XtraPrinting.BarCode.Code128Generator();
             this.topMarginBand1 = new DevExpress.XtraReports.UI.TopMarginBand();
-            this.bottomMarginBand1 = new DevExpress.XtraReports.UI.BottomMarginBand();
+            this.xrLabel1 = new DevExpress.XtraReports.UI.XRLabel();
             this.xrBarcodeLoadId = new DevExpress.XtraReports.UI.XRBarCode();
+            this.bottomMarginBand1 = new DevExpress.XtraReports.UI.BottomMarginBand();
+            this.xrFooter = new DevExpress.XtraReports.UI.XRLabel();
             this.detailBand1 = new DevExpress.XtraReports.UI.DetailBand();
+            this.xrLabel3 = new DevExpress.XtraReports.UI.XRLabel();
+            this.xrLabel2 = new DevExpress.XtraReports.UI.XRLabel();
+            this.xrLabel4 = new DevExpress.XtraReports.UI.XRLabel();
+            this.xrLabel5 = new DevExpress.XtraReports.UI.XRLabel();
             this.xrTitle = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLoadId = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLine1 = new DevExpress.XtraReports.UI.XRLine();
@@ -87,9 +93,7 @@ namespace GrainManagement.Reporting
             this.xrLine3 = new DevExpress.XtraReports.UI.XRLine();
             this.capInWeight = new DevExpress.XtraReports.UI.XRLabel();
             this.xrInboundWeight = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrFooter = new DevExpress.XtraReports.UI.XRLabel();
             this.objectDataSource1 = new DevExpress.DataAccess.ObjectBinding.ObjectDataSource(this.components);
-            this.xrLabel1 = new DevExpress.XtraReports.UI.XRLabel();
             ((System.ComponentModel.ISupportInitialize)(this.objectDataSource1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
             // 
@@ -101,12 +105,18 @@ namespace GrainManagement.Reporting
             this.topMarginBand1.HeightF = 182.2917F;
             this.topMarginBand1.Name = "topMarginBand1";
             // 
-            // bottomMarginBand1
+            // xrLabel1
             // 
-            this.bottomMarginBand1.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
-            this.xrFooter});
-            this.bottomMarginBand1.HeightF = 40F;
-            this.bottomMarginBand1.Name = "bottomMarginBand1";
+            this.xrLabel1.Font = new DevExpress.Drawing.DXFont("Arial", 12F, DevExpress.Drawing.DXFontStyle.Bold);
+            this.xrLabel1.LocationFloat = new DevExpress.Utils.PointFloat(0F, 156.25F);
+            this.xrLabel1.Multiline = true;
+            this.xrLabel1.Name = "xrLabel1";
+            this.xrLabel1.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
+            this.xrLabel1.SizeF = new System.Drawing.SizeF(269F, 23F);
+            this.xrLabel1.StylePriority.UseFont = false;
+            this.xrLabel1.StylePriority.UseTextAlignment = false;
+            this.xrLabel1.Text = "Northwest Grain Growers";
+            this.xrLabel1.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter;
             // 
             // xrBarcodeLoadId
             // 
@@ -117,11 +127,31 @@ namespace GrainManagement.Reporting
             this.xrBarcodeLoadId.Name = "xrBarcodeLoadId";
             this.xrBarcodeLoadId.Padding = new DevExpress.XtraPrinting.PaddingInfo(10F, 10F, 0F, 0F, 100F);
             this.xrBarcodeLoadId.SizeF = new System.Drawing.SizeF(254F, 112F);
-            this.xrBarcodeLoadId.Symbology = code128Generator2;
+            this.xrBarcodeLoadId.Symbology = code128Generator3;
+            // 
+            // bottomMarginBand1
+            // 
+            this.bottomMarginBand1.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
+            this.xrFooter});
+            this.bottomMarginBand1.HeightF = 40F;
+            this.bottomMarginBand1.Name = "bottomMarginBand1";
+            // 
+            // xrFooter
+            // 
+            this.xrFooter.LocationFloat = new DevExpress.Utils.PointFloat(0F, 5F);
+            this.xrFooter.Name = "xrFooter";
+            this.xrFooter.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
+            this.xrFooter.SizeF = new System.Drawing.SizeF(269F, 30F);
+            this.xrFooter.Text = "Thank you";
+            this.xrFooter.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
             // 
             // detailBand1
             // 
             this.detailBand1.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
+            this.xrLabel3,
+            this.xrLabel2,
+            this.xrLabel4,
+            this.xrLabel5,
             this.xrTitle,
             this.xrLoadId,
             this.xrLine1,
@@ -149,8 +179,32 @@ namespace GrainManagement.Reporting
             this.xrLine3,
             this.capInWeight,
             this.xrInboundWeight});
-            this.detailBand1.HeightF = 415F;
+            this.detailBand1.HeightF = 394.1666F;
             this.detailBand1.Name = "detailBand1";
+            // 
+            // xrLabel3 (removed — was Farm Number value)
+            //
+            this.xrLabel3.Name = "xrLabel3";
+            this.xrLabel3.SizeF = new System.Drawing.SizeF(0F, 0F);
+            this.xrLabel3.Visible = false;
+            //
+            // xrLabel2 (removed — was Landlord caption)
+            //
+            this.xrLabel2.Name = "xrLabel2";
+            this.xrLabel2.SizeF = new System.Drawing.SizeF(0F, 0F);
+            this.xrLabel2.Visible = false;
+            //
+            // xrLabel4 (removed — was Farm Number caption)
+            //
+            this.xrLabel4.Name = "xrLabel4";
+            this.xrLabel4.SizeF = new System.Drawing.SizeF(0F, 0F);
+            this.xrLabel4.Visible = false;
+            //
+            // xrLabel5 (removed — was Landlord value)
+            //
+            this.xrLabel5.Name = "xrLabel5";
+            this.xrLabel5.SizeF = new System.Drawing.SizeF(0F, 0F);
+            this.xrLabel5.Visible = false;
             // 
             // xrTitle
             // 
@@ -375,13 +429,13 @@ namespace GrainManagement.Reporting
             // 
             // xrLine2
             // 
-            this.xrLine2.LocationFloat = new DevExpress.Utils.PointFloat(0F, 250F);
+            this.xrLine2.LocationFloat = new DevExpress.Utils.PointFloat(0F, 289.7083F);
             this.xrLine2.Name = "xrLine2";
             this.xrLine2.SizeF = new System.Drawing.SizeF(269F, 2F);
             // 
             // capInTime
             // 
-            this.capInTime.LocationFloat = new DevExpress.Utils.PointFloat(0F, 260F);
+            this.capInTime.LocationFloat = new DevExpress.Utils.PointFloat(0F, 299.7083F);
             this.capInTime.Name = "capInTime";
             this.capInTime.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.capInTime.SizeF = new System.Drawing.SizeF(90F, 18F);
@@ -393,7 +447,7 @@ namespace GrainManagement.Reporting
             this.xrInboundTime.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[InboundTime]")});
             this.xrInboundTime.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrInboundTime.LocationFloat = new DevExpress.Utils.PointFloat(90F, 260F);
+            this.xrInboundTime.LocationFloat = new DevExpress.Utils.PointFloat(90F, 299.7083F);
             this.xrInboundTime.Name = "xrInboundTime";
             this.xrInboundTime.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.xrInboundTime.SizeF = new System.Drawing.SizeF(179F, 18F);
@@ -403,13 +457,13 @@ namespace GrainManagement.Reporting
             // 
             // xrLine3
             // 
-            this.xrLine3.LocationFloat = new DevExpress.Utils.PointFloat(0F, 286F);
+            this.xrLine3.LocationFloat = new DevExpress.Utils.PointFloat(0F, 325.7083F);
             this.xrLine3.Name = "xrLine3";
             this.xrLine3.SizeF = new System.Drawing.SizeF(269F, 2F);
             // 
             // capInWeight
             // 
-            this.capInWeight.LocationFloat = new DevExpress.Utils.PointFloat(0F, 296F);
+            this.capInWeight.LocationFloat = new DevExpress.Utils.PointFloat(0F, 335.7083F);
             this.capInWeight.Name = "capInWeight";
             this.capInWeight.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.capInWeight.SizeF = new System.Drawing.SizeF(269F, 20F);
@@ -419,9 +473,9 @@ namespace GrainManagement.Reporting
             // xrInboundWeight
             // 
             this.xrInboundWeight.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[InboundWeight]")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[InboundWeight]+[StartManualFlag]")});
             this.xrInboundWeight.Font = new DevExpress.Drawing.DXFont("Arial", 16F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrInboundWeight.LocationFloat = new DevExpress.Utils.PointFloat(22F, 320F);
+            this.xrInboundWeight.LocationFloat = new DevExpress.Utils.PointFloat(22F, 359.7083F);
             this.xrInboundWeight.Name = "xrInboundWeight";
             this.xrInboundWeight.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.xrInboundWeight.SizeF = new System.Drawing.SizeF(230F, 30F);
@@ -430,32 +484,10 @@ namespace GrainManagement.Reporting
             this.xrInboundWeight.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
             this.xrInboundWeight.TextFormatString = "{0:n0}";
             // 
-            // xrFooter
-            // 
-            this.xrFooter.LocationFloat = new DevExpress.Utils.PointFloat(0F, 5F);
-            this.xrFooter.Name = "xrFooter";
-            this.xrFooter.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrFooter.SizeF = new System.Drawing.SizeF(269F, 30F);
-            this.xrFooter.Text = "Thank you";
-            this.xrFooter.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
-            // 
             // objectDataSource1
             // 
             this.objectDataSource1.DataSource = typeof(global::GrainManagement.Dtos.Warehouse.LoadTicketDataModel);
             this.objectDataSource1.Name = "objectDataSource1";
-            // 
-            // xrLabel1
-            // 
-            this.xrLabel1.Font = new DevExpress.Drawing.DXFont("Arial", 12F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrLabel1.LocationFloat = new DevExpress.Utils.PointFloat(0F, 156.25F);
-            this.xrLabel1.Multiline = true;
-            this.xrLabel1.Name = "xrLabel1";
-            this.xrLabel1.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrLabel1.SizeF = new System.Drawing.SizeF(269F, 23F);
-            this.xrLabel1.StylePriority.UseFont = false;
-            this.xrLabel1.StylePriority.UseTextAlignment = false;
-            this.xrLabel1.Text = "Northwest Grain Growers";
-            this.xrLabel1.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter;
             // 
             // InboundLoadTicketReport
             // 
@@ -467,7 +499,7 @@ namespace GrainManagement.Reporting
             this.objectDataSource1});
             this.DataSource = this.objectDataSource1;
             this.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
-            this.Margins = new DevExpress.Drawing.DXMargins(22F, 19F, 182.2917F, 8.333302F);
+            this.Margins = new DevExpress.Drawing.DXMargins(22F, 19F, 182.2917F, 40F);
             this.PageWidthF = 315F;
             this.PaperKind = DevExpress.Drawing.Printing.DXPaperKind.Custom;
             this.RollPaper = true;
@@ -478,5 +510,9 @@ namespace GrainManagement.Reporting
         }
 
         private XRLabel xrLabel1;
+        private XRLabel xrLabel3;
+        private XRLabel xrLabel2;
+        private XRLabel xrLabel4;
+        private XRLabel xrLabel5;
     }
 }

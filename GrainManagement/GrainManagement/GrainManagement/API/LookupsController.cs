@@ -69,7 +69,7 @@ namespace GrainManagement.API
         }
 
         // GET /api/Lookups/WarehouseItems
-        // Active, visible grain products (CropId required), ordered by description descending.
+        // Active, visible items with the WAREHOUSE trait (TraitId=32).
         [HttpGet("WarehouseItems")]
         public async Task<IActionResult> WarehouseItems(CancellationToken ct)
         {
@@ -81,6 +81,25 @@ namespace GrainManagement.API
                 {
                     ItemId = p.ItemId,
                     Name      = p.Description
+                })
+                .ToListAsync(ct);
+
+            return Ok(data);
+        }
+
+        // GET /api/Lookups/SeedItems
+        // Active, visible items with the SEED trait (TraitId=31).
+        [HttpGet("SeedItems")]
+        public async Task<IActionResult> SeedItems(CancellationToken ct)
+        {
+            var data = await _ctx.Items
+                .AsNoTracking()
+                .Where(i => i.IsActive == true && i.Product.IsHidden != true && i.ItemTraits.FirstOrDefault(x => x.TraitId == 31) != null)
+                .OrderByDescending(p => p.Description)
+                .Select(p => new
+                {
+                    ItemId = p.ItemId,
+                    Name = p.Description
                 })
                 .ToListAsync(ct);
 

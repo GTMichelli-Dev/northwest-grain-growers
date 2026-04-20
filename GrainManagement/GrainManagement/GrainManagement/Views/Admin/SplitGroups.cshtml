@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Split Groups";
+}
+
+<style>
+    /* Light yellow highlight for split groups with no primary account. */
+    #adminSgGrid .dx-data-row.gm-sg-unassigned > td {
+        background-color: #fff3b0 !important;
+    }
+</style>
+
+<a href="@Url.Action("Index", "Admin")" class="gm-module-bar gm-module-bar--admin gm-module-bar--link" title="Back to Admin">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--accounts" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">SPLIT GROUPS</span>
+</a>
+
+<div class="gm-pagehead gm-pagehead--sticky">
+</div>
+
+<div class="gm-gd">
+    <div class="gm-gd-section">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="gm-gd-section__title" style="margin-bottom:0">Split Groups</div>
+            <label style="display:flex;align-items:center;gap:6px;margin-bottom:0;font-weight:600;cursor:pointer;">
+                <input type="checkbox" id="adminSgOnlyUnassigned" />
+                Only Show Split Groups With No Primary Account
+            </label>
+        </div>
+
+        <div id="adminSgGrid"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/admin.splitgroups.js" asp-append-version="true"></script>
+}

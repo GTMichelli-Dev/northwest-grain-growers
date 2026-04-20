@@ -83,16 +83,16 @@ namespace GrainManagement.Api
             return File(ms.ToArray(), "application/pdf", "TestPage.pdf");
         }
 
-        // ── Weight Sheet Summary ────────────────────────────────────────────────
+        // ── Intake Weight Sheet ─────────────────────────────────────────────────
 
-        [HttpGet("weight-sheet-summary/{wsId:long}/pdf")]
-        public IActionResult GetWeightSheetSummaryPdf([FromRoute] long wsId)
+        [HttpGet("intake-weight-sheet/{wsId:long}/pdf")]
+        public IActionResult GetIntakeWeightSheetPdf([FromRoute] long wsId, [FromQuery] bool original = true)
         {
-            var model = BuildWeightSheetSummary(wsId);
+            var model = BuildIntakeWeightSheet(wsId, original);
             if (model == null)
                 return NotFound(new { error = $"Weight sheet {wsId} not found." });
 
-            var report = new WeightSheetSummaryReport();
+            var report = new IntakeWeightSheetReport();
             report.DataSource = new[] { model };
             report.CreateDocument();
 
@@ -102,6 +102,86 @@ namespace GrainManagement.Api
             using var ms = new MemoryStream();
             report.ExportToPdf(ms);
             return File(ms.ToArray(), "application/pdf", $"WeightSheet-{wsId}.pdf");
+        }
+
+        // ── Lot Label ───────────────────────────────────────────────────────────
+
+        [HttpGet("lot-label/{lotId:long}/pdf")]
+        public IActionResult GetLotLabelPdf([FromRoute] long lotId)
+        {
+            var model = BuildLotLabel(lotId);
+            if (model == null)
+                return NotFound(new { error = $"Lot {lotId} not found." });
+
+            var report = new LotLabelReport();
+            report.DataSource = new[] { model };
+            report.CreateDocument();
+
+            if (report.Pages.Count == 0)
+                return Problem("Report rendered zero pages.");
+
+            using var ms = new MemoryStream();
+            report.ExportToPdf(ms);
+            return File(ms.ToArray(), "application/pdf", $"LotLabel-{lotId}.pdf");
+        }
+
+        private LotLabelDto? BuildLotLabel(long lotId)
+        {
+            var lot = _db.Lots
+                .Include(l => l.SplitGroup)
+                .Include(l => l.Product)
+                .AsNoTracking()
+                .FirstOrDefault(l => l.LotId == lotId);
+
+            if (lot == null) return null;
+
+            // Primary account is read from the lot's own LotSplitGroups row flagged
+            // PrimaryAccount = 1 — override-mode split groups have a null
+            // SplitGroup.PrimaryAccountId and would otherwise print blank.
+            string accountName = "";
+            string accountId = "";
+            var primaryAccountId = _db.LotSplitGroups
+                .AsNoTracking()
+                .Where(lsg => lsg.LotId == lot.LotId && lsg.PrimaryAccount)
+                .Select(lsg => (long?)lsg.AccountId)
+                .FirstOrDefault();
+            if (primaryAccountId.HasValue)
+            {
+                var acct = _db.Accounts
+                    .AsNoTracking()
+                    .FirstOrDefault(a => a.AccountId == primaryAccountId.Value);
+                if (acct != null)
+                {
+                    accountName = !string.IsNullOrWhiteSpace(acct.EntityName) ? acct.EntityName : acct.LookupName ?? "";
+                    accountId = acct.AccountId.ToString();
+                }
+            }
+
+            // Explicit Location lookup — don't rely on nav property in case FK is misconfigured
+            string locationName = _db.Locations
+                .AsNoTracking()
+                .Where(l => l.LocationId == lot.LocationId)
+                .Select(l => l.Name)
+                .FirstOrDefault() ?? "";
+
+            _log.LogInformation(
+                "BuildLotLabel LotId={LotId} LocationId={LocationId} LocationName={LocationName}",
+                lotId, lot.LocationId, locationName);
+
+            return new LotLabelDto
+            {
+                LotId = lot.LotId.ToString(),
+                As400Id = lot.As400Id > 0 ? FormatId(lot.As400Id) : FormatId(lot.LotId),
+                SplitGroupId = lot.SplitGroupId?.ToString() ?? "",
+                SplitGroupDescription = lot.SplitGroup?.SplitGroupDescription ?? "",
+                CropName = lot.Product?.Description ?? "",
+                CreatedByUserName = lot.CreatedByUserName ?? "",
+                CreatedDate = lot.CreatedAt.ToString("M/d/yyyy"),
+                PrimaryAccountName = accountName,
+                PrimaryAccountId = accountId,
+                LocationId = lot.LocationId.ToString(),
+                LocationDescription = locationName
+            };
         }
 
         // ══════════════════════════════════════════════════════════════════════════
@@ -120,6 +200,16 @@ namespace GrainManagement.Api
 
         private static string FormatId(string id) =>
             long.TryParse(id, out var v) ? FormatId(v) : id;
+
+        /// <summary>
+        /// Formats a weight sheet ID with a single hyphen: 604000013 → 604-000013
+        /// </summary>
+        private static string FormatWsId(long id)
+        {
+            var s = id.ToString();
+            if (s.Length < 4) return s;
+            return s[..3] + "-" + s[3..];
+        }
 
         /// <summary>
         /// Renders a specific report type for the given transaction.
@@ -265,6 +355,17 @@ namespace GrainManagement.Api
                 ? ws.As400Id.ToString()
                 : FormatId(wsId);
 
+            // ── Manual-entry legal flags (START / END / DIRECT) ─────────────
+            var manualSources = (from qs in _db.TransactionQuantitySources.AsNoTracking()
+                                 join st in _db.QuantitySourceTypes.AsNoTracking()
+                                    on qs.SourceTypeId equals st.QuantitySourceTypeId
+                                 where qs.TransactionId == transactionId
+                                 select new { qs.QuantityField, st.Code })
+                                .ToList();
+            string startManualFlag  = manualSources.Any(s => s.QuantityField == "START"  && s.Code == "MANUAL") ? "M" : " ";
+            string endManualFlag    = manualSources.Any(s => s.QuantityField == "END"    && s.Code == "MANUAL") ? "M" : " ";
+            string directManualFlag = manualSources.Any(s => s.QuantityField == "DIRECT" && s.Code == "MANUAL") ? "M" : " ";
+
             return new LoadTicketDataModel
             {
                 LoadId           = FormatId(ticket),
@@ -285,14 +386,17 @@ namespace GrainManagement.Api
                 LocationId       = detail.Transaction?.LocationId.ToString() ?? "",
                 Commodity        = detail.Product?.Description ?? "",
                 Bin              = binName,
+                StartManualFlag  = startManualFlag,
+                EndManualFlag    = endManualFlag,
+                DirectManualFlag = directManualFlag,
             };
         }
 
         /// <summary>
-        /// Builds the WeightSheetSummaryDto by loading the WS header + all delivery loads.
+        /// Builds the IntakeWeightSheetDto by loading the WS header + all delivery loads.
         /// Uses the same SQL query as GetWeightSheetDeliveryLoads for consistency.
         /// </summary>
-        private WeightSheetSummaryDto? BuildWeightSheetSummary(long wsId)
+        private IntakeWeightSheetDto? BuildIntakeWeightSheet(long wsId, bool original = true)
         {
             // Load WS header
             var ws = _db.WeightSheets
@@ -311,6 +415,12 @@ namespace GrainManagement.Api
             string splitId = "";
             string splitName = "";
             string locationName = "";
+            bool isLicensed = true;
+            bool isFinalWeightSheet = false;
+            string lotLandlordName = "";
+            string lotFarmNumber = "";
+            string lotState = "";
+            string lotCounty = "";
 
             if (ws.LotId.HasValue)
             {
@@ -327,11 +437,19 @@ namespace GrainManagement.Api
                     splitId = lotInfo.SplitGroupId?.ToString() ?? "";
                     splitName = lotInfo.SplitGroup?.SplitGroupDescription ?? "";
 
-                    if (lotInfo.SplitGroup != null)
+                    // Primary account is read from the lot's own LotSplitGroups row
+                    // flagged PrimaryAccount = 1 — override-mode split groups have a
+                    // null SplitGroup.PrimaryAccountId and would otherwise print blank.
+                    var primaryAcctId = _db.LotSplitGroups
+                        .AsNoTracking()
+                        .Where(lsg => lsg.LotId == lotInfo.LotId && lsg.PrimaryAccount)
+                        .Select(lsg => (long?)lsg.AccountId)
+                        .FirstOrDefault();
+                    if (primaryAcctId.HasValue)
                     {
                         var acct = _db.Accounts
                             .AsNoTracking()
-                            .FirstOrDefault(a => a.AccountId == lotInfo.SplitGroup.PrimaryAccountId);
+                            .FirstOrDefault(a => a.AccountId == primaryAcctId.Value);
                         if (acct != null)
                         {
                             accountName = !string.IsNullOrWhiteSpace(acct.EntityName) ? acct.EntityName : acct.LookupName ?? "";
@@ -340,11 +458,40 @@ namespace GrainManagement.Api
                     }
                 }
 
-                locationName = _db.Locations
+                var locInfo = _db.Locations
                     .AsNoTracking()
                     .Where(l => l.LocationId == ws.LocationId)
-                    .Select(l => l.Name)
-                    .FirstOrDefault() ?? "";
+                    .Select(l => new { l.Name, l.Licensed })
+                    .FirstOrDefault();
+                locationName = locInfo?.Name ?? "";
+                isLicensed = locInfo?.Licensed ?? true;
+
+                // Read lot-level traits (Landlord Name + Farm Number)
+                if (ws.LotId.HasValue)
+                {
+                    lotLandlordName = _db.LotTraits.AsNoTracking()
+                        .Where(t => t.LotId == ws.LotId && t.TraitTypeId == 18)
+                        .Select(t => t.Trait.TraitCode).FirstOrDefault() ?? "";
+                    lotFarmNumber = _db.LotTraits.AsNoTracking()
+                        .Where(t => t.LotId == ws.LotId && t.TraitTypeId == 19)
+                        .Select(t => t.Trait.TraitCode).FirstOrDefault() ?? "";
+                    lotState = _db.LotTraits.AsNoTracking()
+                        .Where(t => t.LotId == ws.LotId && t.TraitTypeId == 15)
+                        .Select(t => t.Trait.TraitCode).FirstOrDefault() ?? "";
+                    lotCounty = _db.LotTraits.AsNoTracking()
+                        .Where(t => t.LotId == ws.LotId && t.TraitTypeId == 16)
+                        .Select(t => t.Trait.TraitCode).FirstOrDefault() ?? "";
+                }
+
+                // Check if the lot is closed and this is the last weight sheet for it
+                if (lotInfo != null && !lotInfo.IsOpen)
+                {
+                    var maxWsId = _db.WeightSheets
+                        .AsNoTracking()
+                        .Where(w => w.LotId == ws.LotId)
+                        .Max(w => (long?)w.WeightSheetId) ?? 0;
+                    isFinalWeightSheet = ws.WeightSheetId == maxWsId;
+                }
             }
 
             string bolType = ws.RateType switch
@@ -373,14 +520,26 @@ namespace GrainManagement.Api
                     c.Description  AS ContainerDescription,
                     attr1.DecimalValue AS Protein,
                     attr2.DecimalValue AS Moisture,
+                    truckAttr.StringValue AS TruckId,
+                    bolAttr.StringValue AS BOL,
                     CASE WHEN startSrcType.Code = 'MANUAL' THEN 1 ELSE 0 END AS StartIsManual,
                     CASE WHEN endSrcType.Code = 'MANUAL' THEN 1 ELSE 0 END AS EndIsManual
                 FROM [warehouse].[WeightSheets] ws
                 INNER JOIN [Inventory].[InventoryTransactionDetails] itd ON itd.RefId = ws.RowUid AND itd.RefType = 'WeightSheet'
                 LEFT JOIN [Inventory].[InventoryTransactionDetailToContainers] tc ON tc.TransactionId = itd.TransactionId
                 LEFT JOIN [container].[Containers] c ON c.ContainerId = tc.ContainerId
-                LEFT JOIN [Inventory].[TransactionAttributes] attr1 ON attr1.TransactionId = itd.TransactionId AND attr1.AttributeTypeId = 1
-                LEFT JOIN [Inventory].[TransactionAttributes] attr2 ON attr2.TransactionId = itd.TransactionId AND attr2.AttributeTypeId = 2
+                LEFT JOIN [Inventory].[TransactionAttributes] attr1
+                    ON attr1.TransactionId = itd.TransactionId
+                    AND attr1.AttributeTypeId = (SELECT TOP 1 Id FROM [Inventory].[TransactionAttributeTypes] WHERE Code = 'PROTEIN')
+                LEFT JOIN [Inventory].[TransactionAttributes] attr2
+                    ON attr2.TransactionId = itd.TransactionId
+                    AND attr2.AttributeTypeId = (SELECT TOP 1 Id FROM [Inventory].[TransactionAttributeTypes] WHERE Code = 'MOISTURE')
+                LEFT JOIN [Inventory].[TransactionAttributes] truckAttr
+                    ON truckAttr.TransactionId = itd.TransactionId
+                    AND truckAttr.AttributeTypeId = (SELECT TOP 1 Id FROM [Inventory].[TransactionAttributeTypes] WHERE Code = 'TRUCK_ID')
+                LEFT JOIN [Inventory].[TransactionAttributes] bolAttr
+                    ON bolAttr.TransactionId = itd.TransactionId
+                    AND bolAttr.AttributeTypeId = (SELECT TOP 1 Id FROM [Inventory].[TransactionAttributeTypes] WHERE Code = 'BOL')
                 LEFT JOIN [Inventory].[TransactionQuantitySources] startSrc
                     ON startSrc.TransactionId = itd.TransactionId AND startSrc.QuantityField = 'START'
                 LEFT JOIN [Inventory].[TransactionQuantitySources] endSrc
@@ -392,7 +551,7 @@ namespace GrainManagement.Api
                 WHERE ws.WeightSheetId = @wsId
                 ORDER BY itd.TxnAt DESC";
 
-            var loads = new List<WeightSheetLoadRow>();
+            var loads = new List<IntakeWeightSheetLoadRow>();
             using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = sql;
@@ -410,43 +569,69 @@ namespace GrainManagement.Api
                     var startedAt = reader.IsDBNull(reader.GetOrdinal("StartedAt")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("StartedAt"));
                     var completedAt = reader.IsDBNull(reader.GetOrdinal("CompletedAt")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("CompletedAt"));
                     var notes = reader.IsDBNull(reader.GetOrdinal("Notes")) ? "" : reader.GetString(reader.GetOrdinal("Notes"));
+                    var truckId = reader.IsDBNull(reader.GetOrdinal("TruckId")) ? "" : reader.GetString(reader.GetOrdinal("TruckId"));
+                    var bol = reader.IsDBNull(reader.GetOrdinal("BOL")) ? "" : reader.GetString(reader.GetOrdinal("BOL"));
                     var startIsManual = reader.GetInt32(reader.GetOrdinal("StartIsManual")) == 1;
                     var endIsManual = reader.GetInt32(reader.GetOrdinal("EndIsManual")) == 1;
 
                     bool complete = outWt.HasValue && !string.IsNullOrEmpty(container) && protein.HasValue && protein > 0;
                     bool completeMissingProtein = outWt.HasValue && !string.IsNullOrEmpty(container) && !(protein.HasValue && protein > 0);
 
-                    var inWeightStr = inWt.HasValue ? ((int)inWt.Value).ToString("N0") : "";
-                    var outWeightStr = outWt.HasValue ? ((int)outWt.Value).ToString("N0") : "";
-                    if (startIsManual && inWeightStr != "") inWeightStr += " M";
-                    if (endIsManual && outWeightStr != "") outWeightStr += " M";
+                    // Last 6 digits of TransactionId as LoadNumber
+                    var txnStr = txnId.ToString();
+                    var loadNumber = txnStr.Length >= 6 ? txnStr[^6..] : txnStr;
 
-                    loads.Add(new WeightSheetLoadRow
+                    loads.Add(new IntakeWeightSheetLoadRow
                     {
-                        TransactionId = FormatId(txnId),
-                        TimeIn = startedAt?.ToString("M/d/yyyy h:mm tt") ?? "",
-                        TimeOut = completedAt?.ToString("M/d/yyyy h:mm tt") ?? "",
+                        WeightSheetId = wsId.ToString(),
+                        As400Id = ws.As400Id > 0 ? FormatWsId(ws.As400Id) : "",
+                        LoadNumber = loadNumber,
+                        TruckId = truckId.Length > 4 ? truckId[..4] : truckId,
+                        BOL = bol,
+                        TimeIn = startedAt,
+                        TimeOut = completedAt,
                         Bin = container,
-                        InWeight = inWeightStr,
-                        OutWeight = outWeightStr,
-                        Net = net.HasValue ? ((int)net.Value).ToString("N0") : "",
+                        InWeight = inWt,
+                        OutWeight = outWt,
+                        Net = net,
                         Protein = protein.HasValue && protein > 0 ? protein.Value.ToString("F2") : "",
                         Moisture = moisture.HasValue && moisture > 0 ? moisture.Value.ToString("F2") : "",
                         Notes = notes,
                         Status = complete ? "Complete" : (completeMissingProtein ? "Complete*" : "Incomplete"),
-                        StartIsManual = startIsManual,
-                        EndIsManual = endIsManual,
+                        StartManualFlag = startIsManual ? "M" : " ",
+                        EndManualFlag = endIsManual ? "M" : " ",
                     });
                 }
             }
 
-            int completedCount = loads.Count(l => l.Status.StartsWith("Complete"));
-            decimal totalNet = loads.Where(l => !string.IsNullOrEmpty(l.Net))
-                .Sum(l => decimal.TryParse(l.Net.Replace(",", ""), out var v) ? v : 0);
+            // Sort ascending by TransactionId (lowest first) and assign row numbers
+            loads = loads.OrderBy(l => l.LoadNumber).ToList();
+            for (int i = 0; i < loads.Count; i++)
+                loads[i].RowNumber = i + 1;
 
-            return new WeightSheetSummaryDto
+            int completedCount = loads.Count(l => l.Status.StartsWith("Complete"));
+            decimal totalNet = loads.Where(l => l.Net.HasValue).Sum(l => l.Net.Value);
+
+            // Parse As400Id into ServerId (first 3 digits) and WeightSheetNumber (last 6 digits)
+            var as400Str = ws.As400Id.ToString();
+            var serverId = as400Str.Length >= 3 ? as400Str[..3] : as400Str;
+            var weightSheetNumber = as400Str.Length >= 6 ? as400Str[^6..] : as400Str;
+            var serverName = "";
+            if (int.TryParse(serverId, out var serverIdInt))
             {
-                WeightSheetId = ws.As400Id > 0 ? ws.As400Id.ToString() : FormatId(wsId),
+                serverName = _db.Servers.AsNoTracking()
+                    .Where(s => s.ServerId == serverIdInt)
+                    .Select(s => s.FriendlyName)
+                    .FirstOrDefault() ?? "";
+            }
+
+            return new IntakeWeightSheetDto
+            {
+                WeightSheetId = wsId.ToString(),
+                As400Id = ws.As400Id > 0 ? FormatWsId(ws.As400Id) : "",
+                ServerId = serverId,
+                ServerName = serverName,
+                WeightSheetNumber = weightSheetNumber,
                 LotId = lotAs400Id > 0 ? lotAs400Id.ToString() : FormatId(lotId),
                 CropName = cropName,
                 PrimaryAccountName = accountName,
@@ -455,14 +640,23 @@ namespace GrainManagement.Api
                 SplitName = splitName,
                 RateType = bolType,
                 HaulerName = ws.Hauler?.Description ?? "",
+                IsFinalWeightSheet = isFinalWeightSheet,
                 WeightmasterName = ws.WeightmasterName ?? "",
-                CreationDate = ws.CreationDate.ToString("MM/dd/yyyy"),
+                CreationDate = ws.CreationDate.ToDateTime(TimeOnly.MinValue),
                 Miles = ws.Miles,
                 Rate = ws.Rate,
                 Comment = ws.Notes ?? "",
                 Location = locationName,
                 LocationId = ws.LocationId.ToString(),
-                PrintDate = DateTime.Now.ToString("M/d/yyyy h:mm tt"),
+                CertificateTitle = isLicensed
+                    ? "UNITED STATES WAREHOUSE ACT GRAIN WEIGHT CERTIFICATE"
+                    : "GRAIN WEIGHT CERTIFICATE",
+                LandlordName = lotLandlordName,
+                FarmNumber = lotFarmNumber,
+                State = lotState,
+                County = lotCounty,
+                PrintDate = DateTime.Now,
+                CopyType = original ? "ORIGINAL" : "COPY",
                 TotalLoads = loads.Count,
                 CompletedLoads = completedCount,
                 TotalNetWeight = ((int)totalNet).ToString("N0") + " lbs",

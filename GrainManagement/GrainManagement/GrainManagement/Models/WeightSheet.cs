@@ -43,7 +43,16 @@ public partial class WeightSheet
 
     public Guid RowUid { get; set; }
 
+    // WeightmasterName lives on WeightSheet.Partial.cs so the auto-generated
+    // entity stays in sync with future EF Core Power Tools re-scaffolds.
+
+    // Lifecycle status (FK -> warehouse.WeightSheetStatuses).
+    // 0 = Open (default), 1 = PendingNotFinished, 2 = PendingFinished, 3 = Closed.
+    public byte StatusId { get; set; }
+
     public virtual Hauler Hauler { get; set; }
 
     public virtual Location Location { get; set; }
+
+    public virtual WeightSheetStatus Status { get; set; }
 }

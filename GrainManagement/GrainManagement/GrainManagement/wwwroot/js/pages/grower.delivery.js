@@ -1026,9 +1026,16 @@
                         }
                     }
 
-                    // Navigate back to the weight sheet delivery loads page
-                    if (activeWsId) {
-                        window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + activeWsId;
+                    // Navigate back to the weight sheet delivery loads page.
+                    // If the server spilled this load onto a fresh weight sheet
+                    // because the target was already at the 25-load cap, use
+                    // the NEW sheet's id so the user lands on the sheet their
+                    // load actually ended up on.
+                    var targetWsId = (result && result.spilledToWeightSheetId)
+                        ? result.spilledToWeightSheetId
+                        : activeWsId;
+                    if (targetWsId) {
+                        window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + targetWsId;
                         return;
                     }
                 } else {
@@ -1044,6 +1051,14 @@
 
     // ── Edit mode: populate form from existing transaction ─────────────────
 
+    // Formats a numeric transaction id like 604041000013 as "604-041-000013"
+    function formatTxnId(id) {
+        if (id == null) return '';
+        var s = String(id);
+        if (s.length < 7) return s;
+        return s.slice(0, 3) + '-' + s.slice(3, 6) + '-' + s.slice(6);
+    }
+
     function loadExistingDelivery(txnId) {
         $.ajax({
             url: '/api/GrowerDelivery/' + txnId,
@@ -1051,6 +1066,12 @@
             dataType: 'json',
         })
         .done(function (d) {
+            // Show formatted Load ID next to Weight Sheet ID (edit mode only)
+            if (d.TransactionId) {
+                $('#gdLoadIdValue').text(formatTxnId(d.TransactionId));
+                $('#gdLoadIdDisplay').prop('hidden', false);
+            }
+
             // Hidden FK fields
             $(SEL.lotId).val(d.LotId || '');
             $(SEL.locationId).val(d.LocationId || '');

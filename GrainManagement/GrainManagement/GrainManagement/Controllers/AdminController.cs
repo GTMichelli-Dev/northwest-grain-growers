@@ -133,5 +133,16 @@ namespace GrainManagement
             return View();
         }
 
+        // GET: Admin/SplitGroups
+        public IActionResult SplitGroups()
+        {
+            if (!_me.IsAdmin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View();
+        }
+
     }
 }

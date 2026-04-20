@@ -58,6 +58,7 @@
         county:         '#nwsCounty',
         lotDesc:        '#nwsLotDesc',
         landlord:       '#nwsLandlord',
+        farmNumber:     '#nwsFarmNumber',
         notes:          '#nwsNotes',
         createLotError: '#nwsCreateLotError',
         saveLotBtn:     '#nwsSaveLotBtn',
@@ -100,6 +101,15 @@
     var _lotsCache = [];
     var _populating = false;
 
+    // Override mode — when a split group has no PrimaryAccountId, the user
+    // picks any active producer account which is sent as OverrideAccountId.
+    var _sgOverrideActive     = false;
+    var _sgOverrideSplitGroup = null;
+
+    // Lot type from URL (seed or warehouse)
+    var _lotType = (new URLSearchParams(window.location.search).get('lotType') || 'seed').toLowerCase();
+    var _itemsEndpoint = _lotType === 'seed' ? '/api/Lookups/SeedItems' : '/api/Lookups/WarehouseItems';
+
     // Wizard state
     var _selectedLot = null;         // { LotId, LotDescription, SplitGroupDescription, SplitGroupId, ... }
     var _wsPin = null;               // PIN captured from modal before WS creation
@@ -131,7 +141,7 @@
         var pinModalEl = document.getElementById('nwsPinModal');
         if (!pinModalEl) {
             // No modal on page — redirect to LoadType
-            window.location.href = '/Warehouse/LoadType';
+            window.location.href = '/WeightSheets/LoadType';
             return;
         }
 
@@ -162,7 +172,7 @@
         });
 
         pinModalEl.addEventListener('hidden.bs.modal', function () {
-            if (!_wsPin) window.location.href = '/Warehouse';
+            if (!_wsPin) window.location.href = '/WeightSheets';
         });
     }
 
@@ -212,6 +222,7 @@
             $('#nwsConfirmState').text(lot.State || '\u2014');
             $('#nwsConfirmCounty').text(lot.County || '\u2014');
             $('#nwsConfirmLandlord').text(lot.Landlord || '\u2014');
+            $('#nwsConfirmFarmNumber').text(lot.FarmNumber || '\u2014');
         }
 
         // Reset BOL & hauler state
@@ -331,7 +342,10 @@
         grid.beginCustomLoading('Loading\u2026');
 
         try {
-            _lotsCache = await $.getJSON('/api/GrowerDelivery/OpenLots?locationId=' + currentLocationId);
+            var allLots = await $.getJSON('/api/GrowerDelivery/OpenLots?locationId=' + currentLocationId);
+            // Filter to only lots matching the selected lot type (0=Seed, 1=Warehouse)
+            var lotTypeInt = _lotType === 'warehouse' ? 1 : 0;
+            _lotsCache = allLots.filter(function (l) { return l.LotType === lotTypeInt; });
         } catch (ex) {
             _lotsCache = [];
         }
@@ -367,10 +381,16 @@
         if (!_accountsCache) {
             try { _accountsCache = await $.getJSON('/api/Lookups/ProducerAccounts'); }
             catch (ex) { _accountsCache = []; }
+            (_accountsCache || []).sort(function (a, b) {
+                return (a.Name || '').localeCompare(b.Name || '', undefined, { sensitivity: 'base' });
+            });
         }
         if (!_allItemsCache) {
-            try { _allItemsCache = await $.getJSON('/api/Lookups/WarehouseItems'); }
+            try { _allItemsCache = await $.getJSON(_itemsEndpoint); }
             catch (ex) { _allItemsCache = []; }
+            (_allItemsCache || []).sort(function (a, b) {
+                return (a.Name || '').localeCompare(b.Name || '', undefined, { sensitivity: 'base' });
+            });
         }
 
         initItemPicker();
@@ -387,6 +407,19 @@
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(applySearch, 300);
         });
+    }
+
+    function setPickerLoading(sel, loading) {
+        var inst = dxInstance(sel);
+        if (!inst) return;
+        if (loading) {
+            inst.option('disabled', true);
+            inst.option('placeholder', 'Loading\u2026');
+        } else {
+            inst.option('disabled', false);
+            inst.option('placeholder', sel === SEL.account ? 'Select account\u2026'
+                : sel === SEL.splitGroup ? 'Select split group\u2026' : 'Select\u2026');
+        }
     }
 
     function initItemPicker() {
@@ -409,13 +442,14 @@
                     var accounts = _accountsCache || [];
                     if (acctInst) {
                         acctInst.reset();
+                        setPickerLoading(SEL.account, true);
                         if (currentLocationId) {
                             try {
                                 accounts = await $.getJSON('/api/Lookups/ProducerAccountsForItem?itemId=' + e.value + '&locationId=' + currentLocationId);
                             } catch (ex) { /* fallback to all accounts */ }
                         }
                         acctInst.option('dataSource', accounts);
-                        acctInst.option('disabled', false);
+                        setPickerLoading(SEL.account, false);
                         if (accounts.length === 1) {
                             acctInst.option('value', accounts[0].AccountId);
                         }
@@ -448,6 +482,17 @@
             disabled:            true,
             onValueChanged: function (e) {
                 if (_populating) return;
+
+                // Override mode: keep the SG# locked; just hide the warning once
+                // the user picks an account.
+                if (_sgOverrideActive) {
+                    if (e.value) {
+                        $(SEL.splitGroupWarn).prop('hidden', true);
+                    }
+                    updateLotDescription();
+                    return;
+                }
+
                 var sgInst = dxInstance(SEL.splitGroup);
                 if (sgInst) { sgInst.reset(); sgInst.option('dataSource', []); sgInst.option('disabled', true); }
                 $(SEL.lotDesc).val('');
@@ -457,6 +502,7 @@
             onFocusOut: function (e) {
                 if (!e.component.option('value')) {
                     e.component.reset();
+                    if (_sgOverrideActive) return;
                     var sgInst = dxInstance(SEL.splitGroup);
                     if (sgInst) { sgInst.reset(); sgInst.option('dataSource', []); sgInst.option('disabled', true); }
                     $(SEL.lotDesc).val('');
@@ -467,6 +513,7 @@
     }
 
     async function loadSplitGroups(accountId) {
+        setPickerLoading(SEL.splitGroup, true);
         var groups = [];
         try { groups = await $.getJSON('/api/GrowerDelivery/SplitGroupsByAccount?accountId=' + accountId); }
         catch (ex) { /* ignore */ }
@@ -474,6 +521,7 @@
         if (sgInst) {
             sgInst.option('dataSource', groups);
             sgInst.option('disabled', groups.length === 0);
+            sgInst.option('placeholder', 'Select split group\u2026');
             if (groups.length === 1) { sgInst.option('value', groups[0].SplitGroupId); }
         }
         $(SEL.splitGroupWarn).prop('hidden', groups.length > 0);
@@ -703,20 +751,56 @@
             _populating = true;
             try {
                 var acctInst = dxInstance(SEL.account);
-                if (acctInst) {
-                    acctInst.option('disabled', false);
-                    acctInst.option('value', sg.PrimaryAccountId);
+                var sgInst   = dxInstance(SEL.splitGroup);
+
+                if (sg.PrimaryAccountId) {
+                    // ── Normal path: split group has a primary account ─────────
+                    _sgOverrideActive     = false;
+                    _sgOverrideSplitGroup = null;
+                    $(SEL.splitGroupWarn).text('No split group set up for this account.');
+
+                    if (acctInst) {
+                        acctInst.option('disabled', false);
+                        acctInst.option('value', sg.PrimaryAccountId);
+                    }
+                    var groups = [];
+                    try { groups = await $.getJSON('/api/GrowerDelivery/SplitGroupsByAccount?accountId=' + sg.PrimaryAccountId); }
+                    catch (ex) { /* ignore */ }
+                    if (sgInst) {
+                        sgInst.option('dataSource', groups);
+                        sgInst.option('disabled', false);
+                        sgInst.option('value', sg.SplitGroupId);
+                    }
+                    $(SEL.splitGroupWarn).prop('hidden', groups.length > 0);
+                } else {
+                    // ── Override path: no primary account on this split group ──
+                    // Let the user pick any active producer; the selected account
+                    // will be sent as OverrideAccountId on create.
+                    _sgOverrideActive     = true;
+                    _sgOverrideSplitGroup = {
+                        SplitGroupId:          sg.SplitGroupId,
+                        SplitGroupDescription: sg.SplitGroupDescription,
+                    };
+
+                    // Lock the split group picker to this single entry.
+                    if (sgInst) {
+                        sgInst.option('dataSource', [_sgOverrideSplitGroup]);
+                        sgInst.option('value', sg.SplitGroupId);
+                        sgInst.option('disabled', true);
+                    }
+
+                    // Enable account picker with all producer accounts; clear selection.
+                    if (acctInst) {
+                        acctInst.option('dataSource', _accountsCache || []);
+                        acctInst.option('disabled', false);
+                        acctInst.option('value', null);
+                    }
+
+                    $(SEL.splitGroupWarn)
+                        .text('This split group has no primary account. Please select any active producer account.')
+                        .prop('hidden', false);
                 }
-                var groups = [];
-                try { groups = await $.getJSON('/api/GrowerDelivery/SplitGroupsByAccount?accountId=' + sg.PrimaryAccountId); }
-                catch (ex) { /* ignore */ }
-                var sgInst = dxInstance(SEL.splitGroup);
-                if (sgInst) {
-                    sgInst.option('dataSource', groups);
-                    sgInst.option('disabled', false);
-                    sgInst.option('value', sg.SplitGroupId);
-                }
-                $(SEL.splitGroupWarn).prop('hidden', groups.length > 0);
+
                 updateLotDescription();
             } finally {
                 _populating = false;
@@ -727,10 +811,16 @@
             } else {
                 $(SEL.sgError).text('Lookup failed.').prop('hidden', false);
             }
+
+            _sgOverrideActive     = false;
+            _sgOverrideSplitGroup = null;
         }
     }
 
     async function resetCreateLotForm() {
+        _sgOverrideActive     = false;
+        _sgOverrideSplitGroup = null;
+
         var itemInst = dxInstance(SEL.item);
         var acctInst = dxInstance(SEL.account);
         var sgInst   = dxInstance(SEL.splitGroup);
@@ -795,6 +885,19 @@
             $(SEL.createLotError).text('Please select a split group.').prop('hidden', false);
             return;
         }
+
+        // Override mode: the server needs an explicit account to mark as primary
+        // since the split group itself has no PrimaryAccountId.
+        var overrideAccountId = null;
+        if (_sgOverrideActive) {
+            overrideAccountId = parseInt(
+                $(SEL.account).dxSelectBox('option', 'value'), 10) || null;
+            if (!overrideAccountId) {
+                $(SEL.createLotError).text('Please select an account for this split group.').prop('hidden', false);
+                return;
+            }
+        }
+
         if (!$(SEL.state).dxSelectBox('option', 'value')) {
             $(SEL.createLotError).text('Please select a state.').prop('hidden', false);
             return;
@@ -813,13 +916,17 @@
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body:    JSON.stringify({
-                    LocationId:   currentLocationId,
-                    SplitGroupId: splitGroupId,
-                    ItemId:       $(SEL.item).dxSelectBox('option', 'value') || null,
-                    Notes:        $(SEL.notes).val().trim() || null,
-                    State:        $(SEL.state).dxSelectBox('option', 'value') || null,
-                    County:       $(SEL.county).dxSelectBox('option', 'value') || null,
-                    Landlord:     $(SEL.landlord).val().trim() || null,
+                    LocationId:        currentLocationId,
+                    SplitGroupId:      splitGroupId,
+                    ItemId:            $(SEL.item).dxSelectBox('option', 'value') || null,
+                    Notes:             $(SEL.notes).val().trim() || null,
+                    State:             $(SEL.state).dxSelectBox('option', 'value') || null,
+                    County:            $(SEL.county).dxSelectBox('option', 'value') || null,
+                    Landlord:          $(SEL.landlord).val().trim() || null,
+                    FarmNumber:        $(SEL.farmNumber).val().trim() || null,
+                    Pin:               _wsPin,
+                    OverrideAccountId: overrideAccountId,
+                    LotType:           _lotType === 'warehouse' ? 1 : 0,
                 }),
             });
 

@@ -42,4 +42,12 @@ public class LoadTicketDataModel
     public string LocationId { get; set; } = "";
     public string Commodity { get; set; } = "";
     public string Bin { get; set; } = "";
+
+    // ── Manual-entry legal flags ────────────────────────────────────────────
+    /// <summary>"M" if the inbound weight was entered manually, otherwise " " (space). Must appear on printed tickets for legal reasons.</summary>
+    public string StartManualFlag { get; set; } = " ";
+    /// <summary>"M" if the outbound weight was entered manually, otherwise " " (space). Must appear on printed tickets for legal reasons.</summary>
+    public string EndManualFlag { get; set; } = " ";
+    /// <summary>"M" if the direct-quantity value was entered manually, otherwise " " (space). Must appear on printed tickets for legal reasons.</summary>
+    public string DirectManualFlag { get; set; } = " ";
 }

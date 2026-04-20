@@ -110,6 +110,31 @@
 
                 searchPanel: { visible: false },
 
+                export: {
+                    enabled: true,
+                    allowExportSelectedData: false,
+                },
+                onExporting: function (e) {
+                    // Exports ALL rows matching the current search/filter state,
+                    // across every page — not just the visible page. Since
+                    // this grid uses a remote store, DevExtreme loads the full
+                    // filtered result set (isLoadingAll) for the export.
+                    var workbook = new ExcelJS.Workbook();
+                    var worksheet = workbook.addWorksheet('Locations');
+                    DevExpress.excelExporter.exportDataGrid({
+                        component: e.component,
+                        worksheet: worksheet,
+                    }).then(function () {
+                        return workbook.xlsx.writeBuffer();
+                    }).then(function (buffer) {
+                        saveAs(
+                            new Blob([buffer], { type: 'application/octet-stream' }),
+                            'Locations.xlsx'
+                        );
+                    });
+                    e.cancel = true;
+                },
+
                 editing: {
                     mode: "popup",
                     allowAdding: true,
@@ -141,7 +166,8 @@
                                 }
                             },
                             { dataField: "UseForSeed", label: { text: "Use For Seed" } },
-                            { dataField: "UseForWarehouse", label: { text: "Use For Warehouse" } }
+                            { dataField: "UseForWarehouse", label: { text: "Use For Warehouse" } },
+                            { dataField: "Licensed", label: { text: "Licensed" } }
                         ]
                     }
                 },
@@ -182,6 +208,15 @@
                     {
                         dataField: "UseForWarehouse",
                         caption: "Warehouse",
+                        cellTemplate: function (cellElement, cellInfo) {
+                            const value = cellInfo.value;
+                            cellElement.text(value ? "Yes" : "No");
+                            if (!value) cellElement.css("color", "red");
+                        }
+                    },
+                    {
+                        dataField: "Licensed",
+                        caption: "Licensed",
                         cellTemplate: function (cellElement, cellInfo) {
                             const value = cellInfo.value;
                             cellElement.text(value ? "Yes" : "No");

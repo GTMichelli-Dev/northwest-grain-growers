@@ -129,6 +129,7 @@ public class LocationsApiController : ControllerBase
                 Name = l.Name,
                 UseForSeed = l.UseForSeed,
                 UseForWarehouse = l.UseForWarehouse,
+                Licensed = l.Licensed,
                 IsActive = l.IsActive,
                 DistrictId = l.DistrictId,
                 District = l.District.Name

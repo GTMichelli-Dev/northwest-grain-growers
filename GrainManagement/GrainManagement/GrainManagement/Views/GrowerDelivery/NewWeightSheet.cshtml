@@ -1,13 +1,18 @@
 @{
     ViewData["Title"] = "New Weight Sheet";
+    var lotType = (Context.Request.Query["lotType"].FirstOrDefault() ?? "seed").ToLowerInvariant();
+    var isSeed = lotType == "seed";
+    var barClass = isSeed ? "gm-module-bar--seed" : "gm-module-bar--warehouse";
+    var iconClass = isSeed ? "gm-icon--seed" : "gm-icon--warehouse";
+    var lotTypeLabel = isSeed ? "SEED" : "WAREHOUSE";
 }
 
 <link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
 
-<a href="/Warehouse/LoadType" class="gm-module-bar gm-module-bar--warehouse gm-module-bar--link" title="Back to New WeightSheet">
+<a href="/WeightSheets/LoadType" class="gm-module-bar @barClass gm-module-bar--link" title="Back to New WeightSheet">
     <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
-    <span class="gm-module-bar__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
-    <span class="gm-module-bar__label">NEW WEIGHT SHEET</span>
+    <span class="gm-module-bar__icon gm-icon @iconClass" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">NEW @lotTypeLabel WEIGHT SHEET</span>
 </a>
 
 <div class="gm-pagehead gm-pagehead--sticky"></div>
@@ -45,7 +50,7 @@
             <div class="gm-gd-section">
 
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                    <div class="gm-gd-section__title" style="margin-bottom:0" id="nwsLotPanelTitle">New Weight Sheet Lot</div>
+                    <div class="gm-gd-section__title" style="margin-bottom:0" id="nwsLotPanelTitle">New @lotTypeLabel Weight Sheet Lot</div>
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="nwsCancelCreateLotBtn">
                         &larr; Back to Lots
                     </button>
@@ -94,10 +99,15 @@
                                readonly placeholder="Auto-filled from split group" />
                     </div>
 
-                    <div class="gm-gd-field gm-gd-field--full">
-                        <label class="form-label">Landlord</label>
+                    <div class="gm-gd-field">
+                        <label class="form-label">Landlord Name</label>
                         <input type="text" class="form-control" id="nwsLandlord"
-                               placeholder="Optional landlord…" />
+                               placeholder="Optional landlord name…" />
+                    </div>
+                    <div class="gm-gd-field">
+                        <label class="form-label">Farm Number</label>
+                        <input type="text" class="form-control" id="nwsFarmNumber"
+                               placeholder="Optional farm number…" />
                     </div>
 
                     <div class="gm-gd-field gm-gd-field--full">
@@ -144,6 +154,7 @@
                     <span><span class="text-muted">State</span> <span id="nwsConfirmState"></span></span>
                     <span><span class="text-muted">County</span> <span id="nwsConfirmCounty"></span></span>
                     <span><span class="text-muted">Landlord</span> <span id="nwsConfirmLandlord"></span></span>
+                    <span><span class="text-muted">Farm #</span> <span id="nwsConfirmFarmNumber"></span></span>
                 </div>
                 <div class="mt-1">
                     <span class="text-muted">Description</span> <span id="nwsConfirmLotDesc" class="fw-semibold"></span>
@@ -223,8 +234,8 @@
                 <a id="nwsAddLoadBtn" class="btn btn-primary" href="#">
                     Add New Load
                 </a>
-                <a class="btn btn-outline-secondary" href="/Warehouse">
-                    Back to Warehouse
+                <a class="btn btn-outline-secondary" href="/WeightSheets">
+                    Back to Weight Sheets
                 </a>
             </div>
 

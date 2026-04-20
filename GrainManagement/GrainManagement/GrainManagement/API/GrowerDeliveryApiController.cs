@@ -16,6 +16,20 @@ namespace GrainManagement.API;
 [RequiresModule(nameof(Services.ModuleOptions.GrowerDelivery))]
 public sealed class GrowerDeliveryApiController : ControllerBase
 {
+    // Business rule: a weight sheet transitions out of Open (StatusId 0) once
+    // it accumulates this many non-voided loads. At/above this threshold the
+    // sheet becomes Pending — finished or not depending on whether every load
+    // has outbound weight, protein, and a destination bin set.
+    private const int WeightSheetMaxLoads = 25;
+
+    // Status constants mirror warehouse.WeightSheetStatuses (see
+    // SQL/AddWeightSheetStatus.sql). Kept here so the controller doesn't have
+    // magic numbers scattered through it.
+    private const byte StatusOpen               = 0;
+    private const byte StatusPendingNotFinished = 1;
+    private const byte StatusPendingFinished    = 2;
+    private const byte StatusClosed             = 3;
+
     private readonly dbContext _ctx;
     private readonly ICurrentUser _currentUser;
     private readonly ILogger<GrowerDeliveryApiController> _logger;
@@ -181,6 +195,10 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         }
 
         // ── Resolve ProductId, ItemId, AccountId from the Lot ────────────────
+        // PrimaryAccountId is taken from the lot's own LotSplitGroups row flagged
+        // PrimaryAccount = 1 (the authoritative per-lot primary), NOT from
+        // SplitGroup.PrimaryAccountId — override-mode groups have a null value
+        // there and would otherwise drop the account on the transaction.
         var lot = await _ctx.Lots
             .AsNoTracking()
             .Where(l => l.LotId == dto.LotId)
@@ -189,7 +207,10 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 l.ProductId,
                 l.ItemId,
                 l.SplitGroupId,
-                PrimaryAccountId = l.SplitGroup != null ? (long?)l.SplitGroup.PrimaryAccountId : null,
+                PrimaryAccountId = _ctx.LotSplitGroups
+                                       .Where(lsg => lsg.LotId == l.LotId && lsg.PrimaryAccount)
+                                       .Select(lsg => (long?)lsg.AccountId)
+                                       .FirstOrDefault(),
             })
             .FirstOrDefaultAsync(ct);
 
@@ -428,7 +449,8 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             }
         }
 
-        // ── Build grain quality TransactionAttributes via raw SQL (keyless entity) ──
+        // ── Insert TransactionAttributes via EF tracking ─────────────────────
+        // Entity is keyed by TransactionAttributesUid; we let EF track + SaveChanges.
         var attributes = BuildAttributes(dto);
 
         if (attributes.Count > 0)
@@ -440,6 +462,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 .Where(t => t.IsActive == true && codes.Contains(t.Code))
                 .ToDictionaryAsync(t => t.Code, t => t.Id, ct);
 
+            var attrNow = DateTime.UtcNow;
             foreach (var attr in attributes)
             {
                 if (!typeMap.TryGetValue(attr.Code, out var typeId))
@@ -448,20 +471,66 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                     continue;
                 }
 
-                var attrNow = DateTime.UtcNow;
-                await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
-                    INSERT INTO [Inventory].[TransactionAttributes]
-                        (TransactionId, AttributeTypeId, DecimalValue, StringValue, IntValue, BoolValue, CreatedAt)
-                    VALUES ({transactionId}, {typeId}, {attr.DecimalValue}, {attr.StringValue}, {(int?)null}, {(bool?)null}, {attrNow})",
-                    ct);
+                _ctx.TransactionAttributes.Add(new TransactionAttribute
+                {
+                    TransactionAttributesUid = Guid.NewGuid(),
+                    TransactionId            = transactionId,
+                    AttributeTypeId          = typeId,
+                    DecimalValue             = attr.DecimalValue,
+                    StringValue              = attr.StringValue,
+                    IntValue                 = null,
+                    BoolValue                = null,
+                    CreatedAt                = attrNow,
+                });
             }
+
+            await _ctx.SaveChangesAsync(ct);
         }
 
         // ── Link to weight sheet directly via RefId ────────────────────────────
+        //
+        // If the target weight sheet is already at or above the load cap, spill
+        // this new load onto a fresh weight sheet that copies the lot + hauler
+        // header of the full one. The full sheet is then finalized via
+        // RecomputeWeightSheetStatusAsync (Open → PendingFinished or
+        // PendingNotFinished depending on whether every load has outbound
+        // weight, protein, and a bin set).
+        Guid? overflowWsUid    = null;
+        long? overflowWsId     = null;
         if (dto.WeightSheetUid.HasValue)
         {
-            detail.RefType = "WeightSheet";
-            detail.RefId   = dto.WeightSheetUid.Value;
+            var linkWsUid = dto.WeightSheetUid.Value;
+
+            var existingCount = await _ctx.InventoryTransactionDetails
+                .CountAsync(itd => itd.RefType == "WeightSheet"
+                                && itd.RefId   == linkWsUid
+                                && !itd.IsVoided, ct);
+
+            if (existingCount >= WeightSheetMaxLoads)
+            {
+                // Spill to a new sheet. The helper inserts a new row via raw
+                // SQL (so the AutoGenerateIDs trigger generates WeightSheetId)
+                // and returns its RowUid.
+                var spill = await CreateOverflowWeightSheetAsync(linkWsUid, ct);
+                if (spill.NewWsRowUid is null)
+                {
+                    _logger.LogError(
+                        "Failed to create overflow weight sheet for full WS RowUid={Uid}", linkWsUid);
+                    return StatusCode(500, new { message = "Database error while spilling to a new weight sheet." });
+                }
+
+                overflowWsUid = spill.NewWsRowUid.Value;
+                overflowWsId  = spill.NewWsId;
+
+                // The new load goes onto the overflow sheet.
+                detail.RefType = "WeightSheet";
+                detail.RefId   = overflowWsUid.Value;
+            }
+            else
+            {
+                detail.RefType = "WeightSheet";
+                detail.RefId   = linkWsUid;
+            }
 
             try
             {
@@ -471,6 +540,20 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             {
                 _logger.LogError(ex, "Failed to link delivery to weight sheet for TransactionId={TxnId}", transactionId);
                 return StatusCode(500, new { message = "Database error while linking to weight sheet." });
+            }
+
+            // Recompute the status of the sheet(s) we touched.
+            //   - If we spilled, the original (full) sheet needs to transition
+            //     from Open → Pending* now that no more loads will be added.
+            //   - Otherwise, the sheet we just added to may now be at the cap
+            //     and ready to transition.
+            await RecomputeWeightSheetStatusAsync(linkWsUid, ct);
+            if (overflowWsUid.HasValue)
+            {
+                // Also recompute the new sheet — it's just one load so it'll
+                // stay Open, but the helper is a no-op in that case and keeps
+                // the logic uniform.
+                await RecomputeWeightSheetStatusAsync(overflowWsUid.Value, ct);
             }
         }
 
@@ -485,6 +568,11 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             isComplete,
             hasQuantity  = hasQty,
             hasContainer,
+            // Overflow info: non-null when the target WS was already at the
+            // load cap and this ticket was moved to a fresh sheet. The client
+            // can use these to redirect the user to the new sheet's page.
+            spilledToWeightSheetId  = overflowWsId,
+            spilledToWeightSheetUid = overflowWsUid,
         });
     }
 
@@ -562,6 +650,8 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             return BadRequest(new { message = "Provide truck weights OR a direct quantity, not both." });
 
         // ── Resolve ProductId, ItemId, AccountId from the Lot ───────────────
+        // PrimaryAccountId from LotSplitGroups.PrimaryAccount = 1 — see notes on
+        // the other transaction-creation path; override-mode groups need this.
         var lot = await _ctx.Lots
             .AsNoTracking()
             .Where(l => l.LotId == dto.LotId)
@@ -570,7 +660,10 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 l.ProductId,
                 l.ItemId,
                 l.SplitGroupId,
-                PrimaryAccountId = l.SplitGroup != null ? (long?)l.SplitGroup.PrimaryAccountId : null,
+                PrimaryAccountId = _ctx.LotSplitGroups
+                                       .Where(lsg => lsg.LotId == l.LotId && lsg.PrimaryAccount)
+                                       .Select(lsg => (long?)lsg.AccountId)
+                                       .FirstOrDefault(),
             })
             .FirstOrDefaultAsync(ct);
 
@@ -688,6 +781,65 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             return StatusCode(500, new { message = "Database error while updating delivery." });
         }
 
+        // ── Upsert TransactionAttributes (grain quality + transport + free-text) ──
+        // For each attribute, delete the existing row (if any) and insert the new
+        // value when one was supplied. This keeps the edit flow aligned with Create
+        // and uses code-based lookup so swapped IDs don't corrupt the data.
+        _logger.LogInformation(
+            "GrowerDelivery Update attributes TxnId={TxnId} BOL='{BOL}' Truck='{Truck}' Driver='{Driver}'",
+            transactionId, dto.BOL ?? "<null>", dto.TruckId ?? "<null>", dto.Driver ?? "<null>");
+
+        var updateAttributes = BuildAttributes(dto);
+        _logger.LogInformation("GrowerDelivery Update BuildAttributes returned {Count} entries: {Codes}",
+            updateAttributes.Count, string.Join(",", updateAttributes.Select(a => a.Code)));
+        {
+            // Load the full active type map so we can also delete rows that were
+            // cleared in the UI (attribute no longer has a value).
+            var knownCodes = new[] { "MOISTURE", "PROTEIN", "OIL", "STARCH", "TEST_WEIGHT",
+                "DOCKAGE", "FOREIGN_MATTER", "SPLITS", "DAMAGED", "GRADE",
+                "BOL", "TRUCK_ID", "DRIVER" };
+
+            var typeMapUpd = await _ctx.TransactionAttributeTypes
+                .AsNoTracking()
+                .Where(t => t.IsActive == true && knownCodes.Contains(t.Code))
+                .ToDictionaryAsync(t => t.Code, t => t.Id, ct);
+
+            // Delete every known-code row for this transaction up front so that
+            // cleared fields don't linger and swapped IDs can't cause double rows.
+            // TransactionAttributes is now keyed by TransactionAttributesUid,
+            // so EF Core can track + remove rows cleanly.
+            var knownIds = typeMapUpd.Values.ToHashSet();
+            var existingRows = await _ctx.TransactionAttributes
+                .Where(a => a.TransactionId == transactionId && knownIds.Contains(a.AttributeTypeId))
+                .ToListAsync(ct);
+            _ctx.TransactionAttributes.RemoveRange(existingRows);
+
+            // Re-insert attributes that have values.
+            var attrNow = DateTime.UtcNow;
+            foreach (var attr in updateAttributes)
+            {
+                if (!typeMapUpd.TryGetValue(attr.Code, out var typeId))
+                {
+                    _logger.LogWarning("TransactionAttributeType not found for code {Code}", attr.Code);
+                    continue;
+                }
+
+                _ctx.TransactionAttributes.Add(new TransactionAttribute
+                {
+                    TransactionAttributesUid = Guid.NewGuid(),
+                    TransactionId            = transactionId,
+                    AttributeTypeId          = typeId,
+                    DecimalValue             = attr.DecimalValue,
+                    StringValue              = attr.StringValue,
+                    IntValue                 = null,
+                    BoolValue                = null,
+                    CreatedAt                = attrNow,
+                });
+            }
+
+            await _ctx.SaveChangesAsync(ct);
+        }
+
         // ── Audit trail for weight modifications ────────────────────────────────
         if (weightsModified && weightEditUserName != null)
         {
@@ -703,6 +855,14 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 INSERT INTO [system].[AuditTrail] (LocationId, UserName, TableName, Action, KeyJson, OldJson, NewJson)
                 VALUES ({locationId}, {weightEditUserName}, {tableName}, {action}, {keyJson}, {oldJson}, {newJson})",
                 ct);
+        }
+
+        // Recompute the parent WS status — editing an existing load may now
+        // satisfy the outbound/protein/bin rules and move the sheet from
+        // PendingNotFinished to PendingFinished (or vice versa if cleared).
+        if (detail.RefType == "WeightSheet" && detail.RefId.HasValue)
+        {
+            await RecomputeWeightSheetStatusAsync(detail.RefId.Value, ct);
         }
 
         // ── Completion status ───────────────────────────────────────────────────
@@ -829,16 +989,62 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         return Ok(new { UserId = user.UserId, UserName = user.UserName });
     }
 
-    // GET /api/GrowerDelivery/OpenWeightSheets?locationId=
+    // GET /api/GrowerDelivery/OpenWeightSheets?locationId=&statusBucket=&fromDate=&toDate=
+    // statusBucket: "open" (default), "pending", "closed", or "all"
+    //   open    = StatusId IN (0, 1)   — only untouched sheets on this bucket,
+    //                                     the date range is ignored
+    //   pending = StatusId = 2         — PendingFinished
+    //   closed  = StatusId = 3         — end-of-day closed
+    //   all     = any status
+    // fromDate/toDate are inclusive bounds on CreationDate (applied to all
+    // buckets except "open", matching the Warehouse page UX where the date
+    // picker is only visible on non-Open selections).
     [HttpGet("OpenWeightSheets")]
-    public async Task<IActionResult> GetOpenWeightSheets([FromQuery] int locationId, CancellationToken ct)
+    public async Task<IActionResult> GetOpenWeightSheets(
+        [FromQuery] int locationId,
+        [FromQuery] string? statusBucket,
+        [FromQuery] DateTime? fromDate,
+        [FromQuery] DateTime? toDate,
+        CancellationToken ct)
     {
         if (locationId <= 0)
             return BadRequest(new { message = "locationId is required." });
 
-        var sheets = await _ctx.WeightSheets
+        var bucket = (statusBucket ?? "open").Trim().ToLowerInvariant();
+        if (bucket != "open" && bucket != "pending" && bucket != "closed" && bucket != "all")
+            bucket = "open";
+
+        var query = _ctx.WeightSheets
             .AsNoTracking()
-            .Where(ws => ws.LocationId == locationId && ws.ServerId == _systemInfo.ServerId && ws.ClosedAt == null)
+            .Where(ws => ws.LocationId == locationId && ws.ServerId == _systemInfo.ServerId);
+
+        // Bucket filter. The "open" bucket covers StatusId 0 and 1 per the
+        // business rules: Open and PendingNotFinished are both shown in the
+        // warehouse worklist until they move to PendingFinished or Closed.
+        if (bucket == "open")
+            query = query.Where(ws => ws.StatusId == 0 || ws.StatusId == 1);
+        else if (bucket == "pending")
+            query = query.Where(ws => ws.StatusId == 2);
+        else if (bucket == "closed")
+            query = query.Where(ws => ws.StatusId == 3);
+        // "all" — no status filter
+
+        // Date range — only applied on non-Open buckets.
+        if (bucket != "open")
+        {
+            if (fromDate.HasValue)
+            {
+                var from = DateOnly.FromDateTime(fromDate.Value.Date);
+                query = query.Where(ws => ws.CreationDate >= from);
+            }
+            if (toDate.HasValue)
+            {
+                var to = DateOnly.FromDateTime(toDate.Value.Date);
+                query = query.Where(ws => ws.CreationDate <= to);
+            }
+        }
+
+        var sheets = await query
             .OrderByDescending(ws => ws.CreatedAt)
             .Select(ws => new
             {
@@ -846,7 +1052,8 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 ws.RowUid,
                 ws.WeightSheetType,
                 CreationDate   = ws.CreationDate.ToString("MM/dd/yyyy"),
-                IsOpen         = ws.ClosedAt == null,
+                ws.StatusId,
+                IsOpen         = ws.StatusId < 3,
                 LotDescription = ws.LotId != null
                     ? _ctx.Lots.Where(l => l.LotId == ws.LotId).Select(l => l.LotDescription).FirstOrDefault()
                     : null,
@@ -856,12 +1063,17 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                         .Select(l => l.SplitGroup != null ? l.SplitGroup.SplitGroupDescription : null)
                         .FirstOrDefault()
                     : null,
+                // Primary account comes from LotSplitGroups.PrimaryAccount = 1 rather
+                // than SplitGroup.PrimaryAccountId so override-mode groups still show
+                // the chosen producer (the split-group-level value is null for those).
                 AccountName = ws.LotId != null
-                    ? _ctx.Lots.Where(l => l.LotId == ws.LotId && l.SplitGroup != null)
-                        .Select(l => _ctx.Accounts
-                            .Where(a => a.AccountId == l.SplitGroup.PrimaryAccountId)
-                            .Select(a => a.LookupName).FirstOrDefault())
-                        .FirstOrDefault()
+                    ? _ctx.LotSplitGroups
+                          .Where(lsg => lsg.LotId == ws.LotId && lsg.PrimaryAccount)
+                          .Join(_ctx.Accounts,
+                                lsg => lsg.AccountId,
+                                a => a.AccountId,
+                                (lsg, a) => a.LookupName)
+                          .FirstOrDefault()
                     : null,
                 ItemDescription = ws.LotId != null
                     ? _ctx.Lots.Where(l => l.LotId == ws.LotId && l.ItemId != null)
@@ -876,6 +1088,9 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                     ? _ctx.Haulers.Where(h => h.Id == ws.HaulerId).Select(h => h.Description).FirstOrDefault()
                     : null,
                 LoadCount = _ctx.InventoryTransactionDetails.Count(itd => itd.RefId == ws.RowUid && itd.RefType == "WeightSheet"),
+                LotType = ws.LotId != null
+                    ? (int?)_ctx.Lots.Where(l => l.LotId == ws.LotId).Select(l => (int)l.LotType).FirstOrDefault()
+                    : null,
             })
             .ToListAsync(ct);
 
@@ -883,7 +1098,10 @@ public sealed class GrowerDeliveryApiController : ControllerBase
     }
 
     // GET /api/GrowerDelivery/OpenLots?locationId=
-    // Returns open lots at this location that carry the WEIGHTSHEET system trait (TraitTypeId=12).
+    // Returns open lots at this location for the lot-selection pickers. Lots.IsOpen
+    // is the only selection criterion — we intentionally do NOT re-filter by the
+    // WEIGHTSHEET system trait here, both because the picker only needs open lots
+    // and because skipping the LotTraits join keeps this query fast.
     [HttpGet("OpenLots")]
     public async Task<IActionResult> GetOpenLots([FromQuery] int locationId, CancellationToken ct)
     {
@@ -893,8 +1111,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         var lots = await _ctx.Lots
             .AsNoTracking()
             .Where(l => l.LocationId == locationId && l.IsOpen &&
-                        l.ServerId == _systemInfo.ServerId &&
-                        l.LotTraits.Any(t => t.TraitTypeId == 12))
+                        l.ServerId == _systemInfo.ServerId)
             .Include(l => l.SplitGroup)
             .OrderBy(l => l.LotDescription)
             .Select(l => new
@@ -905,20 +1122,26 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 l.LotDescription,
                 l.SplitGroupId,
                 SplitGroupDescription = l.SplitGroup != null ? l.SplitGroup.SplitGroupDescription : null,
-                AccountName           = l.SplitGroup != null
-                    ? _ctx.Accounts
-                          .Where(a => a.AccountId == l.SplitGroup.PrimaryAccountId)
-                          .Select(a => a.LookupName)
-                          .FirstOrDefault()
-                    : null,
+                // Primary account comes from LotSplitGroups.PrimaryAccount = 1 rather
+                // than SplitGroup.PrimaryAccountId, so override-mode groups (where
+                // SplitGroup.PrimaryAccountId is null) still show the chosen producer.
+                AccountName           = _ctx.LotSplitGroups
+                                            .Where(lsg => lsg.LotId == l.LotId && lsg.PrimaryAccount)
+                                            .Join(_ctx.Accounts,
+                                                  lsg => lsg.AccountId,
+                                                  a => a.AccountId,
+                                                  (lsg, a) => a.LookupName)
+                                            .FirstOrDefault(),
                 l.ItemId,
                 ItemDescription       = l.ItemId != null
                     ? _ctx.Items.Where(i => i.ItemId == l.ItemId).Select(i => i.Description).FirstOrDefault()
                     : null,
                 CropName              = l.Product != null ? l.Product.Description : null,
-                State    = l.LotTraits.Where(t => t.TraitTypeId == 15).Select(t => t.Trait.TraitCode).FirstOrDefault(),
-                County   = l.LotTraits.Where(t => t.TraitTypeId == 16).Select(t => t.Trait.TraitCode).FirstOrDefault(),
-                Landlord = l.LotTraits.Where(t => t.TraitTypeId == 18).Select(t => t.Trait.TraitCode).FirstOrDefault(),
+                LotType    = (int)l.LotType,
+                State      = l.LotTraits.Where(t => t.TraitTypeId == 15).Select(t => t.Trait.TraitCode).FirstOrDefault(),
+                County     = l.LotTraits.Where(t => t.TraitTypeId == 16).Select(t => t.Trait.TraitCode).FirstOrDefault(),
+                Landlord   = l.LotTraits.Where(t => t.TraitTypeId == 18).Select(t => t.Trait.TraitCode).FirstOrDefault(),
+                FarmNumber = l.LotTraits.Where(t => t.TraitTypeId == 19).Select(t => t.Trait.TraitCode).FirstOrDefault(),
             })
             .ToListAsync(ct);
 
@@ -963,19 +1186,65 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         return Ok(sg);
     }
 
-    // GET /api/GrowerDelivery/WeightSheetLots?locationId=
-    // Returns ALL weight sheet lots (open + closed) at the location — management view.
+    // NOTE: The split-group reference endpoints (all groups + per-group percents)
+    // live in SplitGroupsApiController under /api/SplitGroups so the /Admin view
+    // can call them without the GrowerDelivery module gate on this controller.
+
+    // GET /api/GrowerDelivery/WeightSheetLots?locationId=&status=&fromDate=&toDate=
+    // Returns weight sheet lots at the location — management view.
+    //
+    // status   : "open" (default), "closed", or "all"
+    // fromDate : inclusive lower bound on Lot.CreatedAt. Optional.
+    // toDate   : inclusive upper bound on Lot.CreatedAt. Optional.
+    //
+    // When status == "open" no date window is applied by default — open lots are
+    // bounded in count and we want them all regardless of age.
+    // When status is "closed" or "all" and fromDate is not supplied, we default
+    // to the last 90 days so the page stays responsive on locations with years
+    // of history. Users can push fromDate back to see older closed lots.
     [HttpGet("WeightSheetLots")]
-    public async Task<IActionResult> GetWeightSheetLots([FromQuery] int locationId, CancellationToken ct)
+    public async Task<IActionResult> GetWeightSheetLots(
+        [FromQuery] int locationId,
+        [FromQuery] string? status,
+        [FromQuery] DateTime? fromDate,
+        [FromQuery] DateTime? toDate,
+        CancellationToken ct)
     {
         if (locationId <= 0)
             return BadRequest(new { message = "locationId is required." });
 
-        var lots = await _ctx.Lots
+        var normalizedStatus = (status ?? "open").Trim().ToLowerInvariant();
+        if (normalizedStatus != "open" && normalizedStatus != "closed" && normalizedStatus != "all")
+            normalizedStatus = "open";
+
+        // Date window rules:
+        //  - open only: no default window (caller can still pass dates if they want).
+        //  - closed/all with no fromDate: default to last 90 days.
+        //  - any explicit fromDate/toDate is always honored.
+        DateTime? fromUtc = fromDate?.Date;
+        if (fromUtc is null && normalizedStatus != "open")
+            fromUtc = DateTime.UtcNow.Date.AddDays(-90);
+
+        // toDate is inclusive, so use the start of the next day as an exclusive upper bound.
+        DateTime? toExclusiveUtc = toDate.HasValue ? toDate.Value.Date.AddDays(1) : (DateTime?)null;
+
+        var query = _ctx.Lots
             .AsNoTracking()
             .Where(l => l.LocationId == locationId &&
                         l.ServerId == _systemInfo.ServerId &&
-                        l.LotTraits.Any(t => t.TraitTypeId == 12))
+                        l.LotTraits.Any(t => t.TraitTypeId == 12));
+
+        if (normalizedStatus == "open")
+            query = query.Where(l => l.IsOpen);
+        else if (normalizedStatus == "closed")
+            query = query.Where(l => !l.IsOpen);
+
+        if (fromUtc.HasValue)
+            query = query.Where(l => l.CreatedAt >= fromUtc.Value);
+        if (toExclusiveUtc.HasValue)
+            query = query.Where(l => l.CreatedAt < toExclusiveUtc.Value);
+
+        var lots = await query
             .Include(l => l.SplitGroup)
             .OrderByDescending(l => l.CreatedAt)
             .Select(l => new
@@ -987,28 +1256,39 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 CreatedAt             = l.CreatedAt.ToString("MM/dd/yyyy"),
                 l.SplitGroupId,
                 SplitGroupDescription = l.SplitGroup != null ? l.SplitGroup.SplitGroupDescription : null,
-                AccountId             = l.SplitGroup != null ? l.SplitGroup.PrimaryAccountId : (long?)null,
-                AccountAs400Id        = l.SplitGroup != null
-                    ? _ctx.Accounts
-                          .Where(a => a.AccountId == l.SplitGroup.PrimaryAccountId)
-                          .Select(a => (long?)a.As400AccountId)
-                          .FirstOrDefault()
-                    : (long?)null,
-                AccountName           = l.SplitGroup != null
-                    ? _ctx.Accounts
-                          .Where(a => a.AccountId == l.SplitGroup.PrimaryAccountId)
-                          .Select(a => a.LookupName)
-                          .FirstOrDefault()
-                    : null,
+                // Primary account comes from the lot's own LotSplitGroups row flagged
+                // PrimaryAccount = 1 (guaranteed to exist by CK_LotSplitGroups_RequiresPrimary).
+                // The SplitGroup.PrimaryAccountId is null for override-mode groups, so
+                // projecting from there would drop the primary account on those lots.
+                AccountId             = _ctx.LotSplitGroups
+                                            .Where(lsg => lsg.LotId == l.LotId && lsg.PrimaryAccount)
+                                            .Select(lsg => (long?)lsg.AccountId)
+                                            .FirstOrDefault(),
+                AccountAs400Id        = _ctx.LotSplitGroups
+                                            .Where(lsg => lsg.LotId == l.LotId && lsg.PrimaryAccount)
+                                            .Join(_ctx.Accounts,
+                                                  lsg => lsg.AccountId,
+                                                  a => a.AccountId,
+                                                  (lsg, a) => (long?)a.As400AccountId)
+                                            .FirstOrDefault(),
+                AccountName           = _ctx.LotSplitGroups
+                                            .Where(lsg => lsg.LotId == l.LotId && lsg.PrimaryAccount)
+                                            .Join(_ctx.Accounts,
+                                                  lsg => lsg.AccountId,
+                                                  a => a.AccountId,
+                                                  (lsg, a) => a.LookupName)
+                                            .FirstOrDefault(),
                 l.ItemId,
                 ItemDescription       = l.ItemId != null
                     ? _ctx.Items.Where(i => i.ItemId == l.ItemId).Select(i => i.Description).FirstOrDefault()
                     : null,
                 l.Notes,
                 HasClosedWeightSheet  = _ctx.WeightSheets.Any(ws => ws.LotId == l.LotId && ws.ClosedAt != null),
-                State    = l.LotTraits.Where(t => t.TraitTypeId == 15).Select(t => t.Trait.TraitCode).FirstOrDefault(),
-                County   = l.LotTraits.Where(t => t.TraitTypeId == 16).Select(t => t.Trait.TraitCode).FirstOrDefault(),
-                Landlord = l.LotTraits.Where(t => t.TraitTypeId == 18).Select(t => t.Trait.TraitCode).FirstOrDefault(),
+                LotType    = (int)l.LotType,
+                State      = l.LotTraits.Where(t => t.TraitTypeId == 15).Select(t => t.Trait.TraitCode).FirstOrDefault(),
+                County     = l.LotTraits.Where(t => t.TraitTypeId == 16).Select(t => t.Trait.TraitCode).FirstOrDefault(),
+                Landlord   = l.LotTraits.Where(t => t.TraitTypeId == 18).Select(t => t.Trait.TraitCode).FirstOrDefault(),
+                FarmNumber = l.LotTraits.Where(t => t.TraitTypeId == 19).Select(t => t.Trait.TraitCode).FirstOrDefault(),
             })
             .ToListAsync(ct);
 
@@ -1067,6 +1347,17 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         if (dto.SplitGroupId <= 0)
             return BadRequest(new { message = "SplitGroupId is required." });
 
+        // ── PIN validation ──────────────────────────────────────────────────
+        if (!dto.Pin.HasValue || dto.Pin.Value <= 0)
+            return BadRequest(new { message = "PIN is required to create a lot." });
+
+        var pinUser = await _ctx.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Pin == dto.Pin.Value && u.IsActive, ct);
+
+        if (pinUser is null)
+            return Unauthorized(new { message = "Invalid or inactive PIN." });
+
         // Load split group + percents in a single query
         var sg = await _ctx.SplitGroups
             .AsNoTracking()
@@ -1075,6 +1366,26 @@ public sealed class GrowerDeliveryApiController : ControllerBase
 
         if (sg is null)
             return NotFound(new { message = "Split group not found." });
+
+        // Override-account path: when the split group has no PrimaryAccountId, the caller
+        // must supply an active producer account to act as the lot's primary account.
+        long? overrideAccountId = null;
+        if (sg.PrimaryAccountId is null)
+        {
+            if (!dto.OverrideAccountId.HasValue || dto.OverrideAccountId.Value <= 0)
+                return BadRequest(new { message = "This split group has no primary account. An override account is required." });
+
+            var overrideAcct = await _ctx.Accounts
+                .AsNoTracking()
+                .Where(a => a.AccountId == dto.OverrideAccountId.Value && a.IsProducer && a.IsActive)
+                .Select(a => new { a.AccountId })
+                .FirstOrDefaultAsync(ct);
+
+            if (overrideAcct is null)
+                return BadRequest(new { message = "Override account must be an active producer account." });
+
+            overrideAccountId = overrideAcct.AccountId;
+        }
 
         // Resolve ProductId from ItemId when provided
         int? productId = null;
@@ -1102,12 +1413,14 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             string lotDesc = sg.SplitGroupDescription;
             long? itemId = dto.ItemId;
             string notes = dto.Notes?.Trim();
+            int lotType = dto.LotType ?? 0; // default Seed
 
             // INSTEAD OF INSERT trigger generates LotId — pass RowUid so we can find the row back
             var rowUid = Guid.NewGuid();
+            string createdBy = pinUser.UserName;
             await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
-                INSERT INTO [Inventory].[Lots] (LocationId, SplitGroupId, LotDescription, ItemId, ProductId, Notes, IsOpen, CreatedAt, RowUid)
-                VALUES ({dto.LocationId}, {dto.SplitGroupId}, {lotDesc}, {itemId}, {productId}, {notes}, 1, {now}, {rowUid})",
+                INSERT INTO [Inventory].[Lots] (LocationId, SplitGroupId, LotDescription, ItemId, ProductId, Notes, IsOpen, CreatedAt, RowUid, CreatedByUserName, LotType)
+                VALUES ({dto.LocationId}, {dto.SplitGroupId}, {lotDesc}, {itemId}, {productId}, {notes}, 1, {now}, {rowUid}, {createdBy}, {lotType})",
                 ct);
 
             // Retrieve the trigger-generated LotId via the known RowUid
@@ -1179,10 +1492,58 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                     VALUES ({lotId}, {landlordTrait.TraitId}, {18}, 1, {now})", ct);
             }
 
+            // Insert FarmNumber trait (TraitTypeId=19) if provided
+            if (!string.IsNullOrWhiteSpace(dto.FarmNumber))
+            {
+                var farmTrait = await _ctx.Traits
+                    .FirstOrDefaultAsync(t => t.TraitTypeId == 19 && t.TraitCode == dto.FarmNumber.Trim(), ct);
+                if (farmTrait == null)
+                {
+                    farmTrait = new Trait { TraitCode = dto.FarmNumber.Trim(), TraitTypeId = 19, Description = dto.FarmNumber.Trim(), IsActive = true, CreatedAt = now };
+                    _ctx.Traits.Add(farmTrait);
+                    await _ctx.SaveChangesAsync(ct);
+                }
+                await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                    INSERT INTO [Inventory].[LotTraits] (LotId, TraitId, TraitTypeId, IsExclusive, CreatedAt)
+                    VALUES ({lotId}, {farmTrait.TraitId}, {19}, 1, {now})", ct);
+            }
+
+            // The CK_LotSplitGroups_RequiresPrimary check constraint demands that
+            // every LotId in LotSplitGroups has at least one row with PrimaryAccount=1,
+            // which means the *first* row we insert for a lot must be the primary.
+            //
+            // Determine the effective primary account:
+            //   - Normal path : sg.PrimaryAccountId (the 'G' row from AS400)
+            //   - Override path: the caller-supplied override account id
+            // Then insert the primary row first, then the rest of the percents,
+            // skipping any percent row that collides with the primary (the override
+            // account may already be one of the landlord percents).
+            long? effectivePrimaryAccountId = sg.PrimaryAccountId ?? overrideAccountId;
+
+            var primaryPercent = effectivePrimaryAccountId.HasValue
+                ? sg.SplitGroupPercents.FirstOrDefault(p => p.AccountId == effectivePrimaryAccountId.Value)
+                : null;
+
+            // 1) Primary row first.
+            {
+                var primaryRowGuid = Guid.NewGuid();
+                var primaryAccountIdForInsert = effectivePrimaryAccountId!.Value;
+                var primarySplitPercent = primaryPercent?.SplitPercent ?? 0m;
+                bool primaryFlag = true;
+                await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                    INSERT INTO [Inventory].[LotSplitGroups] (RowGuid, LotId, AccountId, SplitPercent, PrimaryAccount)
+                    VALUES ({primaryRowGuid}, {lotId}, {primaryAccountIdForInsert}, {primarySplitPercent}, {primaryFlag})",
+                    ct);
+            }
+
+            // 2) Remaining (non-primary) percent rows.
             foreach (var p in sg.SplitGroupPercents)
             {
+                if (effectivePrimaryAccountId.HasValue && p.AccountId == effectivePrimaryAccountId.Value)
+                    continue; // already inserted as the primary row above
+
                 var rowGuid = Guid.NewGuid();
-                var isPrimary = p.AccountId == sg.PrimaryAccountId;
+                bool isPrimary = false;
                 await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
                     INSERT INTO [Inventory].[LotSplitGroups] (RowGuid, LotId, AccountId, SplitPercent, PrimaryAccount)
                     VALUES ({rowGuid}, {lotId}, {p.AccountId}, {p.SplitPercent}, {isPrimary})",
@@ -1194,7 +1555,16 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create WeightSheetLot for LocationId={LocationId}", dto.LocationId);
-            return StatusCode(500, new { message = "Database error while creating weight sheet lot." });
+            // Surface the innermost exception message so the client (and the user
+            // reporting the issue) can see exactly what SQL Server rejected. This
+            // matches how update errors were already handled elsewhere and avoids
+            // the "Database error" opaque message masking the real cause.
+            var rootMsg = ex.GetBaseException().Message;
+            return StatusCode(500, new
+            {
+                message = "Database error while creating weight sheet lot: " + rootMsg,
+                detail  = rootMsg,
+            });
         }
     }
 
@@ -1241,7 +1611,8 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             lot.Notes,
             State    = await _ctx.LotTraits.Where(t => t.LotId == id && t.TraitTypeId == 15).Select(t => t.Trait.TraitCode).FirstOrDefaultAsync(ct),
             County   = await _ctx.LotTraits.Where(t => t.LotId == id && t.TraitTypeId == 16).Select(t => t.Trait.TraitCode).FirstOrDefaultAsync(ct),
-            Landlord = await _ctx.LotTraits.Where(t => t.LotId == id && t.TraitTypeId == 18).Select(t => t.Trait.TraitCode).FirstOrDefaultAsync(ct),
+            Landlord   = await _ctx.LotTraits.Where(t => t.LotId == id && t.TraitTypeId == 18).Select(t => t.Trait.TraitCode).FirstOrDefaultAsync(ct),
+            FarmNumber = await _ctx.LotTraits.Where(t => t.LotId == id && t.TraitTypeId == 19).Select(t => t.Trait.TraitCode).FirstOrDefaultAsync(ct),
         };
         string oldJson = JsonSerializer.Serialize(oldValues);
 
@@ -1287,6 +1658,9 @@ public sealed class GrowerDeliveryApiController : ControllerBase
 
             // Upsert Landlord trait (TraitTypeId=18)
             await UpsertLotTrait(id, 18, dto.Landlord?.Trim(), now, ct);
+
+            // Upsert FarmNumber trait (TraitTypeId=19)
+            await UpsertLotTrait(id, 19, dto.FarmNumber?.Trim(), now, ct);
         }
 
         // ── Audit trail ─────────────────────────────────────────────────────
@@ -1299,6 +1673,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             State          = notesOnly ? oldValues.State : dto.State?.Trim(),
             County         = notesOnly ? oldValues.County : dto.County?.Trim(),
             Landlord       = notesOnly ? oldValues.Landlord : dto.Landlord?.Trim(),
+            FarmNumber     = notesOnly ? oldValues.FarmNumber : dto.FarmNumber?.Trim(),
         };
         string newJson = JsonSerializer.Serialize(newValues);
         string keyJson = JsonSerializer.Serialize(new { LotId = id });
@@ -1415,6 +1790,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 attr2.DecimalValue      AS Attr2Value,
                 attr2.StringValue       AS Attr2String,
                 at2.Description         AS Attr2Description,
+                bolAttr.StringValue     AS BOL,
                 lot.LotDescription,
                 lot.LotId,
                 CASE WHEN startSrcType.Code = 'MANUAL' THEN 1 ELSE 0 END AS StartIsManual,
@@ -1428,14 +1804,17 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 ON tc.TransactionId = itd.TransactionId
             LEFT JOIN [container].[Containers] c
                 ON c.ContainerId = tc.ContainerId
-            LEFT JOIN [Inventory].[TransactionAttributes] attr1
-                ON attr1.TransactionId = itd.TransactionId AND attr1.AttributeTypeId = 1
             LEFT JOIN [Inventory].[TransactionAttributeTypes] at1
-                ON at1.Id = 1
-            LEFT JOIN [Inventory].[TransactionAttributes] attr2
-                ON attr2.TransactionId = itd.TransactionId AND attr2.AttributeTypeId = 2
+                ON at1.Code = 'PROTEIN'
+            LEFT JOIN [Inventory].[TransactionAttributes] attr1
+                ON attr1.TransactionId = itd.TransactionId AND attr1.AttributeTypeId = at1.Id
             LEFT JOIN [Inventory].[TransactionAttributeTypes] at2
-                ON at2.Id = 2
+                ON at2.Code = 'MOISTURE'
+            LEFT JOIN [Inventory].[TransactionAttributes] attr2
+                ON attr2.TransactionId = itd.TransactionId AND attr2.AttributeTypeId = at2.Id
+            LEFT JOIN [Inventory].[TransactionAttributes] bolAttr
+                ON bolAttr.TransactionId = itd.TransactionId
+                AND bolAttr.AttributeTypeId = (SELECT TOP 1 Id FROM [Inventory].[TransactionAttributeTypes] WHERE Code = 'BOL')
             LEFT JOIN [Inventory].[Lots] lot
                 ON lot.LotId = itd.LotId
             LEFT JOIN [Inventory].[TransactionQuantitySources] startSrc
@@ -1491,6 +1870,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 Attr2Value             = reader.IsDBNull(reader.GetOrdinal("Attr2Value")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Attr2Value")),
                 Attr2String            = reader.IsDBNull(reader.GetOrdinal("Attr2String")) ? null : reader.GetString(reader.GetOrdinal("Attr2String")),
                 Attr2Description       = reader.IsDBNull(reader.GetOrdinal("Attr2Description")) ? null : reader.GetString(reader.GetOrdinal("Attr2Description")),
+                BOL                    = reader.IsDBNull(reader.GetOrdinal("BOL")) ? null : reader.GetString(reader.GetOrdinal("BOL")),
                 LotDescription         = reader.IsDBNull(reader.GetOrdinal("LotDescription")) ? null : reader.GetString(reader.GetOrdinal("LotDescription")),
                 LotId                  = reader.IsDBNull(reader.GetOrdinal("LotId")) ? (long?)null : reader.GetInt64(reader.GetOrdinal("LotId")),
                 StartIsManual          = reader.GetInt32(reader.GetOrdinal("StartIsManual")) == 1,
@@ -1541,8 +1921,24 @@ public sealed class GrowerDeliveryApiController : ControllerBase
     {
         if (dto.TransactionId <= 0)
             return BadRequest(new { message = "TransactionId is required." });
-        if (dto.AttributeTypeId <= 0)
-            return BadRequest(new { message = "AttributeTypeId is required." });
+
+        // Resolve AttributeTypeId from AttributeCode if provided (preferred over hardcoded Ids)
+        int resolvedAttrTypeId = dto.AttributeTypeId;
+        if (!string.IsNullOrWhiteSpace(dto.AttributeCode))
+        {
+            var code = dto.AttributeCode.Trim().ToUpperInvariant();
+            var lookup = await _ctx.TransactionAttributeTypes
+                .AsNoTracking()
+                .Where(t => t.IsActive == true && t.Code == code)
+                .Select(t => (int?)t.Id)
+                .FirstOrDefaultAsync(ct);
+            if (lookup == null)
+                return BadRequest(new { message = $"Unknown attribute code '{dto.AttributeCode}'." });
+            resolvedAttrTypeId = lookup.Value;
+        }
+
+        if (resolvedAttrTypeId <= 0)
+            return BadRequest(new { message = "AttributeTypeId or AttributeCode is required." });
         if (dto.DecimalValue.HasValue && dto.DecimalValue.Value <= 0)
             return BadRequest(new { message = "Decimal value must be greater than zero." });
 
@@ -1552,36 +1948,42 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         var hasValue   = hasDecimal || hasString;
         var strVal     = hasString ? dto.StringValue.Trim() : (string)null;
 
-        // Check if attribute already exists
+        // Check if attribute already exists (EF tracked — keyed entity)
         var existing = await _ctx.TransactionAttributes
-            .FirstOrDefaultAsync(a => a.TransactionId == dto.TransactionId && a.AttributeTypeId == dto.AttributeTypeId, ct);
+            .FirstOrDefaultAsync(a => a.TransactionId == dto.TransactionId && a.AttributeTypeId == resolvedAttrTypeId, ct);
 
         if (existing != null)
         {
             if (hasValue)
             {
-                await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
-                    UPDATE [Inventory].[TransactionAttributes]
-                    SET DecimalValue = {dto.DecimalValue}, StringValue = {strVal}, UpdatedAt = {now}
-                    WHERE TransactionId = {dto.TransactionId} AND AttributeTypeId = {dto.AttributeTypeId}", ct);
+                existing.DecimalValue = dto.DecimalValue;
+                existing.StringValue  = strVal;
+                existing.IntValue     = null;
+                existing.BoolValue    = null;
+                existing.UpdatedAt    = now;
             }
             else
             {
                 // Remove if no value submitted
-                await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
-                    DELETE FROM [Inventory].[TransactionAttributes]
-                    WHERE TransactionId = {dto.TransactionId} AND AttributeTypeId = {dto.AttributeTypeId}", ct);
+                _ctx.TransactionAttributes.Remove(existing);
             }
         }
         else if (hasValue)
         {
-            // Insert new
-            await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
-                INSERT INTO [Inventory].[TransactionAttributes]
-                    (TransactionId, AttributeTypeId, DecimalValue, StringValue, IntValue, BoolValue, CreatedAt)
-                VALUES ({dto.TransactionId}, {dto.AttributeTypeId}, {dto.DecimalValue}, {strVal}, {(int?)null}, {(bool?)null}, {now})", ct);
+            _ctx.TransactionAttributes.Add(new TransactionAttribute
+            {
+                TransactionAttributesUid = Guid.NewGuid(),
+                TransactionId            = dto.TransactionId,
+                AttributeTypeId          = resolvedAttrTypeId,
+                DecimalValue             = dto.DecimalValue,
+                StringValue              = strVal,
+                IntValue                 = null,
+                BoolValue                = null,
+                CreatedAt                = now,
+            });
         }
 
+        await _ctx.SaveChangesAsync(ct);
         return Ok(new { success = true });
     }
 
@@ -1650,6 +2052,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 ws.Miles,
                 ws.Rate,
                 ws.LotId,
+                ws.StatusId,
                 lot.As400Id     AS LotAs400Id,
                 lot.LotDescription,
                 lot.ServerId    AS LotServerId,
@@ -1699,6 +2102,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             Miles              = reader.IsDBNull(reader.GetOrdinal("Miles")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Miles")),
             Rate               = reader.IsDBNull(reader.GetOrdinal("Rate")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Rate")),
             LotId              = reader.IsDBNull(reader.GetOrdinal("LotId")) ? (long?)null : reader.GetInt64(reader.GetOrdinal("LotId")),
+            StatusId           = reader.IsDBNull(reader.GetOrdinal("StatusId")) ? (byte)0 : reader.GetByte(reader.GetOrdinal("StatusId")),
             LotAs400Id         = reader.IsDBNull(reader.GetOrdinal("LotAs400Id")) ? (long?)null : reader.GetInt64(reader.GetOrdinal("LotAs400Id")),
             LotDescription     = reader.IsDBNull(reader.GetOrdinal("LotDescription")) ? null : reader.GetString(reader.GetOrdinal("LotDescription")),
             LotServerId        = reader.IsDBNull(reader.GetOrdinal("LotServerId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("LotServerId")),
@@ -1857,12 +2261,16 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                     l.LocationId,
                     CropName = l.Product != null ? l.Product.Description : null,
                     SplitName = l.SplitGroup != null ? l.SplitGroup.SplitGroupDescription : null,
-                    PrimaryAccountName = l.SplitGroup != null
-                        ? _ctx.Accounts
-                              .Where(a => a.AccountId == l.SplitGroup.PrimaryAccountId)
-                              .Select(a => a.EntityName != null && a.EntityName != "" ? a.EntityName : a.LookupName)
-                              .FirstOrDefault()
-                        : null,
+                    // Primary account comes from LotSplitGroups.PrimaryAccount = 1 so
+                    // override-mode groups (SplitGroup.PrimaryAccountId is null) still
+                    // show the chosen producer.
+                    PrimaryAccountName = _ctx.LotSplitGroups
+                                             .Where(lsg => lsg.LotId == l.LotId && lsg.PrimaryAccount)
+                                             .Join(_ctx.Accounts,
+                                                   lsg => lsg.AccountId,
+                                                   a => a.AccountId,
+                                                   (lsg, a) => a.EntityName != null && a.EntityName != "" ? a.EntityName : a.LookupName)
+                                             .FirstOrDefault(),
                 })
                 .FirstOrDefaultAsync(ct);
 
@@ -1905,8 +2313,8 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         var trait = await _ctx.Traits
             .FirstOrDefaultAsync(t => t.TraitTypeId == traitTypeId && t.TraitCode == traitCode, ct);
 
-        // Auto-create the trait if it doesn't exist (for State/County/Landlord)
-        if (trait == null && (traitTypeId == 15 || traitTypeId == 16 || traitTypeId == 18))
+        // Auto-create the trait if it doesn't exist (for State/County/Landlord/FarmNumber)
+        if (trait == null && (traitTypeId == 15 || traitTypeId == 16 || traitTypeId == 18 || traitTypeId == 19))
         {
             trait = new Trait
             {
@@ -1960,6 +2368,200 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         AddString ("DRIVER",        dto.Driver);
 
         return list;
+    }
+
+    /// <summary>
+    /// Result of a spill operation: (NewWsRowUid, NewWsId) is populated when
+    /// the INSERT + trigger-driven id lookup both succeed.
+    /// </summary>
+    private readonly record struct OverflowWeightSheet(Guid? NewWsRowUid, long? NewWsId);
+
+    /// <summary>
+    /// Creates a fresh warehouse.WeightSheets row that copies the lot + hauler
+    /// header of the given (full) source weight sheet. Used when a load save
+    /// arrives on a sheet that already holds WeightSheetMaxLoads loads — the
+    /// caller then links the new load to the returned sheet instead of the
+    /// full one.
+    ///
+    /// The INSERT goes through raw SQL so the trg_WeightSheets_AutoGenerateIDs
+    /// INSTEAD OF trigger can populate WeightSheetId / BaseId / As400Id; we
+    /// read those back by selecting on the supplied RowUid.
+    /// </summary>
+    private async Task<OverflowWeightSheet> CreateOverflowWeightSheetAsync(
+        Guid sourceWsUid, CancellationToken ct)
+    {
+        // Pull every header field we want to propagate onto the new sheet.
+        var src = await _ctx.WeightSheets
+            .AsNoTracking()
+            .Where(w => w.RowUid == sourceWsUid)
+            .Select(w => new
+            {
+                w.LocationId,
+                w.LotId,
+                w.WeightSheetType,
+                w.RateType,
+                w.HaulerId,
+                w.Miles,
+                w.CustomRateDescription,
+                w.Rate,
+                w.WeightmasterName,
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (src is null)
+            return new OverflowWeightSheet(null, null);
+
+        var now          = DateTime.UtcNow;
+        var creationDate = DateOnly.FromDateTime(DateTime.Now);
+        var newWsRowUid  = Guid.NewGuid();
+
+        try
+        {
+            await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                INSERT INTO [warehouse].[WeightSheets]
+                    (LocationId, LotId, WeightSheetType, RateType, HaulerId, Miles, CustomRateDescription, Rate, CreationDate, CreatedAt, RowUid, WeightmasterName)
+                VALUES
+                    ({src.LocationId}, {src.LotId}, {src.WeightSheetType}, {src.RateType}, {src.HaulerId}, {src.Miles}, {src.CustomRateDescription}, {src.Rate}, {creationDate}, {now}, {newWsRowUid}, {src.WeightmasterName})",
+                ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex,
+                "Failed to insert overflow WeightSheet copying source RowUid={Uid}", sourceWsUid);
+            return new OverflowWeightSheet(null, null);
+        }
+
+        // Read back the trigger-generated WeightSheetId via the known RowUid.
+        long? newWsId = null;
+        try
+        {
+            var conn = (SqlConnection)_ctx.Database.GetDbConnection();
+            if (conn.State != System.Data.ConnectionState.Open)
+                await conn.OpenAsync(ct);
+
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = _ctx.Database.CurrentTransaction?.GetDbTransaction() as SqlTransaction;
+            cmd.CommandText = "SELECT WeightSheetId FROM [warehouse].[WeightSheets] WHERE RowUid = @uid";
+            cmd.Parameters.AddWithValue("@uid", newWsRowUid);
+            var result = await cmd.ExecuteScalarAsync(ct);
+            if (result is long id)
+                newWsId = id;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Overflow WeightSheet inserted but WeightSheetId lookup failed for RowUid={Uid}", newWsRowUid);
+        }
+
+        return new OverflowWeightSheet(newWsRowUid, newWsId);
+    }
+
+    /// <summary>
+    /// Recomputes warehouse.WeightSheets.StatusId after a load is created or
+    /// edited on the given weight sheet. Rules:
+    ///
+    ///   - If the sheet is null or already Closed (StatusId 3), do nothing.
+    ///   - If non-voided load count &lt; WeightSheetMaxLoads, do nothing (the
+    ///     sheet stays Open — we never auto-demote back to 0).
+    ///   - If load count &gt;= WeightSheetMaxLoads:
+    ///       * If every load has EndQty, a PROTEIN attribute, and a destination
+    ///         container, transition to PendingFinished (2).
+    ///       * Otherwise transition to PendingNotFinished (1).
+    ///
+    /// Safe to call repeatedly; the method only SaveChangesAsync when the
+    /// computed status differs from the current value.
+    /// </summary>
+    private async Task RecomputeWeightSheetStatusAsync(Guid weightSheetUid, CancellationToken ct)
+    {
+        if (weightSheetUid == Guid.Empty) return;
+
+        var ws = await _ctx.WeightSheets
+            .FirstOrDefaultAsync(w => w.RowUid == weightSheetUid, ct);
+        if (ws is null) return;
+        if (ws.StatusId >= StatusClosed) return;        // don't touch a Closed sheet
+
+        // Count non-voided loads linked to this weight sheet.
+        var loadCount = await _ctx.InventoryTransactionDetails
+            .CountAsync(itd => itd.RefType == "WeightSheet"
+                            && itd.RefId   == weightSheetUid
+                            && !itd.IsVoided, ct);
+
+        if (loadCount < WeightSheetMaxLoads)
+            return; // still Open — nothing to do
+
+        // Resolve the active PROTEIN attribute type id once.
+        var proteinTypeId = await _ctx.TransactionAttributeTypes
+            .AsNoTracking()
+            .Where(t => t.IsActive == true && t.Code == "PROTEIN")
+            .Select(t => (int?)t.Id)
+            .FirstOrDefaultAsync(ct);
+
+        // Pull the TransactionIds for every non-voided load on this sheet.
+        var txnIds = await _ctx.InventoryTransactionDetails
+            .AsNoTracking()
+            .Where(itd => itd.RefType == "WeightSheet"
+                       && itd.RefId   == weightSheetUid
+                       && !itd.IsVoided)
+            .Select(itd => new { itd.TransactionId, itd.EndQty })
+            .ToListAsync(ct);
+
+        // A load is "finished" iff:
+        //   1. EndQty (outbound weight) is non-null.
+        //   2. A PROTEIN TransactionAttribute exists with a decimal value.
+        //   3. At least one InventoryTransactionDetailToContainer (bin) exists.
+        bool allFinished = true;
+        if (proteinTypeId is null)
+        {
+            allFinished = false; // can't verify protein without the type row
+        }
+        else
+        {
+            var ids = txnIds.Select(x => x.TransactionId).ToList();
+
+            var withProtein = await _ctx.TransactionAttributes
+                .AsNoTracking()
+                .Where(a => ids.Contains(a.TransactionId)
+                         && a.AttributeTypeId == proteinTypeId.Value
+                         && a.DecimalValue != null)
+                .Select(a => a.TransactionId)
+                .Distinct()
+                .ToListAsync(ct);
+            var withProteinSet = withProtein.ToHashSet();
+
+            var withContainer = await _ctx.InventoryTransactionDetailToContainers
+                .AsNoTracking()
+                .Where(c => ids.Contains(c.TransactionId))
+                .Select(c => c.TransactionId)
+                .Distinct()
+                .ToListAsync(ct);
+            var withContainerSet = withContainer.ToHashSet();
+
+            foreach (var row in txnIds)
+            {
+                if (row.EndQty is null
+                    || !withProteinSet.Contains(row.TransactionId)
+                    || !withContainerSet.Contains(row.TransactionId))
+                {
+                    allFinished = false;
+                    break;
+                }
+            }
+        }
+
+        byte target = allFinished ? StatusPendingFinished : StatusPendingNotFinished;
+        if (ws.StatusId != target)
+        {
+            ws.StatusId = target;
+            try
+            {
+                await _ctx.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogWarning(ex,
+                    "Failed to update WeightSheet.StatusId for RowUid={Uid}", weightSheetUid);
+            }
+        }
     }
 
     /// <summary>

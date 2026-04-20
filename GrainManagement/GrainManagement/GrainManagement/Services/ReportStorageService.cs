@@ -20,7 +20,8 @@ public sealed class ReportStorageService : ReportStorageWebExtension
         ["Inbound Load Ticket"] = new("Warehouse", () => new InboundLoadTicketReport()),
         ["Outbound Load Ticket"] = new("Warehouse", () => new OutboundLoadTicketReport()),
         ["Direct Quantity Load Ticket"] = new("Warehouse", () => new DirectQuantityLoadTicketReport()),
-        ["Weight Sheet Summary"] = new("Warehouse", () => new WeightSheetSummaryReport()),
+        ["Intake Weight Sheet"] = new("Warehouse", () => new IntakeWeightSheetReport()),
+        ["Lot Label"] = new("Warehouse", () => new LotLabelReport()),
         ["Test Ticket"] = new("Master", () => new TestTicketReport())
     };
 

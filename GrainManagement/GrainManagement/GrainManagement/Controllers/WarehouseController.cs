@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GrainManagement.Controllers;
 
-[Route("Warehouse")]
+[Route("WeightSheets")]
 [RequiresModule(nameof(ModuleOptions.WarehouseIntake))]
 public class WarehouseController : Controller
 {

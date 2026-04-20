@@ -78,6 +78,12 @@
 
     var _locationId = 0;
     var _wsId = 0;
+    // WeightSheet lifecycle status (see warehouse.WeightSheetStatuses):
+    //   0 = Open                  — New Load visible, edits allowed
+    //   1 = PendingNotFinished    — No New Load, edits still allowed
+    //   2 = PendingFinished       — No New Load, edits still allowed
+    //   3 = Closed                — No New Load, no edits at all
+    var _wsStatusId = 0;
     var _modal = null;
     var _haulerModal = null;
     var _lotModal = null;
@@ -121,7 +127,7 @@
         // Print Summary button
         $("#dlPrintSummaryBtn").on("click", function () {
             if (_wsId > 0) {
-                window.open("/api/printjobs/weight-sheet-summary/" + _wsId + "/pdf", "_blank");
+                window.open("/api/printjobs/intake-weight-sheet/" + _wsId + "/pdf?original=true", "_blank");
             }
         });
 
@@ -154,6 +160,38 @@
         });
     });
 
+    // ── Status gating ───────────────────────────────────────────────────────
+    // Applied every time the WS header loads so the UI reflects the current
+    // lifecycle state of the sheet. Called from populateHeader.
+    //   - StatusId > 0 hides the "New Load" button (no adds once Pending).
+    //   - StatusId == 3 (Closed) hides the edit affordances (hauler / lot /
+    //     comment save) and isEditingLocked() below short-circuits the load
+    //     grid cell click so inline edits and the deep-link navigation that
+    //     opens full-edit mode are both suppressed.
+    function applyStatusGates() {
+        // Hide the New Load button on any non-Open status.
+        if (_wsStatusId > 0) {
+            $(sel.newLoadBtn).attr("hidden", true).hide();
+        } else {
+            $(sel.newLoadBtn).removeAttr("hidden").show();
+        }
+
+        // Closed — lock down header editing too. Pending states (1,2) still
+        // allow load edits, so we leave them alone.
+        if (_wsStatusId >= 3) {
+            $(sel.editHaulerBtn).attr("hidden", true).hide();
+            $(sel.editLotBtn).attr("hidden", true).hide();
+            $(sel.editLotLink).attr("hidden", true).hide();
+            $(sel.wsComment).prop("readonly", true);
+            $(sel.saveCommentBtn).hide();
+        }
+    }
+
+    // True when the weight sheet is closed and no edits are allowed.
+    function isEditingLocked() {
+        return _wsStatusId >= 3;
+    }
+
     // ── Format composite ID (e.g. 604063000004 → 604-063-000004) ──────────────
     function formatId(id) {
         var s = String(id);
@@ -181,6 +219,8 @@
         if (!row) return;
 
         _wsHeader = row;
+        _wsStatusId = (typeof row.StatusId === "number") ? row.StatusId : 0;
+        applyStatusGates();
 
         var fmtId = row.WsAs400Id ? String(row.WsAs400Id) : formatId(row.WeightSheetId);
         $(sel.wsIdFmt).text(fmtId);
@@ -306,6 +346,7 @@
                 {
                     dataField: "TransactionId",
                     caption: "Load ID",
+                    width: 110,
                     dataType: "number",
                     sortOrder: "desc",
                     sortIndex: 0,
@@ -314,7 +355,7 @@
                         $("<a>")
                             .attr("href", "/GrowerDelivery/Index?wsId=" + _wsId + "&txnId=" + options.data.TransactionId)
                             .text(formatId(options.data.TransactionId))
-                            .css({ color: "#0d6efd", textDecoration: "underline", cursor: "pointer" })
+                            .css({ color: "#0d6efd", textDecoration: "underline", cursor: "pointer", fontSize: "0.85em" })
                             .appendTo(container);
                     },
                 },
@@ -347,6 +388,12 @@
                                 .css("font-size", "0.85em").appendTo(container);
                         }
                     },
+                },
+                {
+                    dataField: "BOL",
+                    caption: "BOL",
+                    width: 90,
+                    allowEditing: false,
                 },
                 // Bin — click to open bin picker, yellow if not set
                 {
@@ -476,6 +523,12 @@
                 var df = col ? (col.dataField || "") : "";
                 var caption = col ? (col.caption || "") : "";
                 var tag = (e.event.target.tagName || "").toLowerCase();
+
+                // Closed weight sheet — no edits, no full-edit navigation.
+                // Still let the user click Print so they can re-issue tickets.
+                if (isEditingLocked() && caption !== "Print") {
+                    return;
+                }
 
                 // Protein — open inline edit
                 if (df === "Attr1Value" || caption === "Protein") {
@@ -609,7 +662,10 @@
     }
 
     // ── Inline attribute edit (Protein / Moisture) ───────────────────────────
+    // attrTypeId: 1 = Protein, 2 = Moisture (for local UI state only)
+    // The server resolves the actual AttributeTypeId from AttributeCode.
     function openAttrInlineEdit(rowData, attrTypeId, cellContainer) {
+        var attrCode = attrTypeId === 1 ? "PROTEIN" : "MOISTURE";
         var currentVal = attrTypeId === 1 ? rowData.Attr1Value : rowData.Attr2Value;
         var maxVal = attrTypeId === 1 ? 20 : 50;
         var saving = false;
@@ -640,7 +696,7 @@
                 contentType: "application/json",
                 data: JSON.stringify({
                     TransactionId: rowData.TransactionId,
-                    AttributeTypeId: attrTypeId,
+                    AttributeCode: attrCode,
                     DecimalValue: saveVal
                 })
             })

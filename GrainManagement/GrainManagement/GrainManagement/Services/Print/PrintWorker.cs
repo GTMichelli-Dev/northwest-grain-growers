@@ -130,7 +130,7 @@ namespace GrainManagement.Services.Print
                 }
             };
 
-            // Handle print commands from the server
+            // Handle legacy print commands from the server (direct kiosk flow)
             connection.On<JsonElement>("PrintLoadTicket", async payload =>
             {
                 if (!TryGetString(payload, "ticket", out var ticket))
@@ -139,26 +139,46 @@ namespace GrainManagement.Services.Print
                     return;
                 }
 
-                _log.LogInformation("Received print request for ticket: {Ticket}", ticket);
-
-                try
-                {
-                    var pdfPath = await DownloadPdfAsync(baseUrl, ticket);
-                    var ok = await _cups.PrintPdfAsync(pdfPath, printer);
-
-                    try { File.Delete(pdfPath); }
-                    catch { /* ignore cleanup failure */ }
-
-                    if (ok)
-                        _log.LogInformation("Printed OK: {Ticket}", ticket);
-                    else
-                        _log.LogWarning("Print failed: {Ticket}", ticket);
-                }
-                catch (Exception ex)
-                {
-                    _log.LogError(ex, "Print exception for ticket {Ticket}", ticket);
-                }
+                await PrintJobAsync(baseUrl, ticket, "LoadTicket", printer);
             });
+
+            // Handle new-style dispatch from PrintDispatchService — includes job type
+            connection.On<JsonElement>("PrintTicket", async payload =>
+            {
+                if (!TryGetString(payload, "ticketId", out var ticket))
+                {
+                    _log.LogWarning("PrintTicket payload missing 'ticketId'. Payload: {Payload}", payload.ToString());
+                    return;
+                }
+
+                TryGetString(payload, "type", out var type);
+                if (string.IsNullOrWhiteSpace(type)) type = "LoadTicket";
+
+                await PrintJobAsync(baseUrl, ticket, type, printer);
+            });
+        }
+
+        private async Task PrintJobAsync(string baseUrl, string ticket, string type, string printer)
+        {
+            _log.LogInformation("Received print request. Ticket={Ticket} Type={Type}", ticket, type);
+
+            try
+            {
+                var pdfPath = await DownloadPdfAsync(baseUrl, ticket, type);
+                var ok = await _cups.PrintPdfAsync(pdfPath, printer);
+
+                try { File.Delete(pdfPath); }
+                catch { /* ignore cleanup failure */ }
+
+                if (ok)
+                    _log.LogInformation("Printed OK: {Ticket} ({Type})", ticket, type);
+                else
+                    _log.LogWarning("Print failed: {Ticket} ({Type})", ticket, type);
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "Print exception. Ticket={Ticket} Type={Type}", ticket, type);
+            }
         }
 
         private async Task StartAndRegisterAsync(HubConnection connection, string deviceId, CancellationToken ct)
@@ -196,15 +216,21 @@ namespace GrainManagement.Services.Print
             await tcs.Task;
         }
 
-        private static async Task<string> DownloadPdfAsync(string baseUrl, string ticket)
+        private static async Task<string> DownloadPdfAsync(string baseUrl, string ticket, string type = "LoadTicket")
         {
-            var url = $"{baseUrl}/api/printjobs/load-ticket/{Uri.EscapeDataString(ticket)}/pdf";
+            // Choose endpoint based on job type
+            string url = type switch
+            {
+                "LotLabel" => $"{baseUrl}/api/printjobs/lot-label/{Uri.EscapeDataString(ticket)}/pdf",
+                "IntakeWeightSheet" => $"{baseUrl}/api/printjobs/intake-weight-sheet/{Uri.EscapeDataString(ticket)}/pdf",
+                _ => $"{baseUrl}/api/printjobs/load-ticket/{Uri.EscapeDataString(ticket)}/pdf",
+            };
 
             var tempDir = Path.GetTempPath();
             Directory.CreateDirectory(tempDir);
 
             var safeTicket = string.Concat(ticket.Where(ch => !Path.GetInvalidFileNameChars().Contains(ch)));
-            var path = Path.Combine(tempDir, $"LoadTicket-{safeTicket}-{Guid.NewGuid():N}.pdf");
+            var path = Path.Combine(tempDir, $"{type}-{safeTicket}-{Guid.NewGuid():N}.pdf");
 
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
             http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/pdf"));

@@ -4,6 +4,8 @@
     var connectedServices = {};
     var savedInboundPrinterId = "";
     var savedOutboundPrinterId = "";
+    var savedLotPrinterId = "";
+    var savedReportPrinterId = "";
 
     function escHtml(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
     function escAttr(s) { return s.replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
@@ -13,12 +15,10 @@
         fetch("/api/printers/assignments")
             .then(function (r) { return r.ok ? r.json() : {}; })
             .then(function (data) {
-                if (data.Inbound) {
-                    savedInboundPrinterId = data.Inbound.ServiceId + ":" + data.Inbound.PrinterId;
-                }
-                if (data.Outbound) {
-                    savedOutboundPrinterId = data.Outbound.ServiceId + ":" + data.Outbound.PrinterId;
-                }
+                if (data.Inbound)  savedInboundPrinterId  = data.Inbound.ServiceId  + ":" + data.Inbound.PrinterId;
+                if (data.Outbound) savedOutboundPrinterId = data.Outbound.ServiceId + ":" + data.Outbound.PrinterId;
+                if (data.Lot)      savedLotPrinterId      = data.Lot.ServiceId      + ":" + data.Lot.PrinterId;
+                if (data.Report)   savedReportPrinterId   = data.Report.ServiceId   + ":" + data.Report.PrinterId;
                 updateAssignmentDropdowns();
             })
             .catch(function () { });
@@ -159,10 +159,8 @@
 
     // ===== Assignment Dropdowns =====
     function updateAssignmentDropdowns() {
-        var inSel = document.getElementById("inboundPrinterSelect");
-        var outSel = document.getElementById("outboundPrinterSelect");
-        var inVal = inSel.value || savedInboundPrinterId;
-        var outVal = outSel.value || savedOutboundPrinterId;
+        var selIds = ["inboundPrinterSelect", "outboundPrinterSelect", "lotPrinterSelect", "reportPrinterSelect"];
+        var savedVals = [savedInboundPrinterId, savedOutboundPrinterId, savedLotPrinterId, savedReportPrinterId];
 
         var options = '<option value="">-- None --</option>';
         Object.keys(connectedServices).forEach(function (sid) {
@@ -176,29 +174,38 @@
             });
         });
 
-        inSel.innerHTML = options;
-        outSel.innerHTML = options;
-        inSel.value = inVal;
-        outSel.value = outVal;
+        selIds.forEach(function (id, i) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            var currentVal = el.value || savedVals[i];
+            el.innerHTML = options;
+            el.value = currentVal;
+        });
     }
 
     function saveAssignments() {
-        var inVal = document.getElementById("inboundPrinterSelect").value;
-        var outVal = document.getElementById("outboundPrinterSelect").value;
-        var status = document.getElementById("assignmentStatus");
+        var inVal     = document.getElementById("inboundPrinterSelect").value;
+        var outVal    = document.getElementById("outboundPrinterSelect").value;
+        var lotVal    = document.getElementById("lotPrinterSelect").value;
+        var reportVal = document.getElementById("reportPrinterSelect").value;
+        var status    = document.getElementById("assignmentStatus");
         status.innerHTML = '<i class="dx-icon dx-icon-refresh dx-icon-spin"></i>';
 
         fetch("/api/printers/assignments", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                inboundPrinterId: inVal,
-                outboundPrinterId: outVal
+                inboundPrinterId:  inVal,
+                outboundPrinterId: outVal,
+                lotPrinterId:      lotVal,
+                reportPrinterId:   reportVal
             })
         }).then(function (r) {
             if (r.ok) {
-                savedInboundPrinterId = inVal;
+                savedInboundPrinterId  = inVal;
                 savedOutboundPrinterId = outVal;
+                savedLotPrinterId      = lotVal;
+                savedReportPrinterId   = reportVal;
                 status.innerHTML = '<span class="text-success">&#10003; Saved</span>';
                 setTimeout(function () { status.innerHTML = ""; }, 2000);
             } else {
@@ -248,7 +255,10 @@
     });
 
     document.addEventListener("change", function (e) {
-        if (e.target.id === "inboundPrinterSelect" || e.target.id === "outboundPrinterSelect") {
+        if (e.target.id === "inboundPrinterSelect" ||
+            e.target.id === "outboundPrinterSelect" ||
+            e.target.id === "lotPrinterSelect" ||
+            e.target.id === "reportPrinterSelect") {
             saveAssignments();
         }
     });

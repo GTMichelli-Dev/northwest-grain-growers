@@ -1,0 +1,121 @@
+@{
+    ViewData["Title"] = "Edit Weight Sheet Lot";
+}
+
+<link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
+<style>
+    .gm-wsl-sg-picker .dx-data-row.gm-sg-unassigned > td {
+        background-color: #fff3b0 !important;
+    }
+</style>
+
+<a href="/GrowerDelivery/WeightSheetLots" class="gm-module-bar gm-module-bar--warehouse gm-module-bar--link" id="editLotBackBar" title="Back to Warehouse Lots">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--warehouse" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">WAREHOUSE LOTS</span>
+</a>
+
+<div class="gm-pagehead gm-pagehead--sticky"></div>
+
+<div class="gm-gd">
+
+    <div id="wslAlert" class="alert" role="alert" hidden></div>
+
+    <!-- Split group search popup container -->
+    <div id="wslSgPickerPopup"></div>
+
+    <!-- ── Edit / Create form ──────────────────────────────────────────── -->
+    <div id="wslCreatePanel">
+        <div class="gm-gd-section">
+
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="gm-gd-section__title" style="margin-bottom:0" id="wslPanelTitle">New Weight Sheet Lot</div>
+            </div>
+
+            <div class="gm-gd-fields gm-gd-fields--2col">
+
+                <div class="gm-gd-field gm-gd-field--full">
+                    <div style="display:grid;grid-template-columns:0.6fr 110px 1fr;gap:8px;">
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label class="form-label">Item <span class="text-danger">*</span></label>
+                            <div id="wslItem"></div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label class="form-label">SG#</label>
+                            <div style="display:flex;align-items:center;gap:4px;">
+                                <input type="text" class="form-control" id="wslSgShortcut"
+                                       placeholder="Split #" style="text-align:center;height:34px;padding:6px 8px;font-size:14px;flex:1 1 auto;" />
+                                <button type="button" id="wslSgSearchBtn" class="btn btn-outline-secondary btn-sm"
+                                        title="Search split groups"
+                                        style="height:34px;flex:0 0 auto;">
+                                    <i class="dx-icon dx-icon-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <label class="form-label">Account <span class="text-danger">*</span></label>
+                            <div id="wslAccount"></div>
+                        </div>
+                    </div>
+                    <div id="wslSgError" class="text-danger small mt-1" hidden></div>
+                </div>
+
+                <div class="gm-gd-field gm-gd-field--full">
+                    <label class="form-label">Split Group <span class="text-danger">*</span></label>
+                    <div id="wslSplitGroup"></div>
+                    <div id="wslSplitGroupWarning" class="text-danger small mt-1" hidden>No split group set up for this account.</div>
+                </div>
+
+                <div class="gm-gd-field">
+                    <label class="form-label">State <span class="text-danger">*</span></label>
+                    <div id="wslState"></div>
+                </div>
+                <div class="gm-gd-field">
+                    <label class="form-label">County <span class="text-danger">*</span></label>
+                    <div id="wslCounty"></div>
+                </div>
+
+                <div class="gm-gd-field gm-gd-field--full">
+                    <label class="form-label">Lot Description</label>
+                    <input type="text" class="form-control" id="wslLotDesc"
+                           readonly placeholder="Auto-filled from split group" />
+                </div>
+
+                <div class="gm-gd-field">
+                    <label class="form-label">Landlord Name</label>
+                    <input type="text" class="form-control" id="wslLandlord"
+                           placeholder="Optional landlord name…" />
+                </div>
+                <div class="gm-gd-field">
+                    <label class="form-label">Farm Number</label>
+                    <input type="text" class="form-control" id="wslFarmNumber"
+                           placeholder="Optional farm number…" />
+                </div>
+
+                <div class="gm-gd-field gm-gd-field--full">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-control" id="wslNotes" rows="2"
+                              placeholder="Optional notes…"></textarea>
+                </div>
+
+            </div>
+
+            <div id="wslCreateError" class="text-danger small mt-2" hidden></div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button type="button" class="btn btn-primary" id="wslSaveBtn">
+                    Create Lot
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="wslCancelBtn">
+                    Cancel
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/grower.editlot.js" asp-append-version="true"></script>
+}

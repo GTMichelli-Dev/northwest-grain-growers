@@ -14,4 +14,6 @@
     public bool UseForSeed { get; set; }
 
     public bool UseForWarehouse { get; set; }
+
+    public bool Licensed { get; set; }
 }

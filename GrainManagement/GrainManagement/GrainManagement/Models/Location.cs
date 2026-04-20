@@ -23,6 +23,8 @@ public partial class Location
 
     public bool UseForWarehouse { get; set; }
 
+    public bool Licensed { get; set; }
+
     public virtual ICollection<AccountItemFilter> AccountItemFilters { get; set; } = new List<AccountItemFilter>();
 
     public virtual ICollection<ChemicalLot> ChemicalLots { get; set; } = new List<ChemicalLot>();

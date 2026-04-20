@@ -16,6 +16,9 @@ namespace GrainManagement.Controllers
         public IActionResult NewWeightSheet() => View();
 
         [HttpGet]
+        public IActionResult EditWeightSheetLot() => View();
+
+        [HttpGet]
         public IActionResult WeightSheetDeliveryLoads() => View();
 
         [HttpGet]

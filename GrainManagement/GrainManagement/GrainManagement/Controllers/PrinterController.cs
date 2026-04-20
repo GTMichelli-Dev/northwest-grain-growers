@@ -39,18 +39,32 @@ namespace GrainManagement.Controllers
         [HttpPost("api/printers/assignments")]
         public IActionResult SaveAssignments([FromBody] PrinterAssignmentDto dto)
         {
-            if (dto.InboundPrinterId != null)
-            {
-                ParseAssignment(dto.InboundPrinterId, out var svcId, out var pId);
-                _printDb.SaveAssignment("Inbound", svcId, pId);
-            }
-            if (dto.OutboundPrinterId != null)
-            {
-                ParseAssignment(dto.OutboundPrinterId, out var svcId, out var pId);
-                _printDb.SaveAssignment("Outbound", svcId, pId);
-            }
+            // Save each role. Null/empty = "None" = delete assignment (handled in SaveAssignment).
+            SaveRole("Inbound",  dto.InboundPrinterId);
+            SaveRole("Outbound", dto.OutboundPrinterId);
+            SaveRole("Lot",      dto.LotPrinterId);
+            SaveRole("Report",   dto.ReportPrinterId);
 
             return Ok(new { success = true });
+        }
+
+        private void SaveRole(string role, string? printerId)
+        {
+            if (printerId == null)
+            {
+                // Not provided in payload — leave existing assignment alone
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(printerId))
+            {
+                // Explicit None — clear the assignment
+                _printDb.SaveAssignment(role, null, null);
+                return;
+            }
+
+            ParseAssignment(printerId, out var svcId, out var pId);
+            _printDb.SaveAssignment(role, svcId, pId);
         }
 
         /// <summary>
@@ -75,7 +89,9 @@ namespace GrainManagement.Controllers
 
     public class PrinterAssignmentDto
     {
-        public string? InboundPrinterId { get; set; }
+        public string? InboundPrinterId  { get; set; }
         public string? OutboundPrinterId { get; set; }
+        public string? LotPrinterId      { get; set; }
+        public string? ReportPrinterId   { get; set; }
     }
 }
