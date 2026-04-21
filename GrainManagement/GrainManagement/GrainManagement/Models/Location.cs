@@ -66,4 +66,6 @@ public partial class Location
     public virtual ICollection<SalesInvoice> SalesInvoices { get; set; } = new List<SalesInvoice>();
 
     public virtual ICollection<SalesOrder> SalesOrders { get; set; } = new List<SalesOrder>();
+
+    public virtual ICollection<LocationSequenceMapping> LocationSequenceMappings { get; set; } = new List<LocationSequenceMapping>();
 }

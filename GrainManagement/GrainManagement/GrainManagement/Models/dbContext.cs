@@ -65,6 +65,8 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<LocationCounty> LocationCounties { get; set; }
 
+    public virtual DbSet<LocationSequenceMapping> LocationSequenceMappings { get; set; }
+
     public virtual DbSet<LocationDistrict> LocationDistricts { get; set; }
 
     public virtual DbSet<LocationItemFilter> LocationItemFilters { get; set; }
@@ -1959,6 +1961,29 @@ public partial class dbContext : DbContext
                 .HasMaxLength(128);
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
             entity.Property(e => e.Url).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<LocationSequenceMapping>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_LocationSequenceMapping");
+
+            entity.ToTable("LocationSequenceMapping", "system");
+
+            entity.HasIndex(e => new { e.LocationId, e.SequenceId }, "IX_LocationSequenceMapping").IsUnique();
+
+            entity.HasIndex(e => new { e.LocationId, e.ServerId }, "IX_LocationSequenceMapping_LocationServer").IsUnique();
+
+            entity.Property(e => e.Id).UseIdentityColumn();
+
+            entity.HasOne(d => d.Server).WithMany(p => p.LocationSequenceMappings)
+                .HasForeignKey(d => d.ServerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LocationSequenceMapping_Servers");
+
+            entity.HasOne(d => d.Location).WithMany(p => p.LocationSequenceMappings)
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LocationSequenceMapping_Locations");
         });
 
         modelBuilder.Entity<SplitGroup>(entity =>

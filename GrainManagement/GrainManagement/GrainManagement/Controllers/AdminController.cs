@@ -133,6 +133,28 @@ namespace GrainManagement
             return View();
         }
 
+        // GET: Admin/Servers
+        public IActionResult Servers()
+        {
+            if (!_me.IsAdmin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View();
+        }
+
+        // GET: Admin/LocationSequenceMappings
+        public IActionResult LocationSequenceMappings()
+        {
+            if (!_me.IsAdmin)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View();
+        }
+
         // GET: Admin/SplitGroups
         public IActionResult SplitGroups()
         {

@@ -38,4 +38,6 @@ public partial class Server
     public virtual ICollection<LotPriceOverride> LotPriceOverrides { get; set; } = new List<LotPriceOverride>();
 
     public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
+
+    public virtual ICollection<LocationSequenceMapping> LocationSequenceMappings { get; set; } = new List<LocationSequenceMapping>();
 }
