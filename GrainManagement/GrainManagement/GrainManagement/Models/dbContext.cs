@@ -1007,8 +1007,10 @@ public partial class dbContext : DbContext
                 });
 
             entity.HasIndex(e => e.RowUid, "IX_Lots_RowUid");
+            entity.HasIndex(e => e.As400Id, "IX_Lots_As400Id").IsUnique();
 
             entity.Property(e => e.LotId).ValueGeneratedNever();
+            entity.Property(e => e.As400Id).ValueGeneratedOnAddOrUpdate();
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(sysutcdatetime())")
                 .HasAnnotation("Relational:DefaultConstraintName", "DF_Lots_CreatedAt");
@@ -1975,6 +1977,14 @@ public partial class dbContext : DbContext
 
             entity.Property(e => e.Id).UseIdentityColumn();
 
+            entity.Property(e => e.LotSeed)
+                .HasDefaultValue(0)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LocationSequenceMapping_LotSeed");
+
+            entity.Property(e => e.WeightSheetSeed)
+                .HasDefaultValue(0)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LocationSequenceMapping_WeightSheetSeed");
+
             entity.HasOne(d => d.Server).WithMany(p => p.LocationSequenceMappings)
                 .HasForeignKey(d => d.ServerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -2305,6 +2315,10 @@ public partial class dbContext : DbContext
             // WeightSheetId is populated by the AutoGenerateIDs INSTEAD OF
             // trigger, so tell EF not to try to read a value back for it.
             entity.Property(e => e.WeightSheetId).ValueGeneratedOnAdd();
+
+            entity.HasIndex(e => e.As400Id, "IX_WeightSheets_As400Id").IsUnique();
+            entity.HasIndex(e => e.WeightSheetId, "UQ_WeightSheets_WeightSheetId").IsUnique();
+            entity.Property(e => e.As400Id).ValueGeneratedOnAddOrUpdate();
 
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(sysutcdatetime())")

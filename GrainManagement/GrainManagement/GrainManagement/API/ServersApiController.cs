@@ -57,13 +57,28 @@ public sealed class ServersApiController : ControllerBase
         if (exists)
             return Conflict(new { message = "A server with this ServerId already exists." });
 
+        var serverName   = dto.ServerName.Trim();
+        var friendlyName = dto.FriendlyName?.Trim();
+        var url          = dto.Url?.Trim();
+
+        if (await _ctx.Servers.AnyAsync(s => s.ServerName == serverName, ct))
+            return Conflict(new { message = $"A server with Server Name '{serverName}' already exists." });
+
+        if (!string.IsNullOrEmpty(friendlyName) &&
+            await _ctx.Servers.AnyAsync(s => s.FriendlyName == friendlyName, ct))
+            return Conflict(new { message = $"A server with Friendly Name '{friendlyName}' already exists." });
+
+        if (!string.IsNullOrEmpty(url) &&
+            await _ctx.Servers.AnyAsync(s => s.Url == url, ct))
+            return Conflict(new { message = $"A server with URL '{url}' already exists." });
+
         var server = new Server
         {
             ServerId     = dto.ServerId,
-            ServerName   = dto.ServerName.Trim(),
-            FriendlyName = dto.FriendlyName?.Trim(),
+            ServerName   = serverName,
+            FriendlyName = friendlyName,
             IsActive     = dto.IsActive,
-            Url          = dto.Url?.Trim(),
+            Url          = url,
         };
 
         _ctx.Servers.Add(server);
@@ -96,13 +111,30 @@ public sealed class ServersApiController : ControllerBase
             return NotFound(new { message = "Server not found." });
 
         if (dto.ServerName != null)
-            server.ServerName = dto.ServerName.Trim();
+        {
+            var serverName = dto.ServerName.Trim();
+            if (await _ctx.Servers.AnyAsync(s => s.ServerId != id && s.ServerName == serverName, ct))
+                return Conflict(new { message = $"A server with Server Name '{serverName}' already exists." });
+            server.ServerName = serverName;
+        }
         if (dto.FriendlyName != null)
-            server.FriendlyName = dto.FriendlyName.Trim();
+        {
+            var friendlyName = dto.FriendlyName.Trim();
+            if (!string.IsNullOrEmpty(friendlyName) &&
+                await _ctx.Servers.AnyAsync(s => s.ServerId != id && s.FriendlyName == friendlyName, ct))
+                return Conflict(new { message = $"A server with Friendly Name '{friendlyName}' already exists." });
+            server.FriendlyName = friendlyName;
+        }
         if (dto.IsActive.HasValue)
             server.IsActive = dto.IsActive.Value;
         if (dto.Url != null)
-            server.Url = dto.Url.Trim();
+        {
+            var url = dto.Url.Trim();
+            if (!string.IsNullOrEmpty(url) &&
+                await _ctx.Servers.AnyAsync(s => s.ServerId != id && s.Url == url, ct))
+                return Conflict(new { message = $"A server with URL '{url}' already exists." });
+            server.Url = url;
+        }
 
         server.UpdatedAt = DateTime.UtcNow;
 

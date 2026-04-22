@@ -16,6 +16,7 @@ public class IntakeWeightSheetDto
     /// <summary>Last 6 digits of As400Id — the weight sheet number (e.g. "000013").</summary>
     public string WeightSheetNumber { get; set; } = "";
     public string LotId { get; set; } = "";
+    public string ItemId { get; set; } = "";
     public string CropName { get; set; } = "";
     public string PrimaryAccountName { get; set; } = "";
     public string PrimaryAccountId { get; set; } = "";
@@ -25,7 +26,8 @@ public class IntakeWeightSheetDto
     public string HaulerName { get; set; } = "";
     public decimal? Miles { get; set; }
     public decimal? Rate { get; set; }
-    public string Comment { get; set; } = "";
+    public string LotNotes { get; set; } = "";
+    public string WeightSheetNotes { get; set; } = "";
     public string Location { get; set; } = "";
     public string LocationId { get; set; } = "";
     /// <summary>

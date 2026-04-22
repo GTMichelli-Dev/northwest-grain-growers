@@ -13,9 +13,13 @@ public partial class WeightSheet
 
     public int BaseId { get; set; }
 
+    public int As400BaseId { get; set; }
+
     public int LocationId { get; set; }
 
     public int ServerId { get; set; }
+
+    public int SequenceId { get; set; }
 
     public string WeightSheetType { get; set; }
 

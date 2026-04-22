@@ -33,7 +33,7 @@
             return { value: s.ServerId, text: s.Name + ' - ' + s.ServerId };
         });
         var locationLookup = _locations.map(function (l) {
-            return { value: l.LocationId, text: l.Name };
+            return { value: l.LocationId, text: l.Name + ' - ' + l.LocationId };
         });
 
         $('#lsmGrid').dxDataGrid({
@@ -51,6 +51,8 @@
                             serverId: values.ServerId,
                             locationId: values.LocationId,
                             sequenceId: values.SequenceId,
+                            lotSeed: values.LotSeed || 0,
+                            weightSheetSeed: values.WeightSheetSeed || 0,
                         }),
                     });
                 },
@@ -68,6 +70,8 @@
                             serverId: merged.ServerId,
                             locationId: merged.LocationId,
                             sequenceId: merged.SequenceId,
+                            lotSeed: merged.LotSeed || 0,
+                            weightSheetSeed: merged.WeightSheetSeed || 0,
                         }),
                     });
                 },
@@ -103,6 +107,23 @@
                 allowDeleting: true,
                 confirmDelete: true,
                 useIcons: true,
+            },
+            onRowValidating: function (e) {
+                var merged = $.extend({}, e.oldData, e.newData);
+                var lot = Number(merged.LotSeed);
+                var ws = Number(merged.WeightSheetSeed);
+                var messages = [];
+                if (!isFinite(lot) || lot < 0 || lot > 99999) {
+                    messages.push('Lot Seed must be between 0 and 99999 (got ' + merged.LotSeed + ').');
+                }
+                if (!isFinite(ws) || ws < 0 || ws > 99999) {
+                    messages.push('Weight Sheet Seed must be between 0 and 99999 (got ' + merged.WeightSheetSeed + ').');
+                }
+                if (messages.length) {
+                    e.isValid = false;
+                    e.errorText = messages.join(' ');
+                    showAlert(messages.join(' '), 'danger');
+                }
             },
             export: {
                 enabled: true,
@@ -160,6 +181,58 @@
                         displayExpr: 'text',
                     },
                     validationRules: [{ type: 'required' }],
+                },
+                {
+                    dataField: 'LotSeed',
+                    caption: 'Lot Seed (Last Id Used)',
+                    dataType: 'number',
+                    width: 'auto',
+                    headerCellTemplate: function (container) {
+                        $(container)
+                            .append($('<span/>').text('Lot Seed '))
+                            .append($('<span/>').text('(Last Id Used)').css({ 'font-style': 'italic', 'font-size': '50%' }));
+                    },
+                    validationRules: [
+                        { type: 'range', min: 0, max: 99999, message: 'Lot Seed must be between 0 and 99999' },
+                    ],
+                },
+                {
+                    dataField: 'LastLotBaseId',
+                    caption: 'Last Lot Id',
+                    dataType: 'number',
+                    width: 'auto',
+                    allowEditing: false,
+                    allowFiltering: false,
+                    allowSearch: false,
+                    customizeText: function (cellInfo) {
+                        return cellInfo.value == null ? '---' : cellInfo.valueText;
+                    },
+                },
+                {
+                    dataField: 'WeightSheetSeed',
+                    caption: 'Weight Sheet (Last Id Used)',
+                    dataType: 'number',
+                    width: 'auto',
+                    headerCellTemplate: function (container) {
+                        $(container)
+                            .append($('<span/>').text('Weight Sheet '))
+                            .append($('<span/>').text('(Last Id Used)').css({ 'font-style': 'italic', 'font-size': '50%' }));
+                    },
+                    validationRules: [
+                        { type: 'range', min: 0, max: 99999, message: 'Weight Sheet Seed must be between 0 and 99999' },
+                    ],
+                },
+                {
+                    dataField: 'LastWeightSheetBaseId',
+                    caption: 'Last Weight Sheet Id',
+                    dataType: 'number',
+                    width: 'auto',
+                    allowEditing: false,
+                    allowFiltering: false,
+                    allowSearch: false,
+                    customizeText: function (cellInfo) {
+                        return cellInfo.value == null ? '---' : cellInfo.valueText;
+                    },
                 },
             ],
         });

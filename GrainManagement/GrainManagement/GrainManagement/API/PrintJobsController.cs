@@ -409,6 +409,7 @@ namespace GrainManagement.Api
             // Resolve lot info
             string lotId = ws.LotId?.ToString() ?? "";
             long lotAs400Id = 0;
+            string itemId = "";
             string cropName = "";
             string accountName = "";
             string accountId = "";
@@ -421,19 +422,22 @@ namespace GrainManagement.Api
             string lotFarmNumber = "";
             string lotState = "";
             string lotCounty = "";
+            string lotNotes = "";
 
             if (ws.LotId.HasValue)
             {
                 var lotInfo = _db.Lots
                     .Include(l => l.SplitGroup)
-                    .Include(l => l.Product)
+                    .Include(l => l.Item)
                     .AsNoTracking()
                     .FirstOrDefault(l => l.LotId == ws.LotId);
 
                 if (lotInfo != null)
                 {
                     lotAs400Id = lotInfo.As400Id;
-                    cropName = lotInfo.Product?.Description ?? "";
+                    itemId = lotInfo.ItemId?.ToString() ?? "";
+                    cropName = lotInfo.Item?.Description ?? "";
+                    lotNotes = lotInfo.Notes ?? "";
                     splitId = lotInfo.SplitGroupId?.ToString() ?? "";
                     splitName = lotInfo.SplitGroup?.SplitGroupDescription ?? "";
 
@@ -627,12 +631,13 @@ namespace GrainManagement.Api
 
             return new IntakeWeightSheetDto
             {
-                WeightSheetId = wsId.ToString(),
+                WeightSheetId = ws.As400Id > 0 ? ws.As400Id.ToString() : wsId.ToString(),
                 As400Id = ws.As400Id > 0 ? FormatWsId(ws.As400Id) : "",
                 ServerId = serverId,
                 ServerName = serverName,
                 WeightSheetNumber = weightSheetNumber,
-                LotId = lotAs400Id > 0 ? lotAs400Id.ToString() : FormatId(lotId),
+                LotId = lotAs400Id > 0 ? lotAs400Id.ToString() : lotId,
+                ItemId = itemId,
                 CropName = cropName,
                 PrimaryAccountName = accountName,
                 PrimaryAccountId = accountId,
@@ -645,7 +650,8 @@ namespace GrainManagement.Api
                 CreationDate = ws.CreationDate.ToDateTime(TimeOnly.MinValue),
                 Miles = ws.Miles,
                 Rate = ws.Rate,
-                Comment = ws.Notes ?? "",
+                LotNotes = lotNotes,
+                WeightSheetNotes = ws.Notes ?? "",
                 Location = locationName,
                 LocationId = ws.LocationId.ToString(),
                 CertificateTitle = isLicensed

@@ -15,6 +15,10 @@ public partial class LocationSequenceMapping
 
     public int SequenceId { get; set; }
 
+    public int LotSeed { get; set; }
+
+    public int WeightSheetSeed { get; set; }
+
     public virtual Server Server { get; set; }
 
     public virtual Location Location { get; set; }

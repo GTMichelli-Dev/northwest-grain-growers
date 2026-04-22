@@ -124,10 +124,12 @@
         initVoidRestore();
         initReprint();
 
-        // Print Summary button
+        // Print Summary button — uses the internal WeightSheetId from the
+        // loaded header, not the As400Id-shaped value carried in the URL.
         $("#dlPrintSummaryBtn").on("click", function () {
-            if (_wsId > 0) {
-                window.open("/api/printjobs/intake-weight-sheet/" + _wsId + "/pdf?original=true", "_blank");
+            var internalWsId = _wsHeader && _wsHeader.WeightSheetId;
+            if (internalWsId) {
+                window.open("/api/printjobs/intake-weight-sheet/" + internalWsId + "/pdf?original=true", "_blank");
             }
         });
 

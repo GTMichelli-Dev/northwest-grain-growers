@@ -10,6 +10,19 @@
         setTimeout(function () { $el.prop('hidden', true); }, 4000);
     }
 
+    function extractErrorMessage(jqXHR, fallback) {
+        try {
+            if (jqXHR && jqXHR.responseJSON && jqXHR.responseJSON.message) {
+                return jqXHR.responseJSON.message;
+            }
+            if (jqXHR && jqXHR.responseText) {
+                var parsed = JSON.parse(jqXHR.responseText);
+                if (parsed && parsed.message) return parsed.message;
+            }
+        } catch (e) { /* ignore */ }
+        return fallback;
+    }
+
     $(function () {
         $('#srvGrid').dxDataGrid({
             dataSource: new DevExpress.data.CustomStore({
@@ -23,6 +36,8 @@
                         method: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify(values),
+                    }).fail(function (jqXHR) {
+                        showAlert(extractErrorMessage(jqXHR, 'Failed to create server.'), 'danger');
                     });
                 },
                 update: function (key, values) {
@@ -31,12 +46,16 @@
                         method: 'PUT',
                         contentType: 'application/json',
                         data: JSON.stringify(values),
+                    }).fail(function (jqXHR) {
+                        showAlert(extractErrorMessage(jqXHR, 'Failed to update server.'), 'danger');
                     });
                 },
                 remove: function (key) {
                     return $.ajax({
                         url: '/api/Servers/' + key,
                         method: 'DELETE',
+                    }).fail(function (jqXHR) {
+                        showAlert(extractErrorMessage(jqXHR, 'Failed to delete server.'), 'danger');
                     });
                 },
             }),
@@ -89,8 +108,9 @@
                 {
                     dataField: 'ServerId',
                     caption: 'Server ID',
-                    width: 100,
+                    width: 'auto',
                     sortOrder: 'asc',
+                    allowEditing: false,
                     validationRules: [{ type: 'required' }],
                 },
                 {

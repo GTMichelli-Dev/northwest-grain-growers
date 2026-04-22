@@ -24,7 +24,7 @@ public sealed class LocationSequenceMappingApiController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        var data = await _ctx.LocationSequenceMappings
+        var mappings = await _ctx.LocationSequenceMappings
             .AsNoTracking()
             .OrderBy(m => m.Location.Name)
             .ThenBy(m => m.SequenceId)
@@ -36,8 +36,56 @@ public sealed class LocationSequenceMappingApiController : ControllerBase
                 m.LocationId,
                 LocationName = m.Location.Name,
                 m.SequenceId,
+                m.LotSeed,
+                m.WeightSheetSeed,
             })
             .ToListAsync(ct);
+
+        var lotMax = await _ctx.Lots
+            .AsNoTracking()
+            .GroupBy(l => new { l.LocationId, l.SequenceId })
+            .Select(g => new
+            {
+                g.Key.LocationId,
+                g.Key.SequenceId,
+                MaxBaseId = g.Max(l => l.BaseId),
+            })
+            .ToDictionaryAsync(
+                k => (k.LocationId, k.SequenceId),
+                v => v.MaxBaseId,
+                ct);
+
+        var wsMax = await _ctx.WeightSheets
+            .AsNoTracking()
+            .GroupBy(w => new { w.LocationId, w.SequenceId })
+            .Select(g => new
+            {
+                g.Key.LocationId,
+                g.Key.SequenceId,
+                MaxBaseId = g.Max(w => w.BaseId),
+            })
+            .ToDictionaryAsync(
+                k => (k.LocationId, k.SequenceId),
+                v => v.MaxBaseId,
+                ct);
+
+        var data = mappings.Select(m => new
+        {
+            m.Id,
+            m.ServerId,
+            m.ServerName,
+            m.LocationId,
+            m.LocationName,
+            m.SequenceId,
+            m.LotSeed,
+            m.WeightSheetSeed,
+            LastLotBaseId = lotMax.TryGetValue((m.LocationId, m.SequenceId), out var lot)
+                ? (int?)lot
+                : null,
+            LastWeightSheetBaseId = wsMax.TryGetValue((m.LocationId, m.SequenceId), out var ws)
+                ? (int?)ws
+                : null,
+        });
 
         return Ok(data);
     }
@@ -91,6 +139,10 @@ public sealed class LocationSequenceMappingApiController : ControllerBase
             return BadRequest(new { message = "LocationId is required." });
         if (dto.SequenceId <= 0)
             return BadRequest(new { message = "SequenceId is required." });
+        if (dto.LotSeed < 0 || dto.LotSeed > 99999)
+            return BadRequest(new { message = "LotSeed must be between 0 and 99999." });
+        if (dto.WeightSheetSeed < 0 || dto.WeightSheetSeed > 99999)
+            return BadRequest(new { message = "WeightSheetSeed must be between 0 and 99999." });
 
         var exists = await _ctx.LocationSequenceMappings
             .AnyAsync(m => m.LocationId == dto.LocationId && m.SequenceId == dto.SequenceId, ct);
@@ -104,9 +156,11 @@ public sealed class LocationSequenceMappingApiController : ControllerBase
 
         var mapping = new LocationSequenceMapping
         {
-            ServerId   = dto.ServerId,
-            LocationId = dto.LocationId,
-            SequenceId = dto.SequenceId,
+            ServerId        = dto.ServerId,
+            LocationId      = dto.LocationId,
+            SequenceId      = dto.SequenceId,
+            LotSeed         = dto.LotSeed,
+            WeightSheetSeed = dto.WeightSheetSeed,
         };
 
         _ctx.LocationSequenceMappings.Add(mapping);
@@ -135,6 +189,10 @@ public sealed class LocationSequenceMappingApiController : ControllerBase
     {
         if (dto is null)
             return BadRequest(new { message = "Request body is required." });
+        if (dto.LotSeed < 0 || dto.LotSeed > 99999)
+            return BadRequest(new { message = "LotSeed must be between 0 and 99999." });
+        if (dto.WeightSheetSeed < 0 || dto.WeightSheetSeed > 99999)
+            return BadRequest(new { message = "WeightSheetSeed must be between 0 and 99999." });
 
         var mapping = await _ctx.LocationSequenceMappings.FindAsync(new object[] { id }, ct);
         if (mapping is null)
@@ -158,9 +216,11 @@ public sealed class LocationSequenceMappingApiController : ControllerBase
                 return Conflict(new { message = "This location is already assigned to that server." });
         }
 
-        mapping.ServerId   = dto.ServerId;
-        mapping.LocationId = dto.LocationId;
-        mapping.SequenceId = dto.SequenceId;
+        mapping.ServerId        = dto.ServerId;
+        mapping.LocationId      = dto.LocationId;
+        mapping.SequenceId      = dto.SequenceId;
+        mapping.LotSeed         = dto.LotSeed;
+        mapping.WeightSheetSeed = dto.WeightSheetSeed;
 
         try
         {
@@ -199,4 +259,4 @@ public sealed class LocationSequenceMappingApiController : ControllerBase
     }
 }
 
-public record CreateLocationSequenceMappingDto(int ServerId, int LocationId, int SequenceId);
+public record CreateLocationSequenceMappingDto(int ServerId, int LocationId, int SequenceId, int LotSeed = 0, int WeightSheetSeed = 0);
