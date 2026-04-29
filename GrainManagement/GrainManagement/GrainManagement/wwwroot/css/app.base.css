@@ -55,17 +55,93 @@ body {
         letter-spacing: .2px;
     }
 
-/* Primary buttons */
+/* ── Button normalization ────────────────────────────────────────
+   Buttons render as bordered/outline at rest and fill solid on hover/focus.
+   Cancel-style buttons (modal dismiss, btn-secondary used as neutral Cancel,
+   btn-outline-danger, btn-danger) get the red treatment universally.        */
+
+/* Primary buttons (brand green): outline at rest, solid on hover/focus */
 .btn-primary {
-    background-color: var(--brand-primary);
+    background-color: transparent;
+    color: var(--brand-primary);
     border-color: var(--brand-primary);
 }
 
     .btn-primary:hover,
-    .btn-primary:focus {
+    .btn-primary:focus,
+    .btn-primary:focus-visible,
+    .btn-primary:active,
+    .btn-primary.active {
         background-color: var(--brand-primary-dark);
         border-color: var(--brand-primary-dark);
+        color: #fff;
     }
+
+/* Success / Info / Warning / Dark — outline at rest, solid on hover/focus */
+.btn-success {
+    background-color: transparent;
+    color: var(--bs-success, #198754);
+    border-color: var(--bs-success, #198754);
+}
+.btn-success:hover, .btn-success:focus, .btn-success:focus-visible, .btn-success:active {
+    background-color: var(--bs-success, #198754); color: #fff;
+}
+
+.btn-info {
+    background-color: transparent;
+    color: var(--bs-info, #0dcaf0);
+    border-color: var(--bs-info, #0dcaf0);
+}
+.btn-info:hover, .btn-info:focus, .btn-info:focus-visible, .btn-info:active {
+    background-color: var(--bs-info, #0dcaf0); color: #000;
+}
+
+.btn-warning {
+    background-color: transparent;
+    color: #8a6d00;
+    border-color: var(--bs-warning, #ffc107);
+}
+.btn-warning:hover, .btn-warning:focus, .btn-warning:focus-visible, .btn-warning:active {
+    background-color: var(--bs-warning, #ffc107); color: #000;
+}
+
+.btn-dark {
+    background-color: transparent;
+    color: #212529;
+    border-color: #212529;
+}
+.btn-dark:hover, .btn-dark:focus, .btn-dark:focus-visible, .btn-dark:active {
+    background-color: #212529; color: #fff;
+}
+
+/* ── Cancel buttons — red bordered, solid red on focus/hover ──────
+   Targets cover the three places "Cancel" shows up in this codebase:
+     • Bootstrap modal dismiss buttons (the most common Cancel)
+     • btn-secondary used as a neutral Cancel (form Cancel, etc.)
+     • Explicit btn-outline-danger / btn-danger
+   This intentionally overrides the Bootstrap btn-secondary default —
+   the codebase only uses btn-secondary as a Cancel-equivalent, so
+   making it red across the board is the cleanest "all Cancels" rule. */
+.btn-secondary,
+.btn[data-bs-dismiss="modal"],
+.btn-outline-danger,
+.btn-danger {
+    background-color: transparent;
+    color: var(--bs-danger, #dc3545);
+    border-color: var(--bs-danger, #dc3545);
+}
+
+.btn-secondary:hover,            .btn-secondary:focus,            .btn-secondary:focus-visible,            .btn-secondary:active,
+.btn[data-bs-dismiss="modal"]:hover,
+.btn[data-bs-dismiss="modal"]:focus,
+.btn[data-bs-dismiss="modal"]:focus-visible,
+.btn[data-bs-dismiss="modal"]:active,
+.btn-outline-danger:hover,       .btn-outline-danger:focus,       .btn-outline-danger:focus-visible,       .btn-outline-danger:active,
+.btn-danger:hover,               .btn-danger:focus,               .btn-danger:focus-visible,               .btn-danger:active {
+    background-color: var(--bs-danger, #dc3545);
+    border-color: var(--bs-danger, #dc3545);
+    color: #fff;
+}
 
 /* Landing hero */
 .gm-hero {
@@ -592,6 +668,9 @@ body {
 
 .gm-module-bar--warehouse { background-color: #d4a017; }
 .gm-module-bar--seed      { background-color: #2e7d32; }
+/* Muted ochre/wheat tan — complements the forest-green nav (--brand-primary #2f5d3a)
+   and is distinct from every other gm-module-bar variant. */
+.gm-module-bar--weightsheets { background-color: #9a7a3b; }
 .gm-module-bar--admin     { background-color: #1565c0; }
 .gm-module-bar--intake    { background-color: #8B5E3C; }
 .gm-module-bar--transfer  { background-color: #16a34a; }
@@ -635,6 +714,7 @@ a.gm-module-bar--link:hover {
 .gm-tile--load       { border-left: 6px solid #9333ea; --tile-accent: #9333ea; --tile-accent-glow: rgba(147,51,234,.35); }
 .gm-tile--admin     { border-left: 6px solid #1565c0; --tile-accent: #1565c0; --tile-accent-glow: rgba(21,101,192,.35); }
 .gm-tile--system    { border-left: 6px solid #757575; --tile-accent: #757575; --tile-accent-glow: rgba(117,117,117,.35); }
+.gm-tile--cancel    { border-left: 6px solid #dc3545; --tile-accent: #dc3545; --tile-accent-glow: rgba(220,53,69,.35); }
 .gm-tile--reports   { border-left: 6px solid #5e548e; --tile-accent: #5e548e; --tile-accent-glow: rgba(94,84,142,.35); }
 .gm-tile--remote    { border-left: 6px solid #00838f; --tile-accent: #00838f; --tile-accent-glow: rgba(0,131,143,.35); }
 

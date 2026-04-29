@@ -21,6 +21,9 @@ public class LocationContextApiController : ControllerBase
 
     /// <summary>
     /// Returns active locations for the location selector dropdown.
+    /// Scoped to locations that have a LocationSequenceMapping for the SQL Server
+    /// this deployment is connected to (resolved live from @@SERVERNAME → system.Servers.ServerName)
+    /// so we don't show other servers' locations.
     /// Filters by enabled modules: Warehouse-only shows UseForWarehouse locations,
     /// Seed-only shows UseForSeed, both shows either. Admin/Reporting modes show all.
     /// AllowedLocationIds further restricts the list when non-empty.
@@ -28,9 +31,26 @@ public class LocationContextApiController : ControllerBase
     [HttpGet("available")]
     public async Task<IActionResult> GetAvailable()
     {
+        // Resolve the current server's ServerId from @@SERVERNAME → system.Servers.
+        // Fetched per-request so startup-cache misses don't leave the dropdown empty.
+        var serverName = await _db.Database
+            .SqlQueryRaw<string>("SELECT CAST(@@SERVERNAME AS nvarchar(128)) AS [Value]")
+            .FirstOrDefaultAsync();
+
+        int? currentServerId = null;
+        if (!string.IsNullOrWhiteSpace(serverName))
+        {
+            currentServerId = await _db.Servers
+                .AsNoTracking()
+                .Where(s => s.ServerName == serverName)
+                .Select(s => (int?)s.ServerId)
+                .FirstOrDefaultAsync();
+        }
+
         var query = _db.Locations
             .AsNoTracking()
-            .Where(l => l.IsActive);
+            .Where(l => l.IsActive)
+            .Where(l => l.LocationSequenceMappings.Any(m => m.ServerId == currentServerId));
 
         // If any admin or reporting module is on, show all locations (no capability filter)
         bool isAdminOrReporting = _modules.DatabaseAdmin || _modules.WarehouseAdmin

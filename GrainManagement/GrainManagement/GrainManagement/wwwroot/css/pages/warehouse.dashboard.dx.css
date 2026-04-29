@@ -102,33 +102,27 @@
     /* full width — no max-width constraint */
 }
 
-/* ── Weight-sheet row coloring by type ────────────────────── */
+/* ── Weight-sheet row coloring by lot type ────────────────── */
 
-/* Grower Delivery rows — brown tint */
-.gm-ws-row--delivery {
-    background-color: rgba(139, 94, 60, 0.08) !important;
-}
-.gm-ws-row--delivery.gm-ws-row--alt {
-    background-color: rgba(139, 94, 60, 0.16) !important;
+/* Seed rows — translucent seed green (matches gm-tile--seed #2e7d32) */
+.gm-ws-row--seed > td {
+    background-color: rgba(46, 125, 50, 0.14) !important;
 }
 
-/* Transfer rows — green tint (future) */
-.gm-ws-row--transfer {
-    background-color: rgba(22, 163, 74, 0.08) !important;
-}
-.gm-ws-row--transfer.gm-ws-row--alt {
-    background-color: rgba(22, 163, 74, 0.14) !important;
+/* Warehouse rows — translucent warehouse yellow (matches gm-tile--warehouse #d4a017) */
+.gm-ws-row--warehouse > td {
+    background-color: rgba(212, 160, 23, 0.14) !important;
 }
 
-/* Row hover highlight */
+/* Row hover — slightly stronger tint */
 #wdOpenWsGrid .dx-data-row:hover > td {
     background-color: rgba(0, 0, 0, 0.08) !important;
 }
-#wdOpenWsGrid .gm-ws-row--delivery:hover > td {
-    background-color: rgba(139, 94, 60, 0.22) !important;
+#wdOpenWsGrid .gm-ws-row--seed:hover > td {
+    background-color: rgba(46, 125, 50, 0.26) !important;
 }
-#wdOpenWsGrid .gm-ws-row--transfer:hover > td {
-    background-color: rgba(22, 163, 74, 0.22) !important;
+#wdOpenWsGrid .gm-ws-row--warehouse:hover > td {
+    background-color: rgba(212, 160, 23, 0.26) !important;
 }
 
 .gm-wd-panel__title {

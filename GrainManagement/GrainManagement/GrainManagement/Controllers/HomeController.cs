@@ -1,3 +1,5 @@
+using GrainManagement.Services;
+using GrainManagement.Services.Warehouse;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -28,15 +30,34 @@ namespace GrainManagement.Controllers
 
 
         private readonly ICurrentUser _me;
+        private readonly IModuleContext _modules;
+        private readonly IWarehouseDashboardService _dash;
+        private readonly ILocationContext _locationContext;
 
-        public HomeController(ICurrentUser me)
+        public HomeController(
+            ICurrentUser me,
+            IModuleContext modules,
+            IWarehouseDashboardService dash,
+            ILocationContext locationContext)
         {
             _me = me;
+            _modules = modules;
+            _dash = dash;
+            _locationContext = locationContext;
         }
 
         public IActionResult Index()
         {
-            // Landing page (Warehouse / Seed / Reports)
+            // On Remote deployments the root URL renders the WeightSheets dashboard
+            // directly. The legacy tiles landing page is moved to /RemoteAdmin
+            // (PIN-gated, requires PrivilegeId=7).
+            if (_modules.IsRemote)
+            {
+                var vm = _dash.GetDashboard(locationId: _locationContext.LocationId);
+                return View("~/Views/Warehouse/Index.cshtml", vm);
+            }
+
+            // Central / Reporting deployments keep the original landing page.
             return View();
         }
 

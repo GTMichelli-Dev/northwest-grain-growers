@@ -61,7 +61,7 @@ private XRLabel xrSplitName;
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(IntakeWeightSheetReport));
-            DevExpress.XtraPrinting.BarCode.QRCodeGS1Generator qrCodeGS1Generator2 = new DevExpress.XtraPrinting.BarCode.QRCodeGS1Generator();
+            DevExpress.XtraPrinting.BarCode.QRCodeGS1Generator qrCodeGS1Generator1 = new DevExpress.XtraPrinting.BarCode.QRCodeGS1Generator();
             this.topMarginBand1 = new DevExpress.XtraReports.UI.TopMarginBand();
             this.bottomMarginBand1 = new DevExpress.XtraReports.UI.BottomMarginBand();
             this.reportHeaderBand1 = new DevExpress.XtraReports.UI.ReportHeaderBand();
@@ -517,7 +517,7 @@ private XRLabel xrSplitName;
             this.xrLabel2.SizeF = new System.Drawing.SizeF(367.7084F, 20F);
             this.xrLabel2.StylePriority.UseFont = false;
             this.xrLabel2.StylePriority.UseTextAlignment = false;
-            this.xrLabel2.Text = "Location:[Location] - [LocationId]";
+            this.xrLabel2.Text = "[Location] - [LocationId]";
             this.xrLabel2.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter;
             // 
             // xrPictureBox1
@@ -640,7 +640,7 @@ private XRLabel xrSplitName;
             this.capBol.LocationFloat = new DevExpress.Utils.PointFloat(0F, 297.5417F);
             this.capBol.Name = "capBol";
             this.capBol.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.capBol.SizeF = new System.Drawing.SizeF(78.12502F, 18F);
+            this.capBol.SizeF = new System.Drawing.SizeF(73F, 18F);
             this.capBol.StylePriority.UseFont = false;
             this.capBol.Text = "BOL Type:";
             this.capBol.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
@@ -650,7 +650,7 @@ private XRLabel xrSplitName;
             this.xrBolType.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[RateType]")});
             this.xrBolType.Font = new DevExpress.Drawing.DXFont("Arial", 12F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrBolType.LocationFloat = new DevExpress.Utils.PointFloat(80.11897F, 297.5417F);
+            this.xrBolType.LocationFloat = new DevExpress.Utils.PointFloat(73.11897F, 297.5417F);
             this.xrBolType.Name = "xrBolType";
             this.xrBolType.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.xrBolType.SizeF = new System.Drawing.SizeF(243.25F, 18F);
@@ -665,7 +665,7 @@ private XRLabel xrSplitName;
             this.capHauler.LocationFloat = new DevExpress.Utils.PointFloat(336.517F, 297.5417F);
             this.capHauler.Name = "capHauler";
             this.capHauler.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.capHauler.SizeF = new System.Drawing.SizeF(58.04819F, 18F);
+            this.capHauler.SizeF = new System.Drawing.SizeF(49F, 18F);
             this.capHauler.StylePriority.UseFont = false;
             this.capHauler.Text = "Hauler:";
             this.capHauler.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
@@ -676,10 +676,10 @@ private XRLabel xrSplitName;
             this.xrHauler.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[HaulerName]")});
             this.xrHauler.Font = new DevExpress.Drawing.DXFont("Arial", 12F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrHauler.LocationFloat = new DevExpress.Utils.PointFloat(403.8545F, 297.5417F);
+            this.xrHauler.LocationFloat = new DevExpress.Utils.PointFloat(385.517F, 297.5417F);
             this.xrHauler.Name = "xrHauler";
             this.xrHauler.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrHauler.SizeF = new System.Drawing.SizeF(330.8183F, 18F);
+            this.xrHauler.SizeF = new System.Drawing.SizeF(356.1558F, 18F);
             this.xrHauler.StylePriority.UseFont = false;
             this.xrHauler.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
             this.xrHauler.WordWrap = false;
@@ -841,7 +841,7 @@ private XRLabel xrSplitName;
             this.hdrLoadId.StylePriority.UsePadding = false;
             this.hdrLoadId.Text = "Load ID";
             this.hdrLoadId.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            this.hdrLoadId.Weight = 88.908529381758186D;
+            this.hdrLoadId.Weight = 109.51831153237285D;
             // 
             // hdrTruckId
             // 
@@ -853,7 +853,7 @@ private XRLabel xrSplitName;
             this.hdrTruckId.StylePriority.UseFont = false;
             this.hdrTruckId.Text = "Trk ID";
             this.hdrTruckId.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            this.hdrTruckId.Weight = 71.320040138924341D;
+            this.hdrTruckId.Weight = 58.632869782221455D;
             // 
             // hdrBOL
             // 
@@ -865,7 +865,7 @@ private XRLabel xrSplitName;
             this.hdrBOL.StylePriority.UseFont = false;
             this.hdrBOL.Text = "BOL";
             this.hdrBOL.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            this.hdrBOL.Weight = 129.24807030844704D;
+            this.hdrBOL.Weight = 121.32545851453526D;
             // 
             // hdrTimeIn
             // 
@@ -986,7 +986,7 @@ private XRLabel xrSplitName;
             this.xrBarCode1.Padding = new DevExpress.XtraPrinting.PaddingInfo(10F, 10F, 0F, 0F, 100F);
             this.xrBarCode1.SizeF = new System.Drawing.SizeF(106F, 81.83306F);
             this.xrBarCode1.StylePriority.UseTextAlignment = false;
-            this.xrBarCode1.Symbology = qrCodeGS1Generator2;
+            this.xrBarCode1.Symbology = qrCodeGS1Generator1;
             this.xrBarCode1.TextAlignment = DevExpress.XtraPrinting.TextAlignment.BottomRight;
             // 
             // xrTotalLoads
@@ -1076,13 +1076,13 @@ private XRLabel xrSplitName;
             this.detLoadId.BorderWidth = 0.5F;
             this.detLoadId.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[LoadNumber]")});
-            this.detLoadId.Font = new DevExpress.Drawing.DXFont("Arial", 10F);
+            this.detLoadId.Font = new DevExpress.Drawing.DXFont("Arial", 8F);
             this.detLoadId.Name = "detLoadId";
             this.detLoadId.Padding = new DevExpress.XtraPrinting.PaddingInfo(10F, 2F, 0F, 0F, 100F);
             this.detLoadId.StylePriority.UseFont = false;
             this.detLoadId.StylePriority.UsePadding = false;
             this.detLoadId.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            this.detLoadId.Weight = 102.65376359387679D;
+            this.detLoadId.Weight = 126.44975421650352D;
             this.detLoadId.WordWrap = false;
             // 
             // detTruckId
@@ -1097,7 +1097,7 @@ private XRLabel xrSplitName;
             this.detTruckId.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.detTruckId.StylePriority.UseFont = false;
             this.detTruckId.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            this.detTruckId.Weight = 82.3460109416987D;
+            this.detTruckId.Weight = 67.69747065886682D;
             this.detTruckId.WordWrap = false;
             // 
             // detBOL
@@ -1112,7 +1112,7 @@ private XRLabel xrSplitName;
             this.detBOL.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.detBOL.StylePriority.UseFont = false;
             this.detBOL.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            this.detBOL.Weight = 149.22971744581108D;
+            this.detBOL.Weight = 140.08226710601622D;
             this.detBOL.WordWrap = false;
             // 
             // detTimeIn
@@ -1246,7 +1246,7 @@ private XRLabel xrSplitName;
             this.detNet.BorderWidth = 0.5F;
             this.detNet.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[Net]")});
-            this.detNet.Font = new DevExpress.Drawing.DXFont("Arial", 12F, DevExpress.Drawing.DXFontStyle.Bold);
+            this.detNet.Font = new DevExpress.Drawing.DXFont("Arial", 12F);
             this.detNet.Name = "detNet";
             this.detNet.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.detNet.StylePriority.UseBorders = false;

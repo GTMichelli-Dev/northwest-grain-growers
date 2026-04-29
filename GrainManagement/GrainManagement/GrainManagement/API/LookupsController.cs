@@ -24,12 +24,21 @@ namespace GrainManagement.API
         [HttpGet("ProducerAccounts")]
         public async Task<IActionResult> ProducerAccounts(CancellationToken ct)
         {
-            var data = await _ctx.Accounts
+            // Projection is done client-side: EF translates `long + string` to
+            // CAST(... AS nvarchar(max)), which forces a huge memory grant for
+            // the ORDER BY sort and stalls on RESOURCE_SEMAPHORE on SQL Express.
+            var rows = await _ctx.Accounts
                 .AsNoTracking()
                 .Where(a => a.IsProducer == true)
                 .OrderBy(a => a.EntityName)
-                .Select(a => new { AccountId = a.AccountId, Name = a.LookupName + " (" + a.As400AccountId + ")" })
+                .Select(a => new { a.AccountId, a.LookupName, a.As400AccountId })
                 .ToListAsync(ct);
+
+            var data = rows.Select(a => new
+            {
+                a.AccountId,
+                Name = $"{a.LookupName} ({a.As400AccountId})"
+            });
 
             return Ok(data);
         }
@@ -60,10 +69,16 @@ namespace GrainManagement.API
             if (allowedAccountIds.Count > 0)
                 query = query.Where(a => allowedAccountIds.Contains(a.AccountId));
 
-            var data = await query
+            var rows = await query
                 .OrderBy(a => a.EntityName)
-                .Select(a => new { a.AccountId, Name = a.LookupName + " (" + a.As400AccountId + ")" })
+                .Select(a => new { a.AccountId, a.LookupName, a.As400AccountId })
                 .ToListAsync(ct);
+
+            var data = rows.Select(a => new
+            {
+                a.AccountId,
+                Name = $"{a.LookupName} ({a.As400AccountId})"
+            });
 
             return Ok(data);
         }
@@ -89,21 +104,46 @@ namespace GrainManagement.API
 
         // GET /api/Lookups/SeedItems
         // Active, visible items with the SEED trait (TraitId=31).
+        // Excludes Products whose Category is a non-seed category — Chemicals
+        // (CHEM), Fertilizers (FERT), Packaging (PACK), and Services (SERVICE).
+        // Those categories contain treatment/input products that happen to be
+        // tagged SYSTEM_USAGE=SEED in the data (e.g. ANCHOR, AMPLIFYR, CONDITIONER).
+        // Each item carries its other traits keyed by TraitTypeId so the client
+        // can render filter dropdowns and the trait grid without extra round-trips.
         [HttpGet("SeedItems")]
         public async Task<IActionResult> SeedItems(CancellationToken ct)
         {
-            var data = await _ctx.Items
+            var nonSeedCategoryCodes = new[] { "CHEM", "FERT", "PACK", "SERVICE" };
+
+            var rows = await _ctx.Items
                 .AsNoTracking()
-                .Where(i => i.IsActive == true && i.Product.IsHidden != true && i.ItemTraits.FirstOrDefault(x => x.TraitId == 31) != null)
-                .OrderByDescending(p => p.Description)
+                .Where(i => i.IsActive == true
+                            && i.Product.IsHidden != true
+                            && i.ItemTraits.Any(x => x.TraitId == 31)
+                            && (i.Product.Category == null
+                                || !nonSeedCategoryCodes.Contains(i.Product.Category.CategoryCode)))
+                .OrderBy(p => p.Description)
                 .Select(p => new
                 {
-                    ItemId = p.ItemId,
-                    Name = p.Description
+                    ItemId      = p.ItemId,
+                    Name        = p.Description,
+                    ProductName = p.Product.Description,
+                    Traits = p.ItemTraits
+                        .Where(it => it.Trait != null && it.Trait.TraitTypeId != 12) // skip SYSTEM_USAGE itself
+                        .Select(it => new
+                        {
+                            it.Trait.TraitTypeId,
+                            TypeCode    = it.Trait.TraitType.TypeCode,
+                            TypeName    = it.Trait.TraitType.Description,
+                            it.TraitId,
+                            TraitCode   = it.Trait.TraitCode,
+                            TraitName   = it.Trait.Description,
+                        })
+                        .ToList()
                 })
                 .ToListAsync(ct);
 
-            return Ok(data);
+            return Ok(rows);
         }
 
         // GET /api/Lookups/Lots?productId=

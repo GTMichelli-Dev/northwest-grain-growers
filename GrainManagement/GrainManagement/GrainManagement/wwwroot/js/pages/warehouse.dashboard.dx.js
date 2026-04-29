@@ -18,11 +18,10 @@
         var $actions = $("#wdActions");
 
         var buttons = [
-            { text: "New Weight Sheet", icon: "doc",     href: "/WeightSheets/LoadType" },
-            { text: "Receive Transfer", icon: "download", href: "/WeightSheets/ReceiveTransfer" },
-            { text: "F.O.B Load",       icon: "money",   href: "/WeightSheets/ShipLoad" },
-            { text: "End Of Day",       icon: "check",   href: "/WeightSheets/EndOfDay" },
-            { text: "Lots",             icon: "folder",  href: "/GrowerDelivery/WeightSheetLots" }
+            { text: "New Weight Sheet", icon: "doc",    href: "/WeightSheets/LoadType" },
+            { text: "F.O.B Load",       icon: "export", href: "/WeightSheets/ShipLoad" },
+            { text: "End Of Day",       icon: "check",  href: "/WeightSheets/EndOfDay" },
+            { text: "Lots",             icon: "folder", href: "/GrowerDelivery/WeightSheetLots" }
         ];
 
         buttons.forEach(function (b) {
@@ -52,17 +51,19 @@
             showRowLines: true,
             columnAutoWidth: true,
             wordWrapEnabled: true,
-            noDataText: "No open weight sheets",
+            noDataText: "No Weight Sheets",
             paging: { enabled: false },
             sorting: { mode: "single" },
             columns: [
                 {
-                    dataField: "WeightSheetId",
+                    dataField: "As400Id",
                     caption: "WS #",
                     alignment: "center",
                     sortOrder: "desc",
                     calculateCellValue: function (row) {
-                        return formatId(row.WeightSheetId);
+                        // Prefer the AS400 / Agvantage id when present;
+                        // fall back to the formatted internal WeightSheetId.
+                        return row.As400Id ? String(row.As400Id) : formatId(row.WeightSheetId);
                     }
                 },
                 {
@@ -127,15 +128,14 @@
                 if (e.rowType === "data") {
                     e.rowElement.css("cursor", "pointer");
 
-                    var type = (e.data.WeightSheetType || "").toLowerCase();
-                    var isAlt = e.rowIndex % 2 === 1;
-
-                    if (type === "delivery") {
-                        e.rowElement.addClass("gm-ws-row--delivery");
-                        if (isAlt) e.rowElement.addClass("gm-ws-row--alt");
-                    } else if (type === "transfer") {
-                        e.rowElement.addClass("gm-ws-row--transfer");
-                        if (isAlt) e.rowElement.addClass("gm-ws-row--alt");
+                    // Color rows by LotType:
+                    //   0 = Seed       → translucent seed green
+                    //   1 = Warehouse  → translucent grower-delivery brown
+                    var lotType = e.data.LotType;
+                    if (lotType === 0) {
+                        e.rowElement.addClass("gm-ws-row--seed");
+                    } else if (lotType === 1) {
+                        e.rowElement.addClass("gm-ws-row--warehouse");
                     }
                 }
             }

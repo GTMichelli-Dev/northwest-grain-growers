@@ -65,7 +65,7 @@ public class IntakeWeightSheetLoadRow
     public int RowNumber { get; set; }
     public string WeightSheetId { get; set; } = "";
     public string As400Id { get; set; } = "";
-    /// <summary>Last 6 digits of the TransactionId (e.g. "000001").</summary>
+    /// <summary>Full Inventory.InventoryTransactionDetails.TransactionId.</summary>
     public string LoadNumber { get; set; } = "";
     public string TruckId { get; set; } = "";
     public string BOL { get; set; } = "";

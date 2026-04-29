@@ -379,16 +379,10 @@
                     },
                 },
                 {
-                    dataField: 'LotId',
+                    dataField: 'As400Id',
                     caption: 'Lot ID',
                     sortOrder: 'desc',
                     sortIndex: 0,
-                    customizeText: function (cellInfo) { return formatLotId(cellInfo.value); },
-                },
-                {
-                    dataField: 'As400Id',
-                    caption: 'Agvantage Id',
-                    width: 110,
                 },
                 {
                     dataField: 'SplitGroupId',
@@ -435,7 +429,7 @@
                 },
                 {
                     caption: '',
-                    width: 240,
+                    width: 170,
                     fixed: true,
                     fixedPosition: 'right',
                     allowSorting: false,
@@ -443,43 +437,26 @@
                     cellTemplate: function (container, options) {
                         var lot = options.data;
                         var isOpen = lot.IsOpen;
-                        var hasClosedWs = lot.HasClosedWeightSheet;
-
-                        var createdToday = false;
-                        if (lot.CreatedAt) {
-                            var parts = lot.CreatedAt.split('/');
-                            if (parts.length === 3) {
-                                var now = new Date();
-                                var todayStr = String(now.getMonth() + 1).padStart(2, '0') + '/' +
-                                               String(now.getDate()).padStart(2, '0') + '/' + now.getFullYear();
-                                createdToday = (lot.CreatedAt === todayStr);
-                            }
-                        }
-                        var canFullEdit = (isOpen && !hasClosedWs) || createdToday;
 
                         var $wrap = $('<div>').addClass('gm-wsl-grid-actions');
 
+                        // Action buttons stop propagation so the row-click navigation
+                        // (which opens the editor) does not fire when these are clicked.
                         $('<button>')
-                            .addClass('btn btn-sm btn-outline-primary')
-                            .text(canFullEdit ? 'Edit' : 'Edit Notes')
-                            .on('click', function () {
-                                window.location.href = '/GrowerDelivery/EditWeightSheetLot?lotId=' + lot.LotId;
-                            })
-                            .appendTo($wrap);
-
-                        $('<button>')
-                            .addClass('btn btn-sm ' + (isOpen ? 'btn-outline-danger' : 'btn-outline-success'))
+                            .addClass('btn btn-sm gm-wsl-row-action ' + (isOpen ? 'btn-outline-danger' : 'btn-outline-success'))
                             .text(isOpen ? 'Close' : 'Re-open')
-                            .on('click', function () {
+                            .on('click', function (e) {
+                                e.stopPropagation();
                                 toggleLot(lot.LotId, isOpen ? 'close' : 'open');
                             })
                             .appendTo($wrap);
 
                         $('<button>')
-                            .addClass('btn btn-sm btn-outline-secondary')
+                            .addClass('btn btn-sm btn-outline-secondary gm-wsl-row-action')
                             .html('<i class="dx-icon dx-icon-print"></i> Label')
                             .attr('title', 'Print lot label')
-                            .on('click', function () {
+                            .on('click', function (e) {
+                                e.stopPropagation();
                                 printLotLabel(lot.LotId);
                             })
                             .appendTo($wrap);
@@ -488,11 +465,21 @@
                     },
                 },
             ],
+            onRowClick: function (e) {
+                if (e.rowType !== 'data' || !e.data) return;
+                // Ignore clicks that originated inside an action button — those
+                // have their own handlers that stopPropagation, but guard against
+                // the rare case where the click lands on an icon child.
+                var $target = $(e.event && e.event.target);
+                if ($target.closest('.gm-wsl-row-action').length) return;
+                window.location.href = '/GrowerDelivery/EditWeightSheetLot?lotId=' + e.data.LotId;
+            },
             onRowPrepared: function (e) {
                 if (e.rowType === 'data') {
                     if (!e.data.IsOpen) {
                         $(e.rowElement).addClass('gm-wsl-row--closed');
                     }
+                    $(e.rowElement).css('cursor', 'pointer');
                     var borderColor = e.data.LotType === 1 ? '#d4a017' : '#2e7d32';
                     $(e.rowElement).css('border-left', '4px solid ' + borderColor);
                     var bgColor = e.data.LotType === 1 ? 'rgba(212,160,23,0.12)' : 'rgba(46,125,50,0.12)';
@@ -1000,7 +987,16 @@
     // ── Create form ───────────────────────────────────────────────────────────
 
     async function initAccountPicker() {
+        var $accountHost = $(SEL.account);
+
         if (!_accountsCache) {
+            // Accounts can be slow to load on installations with many producers —
+            // show a spinner in place of the dropdown while the fetch is in flight.
+            var $spinner = $('<div class="d-flex align-items-center" style="gap:8px;height:34px;padding:6px 8px;color:#6c757d;font-size:14px;border:1px solid #ced4da;border-radius:0.375rem;background:#f8f9fa;"></div>');
+            $('<div></div>').appendTo($spinner).dxLoadIndicator({ visible: true, height: 18, width: 18 });
+            $spinner.append('<span>Loading accounts\u2026</span>');
+            $accountHost.empty().append($spinner);
+
             try { _accountsCache = await $.getJSON('/api/Lookups/ProducerAccounts'); }
             catch (ex) {
                 console.warn('[WeightSheetLots] Account load failed', ex);
@@ -1009,9 +1005,11 @@
             (_accountsCache || []).sort(function (a, b) {
                 return (a.Name || '').localeCompare(b.Name || '', undefined, { sensitivity: 'base' });
             });
+
+            $accountHost.empty();
         }
 
-        $(SEL.account).dxSelectBox({
+        $accountHost.dxSelectBox({
             dataSource:          _accountsCache,
             valueExpr:           'AccountId',
             displayExpr:         'Name',
@@ -1928,8 +1926,8 @@
                     '<h5>Select Lot Type</h5>' +
                     '<p class="text-muted small mb-2">What type of lot would you like to create?</p>' +
                     '<div class="d-flex gap-2 mt-3">' +
-                        '<button type="button" class="btn btn-success gm-lottype-seed flex-fill" style="font-weight:700;padding:12px;">Seed</button>' +
-                        '<button type="button" class="btn btn-warning gm-lottype-warehouse flex-fill" style="font-weight:700;padding:12px;">Warehouse</button>' +
+                        '<button type="button" class="btn btn-success gm-lottype-seed" style="flex:1 1 0;font-weight:700;padding:12px;">Seed</button>' +
+                        '<button type="button" class="btn btn-warning gm-lottype-warehouse" style="flex:1 1 0;font-weight:700;padding:12px;">Warehouse</button>' +
                     '</div>' +
                     '<div class="mt-2 text-center">' +
                         '<button type="button" class="btn btn-outline-secondary btn-sm gm-lottype-cancel">Cancel</button>' +

@@ -78,6 +78,14 @@
                 <div>
                     <span id="system-info" style="font-size: 0.85rem; color: white;">@SystemInfo.ToDisplayString()</span>
                 </div>
+
+                @if (Modules.IsRemote)
+                {
+                    <a href="/RemoteAdmin" class="ms-2 text-light text-decoration-none" title="Remote Admin (PIN required)" aria-label="Remote Admin"
+                       style="font-size:1.05rem;line-height:1;padding:0.25rem 0.5rem;border:1px solid rgba(255,255,255,0.4);border-radius:0.25rem;">
+                        &#9881;
+                    </a>
+                }
             </div>
 
             <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar" aria-expanded="false" aria-controls="navbar">
@@ -86,7 +94,23 @@
 
             <div id="navbar" class="collapse navbar-collapse">
                 <div class="d-flex ms-auto align-items-center">
-                    @if (User.Identity?.IsAuthenticated == true)
+                    @if (Modules.IsRemote)
+                    {
+                        // On Remote we don't use the regular Microsoft Identity login;
+                        // access is gated per-action by PIN (see RemoteAdminController).
+                        // Show a Logout button only when the Remote Admin PIN cookie is set.
+                        if (Context.Request.Cookies.ContainsKey("GrainMgmt_RemoteAdminPin"))
+                        {
+                            var raUser = Context.Request.Cookies.TryGetValue("GrainMgmt_RemoteAdminUser", out var raRaw)
+                                ? Uri.UnescapeDataString(raRaw)
+                                : "";
+                            <span class="navbar-text text-light me-2" style="font-size:0.9rem;">
+                                Remote Administrator@(string.IsNullOrWhiteSpace(raUser) ? "" : ": " + raUser)
+                            </span>
+                            <a href="/RemoteAdmin/Logout" class="btn btn-outline-light btn-sm">Logout</a>
+                        }
+                    }
+                    else if (User.Identity?.IsAuthenticated == true)
                     {
                         <span class="navbar-text text-light me-2">
                             @User.Identity.Name

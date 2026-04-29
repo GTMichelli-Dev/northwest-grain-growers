@@ -9,7 +9,7 @@
 
 <link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
 
-<a href="/WeightSheets/LoadType" class="gm-module-bar @barClass gm-module-bar--link" title="Back to New WeightSheet">
+<a id="nwsBackBar" href="/WeightSheets/LoadType" class="gm-module-bar @barClass gm-module-bar--link" title="Back to New WeightSheet">
     <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
     <span class="gm-module-bar__icon gm-icon @iconClass" aria-hidden="true"></span>
     <span class="gm-module-bar__label">NEW @lotTypeLabel WEIGHT SHEET</span>
@@ -45,90 +45,6 @@
             </div>
         </div>
 
-        <!-- ── Create lot form ─────────────────────────────────────────── -->
-        <div id="nwsCreateLotPanel" hidden>
-            <div class="gm-gd-section">
-
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <div class="gm-gd-section__title" style="margin-bottom:0" id="nwsLotPanelTitle">New @lotTypeLabel Weight Sheet Lot</div>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="nwsCancelCreateLotBtn">
-                        &larr; Back to Lots
-                    </button>
-                </div>
-
-                <div class="gm-gd-fields gm-gd-fields--2col">
-
-                    <div class="gm-gd-field gm-gd-field--full">
-                        <div style="display:grid;grid-template-columns:0.6fr 110px 1fr;gap:8px;">
-                            <div style="display:flex;flex-direction:column;gap:4px;">
-                                <label class="form-label">Item <span class="text-danger">*</span></label>
-                                <div id="nwsItem"></div>
-                            </div>
-                            <div style="display:flex;flex-direction:column;gap:4px;">
-                                <label class="form-label">SG#</label>
-                                <input type="text" class="form-control" id="nwsSgShortcut"
-                                       placeholder="Split #" style="text-align:center;height:34px;padding:6px 8px;font-size:14px;" />
-                            </div>
-                            <div style="display:flex;flex-direction:column;gap:4px;">
-                                <label class="form-label">Account <span class="text-danger">*</span></label>
-                                <div id="nwsAccount"></div>
-                            </div>
-                        </div>
-                        <div id="nwsSgError" class="text-danger small mt-1" hidden></div>
-                    </div>
-
-                    <div class="gm-gd-field gm-gd-field--full">
-                        <label class="form-label">Split Group <span class="text-danger">*</span></label>
-                        <div id="nwsSplitGroup"></div>
-                        <div id="nwsSplitGroupWarning" class="text-danger small mt-1" hidden>No split group set up for this account.</div>
-                        <div id="nwsSplitDesc" class="text-muted small mt-1" hidden></div>
-                    </div>
-
-                    <div class="gm-gd-field">
-                        <label class="form-label">State <span class="text-danger">*</span></label>
-                        <div id="nwsState"></div>
-                    </div>
-                    <div class="gm-gd-field">
-                        <label class="form-label">County <span class="text-danger">*</span></label>
-                        <div id="nwsCounty"></div>
-                    </div>
-
-                    <div class="gm-gd-field gm-gd-field--full">
-                        <label class="form-label">Lot Description</label>
-                        <input type="text" class="form-control" id="nwsLotDesc"
-                               readonly placeholder="Auto-filled from split group" />
-                    </div>
-
-                    <div class="gm-gd-field">
-                        <label class="form-label">Landlord Name</label>
-                        <input type="text" class="form-control" id="nwsLandlord"
-                               placeholder="Optional landlord name…" />
-                    </div>
-                    <div class="gm-gd-field">
-                        <label class="form-label">Farm Number</label>
-                        <input type="text" class="form-control" id="nwsFarmNumber"
-                               placeholder="Optional farm number…" />
-                    </div>
-
-                    <div class="gm-gd-field gm-gd-field--full">
-                        <label class="form-label">Notes</label>
-                        <textarea class="form-control" id="nwsNotes" rows="2"
-                                  placeholder="Optional notes…"></textarea>
-                    </div>
-
-                </div>
-
-                <div id="nwsCreateLotError" class="text-danger small mt-2" hidden></div>
-
-                <div class="mt-3">
-                    <button type="button" class="btn btn-primary" id="nwsSaveLotBtn">
-                        Create Lot
-                    </button>
-                </div>
-
-            </div>
-        </div>
-
     </div>
 
     <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -159,6 +75,13 @@
                 <div class="mt-1">
                     <span class="text-muted">Description</span> <span id="nwsConfirmLotDesc" class="fw-semibold"></span>
                 </div>
+            </div>
+
+            <!-- Cross-variety warning (move-load round-trip only) -->
+            <div id="nwsMoveVarietyWarn" class="alert alert-danger" style="font-size:0.9rem;" hidden>
+                <i class="dx-icon dx-icon-warning" style="margin-right:4px;"></i>
+                <strong>Warning:</strong>
+                <span id="nwsMoveVarietyWarnText"></span>
             </div>
 
             <!-- ── BOL Type (required, highly visible) ── -->

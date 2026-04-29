@@ -54,6 +54,28 @@ public sealed class AuditTrailApiController : ControllerBase
             })
             .ToListAsync(ct);
 
-        return Ok(data);
+        // The CreatedAt column is datetime2 (no timezone). EF returns DateTime
+        // with Kind=Unspecified, which JSON.NET serializes without a 'Z'/offset
+        // suffix — browsers then treat it as local time and never convert.
+        // Tag each row's CreatedAt as UTC so the JSON carries 'Z' and the
+        // client-side dxDataGrid `dataType: 'datetime'` renders in the user's
+        // local timezone.
+        var result = data.Select(a => new
+        {
+            a.AuditId,
+            a.UserName,
+            CreatedAt = DateTime.SpecifyKind(a.CreatedAt, DateTimeKind.Utc),
+            a.LocationId,
+            a.LocationName,
+            a.ServerId,
+            a.ServerName,
+            a.TableName,
+            a.Action,
+            a.KeyJson,
+            a.OldJson,
+            a.NewJson,
+        });
+
+        return Ok(result);
     }
 }

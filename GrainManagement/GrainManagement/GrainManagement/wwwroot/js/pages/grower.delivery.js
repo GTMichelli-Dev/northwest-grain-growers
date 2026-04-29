@@ -15,6 +15,7 @@
         form:           '#gmGdForm',
         alert:          '#gmGdAlert',
         submit:         '#gmGdSubmitTop',
+        cancelDelivery: '#gdCancelDeliveryBtn',
 
         // Scale partial hidden inputs (owned by _ScaleWeight)
         scaleValue:     '#gwSwValue',
@@ -130,6 +131,10 @@
     let selectedNwsLotDesc    = null;
     let activeWsId            = null;   // the weight sheet loaded from cookie/URL
     let _nwsPin               = null;  // PIN captured from popup for new WS creation
+    // True for the FIRST load on a WS the user just created in this session.
+    // While true, the manual-capture / direct-amount modals skip the PIN re-prompt
+    // and reuse _nwsPin. Cleared after the first load saves successfully.
+    let _firstLoadOnNewWsPin  = null;
     let editTxnId             = null;   // set when editing an existing delivery
     let editOriginalWeights   = null;  // { StartQty, EndQty, DirectQty } at load time
     let bolModalInstance      = null;
@@ -172,14 +177,19 @@
                 || parseInt(new URLSearchParams(window.location.search).get('wsId'), 10) || 0;
 
         if (wsId > 0) {
-            // Weight sheet is known — hide the WS list, show form directly
+            // Weight sheet is known — hide the WS list, show form directly.
+            // The module bar stays hidden until loadWsHeader recolors it by
+            // LotType (avoids a default-brown flash before the seed/warehouse
+            // override paints).
             activeWsId = wsId;
             $(SEL.wsPanel).prop('hidden', true);
             $('#gdNwsPanel').prop('hidden', true);
             $('#gdFormBody').prop('hidden', false);
             loadWsHeader(locationId, wsId);
         } else {
-            // No active WS — show the WS list as before
+            // No active WS — show the WS list as before, and reveal the
+            // module bar with its default rendering (no LotType available yet).
+            $('#gdModuleBar').prop('hidden', false);
             $(SEL.wsPanel).prop('hidden', false);
             $('#gdFormBody').prop('hidden', false);
             refreshWeightSheets(locationId);
@@ -261,7 +271,32 @@
             // Set back links to delivery loads for this weight sheet
             var backUrl = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + ws.WeightSheetId;
             $('#gdCancelBtn').attr('href', backUrl);
-            $('.gm-module-bar--intake').attr('href', backUrl);
+            $('#gdModuleBar').attr('href', backUrl);
+
+            // Recolor the module bar by LotType (0=Seed, 1=Warehouse) so
+            // seed/warehouse weight sheets are visually distinct, then unhide.
+            // Strip prior color/icon variants in case the user navigates between
+            // sheets without a full reload.
+            var $bar  = $('#gdModuleBar');
+            var $icon = $('#gdModuleBarIcon');
+            var $lbl  = $('#gdModuleBarLabel');
+            $bar.removeClass('gm-module-bar--seed gm-module-bar--warehouse gm-module-bar--intake gm-module-bar--transfer');
+            $icon.removeClass('gm-icon--seed gm-icon--warehouse gm-icon--delivery gm-icon--transfer');
+            if (ws.LotType === 0) {
+                $bar.addClass('gm-module-bar--seed');
+                $icon.addClass('gm-icon--seed');
+                $lbl.text('SEED GROWER DELIVERY');
+            } else if (ws.LotType === 1) {
+                $bar.addClass('gm-module-bar--warehouse');
+                $icon.addClass('gm-icon--warehouse');
+                $lbl.text('WAREHOUSE GROWER DELIVERY');
+            } else {
+                // Unknown lot type — fall back to the original intake style.
+                $bar.addClass('gm-module-bar--intake');
+                $icon.addClass('gm-icon--delivery');
+                $lbl.text('GROWER DELIVERY');
+            }
+            $bar.prop('hidden', false);
 
             $(SEL.wsHeader).removeAttr('hidden');
 
@@ -694,12 +729,20 @@
             $(SEL.directAmountInput).val('');
             $(SEL.directPinInput).val('');
             $(SEL.directAmountError).prop('hidden', true);
+
+            // Hide the PIN input on the first load of a just-created WS — the
+            // user already validated when creating the WS.
+            var pinReused = !!_firstLoadOnNewWsPin;
+            $(SEL.directPinInput).closest('.mb-3').prop('hidden', pinReused);
+
             enterAmountModalInst.show();
         });
 
         $(SEL.directAmountConfirm).on('click', async function () {
             var amount = parseInt($(SEL.directAmountInput).val(), 10);
-            var pin    = $(SEL.directPinInput).val().trim();
+            var pin    = _firstLoadOnNewWsPin
+                ? String(_firstLoadOnNewWsPin)
+                : $(SEL.directPinInput).val().trim();
 
             if (isNaN(amount) || amount <= 0) {
                 $(SEL.directAmountError).text('Weight must be greater than 0.').prop('hidden', false);
@@ -714,6 +757,14 @@
             var pinResult = await validatePin(parseInt(pin, 10));
             if (!pinResult.valid) {
                 $(SEL.directAmountError).text(pinResult.message).prop('hidden', false);
+                return;
+            }
+
+            // PrivilegeId 6 = Manual Entry. Block if missing.
+            if ((pinResult.privileges || []).indexOf(PRIVILEGE_MANUAL_ENTRY) === -1) {
+                $(SEL.directAmountError)
+                    .text('User ' + (pinResult.userName || '') + ' does not have privileges for Manual Entry.')
+                    .prop('hidden', false);
                 return;
             }
 
@@ -745,11 +796,17 @@
             $(SEL.captureManualInput).val('');
             $(SEL.capturePinInput).val('');
             $(SEL.captureWeightError).prop('hidden', true);
+
+            // Hide the PIN input on the first load of a just-created WS.
+            var pinReused = !!_firstLoadOnNewWsPin;
+            $(SEL.capturePinInput).closest('.mb-2').prop('hidden', pinReused);
         });
 
         $(SEL.captureManualConfirm).on('click', async function () {
             var weight = parseInt($(SEL.captureManualInput).val(), 10);
-            var pin    = $(SEL.capturePinInput).val().trim();
+            var pin    = _firstLoadOnNewWsPin
+                ? String(_firstLoadOnNewWsPin)
+                : $(SEL.capturePinInput).val().trim();
 
             if (isNaN(weight) || weight < 0) {
                 $(SEL.captureWeightError).text('Weight must be 0 or greater.').prop('hidden', false);
@@ -774,6 +831,14 @@
             var pinResult = await validatePin(parseInt(pin, 10));
             if (!pinResult.valid) {
                 $(SEL.captureWeightError).text(pinResult.message).prop('hidden', false);
+                return;
+            }
+
+            // PrivilegeId 6 = Manual Entry. Block if missing.
+            if ((pinResult.privileges || []).indexOf(PRIVILEGE_MANUAL_ENTRY) === -1) {
+                $(SEL.captureWeightError)
+                    .text('User ' + (pinResult.userName || '') + ' does not have privileges for Manual Entry.')
+                    .prop('hidden', false);
                 return;
             }
 
@@ -922,7 +987,12 @@
             var resp = await fetch('/api/GrowerDelivery/ValidatePin?pin=' + encodeURIComponent(pin));
             if (resp.ok) {
                 var data = await resp.json();
-                return { valid: true, userId: data.UserId, userName: data.UserName };
+                return {
+                    valid:      true,
+                    userId:     data.UserId,
+                    userName:   data.UserName,
+                    privileges: data.Privileges || [],
+                };
             }
             var err = await tryParseError(resp);
             return { valid: false, message: err };
@@ -931,6 +1001,10 @@
         }
     }
 
+    // PrivilegeId 6 = "Manual Entry" — required for users who manually type in
+    // a weight value (rather than capturing from a scale).
+    var PRIVILEGE_MANUAL_ENTRY = 6;
+
     // ── Form submission ──────────────────────────────────────────────────────
 
     var _weightEditPinModal = null;
@@ -938,6 +1012,13 @@
 
     function wireSubmit() {
         _weightEditPinModal = new bootstrap.Modal(document.getElementById('gdWeightEditPinModal'));
+
+        // Cancel button — bail out of the delivery form back to the weight sheet list.
+        $(SEL.cancelDelivery).on('click', function () {
+            window.location.href = '/WeightSheets';
+        });
+
+        wireMoveLoad();
 
         $('#gdWeightEditPin').on('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('#gdWeightEditPinConfirm').click(); } });
         $('#gdWeightEditPinConfirm').on('click', function () {
@@ -1034,6 +1115,12 @@
                     var targetWsId = (result && result.spilledToWeightSheetId)
                         ? result.spilledToWeightSheetId
                         : activeWsId;
+
+                    // First-load-on-new-WS PIN reuse only applies to that one
+                    // load. Clear it so any subsequent load (on this same page
+                    // load, however unlikely) re-prompts for a PIN.
+                    _firstLoadOnNewWsPin = null;
+
                     if (targetWsId) {
                         window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + targetWsId;
                         return;
@@ -1047,6 +1134,348 @@
             } finally {
                 btn.prop('disabled', false).text(editTxnId ? 'Update Delivery' : 'Save Delivery');
             }
+    }
+
+    // ── Move Load (between weight sheets, audited) ─────────────────────────
+
+    var _moveLoadModalInst = null;
+    var _movePinPromptInst = null;
+    var _moveLoadSelectedUid = null;
+    var _moveLoadSourceLotId = null;
+    var _moveLoadSourceVariety = '';
+    // PIN captured by the upfront prompt and reused for the /move POST so the
+    // operator only enters their PIN once.
+    var _movePinValidated = null;
+
+    // PrivilegeId 2 = Move Loads. Mirrors PrivilegeIdMoveLoads in the controller.
+    var PRIVILEGE_MOVE_LOADS = 2;
+
+    function wireMoveLoad() {
+        var modalEl = document.getElementById('gdMoveLoadModal');
+        if (!modalEl) return;
+        _moveLoadModalInst = new bootstrap.Modal(modalEl);
+
+        var promptEl = document.getElementById('gdMovePinPromptModal');
+        if (promptEl) _movePinPromptInst = new bootstrap.Modal(promptEl);
+
+        $('#gdMoveLoadBtn').on('click', openMovePinPrompt);
+        $('#gdMoveCreateWsBtn').on('click', moveLoadCreateNewWs);
+        $('#gdMoveConfirmBtn').on('click', moveLoadConfirm);
+
+        // PIN prompt — Enter submits, Confirm validates server-side
+        $('#gdMovePinPromptInput').on('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); $('#gdMovePinPromptConfirm').click(); }
+        });
+        $('#gdMovePinPromptConfirm').on('click', confirmMovePin);
+
+        if (promptEl) {
+            $(promptEl).on('hidden.bs.modal', function () {
+                $('#gdMovePinPromptInput').val('');
+                $('#gdMovePinPromptError').prop('hidden', true).text('');
+            });
+        }
+
+        // Reset selection when the move modal closes so a re-open starts fresh
+        $(modalEl).on('hidden.bs.modal', function () {
+            _moveLoadSelectedUid = null;
+            _moveLoadSourceLotId = null;
+            _moveLoadSourceVariety = '';
+            _movePinValidated = null;
+            $('#gdMoveConfirmBtn').prop('disabled', true);
+            $('#gdMoveError').prop('hidden', true).text('');
+            $('#gdMoveLotWarn').prop('hidden', true);
+        });
+    }
+
+    function openMovePinPrompt() {
+        if (!editTxnId) return;
+        if (!_movePinPromptInst) return;
+        _movePinValidated = null;
+        $('#gdMovePinPromptInput').val('');
+        $('#gdMovePinPromptError').prop('hidden', true).text('');
+        _movePinPromptInst.show();
+        setTimeout(function () { $('#gdMovePinPromptInput').focus(); }, 200);
+    }
+
+    async function confirmMovePin() {
+        $('#gdMovePinPromptError').prop('hidden', true).text('');
+        var pin = parseInt($('#gdMovePinPromptInput').val(), 10);
+        if (!pin || pin <= 0) {
+            $('#gdMovePinPromptError').text('A valid PIN is required.').prop('hidden', false);
+            return;
+        }
+
+        var btn = $('#gdMovePinPromptConfirm');
+        btn.prop('disabled', true).text('Validating\u2026');
+        try {
+            var pinResult = await validatePin(pin);
+            if (!pinResult.valid) {
+                $('#gdMovePinPromptError').text(pinResult.message || 'Invalid PIN.').prop('hidden', false);
+                return;
+            }
+            if ((pinResult.privileges || []).indexOf(PRIVILEGE_MOVE_LOADS) === -1) {
+                $('#gdMovePinPromptError')
+                    .text('User ' + (pinResult.userName || '') + ' does not have privileges to Move Loads.')
+                    .prop('hidden', false);
+                return;
+            }
+
+            // Cache the validated PIN — moveLoadConfirm reuses it.
+            _movePinValidated = pin;
+            _movePinPromptInst.hide();
+            openMoveLoadModal();
+        } catch (ex) {
+            $('#gdMovePinPromptError').text('Network error: ' + ex.message).prop('hidden', false);
+        } finally {
+            btn.prop('disabled', false).text('Continue');
+        }
+    }
+
+    async function openMoveLoadModal() {
+        if (!editTxnId) return;
+        $('#gdMoveError').prop('hidden', true).text('');
+        $('#gdMoveLotWarn').prop('hidden', true);
+        _moveLoadSelectedUid = null;
+        _moveLoadSourceLotId = null;
+        _moveLoadSourceVariety = '';
+        $('#gdMoveConfirmBtn').prop('disabled', true);
+
+        // Dispose any existing grid instance before re-initializing — DevExtreme
+        // doesn't reset cleanly otherwise and a second open can leave the grid
+        // empty or duplicated.
+        try {
+            var prev = $('#gdMoveCandidatesGrid').dxDataGrid('instance');
+            if (prev) prev.dispose();
+        } catch (e) { /* nothing to dispose */ }
+        $('#gdMoveCandidatesGrid').empty();
+
+        // Show the modal FIRST so the grid initializes inside a visible
+        // container — Bootstrap modal hidden state gives DevExtreme a 0×0 box
+        // and the grid silently renders 0 rows.
+        _moveLoadModalInst.show();
+
+        // Defer the grid build + data fetch until the modal's "shown" event
+        // fires. If the event has already fired (cached modal), the listener
+        // never re-runs, so add a fallback timeout.
+        var modalEl = document.getElementById('gdMoveLoadModal');
+        var built = false;
+        function buildGridAndFetch() {
+            if (built) return;
+            built = true;
+
+            $('#gdMoveCandidatesGrid').dxDataGrid({
+                dataSource:    [],
+                keyExpr:       'RowUid',
+                showBorders:   true,
+                columnAutoWidth:true,
+                paging:        { enabled: true, pageSize: 10 },
+                sorting:       { mode: 'single' },
+                selection:     { mode: 'single' },
+                noDataText:    'No open weight sheets are available.',
+                columns: [
+                    { dataField:'WeightSheetId', caption:'WS #', sortOrder:'desc',
+                      customizeText: function (c) { return formatWsId(c.value); } },
+                    { dataField:'As400Id',       caption:'Agvantage #' },
+                    { dataField:'CreationDate',  caption:'Created', dataType:'date',
+                      format: 'M/d/yyyy' },
+                    { dataField:'StatusId',      caption:'Status', width:120,
+                      customizeText: function (c) { return c.value === 1 ? 'Pending' : 'Open'; } },
+                    { dataField:'LotId',         caption:'Lot #', width:120 },
+                    { dataField:'Variety',       caption:'Variety' },
+                    { dataField:'LoadCount',     caption:'Loads',  width:90, alignment:'right' },
+                ],
+                onSelectionChanged: function (e) {
+                    var key = (e.selectedRowKeys && e.selectedRowKeys[0]) || null;
+                    var row = (e.selectedRowsData && e.selectedRowsData[0]) || null;
+                    _moveLoadSelectedUid = key;
+                    $('#gdMoveConfirmBtn').prop('disabled', !key);
+                    refreshCrossLotWarning(row);
+                },
+            });
+
+            $.getJSON('/api/GrowerDelivery/' + editTxnId + '/move-candidates')
+                .done(function (resp) {
+                    var rows = Array.isArray(resp) ? resp : (resp.Candidates || []);
+                    _moveLoadSourceLotId   = (resp && resp.SourceLotId)   || null;
+                    _moveLoadSourceVariety = (resp && resp.SourceVariety) || '';
+                    var inst = $('#gdMoveCandidatesGrid').dxDataGrid('instance');
+                    if (inst) {
+                        inst.option('dataSource', rows);
+                        // Force a recalc — guards against DevExtreme rendering
+                        // with stale 0-height container measurements.
+                        inst.updateDimensions();
+                    }
+                })
+                .fail(function (xhr) {
+                    var msg = (xhr && xhr.responseJSON && xhr.responseJSON.message)
+                        || (xhr && xhr.statusText)
+                        || 'Failed to load candidates.';
+                    $('#gdMoveError').text(msg).prop('hidden', false);
+                });
+        }
+
+        $(modalEl).one('shown.bs.modal', buildGridAndFetch);
+        // Fallback if the modal is already visible (re-open case)
+        setTimeout(buildGridAndFetch, 250);
+    }
+
+    // Show or hide the cross-lot/variety danger banner based on the selected
+    // candidate. Doesn't disable the move — the operator can proceed; the
+    // MOVE_LOAD audit row records both source and destination IDs.
+    function refreshCrossLotWarning(candidate) {
+        var $warn = $('#gdMoveLotWarn');
+        var $text = $('#gdMoveLotWarnText');
+        if (!candidate || !_moveLoadSourceLotId) {
+            $warn.prop('hidden', true);
+            return;
+        }
+        if (candidate.LotId === _moveLoadSourceLotId) {
+            $warn.prop('hidden', true);
+            return;
+        }
+        var srcVar = _moveLoadSourceVariety || 'unknown';
+        var dstVar = candidate.Variety || 'unknown';
+        var msg = 'You are moving this load to a different lot — variety changes from "'
+                + srcVar + '" to "' + dstVar + '".';
+        $text.text(msg);
+        $warn.prop('hidden', false);
+    }
+
+    // Auto-perform the move when returning from the New WS round-trip. The
+    // operator picked the upstream lot/WS type; we already have a validated
+    // PIN and the new WS id. Just resolve its RowUid and POST /move.
+    async function autoPerformMove(targetWeightSheetId) {
+        if (!editTxnId || !targetWeightSheetId) return;
+        if (!_movePinValidated) {
+            // Defensive: lost PIN somehow (shouldn't happen). Fall back to
+            // pre-selecting in the picker so the operator re-enters.
+            openMoveLoadModalForWs(targetWeightSheetId);
+            return;
+        }
+        try {
+            // Resolve the new WS's RowUid via the candidates list (cheapest
+            // available endpoint that returns RowUid for an in-scope sheet).
+            var resp = await $.getJSON('/api/GrowerDelivery/' + editTxnId + '/move-candidates');
+            var rows = Array.isArray(resp) ? resp : (resp.Candidates || []);
+            var match = rows.find(function (r) { return r.WeightSheetId === targetWeightSheetId; });
+            if (!match) {
+                // Couldn't find the new WS in candidates (different location?
+                // closed already?). Fall back to the picker so the operator
+                // sees an explanation in the grid.
+                openMoveLoadModalForWs(targetWeightSheetId);
+                return;
+            }
+
+            var moveResp = await fetch('/api/GrowerDelivery/' + editTxnId + '/move', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ TargetWeightSheetUid: match.RowUid, Pin: _movePinValidated }),
+            });
+            if (!moveResp.ok) {
+                var detail = await tryParseError(moveResp);
+                showAlert('Move failed: ' + detail, 'danger');
+                return;
+            }
+            var result = await moveResp.json();
+            if (result && result.toWeightSheetId) {
+                window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + result.toWeightSheetId;
+            } else {
+                window.location.href = '/WeightSheets';
+            }
+        } catch (ex) {
+            showAlert('Network error during move: ' + ex.message, 'danger');
+        }
+    }
+
+    // Open the move modal and pre-select the candidate row matching the given
+    // WeightSheetId. Used as a fallback when autoPerformMove can't proceed.
+    function openMoveLoadModalForWs(targetWeightSheetId) {
+        if (!_moveLoadModalInst) return;
+        openMoveLoadModal();
+        // Poll briefly for the grid to fill (the candidates fetch is async).
+        var attempts = 0;
+        var iv = setInterval(function () {
+            attempts++;
+            var inst;
+            try { inst = $('#gdMoveCandidatesGrid').dxDataGrid('instance'); } catch (e) { inst = null; }
+            var rows = inst ? (inst.option('dataSource') || []) : [];
+            if (rows && rows.length) {
+                var match = rows.find(function (r) { return r.WeightSheetId === targetWeightSheetId; });
+                if (match) {
+                    _moveLoadSelectedUid = match.RowUid;
+                    inst.selectRows([match.RowUid], false);
+                    $('#gdMoveConfirmBtn').prop('disabled', false);
+                    refreshCrossLotWarning(match);
+                }
+                clearInterval(iv);
+            } else if (attempts > 30) {
+                // 30 × 100ms = 3s — give up; the modal stays open with no preselect.
+                clearInterval(iv);
+            }
+        }, 100);
+    }
+
+    function moveLoadCreateNewWs() {
+        // Navigate through /WeightSheets/LoadType → /GrowerDelivery/NewWeightSheet
+        // (or TransferIn) so the operator can pick lot type, WS type, and an
+        // existing or new lot. The PIN already validated upstream rides along
+        // in the URL so the operator doesn't have to re-enter it. The flow
+        // returns to this page with ?moveTo=<newWsId>&pin=<pin> and the
+        // round-trip handler auto-performs the move.
+        if (!editTxnId) return;
+        var fromWsId = activeWsId || 0;
+        var params = new URLSearchParams();
+        params.set('returnTo', 'move');
+        params.set('txnId',    String(editTxnId));
+        if (fromWsId)            params.set('fromWsId', String(fromWsId));
+        if (_movePinValidated)   params.set('pin',      String(_movePinValidated));
+        window.location.href = '/WeightSheets/LoadType?' + params.toString();
+    }
+
+    async function moveLoadConfirm() {
+        $('#gdMoveError').prop('hidden', true).text('');
+        if (!editTxnId) return;
+        if (!_moveLoadSelectedUid) {
+            $('#gdMoveError').text('Select a destination weight sheet.').prop('hidden', false);
+            return;
+        }
+        // PIN was captured + privilege-checked by the upfront prompt before
+        // this modal opened. If we somehow lost it, kick the user back to
+        // the prompt rather than silently failing.
+        var pin = _movePinValidated;
+        if (!pin || pin <= 0) {
+            _moveLoadModalInst.hide();
+            openMovePinPrompt();
+            return;
+        }
+
+        var btn = $('#gdMoveConfirmBtn');
+        btn.prop('disabled', true).text('Moving\u2026');
+        try {
+            var resp = await fetch('/api/GrowerDelivery/' + editTxnId + '/move', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ TargetWeightSheetUid: _moveLoadSelectedUid, Pin: pin }),
+            });
+            if (!resp.ok) {
+                var detail = await tryParseError(resp);
+                $('#gdMoveError').text(detail).prop('hidden', false);
+                return;
+            }
+            var result = await resp.json();
+            _moveLoadModalInst.hide();
+            // Bounce the user to the destination weight sheet's loads page so
+            // they see the move took effect.
+            if (result && result.toWeightSheetId) {
+                window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + result.toWeightSheetId;
+            } else {
+                window.location.href = '/WeightSheets';
+            }
+        } catch (ex) {
+            $('#gdMoveError').text('Network error: ' + ex.message).prop('hidden', false);
+        } finally {
+            btn.prop('disabled', false).text('Move Load');
+        }
     }
 
     // ── Edit mode: populate form from existing transaction ─────────────────
@@ -1150,8 +1579,48 @@
                 DirectQty: d.DirectQty,
             };
 
-            // Update submit button text
+            // Update submit button text + reveal the Move Load button (edit mode only)
             $(SEL.submit).text('Update Delivery').prop('hidden', false);
+            $('#gdMoveLoadBtn').prop('hidden', false);
+
+            // Move-load round-trip: handle return from the New WS / LoadType
+            // flow that was launched from the Move Load modal.
+            //   ?moveTo=<id>&pin=<pin>   → operator finished creating a new
+            //       WS upstream; auto-perform the move directly. No picker,
+            //       no second PIN entry. The carried PIN was already validated
+            //       (PIN+Privilege 2) at the start of the move flow.
+            //   ?resumeMove=1&pin=<pin>  → operator cancelled out of the new
+            //       WS flow; reopen the Move Load picker with the cached PIN
+            //       already validated, so they don't have to re-enter it.
+            var qp        = new URLSearchParams(window.location.search);
+            var moveToId  = parseInt(qp.get('moveTo'),  10) || 0;
+            var resumeMove= qp.get('resumeMove') === '1';
+            var carriedPin= parseInt(qp.get('pin'),     10) || 0;
+
+            if (moveToId > 0 || resumeMove) {
+                // Strip the round-trip params from the URL so a refresh
+                // doesn't re-fire the auto-move or auto-reopen.
+                var clean = new URLSearchParams(window.location.search);
+                clean.delete('moveTo');
+                clean.delete('resumeMove');
+                clean.delete('pin');
+                var qs = clean.toString();
+                history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+
+                if (carriedPin) _movePinValidated = carriedPin;
+
+                if (moveToId > 0) {
+                    autoPerformMove(moveToId);
+                } else {
+                    // resumeMove=1 — reopen the picker; skip the PIN prompt
+                    // since we already have a validated PIN cached.
+                    if (_movePinValidated) {
+                        openMoveLoadModal();
+                    } else {
+                        openMovePinPrompt();
+                    }
+                }
+            }
         })
         .fail(function (xhr) {
             console.error('[GrowerDelivery] Edit load failed:', xhr.status, xhr.responseText);
@@ -1468,6 +1937,12 @@
 
                 const created = await resp.json();
                 selectWeightSheet(created.WeightSheetUid);
+
+                // The user just validated their PIN to create this WS. Carry it
+                // forward to the FIRST load they save on this WS so they don't
+                // have to re-enter it for the manual-capture / direct-amount
+                // modals. Cleared after that first load saves.
+                _firstLoadOnNewWsPin = _nwsPin;
 
                 $(SEL.newWsPanel).prop('hidden', true);
                 $(SEL.wsPanel).prop('hidden', false);

@@ -72,6 +72,43 @@
         return String(v);
     }
 
+    // ── MOVE_LOAD action — custom rendering ─────────────────────────────────
+    // Audit JSON shape (set by GrowerDeliveryApiController.MoveLoad):
+    //   old: { As400Id, LoadId }
+    //   new: { As400Id, LoadId }
+    // The user who moved the load is captured in AuditTrail.UserName (the
+    // "User" column in the grid), so it isn't repeated in the payload.
+
+    function renderMoveLoadChanges(container, row) {
+        var oldObj = tryParse(row.OldJson) || {};
+        var newObj = tryParse(row.NewJson) || {};
+        var $wrap = $('<div class="gm-at-diffs-wrap"></div>');
+
+        $('<span class="gm-at-diff"></span>')
+            .text('LoadId: ' + formatVal(newObj.LoadId !== undefined ? newObj.LoadId : oldObj.LoadId))
+            .appendTo($wrap);
+
+        $('<span class="gm-at-diff"></span>')
+            .text('As400Id: ' + formatVal(oldObj.As400Id)
+                  + ' \u2192 ' + formatVal(newObj.As400Id))
+            .appendTo($wrap);
+
+        $wrap.appendTo(container);
+    }
+
+    function moveLoadChangesText(row) {
+        var oldObj = tryParse(row.OldJson) || {};
+        var newObj = tryParse(row.NewJson) || {};
+        var loadId = newObj.LoadId !== undefined ? newObj.LoadId : oldObj.LoadId;
+        return 'LoadId: ' + formatVal(loadId)
+            + '; As400Id: ' + formatVal(oldObj.As400Id)
+            + ' -> ' + formatVal(newObj.As400Id);
+    }
+
+    // Preferred order for MOVE_LOAD detail rows; falls back to alphabetical
+    // for any keys not in this list.
+    var MOVE_LOAD_KEY_ORDER = ['As400Id', 'LoadId'];
+
     // ── Grid ──────────────────────────────────────────────────────────────────
 
     function initGrid(data) {
@@ -113,8 +150,6 @@
                     caption: 'ID',
                     width: 70,
                     dataType: 'number',
-                    sortOrder: 'desc',
-                    sortIndex: 0,
                 },
                 {
                     dataField: 'UserName',
@@ -122,11 +157,17 @@
                     width: 140,
                 },
                 {
+                    // CreatedAt is stored UTC in system.AuditTrail; the API
+                    // tags it Kind=Utc so the JSON carries a 'Z' suffix and
+                    // dxDataGrid converts to the browser's local timezone.
+                    // Default sort newest-first.
                     dataField: 'CreatedAt',
-                    caption: 'Date',
+                    caption: 'Date (Local)',
                     dataType: 'datetime',
                     format: 'MM/dd/yyyy HH:mm:ss',
                     width: 170,
+                    sortOrder: 'desc',
+                    sortIndex: 0,
                 },
                 {
                     dataField: 'LocationName',
@@ -158,7 +199,12 @@
                 {
                     caption: 'Changes',
                     cellTemplate: function (container, options) {
-                        var diffs = getJsonDiffs(options.data.OldJson, options.data.NewJson);
+                        var row = options.data;
+                        if (row.Action === 'MOVE_LOAD') {
+                            renderMoveLoadChanges(container, row);
+                            return;
+                        }
+                        var diffs = getJsonDiffs(row.OldJson, row.NewJson);
                         if (diffs.length === 0) {
                             $('<span class="text-muted">No changes</span>').appendTo(container);
                             return;
@@ -175,6 +221,9 @@
                     allowExporting: true,
                     calculateCellValue: function (row) {
                         // Plain-text version for export and search
+                        if (row.Action === 'MOVE_LOAD') {
+                            return moveLoadChangesText(row);
+                        }
                         var diffs = getJsonDiffs(row.OldJson, row.NewJson);
                         return diffs.map(function (d) {
                             return d.key + ': ' + formatVal(d.oldVal) + ' -> ' + formatVal(d.newVal);
@@ -215,7 +264,19 @@
         var allKeys = {};
         Object.keys(oldObj).forEach(function (k) { allKeys[k] = true; });
         Object.keys(newObj).forEach(function (k) { allKeys[k] = true; });
-        var keys = Object.keys(allKeys).sort();
+        var keys;
+        if (row.Action === 'MOVE_LOAD') {
+            // Render move-load fields in the operator-friendly order:
+            //   ID, WeightSheetId, LoadId, MovedBy. Anything not on the list
+            //   appended alphabetically after.
+            var listed = MOVE_LOAD_KEY_ORDER.filter(function (k) { return allKeys[k]; });
+            var extras = Object.keys(allKeys)
+                .filter(function (k) { return MOVE_LOAD_KEY_ORDER.indexOf(k) === -1; })
+                .sort();
+            keys = listed.concat(extras);
+        } else {
+            keys = Object.keys(allKeys).sort();
+        }
 
         var $detail = $('<div class="gm-at-detail"></div>');
 

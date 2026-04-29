@@ -111,14 +111,19 @@ namespace GrainManagement.Controllers
             {
                 Pin = dto.Pin,
                 UserName = dto.UserName,
-                IsActive = dto.IsActive,
-
+                // Default new users to active when not specified.
+                IsActive = dto.IsActive ?? true,
             };
 
             _ctx.Users.Add(user);
             _ctx.SaveChanges(); // Save user first to get UserId
 
+            // Default new users to PrivilegeIds 1–6 (everything except Remote Admin = 7)
+            // when the caller didn't specify any privileges.
             var newIds = (dto.PrivilegeIds ?? new List<int>()).Distinct().ToList();
+            if (newIds.Count == 0)
+                newIds = new List<int> { 1, 2, 3, 4, 5, 6 };
+
             foreach (var pid in newIds)
             {
                 _ctx.UserPrivileges.Add(new UserPrivilege
@@ -187,7 +192,11 @@ namespace GrainManagement.Controllers
             // Apply scalar updates
             user.Pin = newPin;
             user.UserName = newName;
-            user.IsActive = dto.IsActive;
+            // Only update IsActive when the caller explicitly sent it. The DevExtreme
+            // grid sends partial PUTs that contain only changed fields, so an absent
+            // IsActive must NOT clobber the stored value.
+            if (dto.IsActive.HasValue)
+                user.IsActive = dto.IsActive.Value;
 
             // === Update privileges ===
             var currentIds = user.UserPrivileges

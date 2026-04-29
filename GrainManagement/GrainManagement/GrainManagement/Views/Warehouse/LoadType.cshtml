@@ -13,6 +13,15 @@
     <h3 class="text-center mt-4 mb-3 fw-semibold" style="font-size:2rem;">Seed or Warehouse?</h3>
     <div class="row g-4 justify-content-center">
         <div class="col-12 col-lg-4">
+            <a class="gm-tile gm-tile--link gm-tile--warehouse" href="#" data-lot-type="warehouse">
+                <div class="gm-tile__header">
+                    <div class="gm-tile__icon gm-tile__icon--bold gm-icon gm-icon--warehouse" aria-hidden="true"></div>
+                    <h2 class="gm-tile__title">Warehouse</h2>
+                </div>
+                <p class="gm-tile__text">Warehouse receiving lot</p>
+            </a>
+        </div>
+        <div class="col-12 col-lg-4">
             <a class="gm-tile gm-tile--link gm-tile--seed" href="#" data-lot-type="seed">
                 <div class="gm-tile__header">
                     <div class="gm-tile__icon gm-tile__icon--bold gm-icon gm-icon--seed" aria-hidden="true"></div>
@@ -21,13 +30,14 @@
                 <p class="gm-tile__text">Seed receiving lot</p>
             </a>
         </div>
+    </div>
+    <div class="row g-4 justify-content-center mt-1">
         <div class="col-12 col-lg-4">
-            <a class="gm-tile gm-tile--link gm-tile--warehouse" href="#" data-lot-type="warehouse">
+            <a class="gm-tile gm-tile--link gm-tile--cancel" href="/WeightSheets" id="ltCancelStep1">
                 <div class="gm-tile__header">
-                    <div class="gm-tile__icon gm-tile__icon--bold gm-icon gm-icon--warehouse" aria-hidden="true"></div>
-                    <h2 class="gm-tile__title">Warehouse</h2>
+                    <h2 class="gm-tile__title">Cancel</h2>
                 </div>
-                <p class="gm-tile__text">Warehouse receiving lot</p>
+                <p class="gm-tile__text">Return to weight sheets</p>
             </a>
         </div>
     </div>
@@ -56,8 +66,15 @@
             </a>
         </div>
     </div>
-    <div class="text-center mt-3">
-        <button type="button" class="btn btn-outline-secondary btn-sm" id="ltBackToStep1">Back</button>
+    <div class="row g-4 justify-content-center mt-1">
+        <div class="col-12 col-lg-4">
+            <a class="gm-tile gm-tile--link gm-tile--cancel" href="#" id="ltBackToStep1">
+                <div class="gm-tile__header">
+                    <h2 class="gm-tile__title">Cancel</h2>
+                </div>
+                <p class="gm-tile__text">Return to lot type selection</p>
+            </a>
+        </div>
     </div>
 </div>
 
@@ -105,6 +122,36 @@
     $(function () {
         _pinModal = new bootstrap.Modal(document.getElementById('ltPinModal'));
 
+        // If we arrived from the Move Load flow with a PIN already validated
+        // upstream, skip our own PIN modal. The PIN rides through to the
+        // next page via the existing pass-through.
+        var _urlParams = new URLSearchParams(window.location.search);
+        var _urlPin    = parseInt(_urlParams.get('pin'), 10) || 0;
+        if (_urlPin > 0) _pin = _urlPin;
+
+        // If launched from the Move Load flow, the back-to-WeightSheets links
+        // should instead bounce back to /GrowerDelivery/Index so the operator
+        // resumes their move (with the cached PIN, no re-prompt).
+        if (_urlParams.get('returnTo') === 'move') {
+            var resumeUrl = buildResumeMoveUrl();
+            if (resumeUrl) {
+                $('a.gm-module-bar[href="/WeightSheets"]').attr('href', resumeUrl);
+                $('#ltCancelStep1').attr('href', resumeUrl);
+            }
+        }
+
+        function buildResumeMoveUrl() {
+            var fromWsId = parseInt(_urlParams.get('fromWsId'), 10) || 0;
+            var txnId    = parseInt(_urlParams.get('txnId'),    10) || 0;
+            if (!fromWsId || !txnId) return null;
+            var qs = new URLSearchParams();
+            qs.set('wsId',        String(fromWsId));
+            qs.set('txnId',       String(txnId));
+            qs.set('resumeMove',  '1');
+            if (_pin) qs.set('pin', String(_pin));
+            return '/GrowerDelivery/Index?' + qs.toString();
+        }
+
         // ── Step 1: Lot type selection ──────────────────────────────
         $('#ltStep1 [data-lot-type]').on('click', function (e) {
             e.preventDefault();
@@ -117,15 +164,42 @@
         $('#ltStep2 [data-ws-type]').on('click', function (e) {
             e.preventDefault();
             _wsType = $(this).data('ws-type');
-            // Show PIN modal
+
+            if (_pin) {
+                // PIN already validated upstream — skip the modal and go
+                // straight to navigation.
+                navigateForward();
+                return;
+            }
+
             $('#ltPinInput').val('');
             $('#ltPinError').attr('hidden', '');
             _pinModal.show();
             setTimeout(function () { $('#ltPinInput').focus(); }, 500);
         });
 
-        // ── Back button: Step 2 → Step 1 ────────────────────────────
-        $('#ltBackToStep1').on('click', function () {
+        // Build the next-page URL and navigate. Used by both the in-modal
+        // PIN flow and the upstream-validated PIN shortcut.
+        function navigateForward() {
+            var ctxParams = new URLSearchParams(window.location.search);
+            var passThrough = '';
+            ['returnTo', 'txnId', 'fromWsId'].forEach(function (k) {
+                var v = ctxParams.get(k);
+                if (v) passThrough += '&' + k + '=' + encodeURIComponent(v);
+            });
+
+            var url;
+            if (_wsType === 'delivery') {
+                url = '/GrowerDelivery/NewWeightSheet?pin=' + _pin + '&lotType=' + _lotType + passThrough;
+            } else {
+                url = '/WeightSheets/TransferIn?pin=' + _pin + '&lotType=' + _lotType + passThrough;
+            }
+            window.location.href = url;
+        }
+
+        // ── Cancel button: Step 2 → Step 1 ──────────────────────────
+        $('#ltBackToStep1').on('click', function (e) {
+            e.preventDefault();
             _lotType = null;
             $('#ltStep2').attr('hidden', '');
             $('#ltStep1').removeAttr('hidden');
@@ -151,15 +225,7 @@
                 _pin = pin;
                 _userName = data.UserName;
                 _pinModal.hide();
-
-                // Navigate to the correct page based on selections
-                var url;
-                if (_wsType === 'delivery') {
-                    url = '/GrowerDelivery/NewWeightSheet?pin=' + _pin + '&lotType=' + _lotType;
-                } else {
-                    url = '/WeightSheets/TransferIn?pin=' + _pin + '&lotType=' + _lotType;
-                }
-                window.location.href = url;
+                navigateForward();
             })
             .fail(function (xhr) {
                 var msg = xhr.responseJSON && xhr.responseJSON.message

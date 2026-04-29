@@ -133,6 +133,11 @@
             }
         });
 
+        // Set Pending / Re-open / protein-warning Continue
+        $('#dlSetPendingBtn').on('click', function () { setPending(false); });
+        $('#dlReopenBtn').on('click',     reopenWeightSheet);
+        $('#dlProteinWarnContinue').on('click', function () { setPending(true); });
+
         initGrid();
         initHaulerSelect();
         initLotGrid();
@@ -178,6 +183,21 @@
             $(sel.newLoadBtn).removeAttr("hidden").show();
         }
 
+        // Set Pending — visible only on Open / PendingNotFinished.
+        // Re-open    — visible only on Pending* (1 or 2).
+        var $setPending = $('#dlSetPendingBtn');
+        var $reopen     = $('#dlReopenBtn');
+        if (_wsStatusId === 0 || _wsStatusId === 1) {
+            $setPending.removeAttr('hidden').show();
+        } else {
+            $setPending.attr('hidden', true).hide();
+        }
+        if (_wsStatusId === 1 || _wsStatusId === 2) {
+            $reopen.removeAttr('hidden').show();
+        } else {
+            $reopen.attr('hidden', true).hide();
+        }
+
         // Closed — lock down header editing too. Pending states (1,2) still
         // allow load edits, so we leave them alone.
         if (_wsStatusId >= 3) {
@@ -193,6 +213,103 @@
     function isEditingLocked() {
         return _wsStatusId >= 3;
     }
+
+    // ── Set Pending / Re-open ───────────────────────────────────────────────
+    // Two manual lifecycle transitions. The server validates each request:
+    //   /pending → blocks if any non-voided load is missing outbound weight
+    //              or a bin (returns 400 with `incompleteLoads`); also returns
+    //              200 with `requiresProteinAck` when any load lacks protein —
+    //              we re-POST with acceptMissingProtein=true after the operator
+    //              acknowledges the warning modal.
+    //   /reopen  → only when status is Pending* and load count < cap.
+    async function setPending(acceptMissingProtein) {
+        var wsId = _wsHeader && _wsHeader.WeightSheetId;
+        if (!wsId) return;
+
+        var btn = $('#dlSetPendingBtn');
+        btn.prop('disabled', true);
+        try {
+            var resp = await fetch('/api/GrowerDelivery/WeightSheet/' + wsId + '/pending', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ AcceptMissingProtein: !!acceptMissingProtein }),
+            });
+
+            if (resp.status === 400) {
+                var err = await resp.json().catch(function () { return {}; });
+                if (Array.isArray(err.incompleteLoads) && err.incompleteLoads.length > 0) {
+                    showIncompleteLoads(err.incompleteLoads);
+                    return;
+                }
+                showAlert(err.message || 'Cannot set Pending.', 'danger');
+                return;
+            }
+            if (!resp.ok) {
+                var detail = await tryParseError(resp);
+                showAlert('Set Pending failed: ' + detail, 'danger');
+                return;
+            }
+
+            var result = await resp.json();
+            if (result.requiresProteinAck) {
+                showProteinWarning(result.missingProteinLoads || []);
+                return;
+            }
+
+            // Success — reload the page so status badges, gates, and grid all refresh.
+            window.location.reload();
+        } catch (ex) {
+            showAlert('Network error: ' + ex.message, 'danger');
+        } finally {
+            btn.prop('disabled', false);
+        }
+    }
+
+    async function reopenWeightSheet() {
+        var wsId = _wsHeader && _wsHeader.WeightSheetId;
+        if (!wsId) return;
+
+        var btn = $('#dlReopenBtn');
+        btn.prop('disabled', true);
+        try {
+            var resp = await fetch('/api/GrowerDelivery/WeightSheet/' + wsId + '/reopen', { method: 'POST' });
+            if (!resp.ok) {
+                var detail = await tryParseError(resp);
+                showAlert('Re-open failed: ' + detail, 'danger');
+                return;
+            }
+            window.location.reload();
+        } catch (ex) {
+            showAlert('Network error: ' + ex.message, 'danger');
+        } finally {
+            btn.prop('disabled', false);
+        }
+    }
+
+    function showIncompleteLoads(rows) {
+        var $list = $('#dlIncompleteList').empty();
+        rows.forEach(function (r) {
+            $('<li></li>').text('Load ' + formatId(r.TransactionId)).appendTo($list);
+        });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('dlIncompleteModal')).show();
+    }
+
+    function showProteinWarning(rows) {
+        var $list = $('#dlProteinList').empty();
+        rows.forEach(function (r) {
+            $('<li></li>').text('Load ' + formatId(r.TransactionId)).appendTo($list);
+        });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('dlProteinWarnModal')).show();
+    }
+
+    async function tryParseError(resp) {
+        try {
+            var j = await resp.json();
+            return j.message || j.title || resp.statusText;
+        } catch (e) { return resp.statusText; }
+    }
+    // showAlert(msg, kind) is defined later in this file; both declarations hoist
+    // so callers above resolve to the existing implementation at the bottom.
 
     // ── Format composite ID (e.g. 604063000004 → 604-063-000004) ──────────────
     function formatId(id) {
@@ -233,14 +350,48 @@
         } else {
             $(sel.wsLotNumber).text("—");
         }
-        $(sel.wsCrop).text(row.CropName || "—");
+        // Variety = "<ItemId> - <CropName>" (per-lot Item number prefix)
+        var varietyParts = [];
+        if (row.LotItemId) varietyParts.push(String(row.LotItemId));
+        if (row.CropName)  varietyParts.push(row.CropName);
+        $(sel.wsCrop).text(varietyParts.length ? varietyParts.join(" - ") : "—");
+
         $("#dlWsSplitId").text(row.SplitGroupId || "—");
         $(sel.wsSplit).text(row.SplitName || "—");
         $(sel.wsAccount).text(row.PrimaryAccountName || "—");
 
-        // Weightmaster & Date
-        $("#dlWsWeightmaster").text(row.WeightmasterName || "—");
+        // Date
         $("#dlWsDate").text(row.CreationDate || "—");
+
+        // Recolor + relabel the module bar by LotType (0=Seed, 1=Warehouse).
+        // The default Razor render uses --intake / --transfer based on wsType
+        // (delivery vs transfer); we override here once we know the lot.
+        var $bar  = $("#dlModuleBar");
+        var $icon = $("#dlModuleBarIcon");
+        var $lbl  = $("#dlModuleBarLabel");
+        if ($bar.length) {
+            // Remove all module-bar color variants and icon variants we might
+            // have inherited from the Razor render (intake/transfer) before
+            // applying the seed/warehouse one — otherwise the later-declared
+            // CSS rule wins the cascade and the wrong color sticks.
+            $bar.removeClass("gm-module-bar--seed gm-module-bar--warehouse gm-module-bar--intake gm-module-bar--transfer");
+            $icon.removeClass("gm-icon--seed gm-icon--warehouse gm-icon--delivery gm-icon--transfer");
+            var baseLabel = ($lbl.text() || "").replace(/^(SEED|WAREHOUSE)\s+/i, "").trim();
+            if (row.LotType === 0) {
+                $bar.addClass("gm-module-bar--seed");
+                $icon.addClass("gm-icon--seed");
+                $lbl.text("SEED " + baseLabel);
+            } else if (row.LotType === 1) {
+                $bar.addClass("gm-module-bar--warehouse");
+                $icon.addClass("gm-icon--warehouse");
+                $lbl.text("WAREHOUSE " + baseLabel);
+            } else {
+                $lbl.text(baseLabel);
+            }
+            // Reveal once the correct color/label have been applied so the
+            // user never sees the cshtml-default brown flash on first paint.
+            $bar.prop("hidden", false);
+        }
 
         // BOL / Hauler details
         var rt = row.RateType || "N";

@@ -1,5 +1,7 @@
 @{
     ViewData["Title"] = "Edit Weight Sheet Lot";
+    var lotType = (Context.Request.Query["lotType"].FirstOrDefault() ?? "").ToLowerInvariant();
+    var isSeedLot = lotType == "seed";
 }
 
 <link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
@@ -34,31 +36,91 @@
 
             <div class="gm-gd-fields gm-gd-fields--2col">
 
-                <div class="gm-gd-field gm-gd-field--full">
-                    <div style="display:grid;grid-template-columns:0.6fr 110px 1fr;gap:8px;">
-                        <div style="display:flex;flex-direction:column;gap:4px;">
-                            <label class="form-label">Item <span class="text-danger">*</span></label>
-                            <div id="wslItem"></div>
-                        </div>
-                        <div style="display:flex;flex-direction:column;gap:4px;">
-                            <label class="form-label">SG#</label>
-                            <div style="display:flex;align-items:center;gap:4px;">
-                                <input type="text" class="form-control" id="wslSgShortcut"
-                                       placeholder="Split #" style="text-align:center;height:34px;padding:6px 8px;font-size:14px;flex:1 1 auto;" />
-                                <button type="button" id="wslSgSearchBtn" class="btn btn-outline-secondary btn-sm"
-                                        title="Search split groups"
-                                        style="height:34px;flex:0 0 auto;">
-                                    <i class="dx-icon dx-icon-search"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div style="display:flex;flex-direction:column;gap:4px;">
-                            <label class="form-label">Account <span class="text-danger">*</span></label>
-                            <div id="wslAccount"></div>
+                @if (isSeedLot)
+                {
+                    <!-- Variety on its own row (descriptions are long for seed) -->
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <label class="form-label">Variety <span class="text-danger">*</span></label>
+                        <div style="display:flex;align-items:center;gap:4px;">
+                            <input type="text" class="form-control" id="wslVarietyItemIdDisplay" readonly
+                                   placeholder="Item #"
+                                   style="background:#f8f9fa;font-weight:600;text-align:center;width:110px;flex:0 0 110px;" />
+                            <input type="text" class="form-control" id="wslVarietyDisplay" readonly
+                                   placeholder="Click Select to choose a variety…"
+                                   style="background:#fff;cursor:pointer;flex:1 1 auto;" />
+                            <input type="hidden" id="wslVarietyId" />
+                            <button type="button" id="wslVarietySelectBtn" class="btn btn-outline-primary"
+                                    style="height:38px;flex:0 0 auto;">
+                                <i class="dx-icon dx-icon-search"></i> Select
+                            </button>
                         </div>
                     </div>
-                    <div id="wslSgError" class="text-danger small mt-1" hidden></div>
-                </div>
+
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <div style="display:grid;grid-template-columns:200px 1fr;gap:8px;">
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <label class="form-label">Split Group #</label>
+                                <div style="display:flex;align-items:center;gap:4px;">
+                                    <input type="text" class="form-control" id="wslSgShortcut"
+                                           name="wslSgShortcut-@DateTime.UtcNow.Ticks"
+                                           autocomplete="off"
+                                           data-lpignore="true"
+                                           data-1p-ignore="true"
+                                           placeholder="Split #" style="text-align:center;height:34px;padding:6px 8px;font-size:14px;flex:1 1 auto;" />
+                                    <button type="button" id="wslSgSearchBtn" class="btn btn-outline-secondary btn-sm"
+                                            title="Search split groups"
+                                            style="height:34px;flex:0 0 auto;">
+                                        <i class="dx-icon dx-icon-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <label class="form-label">Account <span class="text-danger">*</span></label>
+                                <div id="wslAccount"></div>
+                            </div>
+                        </div>
+                        <div id="wslSgError" class="text-danger small mt-1" hidden></div>
+                    </div>
+
+                    <!-- Hidden Item host kept so existing JS that does $('#wslItem').dxSelectBox(...)
+                         doesn't crash. The seed flow uses wslVarietyId / wslVarietyDisplay instead. -->
+                    <div id="wslItem" hidden></div>
+
+                    <!-- Variety popup container — wired in grower.editlot.js -->
+                    <div id="wslVarietyPopup"></div>
+                }
+                else
+                {
+                    <div class="gm-gd-field gm-gd-field--full">
+                        <div style="display:grid;grid-template-columns:0.4fr 200px 1fr;gap:8px;">
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <label class="form-label">Item <span class="text-danger">*</span></label>
+                                <div id="wslItem"></div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <label class="form-label">Split Group #</label>
+                                <div style="display:flex;align-items:center;gap:4px;">
+                                    <input type="text" class="form-control" id="wslSgShortcut"
+                                           name="wslSgShortcut-@DateTime.UtcNow.Ticks"
+                                           autocomplete="off"
+                                           data-lpignore="true"
+                                           data-1p-ignore="true"
+                                           placeholder="Split #" style="text-align:center;height:34px;padding:6px 8px;font-size:14px;flex:1 1 auto;" />
+                                    <button type="button" id="wslSgSearchBtn" class="btn btn-outline-secondary btn-sm"
+                                            title="Search split groups"
+                                            style="height:34px;flex:0 0 auto;">
+                                        <i class="dx-icon dx-icon-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <label class="form-label">Account <span class="text-danger">*</span></label>
+                                <div id="wslAccount"></div>
+                            </div>
+                        </div>
+                        <div id="wslSgError" class="text-danger small mt-1" hidden></div>
+                    </div>
+                }
 
                 <div class="gm-gd-field gm-gd-field--full">
                     <label class="form-label">Split Group <span class="text-danger">*</span></label>
@@ -84,17 +146,32 @@
                 <div class="gm-gd-field">
                     <label class="form-label">Landlord Name</label>
                     <input type="text" class="form-control" id="wslLandlord"
+                           name="wslLandlord-@DateTime.UtcNow.Ticks"
+                           autocomplete="off"
+                           data-lpignore="true"
+                           data-1p-ignore="true"
+                           readonly onfocus="this.removeAttribute('readonly')"
                            placeholder="Optional landlord name…" />
                 </div>
                 <div class="gm-gd-field">
                     <label class="form-label">Farm Number</label>
                     <input type="text" class="form-control" id="wslFarmNumber"
+                           name="wslFarmNumber-@DateTime.UtcNow.Ticks"
+                           autocomplete="off"
+                           data-lpignore="true"
+                           data-1p-ignore="true"
+                           readonly onfocus="this.removeAttribute('readonly')"
                            placeholder="Optional farm number…" />
                 </div>
 
                 <div class="gm-gd-field gm-gd-field--full">
                     <label class="form-label">Notes</label>
                     <textarea class="form-control" id="wslNotes" rows="2"
+                              name="wslNotes-@DateTime.UtcNow.Ticks"
+                              autocomplete="off"
+                              data-lpignore="true"
+                              data-1p-ignore="true"
+                              readonly onfocus="this.removeAttribute('readonly')"
                               placeholder="Optional notes…"></textarea>
                 </div>
 
@@ -114,6 +191,36 @@
         </div>
     </div>
 
+</div>
+
+<!-- ── Cross-variety confirmation modal (move-load round-trip) ──────────
+     Shown by saveCreate() when ?sourceVariety=… is in the URL and the
+     operator picked a different variety than the source load. -->
+<div class="modal fade" id="wslVarietyWarnModal" tabindex="-1" aria-labelledby="wslVarietyWarnLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="wslVarietyWarnLabel">Different Variety</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">
+                    This lot uses a different variety than the source load.
+                    Saving will move the load to a different variety.
+                </p>
+                <div class="small">
+                    <div><span class="text-muted">Source variety:</span>
+                        <span id="wslVarietyWarnSource" class="fw-semibold"></span></div>
+                    <div><span class="text-muted">New lot variety:</span>
+                        <span id="wslVarietyWarnNew" class="fw-semibold"></span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="wslVarietyWarnCancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="wslVarietyWarnContinue">Continue</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

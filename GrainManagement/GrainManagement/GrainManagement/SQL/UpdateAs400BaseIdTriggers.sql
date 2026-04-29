@@ -39,96 +39,87 @@ BEGIN
 
     IF @ServerId IS NULL
     BEGIN
-        RAISERROR('No row in [system].[Servers] matches @@SERVERNAME.', 16, 1);
+        RAISERROR('No row in [system].[Servers] matches @@SERVERNAME (%s).', 16, 1, @ServerName);
         ROLLBACK TRANSACTION;
         RETURN;
     END;
 
+    -- Guard: every inserted row must have a LocationSequenceMapping for this server.
+    -- Otherwise the INNER JOIN below would silently drop the row.
+    IF EXISTS (
+        SELECT 1 FROM inserted i
+        WHERE NOT EXISTS (
+            SELECT 1 FROM [system].[LocationSequenceMapping] lsm
+            WHERE lsm.LocationId = i.LocationId AND lsm.ServerId = @ServerId
+        )
+    )
+    BEGIN
+        RAISERROR('No LocationSequenceMapping exists for ServerId=%d and one or more inserted LocationIds.', 16, 1, @ServerId);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+
+    -- NOTE: As400Id is a computed column (fn_BuildAs400Id(SequenceId, LocationId, BaseId))
+    -- so it's omitted from the INSERT column list — SQL Server fills it in automatically.
     INSERT INTO [Inventory].[Lots]
-        (LotId, As400Id, BaseId, As400BaseId, LocationId, ServerId, SequenceId,
+        (LotId, BaseId, As400BaseId, LocationId, ServerId, SequenceId,
          ItemId, ProductId, LotDescription, CreatedAt, IsOpen,
          UpdatedAt, SplitGroupId, LotLabel, Notes, RowUid,
          CreatedByUserName, LotType)
     SELECT
-        s.LotIdSeed + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)),
+        -- LotId: SSS + LLL (padded 3) + BBBBBB (padded 6)
+        CAST(
+            RIGHT('000'    + CAST(@ServerId    AS VARCHAR(3)), 3) +
+            RIGHT('000'    + CAST(x.LocationId AS VARCHAR(3)), 3) +
+            RIGHT('000000' + CAST(x.NextBaseId AS VARCHAR(6)), 6)
+        AS BIGINT),
 
-        -- As400Id is built from As400BaseId
-        [system].[fn_BuildAs400Id](@ServerId, sub.NextAs400BaseId),
-
-        sub.NextBaseId,
-        sub.NextAs400BaseId,
-
-        i.LocationId,
+        x.NextBaseId,
+        x.NextAs400BaseId,
+        x.LocationId,
         @ServerId,
-        lsm.SequenceId,
-        i.ItemId,
-        i.ProductId,
-        i.LotDescription,
-        i.CreatedAt,
-        i.IsOpen,
-        i.UpdatedAt,
-        i.SplitGroupId,
-        i.LotLabel,
-        i.Notes,
-        i.RowUid,
-        i.CreatedByUserName,
-        i.LotType
-    FROM inserted i
-    INNER JOIN [system].[LocationSequenceMapping] lsm
-        ON lsm.LocationId = i.LocationId
-       AND lsm.ServerId   = @ServerId
-    CROSS JOIN [EFOptions].[SiteSetup] s
-    CROSS APPLY (
+        x.SequenceId,
+        x.ItemId,
+        x.ProductId,
+        x.LotDescription,
+        x.CreatedAt,
+        x.IsOpen,
+        x.UpdatedAt,
+        x.SplitGroupId,
+        x.LotLabel,
+        x.Notes,
+        x.RowUid,
+        x.CreatedByUserName,
+        x.LotType
+    FROM (
         SELECT
-            -- BaseId: per (LocationId, ServerId), bounded by LotSeed
-            CASE
-                WHEN ISNULL(
-                    (SELECT MAX(l2.BaseId) FROM [Inventory].[Lots] l2
-                     WHERE l2.LocationId = i.LocationId
-                       AND l2.ServerId   = @ServerId),
-                    0
-                ) < lsm.LotSeed
-                THEN lsm.LotSeed + 1
-                ELSE ISNULL(
-                    (SELECT MAX(l2.BaseId) FROM [Inventory].[Lots] l2
-                     WHERE l2.LocationId = i.LocationId
-                       AND l2.ServerId   = @ServerId),
-                    0
-                ) + 1
-            END AS NextBaseId,
-
+            i.LocationId, i.ItemId, i.ProductId, i.LotDescription, i.CreatedAt,
+            i.IsOpen, i.UpdatedAt, i.SplitGroupId, i.LotLabel, i.Notes, i.RowUid,
+            i.CreatedByUserName, i.LotType,
+            lsm.SequenceId,
+            -- BaseId: per (ServerId, LocationId). Uses current max + this row's rank in the batch.
+            mb.MaxBase + ROW_NUMBER() OVER (PARTITION BY i.LocationId ORDER BY (SELECT NULL)) AS NextBaseId,
             -- As400BaseId: per (LocationId, SequenceId), floor at LotSeed.
-            CASE
-                WHEN ISNULL(
-                    (SELECT MAX(l3.As400BaseId) FROM [Inventory].[Lots] l3
-                     WHERE l3.LocationId = i.LocationId
-                       AND l3.SequenceId = lsm.SequenceId),
-                    0
-                ) < lsm.LotSeed
-                THEN lsm.LotSeed + 1
-                ELSE ISNULL(
-                    (SELECT MAX(l3.As400BaseId) FROM [Inventory].[Lots] l3
-                     WHERE l3.LocationId = i.LocationId
-                       AND l3.SequenceId = lsm.SequenceId),
-                    0
-                ) + 1
-            END AS NextAs400BaseId
-    ) sub;
-
-    IF EXISTS (
-        SELECT 1 FROM [Inventory].[Lots] l
-        INNER JOIN inserted i ON l.RowUid = i.RowUid
-        WHERE l.BaseId < 1 OR l.BaseId > 99999
-    )
-    BEGIN
-        RAISERROR('BaseId must be between 1 and 99999 for Lots.', 16, 1);
-        ROLLBACK TRANSACTION;
-        RETURN;
-    END;
-
-    UPDATE s
-    SET s.LotIdSeed = s.LotIdSeed + (SELECT COUNT(*) FROM inserted)
-    FROM [EFOptions].[SiteSetup] s;
+            CASE WHEN ma.MaxAs400Base < lsm.LotSeed THEN lsm.LotSeed ELSE ma.MaxAs400Base END
+                + ROW_NUMBER() OVER (PARTITION BY i.LocationId, lsm.SequenceId ORDER BY (SELECT NULL))
+                AS NextAs400BaseId
+        FROM inserted i
+        INNER JOIN [system].[LocationSequenceMapping] lsm
+            ON lsm.LocationId = i.LocationId
+           AND lsm.ServerId   = @ServerId
+        CROSS APPLY (
+            SELECT ISNULL(MAX(l.BaseId), 0) AS MaxBase
+              FROM [Inventory].[Lots] l WITH (UPDLOCK, HOLDLOCK)
+             WHERE l.ServerId   = @ServerId
+               AND l.LocationId = i.LocationId
+        ) mb
+        CROSS APPLY (
+            SELECT ISNULL(MAX(l.As400BaseId), 0) AS MaxAs400Base
+              FROM [Inventory].[Lots] l WITH (UPDLOCK, HOLDLOCK)
+             WHERE l.LocationId = i.LocationId
+               AND l.SequenceId = lsm.SequenceId
+        ) ma
+    ) x;
 END;
 GO
 
@@ -205,99 +196,89 @@ BEGIN
 
     IF @ServerId IS NULL
     BEGIN
-        RAISERROR('No row in [system].[Servers] matches @@SERVERNAME.', 16, 1);
+        RAISERROR('No row in [system].[Servers] matches @@SERVERNAME (%s).', 16, 1, @ServerName);
         ROLLBACK TRANSACTION;
         RETURN;
     END;
 
+    -- Guard: every inserted row must have a LocationSequenceMapping for this server.
+    IF EXISTS (
+        SELECT 1 FROM inserted i
+        WHERE NOT EXISTS (
+            SELECT 1 FROM [system].[LocationSequenceMapping] lsm
+            WHERE lsm.LocationId = i.LocationId AND lsm.ServerId = @ServerId
+        )
+    )
+    BEGIN
+        RAISERROR('No LocationSequenceMapping exists for ServerId=%d and one or more inserted LocationIds.', 16, 1, @ServerId);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+
+    -- NOTE: As400Id is a computed column (fn_BuildAs400Id(SequenceId, LocationId, BaseId))
+    -- so it's omitted from the INSERT column list — SQL Server fills it in automatically.
     INSERT INTO [warehouse].[WeightSheets]
-        (WeightSheetId, As400Id, BaseId, As400BaseId, LocationId, ServerId, SequenceId,
+        (WeightSheetId, BaseId, As400BaseId, LocationId, ServerId, SequenceId,
          WeightSheetType, CreationDate, CreatedAt, ClosedAt,
          HaulerId, Miles, CustomRateDescription, RateType, Rate,
          LotId, Notes, UpdatedAt, RowUid, WeightmasterName, StatusId)
     SELECT
-        s.WsIdSeed + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)),
+        -- WeightSheetId: SSS + LLL (padded 3) + BBBBBB (padded 6)
+        CAST(
+            RIGHT('000'    + CAST(@ServerId    AS VARCHAR(3)), 3) +
+            RIGHT('000'    + CAST(x.LocationId AS VARCHAR(3)), 3) +
+            RIGHT('000000' + CAST(x.NextBaseId AS VARCHAR(6)), 6)
+        AS BIGINT),
 
-        -- As400Id is built from As400BaseId
-        [system].[fn_BuildAs400Id](@ServerId, sub.NextAs400BaseId),
-
-        sub.NextBaseId,
-        sub.NextAs400BaseId,
-
-        i.LocationId,
+        x.NextBaseId,
+        x.NextAs400BaseId,
+        x.LocationId,
         @ServerId,
-        lsm.SequenceId,
-        i.WeightSheetType,
-        i.CreationDate,
-        i.CreatedAt,
-        i.ClosedAt,
-        i.HaulerId,
-        i.Miles,
-        i.CustomRateDescription,
-        i.RateType,
-        i.Rate,
-        i.LotId,
-        i.Notes,
-        i.UpdatedAt,
-        i.RowUid,
-        i.WeightmasterName,
-        i.StatusId
-    FROM inserted i
-    INNER JOIN [system].[LocationSequenceMapping] lsm
-        ON lsm.LocationId = i.LocationId
-       AND lsm.ServerId   = @ServerId
-    CROSS JOIN [EFOptions].[SiteSetup] s
-    CROSS APPLY (
+        x.SequenceId,
+        x.WeightSheetType,
+        x.CreationDate,
+        x.CreatedAt,
+        x.ClosedAt,
+        x.HaulerId,
+        x.Miles,
+        x.CustomRateDescription,
+        x.RateType,
+        x.Rate,
+        x.LotId,
+        x.Notes,
+        x.UpdatedAt,
+        x.RowUid,
+        x.WeightmasterName,
+        x.StatusId
+    FROM (
         SELECT
-            -- BaseId: per (LocationId, ServerId), bounded by WeightSheetSeed
-            CASE
-                WHEN ISNULL(
-                    (SELECT MAX(ws2.BaseId) FROM [warehouse].[WeightSheets] ws2
-                     WHERE ws2.LocationId = i.LocationId
-                       AND ws2.ServerId   = @ServerId),
-                    0
-                ) < lsm.WeightSheetSeed
-                THEN lsm.WeightSheetSeed + 1
-                ELSE ISNULL(
-                    (SELECT MAX(ws2.BaseId) FROM [warehouse].[WeightSheets] ws2
-                     WHERE ws2.LocationId = i.LocationId
-                       AND ws2.ServerId   = @ServerId),
-                    0
-                ) + 1
-            END AS NextBaseId,
-
+            i.LocationId, i.WeightSheetType, i.CreationDate, i.CreatedAt, i.ClosedAt,
+            i.HaulerId, i.Miles, i.CustomRateDescription, i.RateType, i.Rate,
+            i.LotId, i.Notes, i.UpdatedAt, i.RowUid, i.WeightmasterName, i.StatusId,
+            lsm.SequenceId,
+            -- BaseId: per (ServerId, LocationId). Uses current max + this row's rank in the batch.
+            mb.MaxBase + ROW_NUMBER() OVER (PARTITION BY i.LocationId ORDER BY (SELECT NULL)) AS NextBaseId,
             -- As400BaseId: per (LocationId, SequenceId), floor at WeightSheetSeed.
-            CASE
-                WHEN ISNULL(
-                    (SELECT MAX(ws3.As400BaseId) FROM [warehouse].[WeightSheets] ws3
-                     WHERE ws3.LocationId = i.LocationId
-                       AND ws3.SequenceId = lsm.SequenceId),
-                    0
-                ) < lsm.WeightSheetSeed
-                THEN lsm.WeightSheetSeed + 1
-                ELSE ISNULL(
-                    (SELECT MAX(ws3.As400BaseId) FROM [warehouse].[WeightSheets] ws3
-                     WHERE ws3.LocationId = i.LocationId
-                       AND ws3.SequenceId = lsm.SequenceId),
-                    0
-                ) + 1
-            END AS NextAs400BaseId
-    ) sub;
-
-    IF EXISTS (
-        SELECT 1 FROM [warehouse].[WeightSheets] ws
-        INNER JOIN inserted i ON ws.RowUid = i.RowUid
-        WHERE ws.BaseId < 1 OR ws.BaseId > 99999
-    )
-    BEGIN
-        RAISERROR('BaseId must be between 1 and 99999 for WeightSheets.', 16, 1);
-        ROLLBACK TRANSACTION;
-        RETURN;
-    END;
-
-    UPDATE s
-    SET s.WsIdSeed = s.WsIdSeed + (SELECT COUNT(*) FROM inserted)
-    FROM [EFOptions].[SiteSetup] s;
+            CASE WHEN ma.MaxAs400Base < lsm.WeightSheetSeed THEN lsm.WeightSheetSeed ELSE ma.MaxAs400Base END
+                + ROW_NUMBER() OVER (PARTITION BY i.LocationId, lsm.SequenceId ORDER BY (SELECT NULL))
+                AS NextAs400BaseId
+        FROM inserted i
+        INNER JOIN [system].[LocationSequenceMapping] lsm
+            ON lsm.LocationId = i.LocationId
+           AND lsm.ServerId   = @ServerId
+        CROSS APPLY (
+            SELECT ISNULL(MAX(ws.BaseId), 0) AS MaxBase
+              FROM [warehouse].[WeightSheets] ws WITH (UPDLOCK, HOLDLOCK)
+             WHERE ws.ServerId   = @ServerId
+               AND ws.LocationId = i.LocationId
+        ) mb
+        CROSS APPLY (
+            SELECT ISNULL(MAX(ws.As400BaseId), 0) AS MaxAs400Base
+              FROM [warehouse].[WeightSheets] ws WITH (UPDLOCK, HOLDLOCK)
+             WHERE ws.LocationId = i.LocationId
+               AND ws.SequenceId = lsm.SequenceId
+        ) ma
+    ) x;
 END;
 GO
 

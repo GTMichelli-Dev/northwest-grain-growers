@@ -202,16 +202,6 @@ namespace GrainManagement.Api
             long.TryParse(id, out var v) ? FormatId(v) : id;
 
         /// <summary>
-        /// Formats a weight sheet ID with a single hyphen: 604000013 → 604-000013
-        /// </summary>
-        private static string FormatWsId(long id)
-        {
-            var s = id.ToString();
-            if (s.Length < 4) return s;
-            return s[..3] + "-" + s[3..];
-        }
-
-        /// <summary>
         /// Renders a specific report type for the given transaction.
         /// Used by the explicit endpoints.
         /// </summary>
@@ -581,15 +571,11 @@ namespace GrainManagement.Api
                     bool complete = outWt.HasValue && !string.IsNullOrEmpty(container) && protein.HasValue && protein > 0;
                     bool completeMissingProtein = outWt.HasValue && !string.IsNullOrEmpty(container) && !(protein.HasValue && protein > 0);
 
-                    // Last 6 digits of TransactionId as LoadNumber
-                    var txnStr = txnId.ToString();
-                    var loadNumber = txnStr.Length >= 6 ? txnStr[^6..] : txnStr;
-
                     loads.Add(new IntakeWeightSheetLoadRow
                     {
                         WeightSheetId = wsId.ToString(),
-                        As400Id = ws.As400Id > 0 ? FormatWsId(ws.As400Id) : "",
-                        LoadNumber = loadNumber,
+                        As400Id = ws.As400Id > 0 ? ws.As400Id.ToString() : "",
+                        LoadNumber = txnId.ToString(),
                         TruckId = truckId.Length > 4 ? truckId[..4] : truckId,
                         BOL = bol,
                         TimeIn = startedAt,
@@ -632,7 +618,7 @@ namespace GrainManagement.Api
             return new IntakeWeightSheetDto
             {
                 WeightSheetId = ws.As400Id > 0 ? ws.As400Id.ToString() : wsId.ToString(),
-                As400Id = ws.As400Id > 0 ? FormatWsId(ws.As400Id) : "",
+                As400Id = ws.As400Id > 0 ? ws.As400Id.ToString() : "",
                 ServerId = serverId,
                 ServerName = serverName,
                 WeightSheetNumber = weightSheetNumber,

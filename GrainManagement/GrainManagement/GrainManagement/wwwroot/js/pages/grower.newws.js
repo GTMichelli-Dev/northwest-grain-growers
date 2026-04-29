@@ -46,22 +46,6 @@
         lotsGrid:       '#nwsLotsGrid',
         newLotBtn:      '#nwsNewLotBtn',
         search:         '#nwsSearch',
-        createLotPanel: '#nwsCreateLotPanel',
-        cancelCreateLotBtn: '#nwsCancelCreateLotBtn',
-        item:           '#nwsItem',
-        sgShortcut:     '#nwsSgShortcut',
-        sgError:        '#nwsSgError',
-        account:        '#nwsAccount',
-        splitGroup:     '#nwsSplitGroup',
-        splitGroupWarn: '#nwsSplitGroupWarning',
-        state:          '#nwsState',
-        county:         '#nwsCounty',
-        lotDesc:        '#nwsLotDesc',
-        landlord:       '#nwsLandlord',
-        farmNumber:     '#nwsFarmNumber',
-        notes:          '#nwsNotes',
-        createLotError: '#nwsCreateLotError',
-        saveLotBtn:     '#nwsSaveLotBtn',
 
         // Step 2 — BOL & Hauler
         selectedLotInfo:    '#nwsSelectedLotInfo',
@@ -89,32 +73,21 @@
 
     var currentLocationId = null;
 
-    // Lot creation caches (mirrors grower.wslots.js)
-    var _accountsCache      = null;
-    var _allItemsCache      = null;
-    var _stateCountiesCache = null;
-    var _locationCountiesData       = null;
-    var _locationCountiesLocationId = null;
-    var _activeStateCounties        = null;
-    var _locationItemFiltersCache      = null;
-    var _locationItemFiltersLocationId = null;
     var _lotsCache = [];
-    var _populating = false;
-
-    // Override mode — when a split group has no PrimaryAccountId, the user
-    // picks any active producer account which is sent as OverrideAccountId.
-    var _sgOverrideActive     = false;
-    var _sgOverrideSplitGroup = null;
 
     // Lot type from URL (seed or warehouse)
     var _lotType = (new URLSearchParams(window.location.search).get('lotType') || 'seed').toLowerCase();
-    var _itemsEndpoint = _lotType === 'seed' ? '/api/Lookups/SeedItems' : '/api/Lookups/WarehouseItems';
 
     // Wizard state
     var _selectedLot = null;         // { LotId, LotDescription, SplitGroupDescription, SplitGroupId, ... }
     var _wsPin = null;               // PIN captured from modal before WS creation
     var _createdWsId = null;
     var _milesEntered = false;       // tracks whether user explicitly entered miles
+
+    // Move-load round-trip: when this page is reached from the Move Load
+    // modal, we cache the source load's variety so we can warn the operator
+    // if the lot they're about to use on the new WS has a different variety.
+    var _sourceVarietyForMove = '';
 
     // ── Init ─────────────────────────────────────────────────────────────────
 
@@ -125,7 +98,41 @@
         initHaulerStep();
         wireNavigation();
         wirePinModal();
+        wireMoveFlowBack();
     });
+
+    // When this page was reached via the Move Load round-trip, the back bar
+    // and the trailing "Back to Weight Sheets" success-screen link should
+    // bounce the operator back to /GrowerDelivery/Index?resumeMove=1 with
+    // the cached PIN, instead of leaving them in /WeightSheets. Also fetches
+    // the source load's variety so we can warn on cross-variety choices.
+    function wireMoveFlowBack() {
+        var qp = new URLSearchParams(window.location.search);
+        if (qp.get('returnTo') !== 'move') return;
+
+        var pin      = parseInt(qp.get('pin'),      10) || 0;
+        var fromWsId = parseInt(qp.get('fromWsId'), 10) || 0;
+        var txnId    = parseInt(qp.get('txnId'),    10) || 0;
+        if (!fromWsId || !txnId) return;
+
+        var resume = new URLSearchParams();
+        resume.set('wsId',       String(fromWsId));
+        resume.set('txnId',      String(txnId));
+        resume.set('resumeMove', '1');
+        if (pin) resume.set('pin', String(pin));
+        var resumeUrl = '/GrowerDelivery/Index?' + resume.toString();
+
+        $('#nwsBackBar').attr('href', resumeUrl);
+        $('a.btn[href="/WeightSheets"]').attr('href', resumeUrl);
+
+        // Cache the source load's variety so showStep2 / new-lot navigation
+        // can warn the operator if the chosen lot's variety doesn't match.
+        $.getJSON('/api/GrowerDelivery/' + txnId + '/move-candidates')
+            .done(function (resp) {
+                _sourceVarietyForMove = (resp && resp.SourceVariety) || '';
+            })
+            .fail(function () { /* silent — warning just won't fire */ });
+    }
 
     // ── PIN modal ────────────────────────────────────────────────────────────
 
@@ -199,7 +206,6 @@
         $(SEL.step2).prop('hidden', true);
         $(SEL.step3).prop('hidden', true);
         $(SEL.lotListPanel).prop('hidden', false);
-        $(SEL.createLotPanel).prop('hidden', true);
     }
 
     function showStep2() {
@@ -223,6 +229,24 @@
             $('#nwsConfirmCounty').text(lot.County || '\u2014');
             $('#nwsConfirmLandlord').text(lot.Landlord || '\u2014');
             $('#nwsConfirmFarmNumber').text(lot.FarmNumber || '\u2014');
+        }
+
+        // Cross-variety warning (only meaningful in the move-load round-trip):
+        // if the chosen lot's variety differs from the source load's variety,
+        // surface a danger banner so the operator knows before continuing.
+        var $vw = $('#nwsMoveVarietyWarn');
+        if (_sourceVarietyForMove
+            && _selectedLot
+            && _selectedLot.ItemDescription
+            && _selectedLot.ItemDescription !== _sourceVarietyForMove) {
+            $('#nwsMoveVarietyWarnText').text(
+                'You are moving the load to a new variety — from "'
+                + _sourceVarietyForMove + '" to "'
+                + _selectedLot.ItemDescription + '".'
+            );
+            $vw.prop('hidden', false);
+        } else {
+            $vw.prop('hidden', true);
         }
 
         // Reset BOL & hauler state
@@ -354,6 +378,22 @@
         grid.endCustomLoading();
 
         applySearch();
+
+        // If EditWeightSheetLot just sent us back with ?selectLotId=<id>,
+        // auto-advance to Step 2 for that lot.
+        var selectLotId = parseInt(new URLSearchParams(window.location.search).get('selectLotId'), 10) || null;
+        if (selectLotId) {
+            var match = _lotsCache.find(function (l) { return l.LotId === selectLotId; });
+            if (match) {
+                _selectedLot = match;
+                // Strip selectLotId from the URL so a page refresh doesn't reselect.
+                var cleanParams = new URLSearchParams(window.location.search);
+                cleanParams.delete('selectLotId');
+                var newQs = cleanParams.toString();
+                history.replaceState(null, '', window.location.pathname + (newQs ? '?' + newQs : ''));
+                showStep2();
+            }
+        }
     }
 
     function applySearch() {
@@ -376,28 +416,39 @@
 
     // ── Create Lot Form (replicates grower.wslots.js patterns) ───────────────
 
-    async function initCreateLotForm() {
-        // Load caches
-        if (!_accountsCache) {
-            try { _accountsCache = await $.getJSON('/api/Lookups/ProducerAccounts'); }
-            catch (ex) { _accountsCache = []; }
-            (_accountsCache || []).sort(function (a, b) {
-                return (a.Name || '').localeCompare(b.Name || '', undefined, { sensitivity: 'base' });
-            });
-        }
-        if (!_allItemsCache) {
-            try { _allItemsCache = await $.getJSON(_itemsEndpoint); }
-            catch (ex) { _allItemsCache = []; }
-            (_allItemsCache || []).sort(function (a, b) {
-                return (a.Name || '').localeCompare(b.Name || '', undefined, { sensitivity: 'base' });
-            });
-        }
+    function initCreateLotForm() {
+        // "New Lot" navigates to the dedicated EditWeightSheetLot page.
+        // After the lot is created there, EditWeightSheetLot returns to this
+        // page with ?selectLotId=<id>, which refreshLots() auto-selects.
+        $(SEL.newLotBtn).dxButton({
+            text: 'New Lot',
+            icon: 'add',
+            stylingMode: 'outlined',
+            type: 'default',
+            onClick: function () {
+                var params = new URLSearchParams();
+                params.set('lotType', _lotType);
+                if (_wsPin) params.set('pin', String(_wsPin));
+                params.set('returnTo', 'newws');
+                // Carry source variety through so EditWeightSheetLot can warn
+                // when the operator's about to save a cross-variety lot during
+                // a move-load round-trip.
+                if (_sourceVarietyForMove) params.set('sourceVariety', _sourceVarietyForMove);
 
-        initItemPicker();
-        initAccountPicker();
-        initSplitGroupPicker();
-        await initStateCountyPickers();
-        wireCreateLotButtons();
+                // Forward move-flow context (when present) so EditWeightSheetLot
+                // can echo it back on return — preserves the move flow across the
+                // lot-creation sub-trip, so NewWeightSheet won't lose its
+                // returnTo=move / txnId / fromWsId after the lot is saved.
+                var here = new URLSearchParams(window.location.search);
+                var moveTxnId    = here.get('txnId');
+                var moveFromWsId = here.get('fromWsId');
+                if (moveTxnId)    params.set('moveTxnId',    moveTxnId);
+                if (moveFromWsId) params.set('moveFromWsId', moveFromWsId);
+
+                window.location.href = '/GrowerDelivery/EditWeightSheetLot?' + params.toString();
+            }
+        });
+
         wireSearch();
     }
 
@@ -409,545 +460,6 @@
         });
     }
 
-    function setPickerLoading(sel, loading) {
-        var inst = dxInstance(sel);
-        if (!inst) return;
-        if (loading) {
-            inst.option('disabled', true);
-            inst.option('placeholder', 'Loading\u2026');
-        } else {
-            inst.option('disabled', false);
-            inst.option('placeholder', sel === SEL.account ? 'Select account\u2026'
-                : sel === SEL.splitGroup ? 'Select split group\u2026' : 'Select\u2026');
-        }
-    }
-
-    function initItemPicker() {
-        $(SEL.item).dxSelectBox({
-            dataSource:          _allItemsCache,
-            valueExpr:           'ItemId',
-            displayExpr:         'Name',
-            searchEnabled:       true,
-            searchExpr:          'Name',
-            searchMode:          'contains',
-            showDataBeforeSearch: true,
-            minSearchLength:     0,
-            placeholder:         'Select item\u2026',
-            showClearButton:     true,
-            onValueChanged: async function (e) {
-                if (_populating) return;
-                var acctInst = dxInstance(SEL.account);
-                var sgInst   = dxInstance(SEL.splitGroup);
-                if (e.value) {
-                    var accounts = _accountsCache || [];
-                    if (acctInst) {
-                        acctInst.reset();
-                        setPickerLoading(SEL.account, true);
-                        if (currentLocationId) {
-                            try {
-                                accounts = await $.getJSON('/api/Lookups/ProducerAccountsForItem?itemId=' + e.value + '&locationId=' + currentLocationId);
-                            } catch (ex) { /* fallback to all accounts */ }
-                        }
-                        acctInst.option('dataSource', accounts);
-                        setPickerLoading(SEL.account, false);
-                        if (accounts.length === 1) {
-                            acctInst.option('value', accounts[0].AccountId);
-                        }
-                    }
-                    $(SEL.sgShortcut).prop('disabled', false);
-                } else {
-                    if (acctInst) { acctInst.reset(); acctInst.option('dataSource', _accountsCache || []); acctInst.option('disabled', true); }
-                    if (sgInst)   { sgInst.reset(); sgInst.option('dataSource', []); sgInst.option('disabled', true); }
-                    $(SEL.sgShortcut).val('').prop('disabled', true);
-                    $(SEL.sgError).prop('hidden', true).text('');
-                    $(SEL.splitGroupWarn).prop('hidden', true);
-                }
-                updateLotDescription();
-            },
-        });
-    }
-
-    function initAccountPicker() {
-        $(SEL.account).dxSelectBox({
-            dataSource:          _accountsCache,
-            valueExpr:           'AccountId',
-            displayExpr:         'Name',
-            searchEnabled:       true,
-            searchExpr:          'Name',
-            searchMode:          'contains',
-            showDataBeforeSearch: true,
-            minSearchLength:     0,
-            placeholder:         'Select account\u2026',
-            showClearButton:     true,
-            disabled:            true,
-            onValueChanged: function (e) {
-                if (_populating) return;
-
-                // Override mode: keep the SG# locked; just hide the warning once
-                // the user picks an account.
-                if (_sgOverrideActive) {
-                    if (e.value) {
-                        $(SEL.splitGroupWarn).prop('hidden', true);
-                    }
-                    updateLotDescription();
-                    return;
-                }
-
-                var sgInst = dxInstance(SEL.splitGroup);
-                if (sgInst) { sgInst.reset(); sgInst.option('dataSource', []); sgInst.option('disabled', true); }
-                $(SEL.lotDesc).val('');
-                $(SEL.splitGroupWarn).prop('hidden', true);
-                if (e.value) { loadSplitGroups(e.value); }
-            },
-            onFocusOut: function (e) {
-                if (!e.component.option('value')) {
-                    e.component.reset();
-                    if (_sgOverrideActive) return;
-                    var sgInst = dxInstance(SEL.splitGroup);
-                    if (sgInst) { sgInst.reset(); sgInst.option('dataSource', []); sgInst.option('disabled', true); }
-                    $(SEL.lotDesc).val('');
-                    $(SEL.splitGroupWarn).prop('hidden', true);
-                }
-            }
-        });
-    }
-
-    async function loadSplitGroups(accountId) {
-        setPickerLoading(SEL.splitGroup, true);
-        var groups = [];
-        try { groups = await $.getJSON('/api/GrowerDelivery/SplitGroupsByAccount?accountId=' + accountId); }
-        catch (ex) { /* ignore */ }
-        var sgInst = dxInstance(SEL.splitGroup);
-        if (sgInst) {
-            sgInst.option('dataSource', groups);
-            sgInst.option('disabled', groups.length === 0);
-            sgInst.option('placeholder', 'Select split group\u2026');
-            if (groups.length === 1) { sgInst.option('value', groups[0].SplitGroupId); }
-        }
-        $(SEL.splitGroupWarn).prop('hidden', groups.length > 0);
-    }
-
-    function initSplitGroupPicker() {
-        $(SEL.splitGroup).dxSelectBox({
-            dataSource:          [],
-            valueExpr:           'SplitGroupId',
-            displayExpr:         function (item) {
-                return item ? item.SplitGroupId + ' - ' + item.SplitGroupDescription : '';
-            },
-            searchEnabled:       true,
-            searchExpr:          ['SplitGroupId', 'SplitGroupDescription'],
-            searchMode:          'contains',
-            showDataBeforeSearch: true,
-            minSearchLength:     0,
-            placeholder:         'Select split group\u2026',
-            showClearButton:     true,
-            disabled:            true,
-            onValueChanged: function (e) {
-                if (!_populating) {
-                    $(SEL.sgShortcut).val(e.value || '');
-                    updateLotDescription();
-                }
-                // Show split description below the selector
-                var inst = $(SEL.splitGroup).dxSelectBox('instance');
-                var item = inst && inst.option('selectedItem');
-                var descEl = $('#nwsSplitDesc');
-                if (item && item.SplitGroupDescription) {
-                    descEl.text(item.SplitGroupDescription).prop('hidden', false);
-                } else {
-                    descEl.text('').prop('hidden', true);
-                }
-            },
-            onFocusOut: function (e) {
-                if (!e.component.option('value')) {
-                    e.component.reset();
-                    $(SEL.sgShortcut).val('');
-                    updateLotDescription();
-                }
-            }
-        });
-    }
-
-    function updateLotDescription() {
-        var itemInst = dxInstance(SEL.item);
-        var sgInst   = dxInstance(SEL.splitGroup);
-        var itemText = itemInst ? (itemInst.option('text') || '') : '';
-        var sgText   = sgInst   ? (sgInst.option('text') || '')   : '';
-        var parts = [];
-        if (itemText) parts.push(itemText);
-        if (sgText)   parts.push(sgText);
-        $(SEL.lotDesc).val(parts.join(' - '));
-    }
-
-    // ── State / County pickers ──────────────────────────────────────────────
-
-    async function loadStateCountiesData() {
-        if (!_stateCountiesCache) {
-            try { _stateCountiesCache = await $.getJSON('/api/Lookups/StatesWithCounties'); }
-            catch (ex) { _stateCountiesCache = []; }
-        }
-        return _stateCountiesCache;
-    }
-
-    async function initStateCountyPickers() {
-        var data = await loadStateCountiesData();
-        _activeStateCounties = data;
-
-        var states = data.map(function (s) { return { State: s.State, StateName: s.StateName }; });
-
-        $(SEL.state).dxSelectBox({
-            dataSource:          states,
-            valueExpr:           'State',
-            displayExpr:         'StateName',
-            searchEnabled:       true,
-            searchExpr:          'StateName',
-            searchMode:          'contains',
-            showDataBeforeSearch: true,
-            minSearchLength:     0,
-            placeholder:         'Select state\u2026',
-            showClearButton:     true,
-            onValueChanged: function (e) {
-                var countyInst = $(SEL.county).dxSelectBox('instance');
-                if (countyInst) {
-                    if (!_populating) countyInst.reset();
-                    countyInst.option('dataSource', getCountiesForState(e.value));
-                    countyInst.option('disabled', !e.value);
-                }
-            },
-        });
-
-        $(SEL.county).dxSelectBox({
-            dataSource:          [],
-            valueExpr:           'this',
-            displayExpr:         'this',
-            searchEnabled:       true,
-            searchMode:          'contains',
-            showDataBeforeSearch: true,
-            minSearchLength:     0,
-            placeholder:         'Select county\u2026',
-            showClearButton:     true,
-            disabled:            true,
-        });
-    }
-
-    function getCountiesForState(stateCode) {
-        var source = _activeStateCounties || _stateCountiesCache;
-        if (!stateCode || !source) return [];
-        for (var i = 0; i < source.length; i++) {
-            if (source[i].State === stateCode) return source[i].Counties;
-        }
-        return [];
-    }
-
-    async function loadLocationCounties() {
-        if (!currentLocationId) { _locationCountiesData = []; return; }
-        if (_locationCountiesLocationId === currentLocationId && _locationCountiesData !== null) return;
-        try {
-            _locationCountiesData = await $.getJSON('/api/locations/' + currentLocationId + '/Counties');
-        } catch (ex) {
-            _locationCountiesData = [];
-        }
-        _locationCountiesLocationId = currentLocationId;
-    }
-
-    async function loadLocationItemFilters() {
-        if (!currentLocationId) { _locationItemFiltersCache = []; return; }
-        if (_locationItemFiltersLocationId === currentLocationId && _locationItemFiltersCache !== null) return;
-        try {
-            _locationItemFiltersCache = await $.getJSON('/api/locations/' + currentLocationId + '/Items');
-        } catch (ex) {
-            _locationItemFiltersCache = [];
-        }
-        _locationItemFiltersLocationId = currentLocationId;
-    }
-
-    function getFilteredItems() {
-        var allItems = _allItemsCache || [];
-        if (!_locationItemFiltersCache || _locationItemFiltersCache.length === 0) return allItems;
-        var allowedIds = {};
-        _locationItemFiltersCache.forEach(function (f) { allowedIds[f.ItemId] = true; });
-        return allItems.filter(function (item) { return allowedIds[item.ItemId]; });
-    }
-
-    function applyStateCountyConstraints() {
-        var stateInst  = dxInstance(SEL.state);
-        var countyInst = $(SEL.county).dxSelectBox('instance');
-        if (!stateInst || !countyInst) return;
-
-        if (_locationCountiesData && _locationCountiesData.length > 0) {
-            var stateMap = {};
-            _locationCountiesData.forEach(function (lc) {
-                if (!stateMap[lc.StateAbv]) {
-                    stateMap[lc.StateAbv] = { State: lc.StateAbv, StateName: lc.StateName, Counties: [] };
-                }
-                stateMap[lc.StateAbv].Counties.push(lc.CountyName);
-            });
-            _activeStateCounties = Object.values(stateMap);
-        } else {
-            _activeStateCounties = _stateCountiesCache || [];
-        }
-
-        var states = _activeStateCounties.map(function (s) { return { State: s.State, StateName: s.StateName }; });
-        stateInst.option('dataSource', states);
-        stateInst.reset();
-        countyInst.reset();
-        countyInst.option('dataSource', []);
-        countyInst.option('disabled', true);
-
-        if (_locationCountiesData && _locationCountiesData.length === 1) {
-            var lc = _locationCountiesData[0];
-            stateInst.option('value', lc.StateAbv);
-            setTimeout(function () { countyInst.option('value', lc.CountyName); }, 0);
-        }
-    }
-
-    // ── Wire create-lot buttons ──────────────────────────────────────────────
-
-    function wireCreateLotButtons() {
-        // New Lot button
-        $(SEL.newLotBtn).dxButton({
-            text: 'New Lot',
-            icon: 'add',
-            stylingMode: 'outlined',
-            type: 'default',
-            onClick: async function () {
-                $(SEL.lotListPanel).prop('hidden', true);
-                $(SEL.createLotPanel).prop('hidden', false);
-                await resetCreateLotForm();
-            }
-        });
-
-        // Cancel create lot
-        $(SEL.cancelCreateLotBtn).on('click', function () {
-            $(SEL.createLotPanel).prop('hidden', true);
-            $(SEL.lotListPanel).prop('hidden', false);
-        });
-
-        // Save lot
-        $(SEL.saveLotBtn).on('click', async function () {
-            await saveCreateLot();
-        });
-
-        // SG# shortcut
-        $(SEL.sgShortcut).on('keydown', function (e) {
-            if (e.key === 'Enter') { e.preventDefault(); applySgShortcut(); }
-        }).on('blur', function () {
-            if ($(SEL.sgShortcut).val().trim()) applySgShortcut();
-        });
-    }
-
-    async function applySgShortcut() {
-        var raw = $(SEL.sgShortcut).val().trim();
-        $(SEL.sgError).prop('hidden', true).text('');
-        if (!raw) return;
-
-        var sgId = parseInt(raw, 10);
-        if (!sgId || sgId <= 0) {
-            $(SEL.sgError).text('Invalid split group number.').prop('hidden', false);
-            return;
-        }
-
-        try {
-            var sg = await $.getJSON('/api/GrowerDelivery/SplitGroupLookup?splitGroupId=' + sgId);
-            _populating = true;
-            try {
-                var acctInst = dxInstance(SEL.account);
-                var sgInst   = dxInstance(SEL.splitGroup);
-
-                if (sg.PrimaryAccountId) {
-                    // ── Normal path: split group has a primary account ─────────
-                    _sgOverrideActive     = false;
-                    _sgOverrideSplitGroup = null;
-                    $(SEL.splitGroupWarn).text('No split group set up for this account.');
-
-                    if (acctInst) {
-                        acctInst.option('disabled', false);
-                        acctInst.option('value', sg.PrimaryAccountId);
-                    }
-                    var groups = [];
-                    try { groups = await $.getJSON('/api/GrowerDelivery/SplitGroupsByAccount?accountId=' + sg.PrimaryAccountId); }
-                    catch (ex) { /* ignore */ }
-                    if (sgInst) {
-                        sgInst.option('dataSource', groups);
-                        sgInst.option('disabled', false);
-                        sgInst.option('value', sg.SplitGroupId);
-                    }
-                    $(SEL.splitGroupWarn).prop('hidden', groups.length > 0);
-                } else {
-                    // ── Override path: no primary account on this split group ──
-                    // Let the user pick any active producer; the selected account
-                    // will be sent as OverrideAccountId on create.
-                    _sgOverrideActive     = true;
-                    _sgOverrideSplitGroup = {
-                        SplitGroupId:          sg.SplitGroupId,
-                        SplitGroupDescription: sg.SplitGroupDescription,
-                    };
-
-                    // Lock the split group picker to this single entry.
-                    if (sgInst) {
-                        sgInst.option('dataSource', [_sgOverrideSplitGroup]);
-                        sgInst.option('value', sg.SplitGroupId);
-                        sgInst.option('disabled', true);
-                    }
-
-                    // Enable account picker with all producer accounts; clear selection.
-                    if (acctInst) {
-                        acctInst.option('dataSource', _accountsCache || []);
-                        acctInst.option('disabled', false);
-                        acctInst.option('value', null);
-                    }
-
-                    $(SEL.splitGroupWarn)
-                        .text('This split group has no primary account. Please select any active producer account.')
-                        .prop('hidden', false);
-                }
-
-                updateLotDescription();
-            } finally {
-                _populating = false;
-            }
-        } catch (ex) {
-            if (ex.status === 404) {
-                $(SEL.sgError).text('Split group ' + sgId + ' not found.').prop('hidden', false);
-            } else {
-                $(SEL.sgError).text('Lookup failed.').prop('hidden', false);
-            }
-
-            _sgOverrideActive     = false;
-            _sgOverrideSplitGroup = null;
-        }
-    }
-
-    async function resetCreateLotForm() {
-        _sgOverrideActive     = false;
-        _sgOverrideSplitGroup = null;
-
-        var itemInst = dxInstance(SEL.item);
-        var acctInst = dxInstance(SEL.account);
-        var sgInst   = dxInstance(SEL.splitGroup);
-
-        await loadLocationItemFilters();
-        var itemSource = getFilteredItems();
-        if (itemInst) {
-            itemInst.option('dataSource', itemSource);
-            itemInst.option('disabled', false);
-            itemInst.reset();
-        }
-        if (acctInst) { acctInst.reset(); acctInst.option('disabled', true); }
-        if (sgInst)   { sgInst.reset(); sgInst.option('dataSource', []); sgInst.option('disabled', true); }
-
-        $(SEL.lotDesc).val('');
-        $(SEL.landlord).val('');
-        $(SEL.notes).val('');
-        $(SEL.sgShortcut).val('').prop('disabled', true);
-        $(SEL.sgError).prop('hidden', true).text('');
-        $(SEL.splitGroupWarn).prop('hidden', true);
-        $(SEL.createLotError).prop('hidden', true).text('');
-
-        await loadLocationCounties();
-        applyStateCountyConstraints();
-
-        // Auto-cascade if only one item
-        if (itemSource.length === 1 && itemInst) {
-            _populating = true;
-            try {
-                itemInst.option('value', itemSource[0].ItemId);
-                $(SEL.sgShortcut).prop('disabled', false);
-                updateLotDescription();
-
-                var accounts = _accountsCache || [];
-                if (currentLocationId) {
-                    try {
-                        accounts = await $.getJSON('/api/Lookups/ProducerAccountsForItem?itemId=' + itemSource[0].ItemId + '&locationId=' + currentLocationId);
-                    } catch (ex) { /* ignore */ }
-                }
-                if (acctInst) {
-                    acctInst.option('dataSource', accounts);
-                    acctInst.option('disabled', false);
-                }
-                if (accounts.length === 1 && acctInst) {
-                    acctInst.option('value', accounts[0].AccountId);
-                    await loadSplitGroups(accounts[0].AccountId);
-                }
-            } finally {
-                _populating = false;
-            }
-        }
-    }
-
-    async function saveCreateLot() {
-        var splitGroupId = parseInt($(SEL.splitGroup).dxSelectBox('option', 'value'), 10) || null;
-
-        if (!currentLocationId) {
-            $(SEL.createLotError).text('No location selected.').prop('hidden', false);
-            return;
-        }
-        if (!splitGroupId) {
-            $(SEL.createLotError).text('Please select a split group.').prop('hidden', false);
-            return;
-        }
-
-        // Override mode: the server needs an explicit account to mark as primary
-        // since the split group itself has no PrimaryAccountId.
-        var overrideAccountId = null;
-        if (_sgOverrideActive) {
-            overrideAccountId = parseInt(
-                $(SEL.account).dxSelectBox('option', 'value'), 10) || null;
-            if (!overrideAccountId) {
-                $(SEL.createLotError).text('Please select an account for this split group.').prop('hidden', false);
-                return;
-            }
-        }
-
-        if (!$(SEL.state).dxSelectBox('option', 'value')) {
-            $(SEL.createLotError).text('Please select a state.').prop('hidden', false);
-            return;
-        }
-        if (!$(SEL.county).dxSelectBox('option', 'value')) {
-            $(SEL.createLotError).text('Please select a county.').prop('hidden', false);
-            return;
-        }
-
-        var btn = $(SEL.saveLotBtn);
-        btn.prop('disabled', true).text('Creating\u2026');
-        $(SEL.createLotError).prop('hidden', true);
-
-        try {
-            var resp = await fetch('/api/GrowerDelivery/WeightSheetLots', {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({
-                    LocationId:        currentLocationId,
-                    SplitGroupId:      splitGroupId,
-                    ItemId:            $(SEL.item).dxSelectBox('option', 'value') || null,
-                    Notes:             $(SEL.notes).val().trim() || null,
-                    State:             $(SEL.state).dxSelectBox('option', 'value') || null,
-                    County:            $(SEL.county).dxSelectBox('option', 'value') || null,
-                    Landlord:          $(SEL.landlord).val().trim() || null,
-                    FarmNumber:        $(SEL.farmNumber).val().trim() || null,
-                    Pin:               _wsPin,
-                    OverrideAccountId: overrideAccountId,
-                    LotType:           _lotType === 'warehouse' ? 1 : 0,
-                }),
-            });
-
-            if (!resp.ok) {
-                var detail = await tryParseError(resp);
-                $(SEL.createLotError).text('Error: ' + detail).prop('hidden', false);
-                return;
-            }
-
-            // Switch back to lot list and refresh
-            $(SEL.createLotPanel).prop('hidden', true);
-            $(SEL.lotListPanel).prop('hidden', false);
-            refreshLots();
-            showAlert('Weight sheet lot created.', 'success');
-
-        } catch (ex) {
-            $(SEL.createLotError).text('Network error: ' + ex.message).prop('hidden', false);
-        } finally {
-            btn.prop('disabled', false).text('Create Lot');
-        }
-    }
 
     // ══════════════════════════════════════════════════════════════════════════
     // STEP 2: BOL TYPE & HAULER SELECTION
@@ -1236,6 +748,27 @@
             }
 
             var result = await resp.json();
+
+            // Move-load round-trip: if the operator launched this WS-create
+            // from the Move Load modal, send them straight back to the load
+            // edit page with ?moveTo=<newWsId>&pin=<pin> so the receiving
+            // page can auto-perform the move without a second PIN prompt.
+            var qp = new URLSearchParams(window.location.search);
+            if (qp.get('returnTo') === 'move') {
+                var fromWsId = parseInt(qp.get('fromWsId'), 10) || 0;
+                var txnId    = parseInt(qp.get('txnId'),    10) || 0;
+                var carryPin = parseInt(qp.get('pin'),      10) || _wsPin || 0;
+                if (fromWsId && txnId && result.WeightSheetId) {
+                    var ret = new URLSearchParams();
+                    ret.set('wsId',   String(fromWsId));
+                    ret.set('txnId',  String(txnId));
+                    ret.set('moveTo', String(result.WeightSheetId));
+                    if (carryPin) ret.set('pin', String(carryPin));
+                    window.location.href = '/GrowerDelivery/Index?' + ret.toString();
+                    return;
+                }
+            }
+
             showStep3(result.WeightSheetId);
 
         } catch (ex) {

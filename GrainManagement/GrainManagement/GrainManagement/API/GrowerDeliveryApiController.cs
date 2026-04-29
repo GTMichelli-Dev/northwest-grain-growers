@@ -47,6 +47,26 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         _systemInfo = systemInfo;
     }
 
+    // Resolves a user-name to attribute audit rows to when no PIN was required
+    // (e.g. SET_PENDING / REOPEN). Tries Remote-Admin cookie first (operator
+    // identity on Remote deployments), then Microsoft Identity UPN, then a
+    // "system" sentinel.
+    private string ResolveAuditUserName()
+    {
+        try
+        {
+            var req = HttpContext?.Request;
+            if (req != null && req.Cookies.TryGetValue("GrainMgmt_RemoteAdminUser", out var raRaw))
+            {
+                var name = Uri.UnescapeDataString(raRaw ?? "");
+                if (!string.IsNullOrWhiteSpace(name)) return name;
+            }
+        }
+        catch { /* fall through */ }
+        if (!string.IsNullOrWhiteSpace(_currentUser?.UPN)) return _currentUser.UPN!;
+        return "system";
+    }
+
     // POST /api/GrowerDelivery
     [HttpPost]
     public async Task<IActionResult> Create(
@@ -61,6 +81,17 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             return BadRequest(new { message = "LotId is required." });
         if (dto.LocationId <= 0)
             return BadRequest(new { message = "LocationId is required." });
+
+        // ── Closed-lot guard: block new loads on a closed lot ────────────────
+        var lotStatus = await _ctx.Lots
+            .AsNoTracking()
+            .Where(l => l.LotId == dto.LotId)
+            .Select(l => new { l.IsOpen })
+            .FirstOrDefaultAsync(ct);
+        if (lotStatus is null)
+            return BadRequest(new { message = "Lot not found." });
+        if (!lotStatus.IsOpen)
+            return BadRequest(new { message = "This lot has been closed. New loads cannot be added to weight sheets on a closed lot." });
 
         // ── Resolve lbs UOM — always lbs for grower deliveries ───────────────
         var uomId = await _ctx.UnitOfMeasures
@@ -673,12 +704,10 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         if (!lot.ProductId.HasValue)
             return BadRequest(new { message = $"Lot {dto.LotId} does not have a ProductId configured." });
 
-        // ── Resolve CompletedAt per truck vs non-truck rules ────────────────
-        DateTime? completedAt = isTruck
-            ? (dto.EndQty.HasValue ? dto.CompletedAt ?? DateTime.UtcNow : null)
-            : dto.CompletedAt ?? DateTime.UtcNow;
-
         // ── Update the detail record ─────────────────────────────────────────
+        // NOTE: StartedAt and CompletedAt are intentionally NOT touched on edit.
+        // The original capture timestamps stay frozen — when/who modified the
+        // weight values is recorded in the AuditTrail row written below.
         detail.LotId        = dto.LotId;
         detail.ProductId    = lot.ProductId.Value;
         detail.ItemId       = lot.ItemId;
@@ -696,8 +725,6 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         detail.EndQtyLocationQuantityMethodDescription   = isTruck && dto.EndQty.HasValue ? dto.EndQtyLocationQuantityMethodDescription?.Trim() : null;
         detail.DirectQtyLocationQuantityMethodId         = hasDirect ? dto.DirectQtyLocationQuantityMethodId : null;
         detail.DirectQtyLocationQuantityMethodDescription = hasDirect ? dto.DirectQtyLocationQuantityMethodDescription?.Trim() : null;
-        detail.StartedAt    = isTruck ? dto.StartedAt : dto.StartedAt ?? DateTime.UtcNow;
-        detail.CompletedAt  = completedAt;
         detail.Notes        = dto.Notes;
         detail.UpdatedAt    = DateTime.UtcNow;
         detail.IsVoided     = false;
@@ -986,7 +1013,13 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         if (user is null)
             return Unauthorized(new { message = "Invalid or inactive PIN." });
 
-        return Ok(new { UserId = user.UserId, UserName = user.UserName });
+        var privileges = await _ctx.UserPrivileges
+            .AsNoTracking()
+            .Where(p => p.UserId == user.UserId)
+            .Select(p => p.PrivilegeId)
+            .ToListAsync(ct);
+
+        return Ok(new { UserId = user.UserId, UserName = user.UserName, Privileges = privileges });
     }
 
     // GET /api/GrowerDelivery/OpenWeightSheets?locationId=&statusBucket=&fromDate=&toDate=
@@ -1049,6 +1082,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             .Select(ws => new
             {
                 ws.WeightSheetId,
+                ws.As400Id,
                 ws.RowUid,
                 ws.WeightSheetType,
                 CreationDate   = ws.CreationDate.ToString("MM/dd/yyyy"),
@@ -1321,6 +1355,17 @@ public sealed class GrowerDeliveryApiController : ControllerBase
     {
         var lot = await _ctx.Lots.FindAsync(new object[] { id }, ct);
         if (lot is null) return NotFound(new { message = "Lot not found." });
+
+        if (lot.IsOpen)
+            return Ok(new { lot.LotId, lot.IsOpen });
+
+        // Same-day-only guard: a lot may only be re-opened on the same local day it was closed.
+        // UpdatedAt is set to UtcNow at close time (see CloseLot above).
+        var closedLocalDate = lot.UpdatedAt?.ToLocalTime().Date;
+        if (closedLocalDate != DateTime.Now.Date)
+        {
+            return BadRequest(new { message = "This lot was closed on a previous day and can no longer be re-opened." });
+        }
 
         lot.IsOpen    = true;
         lot.UpdatedAt = DateTime.UtcNow;
@@ -2057,6 +2102,8 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                 lot.LotDescription,
                 lot.ServerId    AS LotServerId,
                 lot.LocationId  AS LotLocationId,
+                lot.ItemId      AS LotItemId,
+                lot.LotType     AS LotType,
                 p.Description   AS CropName,
                 sg.SplitGroupId,
                 sg.SplitGroupDescription AS SplitName,
@@ -2107,6 +2154,8 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             LotDescription     = reader.IsDBNull(reader.GetOrdinal("LotDescription")) ? null : reader.GetString(reader.GetOrdinal("LotDescription")),
             LotServerId        = reader.IsDBNull(reader.GetOrdinal("LotServerId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("LotServerId")),
             LotLocationId      = reader.IsDBNull(reader.GetOrdinal("LotLocationId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("LotLocationId")),
+            LotItemId          = reader.IsDBNull(reader.GetOrdinal("LotItemId")) ? (long?)null : reader.GetInt64(reader.GetOrdinal("LotItemId")),
+            LotType            = reader.IsDBNull(reader.GetOrdinal("LotType")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("LotType")),
             CropName           = reader.IsDBNull(reader.GetOrdinal("CropName")) ? null : reader.GetString(reader.GetOrdinal("CropName")),
             SplitGroupId       = reader.IsDBNull(reader.GetOrdinal("SplitGroupId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("SplitGroupId")),
             SplitName          = reader.IsDBNull(reader.GetOrdinal("SplitName")) ? null : reader.GetString(reader.GetOrdinal("SplitName")),
@@ -2778,6 +2827,415 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             ct);
 
         return Ok(new { id = transactionId, isVoided = false });
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Move-load: re-parent an existing delivery load to a different weight
+    // sheet. Both the source and destination must belong to this server +
+    // location, the destination must be open, hold the same lot, and have
+    // fewer than WeightSheetMaxLoads non-voided loads. The acting user must
+    // hold PrivilegeId 2 ("Move Loads") and supply a valid PIN.
+    // ────────────────────────────────────────────────────────────────────────
+
+    private const int PrivilegeIdMoveLoads = 2;
+
+    public class MoveLoadDto
+    {
+        public Guid TargetWeightSheetUid { get; set; }
+        public int  Pin { get; set; }
+    }
+
+    // GET /api/GrowerDelivery/{transactionId}/move-candidates
+    // Returns weight sheets the load can be moved to: this server + location,
+    // open status, under 25 non-voided loads. The current sheet is excluded.
+    // The lot/variety on each candidate is included so the client can warn
+    // when the operator is moving across a different lot/variety.
+    [HttpGet("{transactionId:long}/move-candidates")]
+    public async Task<IActionResult> GetMoveLoadCandidates(long transactionId, CancellationToken ct)
+    {
+        var detail = await _ctx.InventoryTransactionDetails
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.TransactionId == transactionId, ct);
+
+        if (detail is null)
+            return NotFound(new { message = $"Transaction {transactionId} not found." });
+        if (detail.RefType != "WeightSheet" || !detail.RefId.HasValue)
+            return BadRequest(new { message = "Load is not currently attached to a weight sheet." });
+
+        var txn = await _ctx.InventoryTransactions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.TransactionId == transactionId, ct);
+        if (txn is null)
+            return NotFound(new { message = $"Transaction {transactionId} not found." });
+
+        // Candidates: any open WS at this server+location with < cap (any lot).
+        var sourceUid = detail.RefId.Value;
+        var candidates = await _ctx.WeightSheets
+            .AsNoTracking()
+            .Where(ws => ws.RowUid != sourceUid
+                         && ws.ServerId   == _systemInfo.ServerId
+                         && ws.LocationId == txn.LocationId
+                         && (ws.StatusId == StatusOpen || ws.StatusId == StatusPendingNotFinished))
+            .Select(ws => new
+            {
+                ws.WeightSheetId,
+                ws.As400Id,
+                ws.RowUid,
+                ws.CreationDate,
+                ws.StatusId,
+                ws.LotId,
+                LotDescription = ws.LotId != null
+                    ? _ctx.Lots.Where(l => l.LotId == ws.LotId).Select(l => l.LotDescription).FirstOrDefault()
+                    : null,
+                Variety = ws.LotId != null
+                    ? _ctx.Lots
+                        .Where(l => l.LotId == ws.LotId && l.ItemId != null)
+                        .Select(l => _ctx.Items
+                            .Where(i => i.ItemId == l.ItemId)
+                            .Select(i => i.Description).FirstOrDefault())
+                        .FirstOrDefault()
+                    : null,
+                LoadCount = _ctx.InventoryTransactionDetails
+                    .Count(d => d.RefId == ws.RowUid && d.RefType == "WeightSheet" && !d.IsVoided),
+            })
+            .ToListAsync(ct);
+
+        var filtered = candidates
+            .Where(c => c.LoadCount < WeightSheetMaxLoads)
+            .OrderByDescending(c => c.CreationDate)
+            .ToList();
+
+        // Source lot info — returned alongside so the client can compare and
+        // raise a warning when moving across lots.
+        var sourceLotId = detail.LotId;
+        var sourceLotDesc = await _ctx.Lots
+            .AsNoTracking()
+            .Where(l => l.LotId == sourceLotId)
+            .Select(l => l.LotDescription)
+            .FirstOrDefaultAsync(ct);
+        var sourceVariety = await _ctx.Lots
+            .AsNoTracking()
+            .Where(l => l.LotId == sourceLotId && l.ItemId != null)
+            .Select(l => _ctx.Items
+                .Where(i => i.ItemId == l.ItemId)
+                .Select(i => i.Description).FirstOrDefault())
+            .FirstOrDefaultAsync(ct);
+
+        return Ok(new
+        {
+            SourceLotId    = sourceLotId,
+            SourceLotDesc  = sourceLotDesc,
+            SourceVariety  = sourceVariety,
+            Candidates     = filtered,
+        });
+    }
+
+    // POST /api/GrowerDelivery/{transactionId}/move
+    // Moves a load to a different weight sheet. Audited as MOVE_LOAD.
+    [HttpPost("{transactionId:long}/move")]
+    public async Task<IActionResult> MoveLoad(
+        long transactionId,
+        [FromBody] MoveLoadDto dto,
+        CancellationToken ct)
+    {
+        if (dto is null)
+            return BadRequest(new { message = "Request body is required." });
+        if (dto.TargetWeightSheetUid == Guid.Empty)
+            return BadRequest(new { message = "TargetWeightSheetUid is required." });
+        if (dto.Pin <= 0)
+            return BadRequest(new { message = "PIN is required." });
+
+        // ── PIN + privilege validation ──────────────────────────────────────
+        var pinUser = await _ctx.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Pin == dto.Pin && u.IsActive, ct);
+
+        if (pinUser is null)
+            return Unauthorized(new { message = "Invalid or inactive PIN." });
+
+        var hasPrivilege = await _ctx.UserPrivileges
+            .AsNoTracking()
+            .AnyAsync(p => p.UserId == pinUser.UserId && p.PrivilegeId == PrivilegeIdMoveLoads, ct);
+
+        if (!hasPrivilege)
+            return Unauthorized(new { message = "User does not have the Move Loads privilege." });
+
+        // ── Load source detail + transaction ────────────────────────────────
+        var detail = await _ctx.InventoryTransactionDetails
+            .FirstOrDefaultAsync(d => d.TransactionId == transactionId, ct);
+        if (detail is null)
+            return NotFound(new { message = $"Transaction {transactionId} not found." });
+        if (detail.IsVoided)
+            return BadRequest(new { message = "Cannot move a voided load." });
+        if (detail.RefType != "WeightSheet" || !detail.RefId.HasValue)
+            return BadRequest(new { message = "Load is not currently attached to a weight sheet." });
+
+        var txn = await _ctx.InventoryTransactions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.TransactionId == transactionId, ct);
+        if (txn is null)
+            return NotFound(new { message = $"Transaction {transactionId} not found." });
+
+        var sourceUid = detail.RefId.Value;
+        if (sourceUid == dto.TargetWeightSheetUid)
+            return BadRequest(new { message = "Load is already on that weight sheet." });
+
+        // ── Validate destination ───────────────────────────────────────────
+        var target = await _ctx.WeightSheets
+            .AsNoTracking()
+            .FirstOrDefaultAsync(w => w.RowUid == dto.TargetWeightSheetUid, ct);
+
+        if (target is null)
+            return NotFound(new { message = "Destination weight sheet not found." });
+        if (target.ServerId != _systemInfo.ServerId || target.LocationId != txn.LocationId)
+            return BadRequest(new { message = "Destination weight sheet is on a different server/location." });
+        if (target.StatusId != StatusOpen && target.StatusId != StatusPendingNotFinished)
+            return BadRequest(new { message = "Destination weight sheet is not open." });
+        // Note: cross-lot moves are intentionally allowed. The client warns the
+        // operator when the destination lot/variety differs; the move itself
+        // is recorded in MOVE_LOAD audit so a different-lot move is traceable.
+
+        var targetLoadCount = await _ctx.InventoryTransactionDetails
+            .AsNoTracking()
+            .CountAsync(d => d.RefId == target.RowUid && d.RefType == "WeightSheet" && !d.IsVoided, ct);
+
+        if (targetLoadCount >= WeightSheetMaxLoads)
+            return BadRequest(new { message = $"Destination weight sheet is full ({WeightSheetMaxLoads} loads max)." });
+
+        // Also resolve source IDs for the audit row before mutating.
+        var sourceWs = await _ctx.WeightSheets
+            .AsNoTracking()
+            .FirstOrDefaultAsync(w => w.RowUid == sourceUid, ct);
+
+        // ── Perform move ────────────────────────────────────────────────────
+        detail.RefId     = target.RowUid;
+        detail.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+            await _ctx.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Failed to move load TransactionId={TxnId}", transactionId);
+            return StatusCode(500, new { message = "Database error while moving load." });
+        }
+
+        // ── Audit ───────────────────────────────────────────────────────────
+        // Audit payload labels match the operator-facing terminology in the
+        // AuditTrail viewer:
+        //   As400Id — the AS400 / Agvantage id operators recognize
+        //   LoadId  — the transaction id of the load that moved
+        // The acting user is already captured in AuditTrail.UserName (the
+        // "User" column in the viewer), so it isn't repeated in the payload.
+        string oldJson = JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["As400Id"] = sourceWs?.As400Id,
+            ["LoadId"]  = transactionId,
+        });
+        string newJson = JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["As400Id"] = target.As400Id,
+            ["LoadId"]  = transactionId,
+        });
+        string keyJson   = JsonSerializer.Serialize(new { TransactionId = transactionId });
+        string tableName = "Inventory.InventoryTransactionDetails";
+        string action    = "MOVE_LOAD";
+        int locationId   = txn.LocationId;
+
+        await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+            INSERT INTO [system].[AuditTrail] (LocationId, UserName, TableName, Action, KeyJson, OldJson, NewJson)
+            VALUES ({locationId}, {pinUser.UserName}, {tableName}, {action}, {keyJson}, {oldJson}, {newJson})",
+            ct);
+
+        // Recompute statuses on both sheets — moving may flip pending↔finished.
+        await RecomputeWeightSheetStatusAsync(sourceUid, ct);
+        await RecomputeWeightSheetStatusAsync(target.RowUid, ct);
+
+        return Ok(new
+        {
+            id = transactionId,
+            fromWeightSheetId = sourceWs?.WeightSheetId,
+            toWeightSheetId   = target.WeightSheetId,
+            toWeightSheetUid  = target.RowUid,
+        });
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Manual Pending / Re-open transitions on a weight sheet.
+    //   POST /WeightSheet/{id}/pending
+    //     - Validates every non-voided load has outbound weight + a bin/container
+    //     - Returns 400 with `incompleteLoads` if any are missing those
+    //     - If any load is missing protein, returns 200 with
+    //       { requiresProteinAck = true, missingProteinLoads = [...] }
+    //       unless the body says { acceptMissingProtein: true }
+    //     - On success transitions to PendingFinished and writes a SET_PENDING audit row
+    //   POST /WeightSheet/{id}/reopen
+    //     - Allowed when current status is Pending* and load count < cap
+    //     - Transitions to Open and writes a REOPEN audit row
+    // ────────────────────────────────────────────────────────────────────────
+
+    public class SetPendingDto
+    {
+        public bool AcceptMissingProtein { get; set; }
+    }
+
+    [HttpPost("WeightSheet/{id:long}/pending")]
+    public async Task<IActionResult> SetWeightSheetPending(
+        long id,
+        [FromBody] SetPendingDto dto,
+        CancellationToken ct)
+    {
+        dto ??= new SetPendingDto();
+
+        var ws = await _ctx.WeightSheets
+            .FirstOrDefaultAsync(w => w.WeightSheetId == id && w.ServerId == _systemInfo.ServerId, ct);
+        if (ws is null)
+            return NotFound(new { message = $"Weight sheet {id} not found." });
+        if (ws.StatusId == StatusClosed)
+            return BadRequest(new { message = "This weight sheet is closed." });
+        if (ws.StatusId == StatusPendingFinished)
+            return Ok(new { weightSheetId = ws.WeightSheetId, statusId = (int)ws.StatusId, alreadyPending = true });
+
+        // Pull the non-voided loads and check completeness.
+        var loads = await _ctx.InventoryTransactionDetails
+            .AsNoTracking()
+            .Where(d => d.RefId == ws.RowUid && d.RefType == "WeightSheet" && !d.IsVoided)
+            .Select(d => new
+            {
+                d.TransactionId,
+                d.StartQty,
+                d.EndQty,
+                d.DirectQty,
+                HasContainer = _ctx.InventoryTransactionDetailToContainers
+                    .Any(c => c.TransactionId == d.TransactionId),
+                ProteinValue = _ctx.TransactionAttributes
+                    .Where(a => a.TransactionId == d.TransactionId
+                                && a.AttributeType.Code == "PROTEIN")
+                    .Select(a => (decimal?)a.DecimalValue)
+                    .FirstOrDefault(),
+            })
+            .ToListAsync(ct);
+
+        // "Complete enough to set Pending" = a recorded final weight + a bin.
+        // Direct loads need DirectQty + container; truck loads need EndQty + container.
+        var incomplete = loads
+            .Where(l =>
+            {
+                bool hasFinalWeight = l.DirectQty.HasValue
+                    || (l.StartQty.HasValue && l.EndQty.HasValue);
+                return !hasFinalWeight || !l.HasContainer;
+            })
+            .Select(l => new { l.TransactionId })
+            .ToList();
+
+        if (incomplete.Count > 0)
+        {
+            return BadRequest(new
+            {
+                message = "Some loads are not complete.",
+                incompleteLoads = incomplete,
+            });
+        }
+
+        var missingProtein = loads
+            .Where(l => !(l.ProteinValue.HasValue && l.ProteinValue.Value > 0))
+            .Select(l => new { l.TransactionId })
+            .ToList();
+
+        if (missingProtein.Count > 0 && !dto.AcceptMissingProtein)
+        {
+            return Ok(new
+            {
+                requiresProteinAck = true,
+                missingProteinLoads = missingProtein,
+            });
+        }
+
+        var oldStatus = (int)ws.StatusId;
+        ws.StatusId = StatusPendingFinished;
+        ws.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+            await _ctx.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Failed to set WS {WsId} to Pending", id);
+            return StatusCode(500, new { message = "Database error while updating weight sheet status." });
+        }
+
+        // Audit
+        string oldJson   = JsonSerializer.Serialize(new { StatusId = oldStatus });
+        string newJson   = JsonSerializer.Serialize(new { StatusId = (int)ws.StatusId });
+        string keyJson   = JsonSerializer.Serialize(new { WeightSheetId = ws.WeightSheetId });
+        string tableName = "warehouse.WeightSheets";
+        string action    = "SET_PENDING";
+        // Prefer the Remote Admin cookie name (operator-recognizable on Remote
+        // deployments) and fall back to the Microsoft Identity UPN, then "system".
+        string userName  = ResolveAuditUserName();
+
+        await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+            INSERT INTO [system].[AuditTrail] (LocationId, UserName, TableName, Action, KeyJson, OldJson, NewJson)
+            VALUES ({ws.LocationId}, {userName}, {tableName}, {action}, {keyJson}, {oldJson}, {newJson})",
+            ct);
+
+        return Ok(new
+        {
+            weightSheetId = ws.WeightSheetId,
+            statusId      = (int)ws.StatusId,
+            acceptedMissingProtein = dto.AcceptMissingProtein && missingProtein.Count > 0,
+        });
+    }
+
+    [HttpPost("WeightSheet/{id:long}/reopen")]
+    public async Task<IActionResult> ReopenWeightSheet(long id, CancellationToken ct)
+    {
+        var ws = await _ctx.WeightSheets
+            .FirstOrDefaultAsync(w => w.WeightSheetId == id && w.ServerId == _systemInfo.ServerId, ct);
+        if (ws is null)
+            return NotFound(new { message = $"Weight sheet {id} not found." });
+
+        if (ws.StatusId != StatusPendingNotFinished && ws.StatusId != StatusPendingFinished)
+            return BadRequest(new { message = "Only pending weight sheets can be re-opened." });
+
+        var loadCount = await _ctx.InventoryTransactionDetails
+            .AsNoTracking()
+            .CountAsync(d => d.RefId == ws.RowUid && d.RefType == "WeightSheet" && !d.IsVoided, ct);
+
+        if (loadCount >= WeightSheetMaxLoads)
+            return BadRequest(new { message = $"This weight sheet already has {WeightSheetMaxLoads} loads — cannot re-open." });
+
+        var oldStatus = (int)ws.StatusId;
+        ws.StatusId = StatusOpen;
+        ws.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+            await _ctx.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Failed to re-open WS {WsId}", id);
+            return StatusCode(500, new { message = "Database error while re-opening weight sheet." });
+        }
+
+        string oldJson   = JsonSerializer.Serialize(new { StatusId = oldStatus });
+        string newJson   = JsonSerializer.Serialize(new { StatusId = (int)ws.StatusId });
+        string keyJson   = JsonSerializer.Serialize(new { WeightSheetId = ws.WeightSheetId });
+        string tableName = "warehouse.WeightSheets";
+        string action    = "REOPEN";
+        // Prefer the Remote Admin cookie name (operator-recognizable on Remote
+        // deployments) and fall back to the Microsoft Identity UPN, then "system".
+        string userName  = ResolveAuditUserName();
+
+        await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+            INSERT INTO [system].[AuditTrail] (LocationId, UserName, TableName, Action, KeyJson, OldJson, NewJson)
+            VALUES ({ws.LocationId}, {userName}, {tableName}, {action}, {keyJson}, {oldJson}, {newJson})",
+            ct);
+
+        return Ok(new { weightSheetId = ws.WeightSheetId, statusId = (int)ws.StatusId });
     }
 
     // GET /api/GrowerDelivery/{transactionId}/completion-status

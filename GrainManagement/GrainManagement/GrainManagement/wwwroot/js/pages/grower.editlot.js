@@ -64,6 +64,13 @@
     let _wsId     = null;
     let _lotType  = null; // 'seed' or 'warehouse' — for new lot mode
     let _prePin   = null; // PIN passed via URL (already collected)
+    // Outer move-flow context, when this page was reached via the chain
+    //   /GrowerDelivery/Index → Move Load → /WeightSheets/LoadType
+    //     → /GrowerDelivery/NewWeightSheet → "New Lot" → here.
+    // We echo these back when returning to NewWeightSheet so the move flow
+    // doesn't get amnesia after the lot save.
+    let _moveTxnId    = null;
+    let _moveFromWsId = null;
 
     // ── Init ─────────────────────────────────────────────────────────────────
 
@@ -74,6 +81,8 @@
         _wsId         = parseInt(urlParams.get('wsId'), 10) || null;
         _lotType      = (urlParams.get('lotType') || '').toLowerCase() || null;
         _prePin       = parseInt(urlParams.get('pin'), 10) || null;
+        _moveTxnId    = parseInt(urlParams.get('moveTxnId'),    10) || null;
+        _moveFromWsId = parseInt(urlParams.get('moveFromWsId'), 10) || null;
 
         // Update back bar based on returnTo
         if (_returnTo === 'deliveryLoads' && _wsId) {
@@ -85,6 +94,10 @@
             var $bar = $('#editLotBackBar');
             $bar.attr('href', '/GrowerDelivery/WeightSheetLots').attr('title', 'Back to Lots');
             $bar.find('.gm-module-bar__label').text('LOTS');
+        } else if (_returnTo === 'newws') {
+            var $bar = $('#editLotBackBar');
+            $bar.attr('href', buildNewWsUrl(null)).attr('title', 'Back to New Weight Sheet');
+            $bar.find('.gm-module-bar__label').text('NEW WEIGHT SHEET');
         }
 
         initItemPicker();
@@ -557,10 +570,18 @@
     }
 
     function updateLotDescription() {
-        var itemInst = $(SEL.item).dxSelectBox('instance');
-        var sgInst   = $(SEL.splitGroup).dxSelectBox('instance');
-        var itemText = itemInst ? (itemInst.option('text') || '') : '';
-        var sgText   = sgInst   ? (sgInst.option('text') || '')   : '';
+        // Item / variety description: in seed mode there's no dxSelectBox on
+        // #wslItem (the popup-grid picker writes to #wslVarietyDisplay), so
+        // tolerate that and fall back to the visible display field.
+        var itemText = '';
+        var itemInst = dxInstance(SEL.item);
+        if (itemInst) {
+            itemText = itemInst.option('text') || '';
+        } else {
+            itemText = ($('#wslVarietyDisplay').val() || '').trim();
+        }
+        var sgInst = dxInstance(SEL.splitGroup);
+        var sgText = sgInst ? (sgInst.option('text') || '') : '';
         var parts = [];
         if (itemText) parts.push(itemText);
         if (sgText)   parts.push(sgText);
@@ -593,6 +614,11 @@
             });
         }
 
+        if (_lotType === 'seed') {
+            initSeedVarietyPicker();
+            return;
+        }
+
         $(SEL.item).dxSelectBox({
             dataSource:          _allItemsCache,
             valueExpr:           'ItemId',
@@ -604,37 +630,261 @@
             minSearchLength:     0,
             placeholder:         'Select item\u2026',
             showClearButton:     true,
-            onValueChanged: async function (e) {
+            onValueChanged: function (e) {
                 if (_populating) return;
-                var acctInst = $(SEL.account).dxSelectBox('instance');
-                var sgInst   = $(SEL.splitGroup).dxSelectBox('instance');
-                if (e.value) {
-                    var accounts = _accountsCache || [];
-                    if (acctInst) {
-                        acctInst.reset();
-                        setPickerLoading(SEL.account, true);
-                        if (currentLocationId) {
-                            try {
-                                accounts = await $.getJSON('/api/Lookups/ProducerAccountsForItem?itemId=' + e.value + '&locationId=' + currentLocationId);
-                            } catch (ex) {
-                                console.warn('[EditLot] Filtered accounts load failed', ex);
-                            }
-                        }
-                        acctInst.option('dataSource', accounts);
-                        setPickerLoading(SEL.account, false);
-                        if (accounts.length === 1) acctInst.option('value', accounts[0].AccountId);
-                    }
-                    $(SEL.sgShortcut).prop('disabled', false);
-                } else {
-                    if (acctInst) { acctInst.reset(); acctInst.option('dataSource', _accountsCache || []); acctInst.option('disabled', true); }
-                    if (sgInst)   { sgInst.reset(); sgInst.option('dataSource', []); sgInst.option('disabled', true); }
-                    $(SEL.sgShortcut).val('').prop('disabled', true);
-                    $(SEL.sgError).prop('hidden', true).text('');
-                    $(SEL.splitGroupWarn).prop('hidden', true);
-                }
-                updateLotDescription();
+                onItemSelected(e.value);
             },
         });
+    }
+
+    // Cascade triggered after the user picks (or clears) the item/variety.
+    // Used by both the warehouse dxSelectBox path and the seed popup picker.
+    async function onItemSelected(itemId) {
+        var acctInst = $(SEL.account).dxSelectBox('instance');
+        var sgInst   = $(SEL.splitGroup).dxSelectBox('instance');
+        if (itemId) {
+            var accounts = _accountsCache || [];
+            if (acctInst) {
+                acctInst.reset();
+                setPickerLoading(SEL.account, true);
+                if (currentLocationId) {
+                    try {
+                        accounts = await $.getJSON('/api/Lookups/ProducerAccountsForItem?itemId=' + itemId + '&locationId=' + currentLocationId);
+                    } catch (ex) {
+                        console.warn('[EditLot] Filtered accounts load failed', ex);
+                    }
+                }
+                acctInst.option('dataSource', accounts);
+                setPickerLoading(SEL.account, false);
+                if (accounts.length === 1) acctInst.option('value', accounts[0].AccountId);
+            }
+            $(SEL.sgShortcut).prop('disabled', false);
+        } else {
+            if (acctInst) { acctInst.reset(); acctInst.option('dataSource', _accountsCache || []); acctInst.option('disabled', true); }
+            if (sgInst)   { sgInst.reset(); sgInst.option('dataSource', []); sgInst.option('disabled', true); }
+            $(SEL.sgShortcut).val('').prop('disabled', true);
+            $(SEL.sgError).prop('hidden', true).text('');
+            $(SEL.splitGroupWarn).prop('hidden', true);
+        }
+        updateLotDescription();
+    }
+
+    // ── Seed variety picker (popup grid) ────────────────────────────────────
+    // Replaces the single Item dxSelectBox with a popup that contains:
+    //   - One filter dxSelectBox per relevant TraitType (CROPID, CERT_CLASS,
+    //     HERBICIDE_SYSTEM, CONDITION)
+    //   - A free-text search box
+    //   - A scrollable dxDataGrid of matching varieties
+    // Selecting a row sets the hidden #wslVarietyId, fills the readonly display
+    // input, closes the popup, and runs the existing item-selected cascade.
+
+    // Filter definitions for the seed variety popup.
+    //   Type 'product' filters by item.ProductName.
+    //   Type 'trait'   filters by item.Traits[*].TraitId for the given TraitTypeId.
+    //                  AllowNone:true adds a "(None)" option that matches items
+    //                  that have no trait of that TraitTypeId.
+    var _seedFilters = [
+        { Key: 'product',     Label: 'Product',          Type: 'product' },
+        { Key: 'cert_class',  Label: 'Cert Class',       Type: 'trait', TraitTypeId: 1, AllowNone: true },
+        { Key: 'herb_system', Label: 'Herbicide System', Type: 'trait', TraitTypeId: 2 },
+        { Key: 'condition',   Label: 'Condition',        Type: 'trait', TraitTypeId: 6 },
+    ];
+    // Sentinel used to indicate "items without any trait of this TraitTypeId".
+    var SEED_FILTER_NONE = '__NONE__';
+    var _seedFilterValues = {};   // { Key: selectedValue | null }
+    var _seedSearchText = '';
+    var _seedPopupInst = null;
+
+    function initSeedVarietyPicker() {
+        // Build the popup with filters + grid
+        $('#wslVarietyPopup').dxPopup({
+            title:         'Select Variety',
+            visible:       false,
+            showCloseButton: true,
+            width:         '90%',
+            height:        '80%',
+            contentTemplate: function (contentEl) {
+                var $wrap = $('<div>').css({ display:'flex', flexDirection:'column', gap:'8px', height:'100%' });
+
+                // Filter row
+                var $filters = $('<div>').css({ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'8px' }).appendTo($wrap);
+                _seedFilters.forEach(function (f) {
+                    var options = buildFilterOptions(f);
+                    var $col = $('<div>').css({ display:'flex', flexDirection:'column', gap:'4px' }).appendTo($filters);
+                    $('<label>').addClass('form-label').css({ marginBottom:'0', fontSize:'0.85rem' }).text(f.Label).appendTo($col);
+                    var $sel = $('<div>').appendTo($col);
+                    $sel.dxSelectBox({
+                        dataSource:    options,
+                        valueExpr:     'Value',
+                        displayExpr:   'Label',
+                        placeholder:   'Any',
+                        showClearButton: true,
+                        onValueChanged: function (e) {
+                            _seedFilterValues[f.Key] = (e.value === undefined ? null : e.value);
+                            refreshSeedGrid();
+                        },
+                    });
+                });
+
+                // Search row
+                var $search = $('<input type="text" class="form-control form-control-sm" placeholder="Search varieties…" />').appendTo($wrap);
+                $search.on('input', function () {
+                    _seedSearchText = ($(this).val() || '').toLowerCase().trim();
+                    refreshSeedGrid();
+                });
+
+                // Grid
+                var $grid = $('<div>').css({ flex:'1 1 auto', minHeight:'0' }).appendTo($wrap);
+                $grid.attr('id', 'wslVarietyGrid');
+                $grid.dxDataGrid({
+                    dataSource: _allItemsCache || [],
+                    keyExpr:    'ItemId',
+                    showBorders:true,
+                    showRowLines:true,
+                    rowAlternationEnabled:true,
+                    columnAutoWidth:true,
+                    height:     '100%',
+                    paging:     { enabled:true, pageSize:50 },
+                    pager:      { visible:true, allowedPageSizes:[25,50,100], showPageSizeSelector:true, showInfo:true },
+                    sorting:    { mode:'multiple' },
+                    noDataText: 'No varieties match the current filters.',
+                    columns: [
+                        { dataField:'ItemId',      caption:'Item #',   width:100, alignment:'right' },
+                        { dataField:'Name',        caption:'Variety',  sortOrder:'asc' },
+                        { dataField:'ProductName', caption:'Product' },
+                        { caption:'Cert Class',   calculateCellValue: function (r) { return traitNameFor(r, 1); }, width:120 },
+                        { caption:'Herb. System', calculateCellValue: function (r) { return traitNameFor(r, 2); }, width:140 },
+                        { caption:'Condition',    calculateCellValue: function (r) { return traitNameFor(r, 6); }, width:120 },
+                        {
+                            caption:'', width:90, fixed:true, fixedPosition:'right',
+                            cellTemplate: function (container, options) {
+                                $('<button>')
+                                    .addClass('btn btn-sm btn-primary')
+                                    .text('Select')
+                                    .on('click', function () { selectVariety(options.data); })
+                                    .appendTo(container);
+                            },
+                        },
+                    ],
+                    onRowDblClick: function (e) { selectVariety(e.data); },
+                });
+
+                contentEl.append($wrap);
+            },
+        });
+        _seedPopupInst = $('#wslVarietyPopup').dxPopup('instance');
+
+        // Open popup on button click OR display-input click
+        $('#wslVarietySelectBtn').on('click', openSeedPopup);
+        $('#wslVarietyDisplay').on('click', openSeedPopup);
+    }
+
+    function openSeedPopup() {
+        if (_seedPopupInst) {
+            _seedPopupInst.show();
+            // Refresh dataSource in case the cache loaded after init
+            setTimeout(refreshSeedGrid, 0);
+        }
+    }
+
+    // Builds the dropdown option list for one filter definition.
+    //   - 'product' filter: distinct ProductName values across loaded items.
+    //   - 'trait'   filter: distinct {TraitId, Label} for that TraitTypeId,
+    //                       optionally prefixed with a "(None)" sentinel option.
+    function buildFilterOptions(f) {
+        var seen = {};
+        var out = [];
+        if (f.Type === 'product') {
+            (_allItemsCache || []).forEach(function (item) {
+                var name = item && item.ProductName;
+                if (!name || seen[name]) return;
+                seen[name] = true;
+                out.push({ Value: name, Label: name });
+            });
+            out.sort(function (a, b) { return (a.Label || '').localeCompare(b.Label || ''); });
+            return out;
+        }
+        // 'trait'
+        (_allItemsCache || []).forEach(function (item) {
+            (item.Traits || []).forEach(function (t) {
+                if (t.TraitTypeId === f.TraitTypeId && !seen[t.TraitId]) {
+                    seen[t.TraitId] = true;
+                    out.push({
+                        Value: t.TraitId,
+                        Label: t.TraitName || t.TraitCode || ('#' + t.TraitId),
+                    });
+                }
+            });
+        });
+        out.sort(function (a, b) { return (a.Label || '').localeCompare(b.Label || ''); });
+        if (f.AllowNone) {
+            out.unshift({ Value: SEED_FILTER_NONE, Label: '(None)' });
+        }
+        return out;
+    }
+
+    function traitNameFor(item, traitTypeId) {
+        var traits = item && item.Traits || [];
+        for (var i = 0; i < traits.length; i++) {
+            if (traits[i].TraitTypeId === traitTypeId) return traits[i].TraitName || traits[i].TraitCode || '';
+        }
+        return '';
+    }
+
+    function refreshSeedGrid() {
+        var grid;
+        try { grid = $('#wslVarietyGrid').dxDataGrid('instance'); } catch (e) { return; }
+        if (!grid) return;
+
+        var filtered = (_allItemsCache || []).filter(function (item) {
+            for (var i = 0; i < _seedFilters.length; i++) {
+                var f = _seedFilters[i];
+                var wanted = _seedFilterValues[f.Key];
+                if (wanted == null) continue;
+
+                if (f.Type === 'product') {
+                    if ((item.ProductName || '') !== wanted) return false;
+                    continue;
+                }
+                // 'trait'
+                if (wanted === SEED_FILTER_NONE) {
+                    // Items must have NO trait of this type
+                    var hasAny = (item.Traits || []).some(function (t) { return t.TraitTypeId === f.TraitTypeId; });
+                    if (hasAny) return false;
+                } else {
+                    var hasMatch = (item.Traits || []).some(function (t) {
+                        return t.TraitTypeId === f.TraitTypeId && t.TraitId === wanted;
+                    });
+                    if (!hasMatch) return false;
+                }
+            }
+            // Search text — ItemId + Name + ProductName
+            if (_seedSearchText) {
+                var hay = (String(item.ItemId || '') + ' ' + (item.Name || '') + ' ' + (item.ProductName || '')).toLowerCase();
+                if (hay.indexOf(_seedSearchText) === -1) return false;
+            }
+            return true;
+        });
+
+        grid.option('dataSource', filtered);
+    }
+
+    function selectVariety(item) {
+        if (!item) return;
+        $('#wslVarietyId').val(item.ItemId);
+        $('#wslVarietyItemIdDisplay').val(item.ItemId);
+        $('#wslVarietyDisplay').val(item.Name || '');
+
+        // Keep the legacy hidden #wslItem in sync so any code that reads its
+        // dxSelectBox value (or doesn't) doesn't break.
+        var sel;
+        try { sel = $('#wslItem').dxSelectBox('instance'); } catch (e) {}
+        if (sel) sel.option('value', item.ItemId);
+
+        if (_seedPopupInst) _seedPopupInst.hide();
+
+        if (_populating) return;
+        onItemSelected(item.ItemId);
     }
 
     // ── State / County pickers ──────────────────────────────────────────────
@@ -803,9 +1053,30 @@
     function navigateBack() {
         if (_returnTo === 'deliveryLoads' && _wsId) {
             window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _wsId;
+        } else if (_returnTo === 'newws') {
+            window.location.href = buildNewWsUrl(null);
         } else {
             window.location.href = '/GrowerDelivery/WeightSheetLots';
         }
+    }
+
+    // Build the URL back to /GrowerDelivery/NewWeightSheet, carrying lotType + pin
+    // and optionally a selectLotId so that page can auto-advance to Step 2.
+    // Also echoes the outer move-flow context (txnId, fromWsId, returnTo=move)
+    // when present so NewWeightSheet keeps its move-load awareness across the
+    // round-trip and can auto-perform the move after WS create.
+    function buildNewWsUrl(lotId) {
+        var params = new URLSearchParams();
+        if (_lotType) params.set('lotType', _lotType);
+        if (_prePin)  params.set('pin', String(_prePin));
+        if (lotId)    params.set('selectLotId', String(lotId));
+        if (_moveTxnId && _moveFromWsId) {
+            params.set('returnTo', 'move');
+            params.set('txnId',    String(_moveTxnId));
+            params.set('fromWsId', String(_moveFromWsId));
+        }
+        var qs = params.toString();
+        return '/GrowerDelivery/NewWeightSheet' + (qs ? '?' + qs : '');
     }
 
     // Use pre-collected PIN if available, otherwise prompt
@@ -1028,10 +1299,16 @@
                 _populating = false;
             }
         } catch (ex) {
-            if (ex.status === 404) {
+            console.error('[EditLot] SplitGroupLookup failed', ex);
+            // jQuery $.getJSON rejects with the jqXHR; status/responseJSON live on it.
+            var status = ex && ex.status;
+            var serverMsg = ex && ex.responseJSON && ex.responseJSON.message;
+            if (status === 404) {
                 $(SEL.sgError).text('Split group ' + sgId + ' not found.').prop('hidden', false);
             } else {
-                $(SEL.sgError).text('Lookup failed.').prop('hidden', false);
+                var detail = serverMsg
+                    || (status ? ('HTTP ' + status + (ex.statusText ? ' ' + ex.statusText : '')) : 'Network error');
+                $(SEL.sgError).text('Lookup failed: ' + detail).prop('hidden', false);
             }
             _sgOverrideActive     = false;
             _sgOverrideSplitGroup = null;
@@ -1058,7 +1335,64 @@
 
     // ── Save ─────────────────────────────────────────────────────────────────
 
+    // Bootstrap-modal version of window.confirm for the cross-variety
+    // warning. Resolves true if the operator clicks Continue, false if they
+    // cancel or dismiss the modal. Re-uses #wslVarietyWarnModal markup.
+    function confirmCrossVariety(sourceVariety, newVariety) {
+        return new Promise(function (resolve) {
+            var modalEl = document.getElementById('wslVarietyWarnModal');
+            if (!modalEl) {
+                // Fallback if the modal markup isn't on the page (shouldn't happen).
+                resolve(window.confirm(
+                    'Warning: this lot uses a different variety than the source load.\n\n' +
+                    'Source: ' + sourceVariety + '\nNew: ' + newVariety + '\n\nContinue?'
+                ));
+                return;
+            }
+            $('#wslVarietyWarnSource').text(sourceVariety || '(unknown)');
+            $('#wslVarietyWarnNew').text(newVariety || '(unknown)');
+
+            var inst = bootstrap.Modal.getOrCreateInstance(modalEl);
+            var settled = false;
+            function finish(value) {
+                if (settled) return;
+                settled = true;
+                $('#wslVarietyWarnContinue').off('click.crossVar');
+                $(modalEl).off('hidden.bs.modal.crossVar');
+                inst.hide();
+                resolve(value);
+            }
+            $('#wslVarietyWarnContinue').on('click.crossVar', function () { finish(true); });
+            // Cancel button uses data-bs-dismiss so it just closes the modal;
+            // the hidden.bs.modal handler resolves false for any non-Continue exit.
+            $(modalEl).on('hidden.bs.modal.crossVar', function () { finish(false); });
+            inst.show();
+        });
+    }
+
     async function saveCreate() {
+        // Cross-variety warning (move-load round-trip): if NewWeightSheet
+        // sent us here with ?sourceVariety=... and the lot we're about to
+        // create uses a different variety, prompt the operator to confirm
+        // they really want to move the load across varieties before saving.
+        var srcVariety = new URLSearchParams(window.location.search).get('sourceVariety') || '';
+        if (srcVariety) {
+            var pickedVariety = '';
+            var seedDisplay = ($('#wslVarietyDisplay').val() || '').trim();
+            if (seedDisplay) {
+                pickedVariety = seedDisplay;
+            } else {
+                try {
+                    var itemInst = $(SEL.item).dxSelectBox('instance');
+                    if (itemInst) pickedVariety = (itemInst.option('text') || '').trim();
+                } catch (e) { /* warehouse mode: dxSelectBox may not be initialized */ }
+            }
+            if (pickedVariety && pickedVariety !== srcVariety) {
+                var ok = await confirmCrossVariety(srcVariety, pickedVariety);
+                if (!ok) return;
+            }
+        }
+
         const splitGroupId = parseInt(
             $(SEL.splitGroup).dxSelectBox('option', 'value'), 10) || null;
 
@@ -1104,7 +1438,13 @@
                 body:    JSON.stringify({
                     LocationId:        currentLocationId,
                     SplitGroupId:      splitGroupId,
-                    ItemId:            $(SEL.item).dxSelectBox('option', 'value') || null,
+                    ItemId:            (function () {
+                        // Seed mode uses #wslVarietyId (popup grid). Warehouse mode
+                        // uses the dxSelectBox on #wslItem.
+                        var inst = dxInstance(SEL.item);
+                        if (inst) return inst.option('value') || null;
+                        return parseInt($('#wslVarietyId').val(), 10) || null;
+                    })(),
                     Notes:             $(SEL.notes).val().trim() || null,
                     State:             $(SEL.state).dxSelectBox('option', 'value') || null,
                     County:            $(SEL.county).dxSelectBox('option', 'value') || null,
@@ -1147,6 +1487,11 @@
                     return;
                 }
                 window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _wsId;
+                return;
+            }
+
+            if (_returnTo === 'newws' && result.LotId) {
+                window.location.href = buildNewWsUrl(result.LotId);
                 return;
             }
 
