@@ -1,0 +1,55 @@
+namespace GrainManagement.Constants;
+
+/// <summary>
+/// Server-side privilege IDs (matches the Auth.Privileges table).
+/// Each value gates a specific PIN-protected action — controllers query
+/// UserPrivileges with these IDs to verify the user behind a PIN holds
+/// the required privilege before allowing the operation.
+///
+/// Existing consts duplicated as private fields inside individual
+/// controllers (e.g. PrivilegeIdMoveLoads in GrowerDelivery / Transfer)
+/// should migrate to these names over time.
+/// </summary>
+public static class Privileges
+{
+    /// <summary>Move a load between weight sheets.</summary>
+    public const int MoveLoads = 2;
+
+    /// <summary>Manual quantity entry (typed weight instead of scale read).</summary>
+    public const int ManualEntry = 6;
+
+    /// <summary>
+    /// Access the Remote Admin tiles page — also acts as the master
+    /// "Administrator" marker. Holders of this privilege bypass every other
+    /// priv check via <see cref="HasPrivilege"/>.
+    /// </summary>
+    public const int RemoteAdmin = 7;
+
+    /// <summary>Create a new producer lot.</summary>
+    public const int AddLots = 9;
+
+    /// <summary>Edit (modify) a producer lot — open/close, change traits, etc.</summary>
+    public const int ModifyLot = 10;
+
+    /// <summary>Edit a Received-flavored (intake) weight sheet header / loads.</summary>
+    public const int ModifyReceivedWeightSheet = 12;
+
+    /// <summary>Edit a Transfer weight sheet header / loads.</summary>
+    public const int ModifyTransferWeightSheet = 13;
+
+    /// <summary>
+    /// Returns true when <paramref name="held"/> contains <paramref name="required"/>
+    /// OR when it contains <see cref="RemoteAdmin"/>. Use this as the single
+    /// source of truth for priv checks so the admin bypass is consistent
+    /// across every PIN-gated endpoint.
+    /// </summary>
+    public static bool HasPrivilege(IEnumerable<int> held, int required)
+    {
+        if (held == null) return false;
+        foreach (var p in held)
+        {
+            if (p == required || p == RemoteAdmin) return true;
+        }
+        return false;
+    }
+}

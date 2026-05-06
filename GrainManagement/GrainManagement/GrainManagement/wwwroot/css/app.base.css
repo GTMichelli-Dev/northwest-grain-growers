@@ -673,7 +673,11 @@ body {
 .gm-module-bar--weightsheets { background-color: #9a7a3b; }
 .gm-module-bar--admin     { background-color: #1565c0; }
 .gm-module-bar--intake    { background-color: #8B5E3C; }
-.gm-module-bar--transfer  { background-color: #16a34a; }
+/* Transfer family — blue-leaning palette so the movement concept reads as
+   distinct from intake/seed/warehouse flows. */
+.gm-module-bar--transfer            { background-color: #2563eb; }
+.gm-module-bar--transfer-seed       { background-color: #0e7490; }
+.gm-module-bar--transfer-warehouse  { background-color: #1e40af; }
 .gm-module-bar--lots      { background-color: #0891b2; }
 .gm-module-bar--load      { background-color: #9333ea; }
 .gm-module-bar--system    { background-color: #757575; }
@@ -709,7 +713,9 @@ a.gm-module-bar--link:hover {
 .gm-tile--warehouse  { border-left: 6px solid #d4a017; --tile-accent: #d4a017; --tile-accent-glow: rgba(212,160,23,.35); }
 .gm-tile--seed       { border-left: 6px solid #2e7d32; --tile-accent: #2e7d32; --tile-accent-glow: rgba(46,125,50,.35); }
 .gm-tile--intake     { border-left: 6px solid #8B5E3C; --tile-accent: #8B5E3C; --tile-accent-glow: rgba(139,94,60,.35); }
-.gm-tile--transfer   { border-left: 6px solid #16a34a; --tile-accent: #16a34a; --tile-accent-glow: rgba(22,163,74,.35); }
+.gm-tile--transfer   { border-left: 6px solid #2563eb; --tile-accent: #2563eb; --tile-accent-glow: rgba(37,99,235,.35); }
+.gm-tile--transfer-seed       { border-left: 6px solid #0e7490; --tile-accent: #0e7490; --tile-accent-glow: rgba(14,116,144,.35); }
+.gm-tile--transfer-warehouse  { border-left: 6px solid #1e40af; --tile-accent: #1e40af; --tile-accent-glow: rgba(30,64,175,.35); }
 .gm-tile--lots       { border-left: 6px solid #0891b2; --tile-accent: #0891b2; --tile-accent-glow: rgba(8,145,178,.35); }
 .gm-tile--load       { border-left: 6px solid #9333ea; --tile-accent: #9333ea; --tile-accent-glow: rgba(147,51,234,.35); }
 .gm-tile--admin     { border-left: 6px solid #1565c0; --tile-accent: #1565c0; --tile-accent-glow: rgba(21,101,192,.35); }

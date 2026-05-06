@@ -679,16 +679,10 @@
     // input, closes the popup, and runs the existing item-selected cascade.
 
     // Filter definitions for the seed variety popup.
-    //   Type 'product' filters by item.ProductName.
-    //   Type 'trait'   filters by item.Traits[*].TraitId for the given TraitTypeId.
-    //                  AllowNone:true adds a "(None)" option that matches items
-    //                  that have no trait of that TraitTypeId.
-    var _seedFilters = [
-        { Key: 'product',     Label: 'Product',          Type: 'product' },
-        { Key: 'cert_class',  Label: 'Cert Class',       Type: 'trait', TraitTypeId: 1, AllowNone: true },
-        { Key: 'herb_system', Label: 'Herbicide System', Type: 'trait', TraitTypeId: 2 },
-        { Key: 'condition',   Label: 'Condition',        Type: 'trait', TraitTypeId: 6 },
-    ];
+    // The dropdown row was removed by request — search + grid is sufficient.
+    // Trait columns (Cert Class / Herb. System / Condition) remain visible
+    // in the grid for context.
+    var _seedFilters = [];
     // Sentinel used to indicate "items without any trait of this TraitTypeId".
     var SEED_FILTER_NONE = '__NONE__';
     var _seedFilterValues = {};   // { Key: selectedValue | null }
@@ -706,8 +700,10 @@
             contentTemplate: function (contentEl) {
                 var $wrap = $('<div>').css({ display:'flex', flexDirection:'column', gap:'8px', height:'100%' });
 
-                // Filter row
-                var $filters = $('<div>').css({ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'8px' }).appendTo($wrap);
+                // Filter row — only rendered if there are filters configured.
+                var $filters = _seedFilters.length
+                    ? $('<div>').css({ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'8px' }).appendTo($wrap)
+                    : $();
                 _seedFilters.forEach(function (f) {
                     var options = buildFilterOptions(f);
                     var $col = $('<div>').css({ display:'flex', flexDirection:'column', gap:'4px' }).appendTo($filters);
@@ -1079,15 +1075,33 @@
         return '/GrowerDelivery/NewWeightSheet' + (qs ? '?' + qs : '');
     }
 
-    // Use pre-collected PIN if available, otherwise prompt
-    async function getPin() {
+    // Pull a PIN, gated against the privilege required for this action.
+    // Order of preference:
+    //   1. URL-passed pin (only used once, doesn't enforce privilege —
+    //      that gate happened upstream).
+    //   2. GM.requestPin's session cache (if it satisfies requiredPrivilegeId).
+    //   3. The shared modal.
+    // requiredPrivilegeId comes from GrainManagement.Constants.Privileges:
+    //   9  = AddLots (create), 10 = ModifyLot (edit / lot reassign).
+    async function getPin(requiredPrivilegeId, promptText) {
         if (_prePin) {
             var pin = _prePin;
             _prePin = null; // only use once
             return pin;
         }
-        return await promptForPin();
+        try {
+            var result = await GM.requestPin({
+                prompt: promptText || 'Enter your PIN to continue.',
+                requiredPrivilegeId: requiredPrivilegeId
+            });
+            return result.pin;
+        } catch (e) {
+            return null; // cancelled or insufficient privilege
+        }
     }
+    // Privilege ids — keep in sync with GrainManagement.Constants.Privileges.
+    var PRIV_ADD_LOT    = 9;
+    var PRIV_MODIFY_LOT = 10;
 
     // ── Split group search popup ─────────────────────────────────────────────
 
@@ -1424,7 +1438,7 @@
             return;
         }
 
-        var createPin = await getPin();
+        var createPin = await getPin(PRIV_ADD_LOT, 'Enter your PIN to create the lot.');
         if (createPin === null) return;
 
         const btn = $(SEL.saveBtn);
@@ -1465,7 +1479,7 @@
             var result = await resp.json();
 
             if (_returnTo === 'deliveryLoads' && _wsId && result.LotId) {
-                var pin = await getPin();
+                var pin = await getPin(PRIV_MODIFY_LOT, 'Enter your PIN to assign the new lot to the weight sheet.');
                 if (pin === null) {
                     window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _wsId;
                     return;
@@ -1538,7 +1552,7 @@
             }
         }
 
-        var pin = await getPin();
+        var pin = await getPin(PRIV_MODIFY_LOT, 'Enter your PIN to save the lot changes.');
         if (pin === null) {
             if (_returnTo === 'deliveryLoads' && _wsId) {
                 window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _wsId;
@@ -1642,54 +1656,7 @@
         }
     }
 
-    // ── PIN prompt ──────────────────────────────────────────────────────────
-
-    function promptForPin() {
-        return new Promise(function (resolve) {
-            var $overlay = $('<div class="gm-pin-overlay"></div>');
-            var $dialog  = $(
-                '<div class="gm-pin-dialog">' +
-                    '<h5>Enter Your PIN</h5>' +
-                    '<p class="text-muted small mb-2">A valid user PIN is required to save changes.</p>' +
-                    '<input type="text" class="form-control gm-pin-input" placeholder="PIN" inputmode="numeric" autocomplete="off" autofocus style="-webkit-text-security:disc" />' +
-                    '<div class="gm-pin-error text-danger small mt-1" hidden></div>' +
-                    '<div class="d-flex gap-2 mt-3">' +
-                        '<button type="button" class="btn btn-primary gm-pin-confirm flex-fill">Confirm</button>' +
-                        '<button type="button" class="btn btn-outline-secondary gm-pin-cancel flex-fill">Cancel</button>' +
-                    '</div>' +
-                '</div>'
-            );
-
-            $overlay.append($dialog);
-            $('body').append($overlay);
-
-            var $input = $dialog.find('.gm-pin-input');
-            var $error = $dialog.find('.gm-pin-error');
-
-            function close(val) {
-                $overlay.remove();
-                resolve(val);
-            }
-
-            $dialog.find('.gm-pin-cancel').on('click', function () { close(null); });
-            $dialog.find('.gm-pin-confirm').on('click', function () {
-                var val = parseInt($input.val(), 10);
-                if (!val || val <= 0) {
-                    $error.text('Please enter a valid numeric PIN.').prop('hidden', false);
-                    $input.focus();
-                    return;
-                }
-                close(val);
-            });
-
-            $input.on('keydown', function (e) {
-                if (e.key === 'Enter') $dialog.find('.gm-pin-confirm').click();
-                if (e.key === 'Escape') close(null);
-            });
-
-            setTimeout(function () { $input.focus(); }, 100);
-        });
-    }
+    // PIN prompts go through GM.requestPin (gm.pin-prompt.js) — see getPin().
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 

@@ -89,7 +89,17 @@
                 <label class="form-label fw-bold text-dark mb-1" style="font-size:1.05rem;">
                     What is the BOL Type? <span class="text-danger">*</span>
                 </label>
-                <div style="max-width:360px;" class="mt-2">
+
+                <!-- "None" bypass: no rate captured. Stamps RateType='N',
+                     CustomRateDescription='None', Miles=0, Rate=0, no hauler. -->
+                <div class="form-check mt-2 mb-1">
+                    <input class="form-check-input" type="checkbox" id="nwsNoneRate">
+                    <label class="form-check-label fw-semibold" for="nwsNoneRate">
+                        None &mdash; no rate captured
+                    </label>
+                </div>
+
+                <div style="max-width:360px;" class="mt-2" id="nwsBolTypeWrap">
                     <div id="nwsBolType"></div>
                 </div>
                 <div id="nwsBolTypeHint" class="text-muted small mt-1" hidden></div>
@@ -167,33 +177,7 @@
 
 </div>
 
-<!-- ── PIN popup for New Weight Sheet ──────────────────────────────── -->
-<div class="modal fade" id="nwsPinModal" tabindex="-1" aria-labelledby="nwsPinModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="nwsPinModalLabel">Enter PIN</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="text-muted small mb-2">Enter your PIN to create a new weight sheet.</p>
-                <div>
-                    <label class="form-label">PIN <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="nwsPinInput"
-                           inputmode="numeric" maxlength="10" placeholder="Enter PIN"
-                           autocomplete="off" data-lpignore="true" data-1p-ignore="true"
-                           data-form-type="other"
-                           style="max-width:160px; -webkit-text-security:disc;" />
-                </div>
-                <div id="nwsPinError" class="text-danger small mt-2" hidden></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="nwsPinConfirmBtn">Continue</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- PIN entry uses the shared GM.requestPin modal — see _GmPinPromptModal. -->
 
 @section Scripts {
     <script src="~/js/pages/grower.newws.js" asp-append-version="true"></script>

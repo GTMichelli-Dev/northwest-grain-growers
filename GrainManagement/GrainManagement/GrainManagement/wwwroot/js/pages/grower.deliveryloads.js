@@ -90,12 +90,37 @@
     var _binModal = null;
     var _wsHeader = null;
     var _selectedLotId = null;
+    // True once every non-voided load on the current WS has outbound weight +
+    // a bin (or the WS has zero loads — finishing an empty WS is allowed).
+    // Drives the Finish / Finish & Close Lot button visibility.
+    var _allLoadsComplete = false;
+    // True when the WS has at least one non-voided load. Used to keep the
+    // Finish & Close Lot button hidden on empty WSs (closing a lot from a
+    // sheet that holds no loads is ambiguous; do that from the Lots view).
+    var _hasAnyLoads = false;
+
+    // Edit-load URLs are routed by WS type so the operator stays in the
+    // matching flow: Delivery WS → /GrowerDelivery/Index, Transfer WS →
+    // /GrowerDelivery/WeightSheetTransferLoad.
+    function buildEditLoadUrl(txnId) {
+        var isTransfer = _wsHeader && (_wsHeader.WeightSheetType || "").toLowerCase() === "transfer";
+        var base = isTransfer ? "/GrowerDelivery/WeightSheetTransferLoad" : "/GrowerDelivery/Index";
+        return base + "?wsId=" + _wsId + "&txnId=" + txnId;
+    }
     var _binTargetRow = null;   // load row currently being assigned a bin
     var _selectedBinId = null;
     var _voidModal = null;
-    var _restoreModal = null;
+    // _restoreModal removed — Restore now uses GM.requestPin directly.
     var _reprintModal = null;
     var _connectedPrinters = [];  // populated via SignalR
+    // Most-recently validated PIN bundle from the upfront priv-checked gate
+    // (resolved by GM.requestPin). saveLot() copies _pinGateLast.pin into the
+    // hidden #dlLotPin so the existing PATCH submit path keeps working without
+    // re-asking. Cleared on next gate call.
+    var _pinGateLast = null;
+    // Privilege ids — keep in sync with GrainManagement.Constants.Privileges.
+    var PRIV_ADD_LOT    = 9;
+    var PRIV_MODIFY_LOT = 10;
 
     // ── Init ─────────────────────────────────────────────────────────────────
     $(function () {
@@ -118,7 +143,7 @@
         _lotModal = new bootstrap.Modal(document.getElementById("dlLotModal"));
         _binModal = new bootstrap.Modal(document.getElementById("dlBinModal"));
         _voidModal = new bootstrap.Modal(document.getElementById("dlVoidModal"));
-        _restoreModal = new bootstrap.Modal(document.getElementById("dlRestoreModal"));
+        // Restore has no dedicated modal — handled directly via GM.requestPin.
         _reprintModal = new bootstrap.Modal(document.getElementById("dlReprintModal"));
         initBinGrid();
         initVoidRestore();
@@ -138,6 +163,12 @@
         $('#dlReopenBtn').on('click',     reopenWeightSheet);
         $('#dlProteinWarnContinue').on('click', function () { setPending(true); });
 
+        // Finish & Close Lot — finishes this WS and closes the lot in one
+        // step. The server validates that every load on the lot (across all
+        // WSs of that lot) is complete before allowing the close.
+        $('#dlFinishAndCloseLotBtn').on('click', function () { finishAndCloseLot(false); });
+        $('#dlCloseLotProteinContinue').on('click', function () { finishAndCloseLot(true); });
+
         initGrid();
         initHaulerSelect();
         initLotGrid();
@@ -147,13 +178,61 @@
 
         loadData();
 
+        // Live-refresh: when any WS at this location is mutated server-side,
+        // refresh the header + loads grid. SignalR sends camelCase by default;
+        // we accept either casing on the payload to stay robust against
+        // server-side serializer reconfiguration.
+        if (window.gmWarehouseRealtime && typeof window.gmWarehouseRealtime.onWeightSheetUpdated === "function" && _locationId > 0) {
+            window.gmWarehouseRealtime.onWeightSheetUpdated(function (payload) {
+                if (!_wsId) return;
+                var pushedWsId = payload && (payload.weightSheetId ?? payload.WeightSheetId);
+                if (pushedWsId && pushedWsId !== _wsId) return;
+                loadWsHeader();
+                loadData();
+            }, _locationId);
+        }
+
         $(sel.attrSaveBtn).on("click", saveAttributes);
         $(sel.editHaulerBtn).on("click", openHaulerModal);
-        $(sel.editLotBtn).on("click", openLotModal);
+        // Reassign Lot button — gate on priv 10 BEFORE the lot grid pops up.
+        $(sel.editLotBtn).on("click", function () {
+            GM.requestPin({
+                prompt: "Enter your PIN to reassign the lot.",
+                requiredPrivilegeId: PRIV_MODIFY_LOT
+            })
+            .then(function (result) { _pinGateLast = result; openLotModal(); })
+            .catch(function () { /* user cancelled or failed */ });
+        });
+        // Edit Lot Properties link — same gate; only navigate on success.
+        $(sel.editLotLink).on("click", function (e) {
+            e.preventDefault();
+            var href = $(this).attr("href");
+            if (!href || href === "#") return;
+            GM.requestPin({
+                prompt: "Enter your PIN to edit lot properties.",
+                requiredPrivilegeId: PRIV_MODIFY_LOT
+            })
+            .then(function () { window.location.href = href; })
+            .catch(function () { /* user cancelled or failed */ });
+        });
         $(sel.haulerSaveBtn).on("click", saveHauler);
         $(sel.lotSaveBtn).on("click", saveLot);
-        $(sel.lotPin).on("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $(sel.lotSaveBtn).click(); } });
         $(sel.saveCommentBtn).on("click", saveComment);
+        // New Lot button (inside the Reassign Lot modal) — gate on priv 9
+        // before navigating to the create-lot page. The cached PIN from the
+        // upfront priv-10 gate is reused automatically when the same user
+        // also holds priv 9 (or admin), so no double prompt.
+        $(sel.newLotBtn).on("click", function (e) {
+            e.preventDefault();
+            var href = $(this).attr("href");
+            if (!href || href === "#") return;
+            GM.requestPin({
+                prompt: "Enter your PIN to create a new lot.",
+                requiredPrivilegeId: PRIV_ADD_LOT
+            })
+            .then(function () { window.location.href = href; })
+            .catch(function () { /* user cancelled or failed */ });
+        });
 
         // Show save button when comment text changes
         $(sel.wsComment).on("input", function () {
@@ -183,19 +262,38 @@
             $(sel.newLoadBtn).removeAttr("hidden").show();
         }
 
-        // Set Pending — visible only on Open / PendingNotFinished.
-        // Re-open    — visible only on Pending* (1 or 2).
-        var $setPending = $('#dlSetPendingBtn');
-        var $reopen     = $('#dlReopenBtn');
-        if (_wsStatusId === 0 || _wsStatusId === 1) {
+        // Weight Sheet Finished / Finish & Close Lot — only when the WS is
+        //   Open or PendingNotFinished (still editable) AND every non-voided
+        //   load is complete (outbound weight + bin).
+        // Re-open — visible only on Pending* (1 or 2). The same-day-only check
+        //   is enforced server-side; we just surface the button.
+        // Print  — only on Finished (2) / Closed (3).
+        var $setPending  = $('#dlSetPendingBtn');
+        var $finishClose = $('#dlFinishAndCloseLotBtn');
+        var $reopen      = $('#dlReopenBtn');
+        var $print       = $('#dlPrintSummaryBtn');
+
+        var canFinish = (_wsStatusId === 0 || _wsStatusId === 1) && _allLoadsComplete;
+        // Finish & Close Lot only applies to deliveries with at least one load.
+        // Transfers have no lot; empty WSs should close the lot from the Lots view.
+        var isTransferWs = !!(_wsHeader && (_wsHeader.WeightSheetType || "").toLowerCase() === "transfer");
+        if (canFinish) {
             $setPending.removeAttr('hidden').show();
+            if (!isTransferWs && _hasAnyLoads) $finishClose.removeAttr('hidden').show();
+            else                                $finishClose.attr('hidden', true).hide();
         } else {
             $setPending.attr('hidden', true).hide();
+            $finishClose.attr('hidden', true).hide();
         }
         if (_wsStatusId === 1 || _wsStatusId === 2) {
             $reopen.removeAttr('hidden').show();
         } else {
             $reopen.attr('hidden', true).hide();
+        }
+        if (_wsStatusId >= 2) {
+            $print.removeAttr('hidden').show();
+        } else {
+            $print.attr('hidden', true).hide();
         }
 
         // Closed — lock down header editing too. Pending states (1,2) still
@@ -241,12 +339,12 @@
                     showIncompleteLoads(err.incompleteLoads);
                     return;
                 }
-                showAlert(err.message || 'Cannot set Pending.', 'danger');
+                showAlert(err.message || 'Cannot set Finished.', 'danger');
                 return;
             }
             if (!resp.ok) {
                 var detail = await tryParseError(resp);
-                showAlert('Set Pending failed: ' + detail, 'danger');
+                showAlert('Set Finished failed: ' + detail, 'danger');
                 return;
             }
 
@@ -263,6 +361,77 @@
         } finally {
             btn.prop('disabled', false);
         }
+    }
+
+    // Finish this WS and close the lot in one step. Server returns:
+    //   400 with `incompleteLoads` (list of {WeightSheetId, As400Id, TransactionId,
+    //                                Reason}) when ANY load on the lot is incomplete
+    //   200 with { requiresProteinAck: true, missingProteinLoads: [...] }
+    //                                when loads on the lot lack protein and we
+    //                                haven't passed AcceptMissingProtein
+    //   200 with { ok: true } on success
+    async function finishAndCloseLot(acceptMissingProtein) {
+        var wsId = _wsHeader && _wsHeader.WeightSheetId;
+        if (!wsId) return;
+
+        var btn = $('#dlFinishAndCloseLotBtn');
+        btn.prop('disabled', true);
+        try {
+            var resp = await fetch('/api/GrowerDelivery/WeightSheet/' + wsId + '/finish-and-close-lot', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ AcceptMissingProtein: !!acceptMissingProtein }),
+            });
+
+            if (resp.status === 400) {
+                var err = await resp.json().catch(function () { return {}; });
+                if (Array.isArray(err.incompleteLoads) && err.incompleteLoads.length > 0) {
+                    showCloseLotIncompleteLoads(err.incompleteLoads);
+                    return;
+                }
+                showAlert(err.message || 'Cannot finish & close lot.', 'danger');
+                return;
+            }
+            if (!resp.ok) {
+                var detail = await tryParseError(resp);
+                showAlert('Finish & close lot failed: ' + detail, 'danger');
+                return;
+            }
+
+            var result = await resp.json();
+            if (result.requiresProteinAck) {
+                showCloseLotProteinWarning(result.missingProteinLoads || []);
+                return;
+            }
+
+            window.location.reload();
+        } catch (ex) {
+            showAlert('Network error: ' + ex.message, 'danger');
+        } finally {
+            btn.prop('disabled', false);
+        }
+    }
+
+    function showCloseLotIncompleteLoads(rows) {
+        var $list = $('#dlCloseLotIncompleteList').empty();
+        rows.forEach(function (r) {
+            // Each row carries WS + transaction info so the operator can locate it.
+            var wsLabel = r.As400Id ? String(r.As400Id) : ('WS #' + r.WeightSheetId);
+            var txnLabel = r.TransactionId ? (' — Load ' + r.TransactionId) : '';
+            var reason = r.Reason ? (' (' + r.Reason + ')') : '';
+            $('<li/>').text(wsLabel + txnLabel + reason).appendTo($list);
+        });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('dlCloseLotIncompleteModal')).show();
+    }
+
+    function showCloseLotProteinWarning(rows) {
+        var $list = $('#dlCloseLotProteinList').empty();
+        rows.forEach(function (r) {
+            var wsLabel = r.As400Id ? String(r.As400Id) : ('WS #' + r.WeightSheetId);
+            var txnLabel = r.TransactionId ? (' — Load ' + r.TransactionId) : '';
+            $('<li/>').text(wsLabel + txnLabel).appendTo($list);
+        });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('dlCloseLotProteinModal')).show();
     }
 
     async function reopenWeightSheet() {
@@ -341,43 +510,81 @@
         _wsStatusId = (typeof row.StatusId === "number") ? row.StatusId : 0;
         applyStatusGates();
 
+        var isTransfer = (row.WeightSheetType || "").toLowerCase() === "transfer";
+
         var fmtId = row.WsAs400Id ? String(row.WsAs400Id) : formatId(row.WeightSheetId);
         $(sel.wsIdFmt).text(fmtId);
 
-        // Lot details — show As400Id if available
-        if (row.LotId && row.LotServerId && row.LotLocationId) {
-            $(sel.wsLotNumber).text(row.LotAs400Id ? String(row.LotAs400Id) : formatId(row.LotId));
-        } else {
-            $(sel.wsLotNumber).text("—");
-        }
-        // Variety = "<ItemId> - <CropName>" (per-lot Item number prefix)
-        var varietyParts = [];
-        if (row.LotItemId) varietyParts.push(String(row.LotItemId));
-        if (row.CropName)  varietyParts.push(row.CropName);
-        $(sel.wsCrop).text(varietyParts.length ? varietyParts.join(" - ") : "—");
+        // Lot details — Delivery only. Transfer WSs hide lot/account/split
+        // entirely and surface the WS Item as the variety.
+        if (isTransfer) {
+            $(sel.wsLotNumber).closest(".gm-dl-header__detail").prop("hidden", true);
+            $("#dlWsSplitId").closest(".gm-dl-header__detail").prop("hidden", true);
+            $(sel.wsSplit).closest(".gm-dl-header__detail").prop("hidden", true);
+            $(sel.wsAccount).closest(".gm-dl-header__detail").prop("hidden", true);
 
-        $("#dlWsSplitId").text(row.SplitGroupId || "—");
-        $(sel.wsSplit).text(row.SplitName || "—");
-        $(sel.wsAccount).text(row.PrimaryAccountName || "—");
+            var tParts = [];
+            if (row.WsItemId) tParts.push(String(row.WsItemId));
+            if (row.WsItemDescription) tParts.push(row.WsItemDescription);
+            $(sel.wsCrop).text(tParts.length ? tParts.join(" - ") : "—");
+
+            // Direction = Receiving (we are the destination) / Shipping (source).
+            var isReceiving = row.DestinationLocationId === row.LocationId;
+            var isShipping  = row.SourceLocationId      === row.LocationId;
+            var dirLabel = isReceiving ? "Receiving" : (isShipping ? "Shipping" : "—");
+            $("#dlWsDirection").text(dirLabel);
+            $("#dlWsDirectionDetail").prop("hidden", false);
+        } else {
+            $("#dlWsDirectionDetail").prop("hidden", true);
+            if (row.LotId && row.LotServerId && row.LotLocationId) {
+                $(sel.wsLotNumber).text(row.LotAs400Id ? String(row.LotAs400Id) : formatId(row.LotId));
+            } else {
+                $(sel.wsLotNumber).text("—");
+            }
+            // Variety = "<ItemId> - <CropName>" (per-lot Item number prefix)
+            var varietyParts = [];
+            if (row.LotItemId) varietyParts.push(String(row.LotItemId));
+            if (row.CropName)  varietyParts.push(row.CropName);
+            $(sel.wsCrop).text(varietyParts.length ? varietyParts.join(" - ") : "—");
+
+            $("#dlWsSplitId").text(row.SplitGroupId || "—");
+            $(sel.wsSplit).text(row.SplitName || "—");
+            $(sel.wsAccount).text(row.PrimaryAccountName || "—");
+        }
 
         // Date
         $("#dlWsDate").text(row.CreationDate || "—");
 
-        // Recolor + relabel the module bar by LotType (0=Seed, 1=Warehouse).
-        // The default Razor render uses --intake / --transfer based on wsType
-        // (delivery vs transfer); we override here once we know the lot.
+        // Recolor + relabel the module bar by LotType (0=Seed, 1=Warehouse) and
+        // WeightSheetType. Transfer WSs use the transfer-flavored colors; the
+        // default Razor render uses --intake / --transfer.
         var $bar  = $("#dlModuleBar");
         var $icon = $("#dlModuleBarIcon");
         var $lbl  = $("#dlModuleBarLabel");
         if ($bar.length) {
-            // Remove all module-bar color variants and icon variants we might
-            // have inherited from the Razor render (intake/transfer) before
-            // applying the seed/warehouse one — otherwise the later-declared
-            // CSS rule wins the cascade and the wrong color sticks.
-            $bar.removeClass("gm-module-bar--seed gm-module-bar--warehouse gm-module-bar--intake gm-module-bar--transfer");
+            $bar.removeClass("gm-module-bar--seed gm-module-bar--warehouse gm-module-bar--intake gm-module-bar--transfer gm-module-bar--transfer-seed gm-module-bar--transfer-warehouse");
             $icon.removeClass("gm-icon--seed gm-icon--warehouse gm-icon--delivery gm-icon--transfer");
-            var baseLabel = ($lbl.text() || "").replace(/^(SEED|WAREHOUSE)\s+/i, "").trim();
-            if (row.LotType === 0) {
+            // Strip any flavor prefix the Razor render or a prior pass added
+            // so we only ever decorate the bare suffix (e.g. "TRANSFER WEIGHT
+            // SHEET" or "GROWER INTAKE WEIGHT SHEET").
+            var baseLabel = ($lbl.text() || "").replace(/^(SEED|WAREHOUSE|TRANSFER SEED|TRANSFER WAREHOUSE)\s+/i, "").trim();
+            if (isTransfer) {
+                // baseLabel already contains "TRANSFER WEIGHT SHEET" — just
+                // prepend SEED / WAREHOUSE so the label reads naturally.
+                if (row.LotType === 0) {
+                    $bar.addClass("gm-module-bar--transfer-seed");
+                    $icon.addClass("gm-icon--transfer");
+                    $lbl.text("SEED " + baseLabel);
+                } else if (row.LotType === 1) {
+                    $bar.addClass("gm-module-bar--transfer-warehouse");
+                    $icon.addClass("gm-icon--transfer");
+                    $lbl.text("WAREHOUSE " + baseLabel);
+                } else {
+                    $bar.addClass("gm-module-bar--transfer");
+                    $icon.addClass("gm-icon--transfer");
+                    $lbl.text(baseLabel);
+                }
+            } else if (row.LotType === 0) {
                 $bar.addClass("gm-module-bar--seed");
                 $icon.addClass("gm-icon--seed");
                 $lbl.text("SEED " + baseLabel);
@@ -396,27 +603,58 @@
         // BOL / Hauler details
         var rt = row.RateType || "N";
         $(sel.wsRateType).text(BOL_LABELS[rt] || BOL_LABELS["N"] || "None");
-        $(sel.wsHauler).text(row.HaulerName || (rt === "U" ? "N/A" : "—"));
 
-        var isAF = rt === "A" || rt === "F";
-        var isC  = rt === "C";
+        var hasHauler = row.HaulerId != null;
 
-        $(sel.wsMilesDetail).prop("hidden", !isAF);
-        $(sel.wsMiles).text(row.Miles != null ? row.Miles : "—");
+        if (isTransfer) {
+            // Transfer rule: always show CustomRateDescription. Hauler / Miles /
+            // Rate only when a hauler is attached (HaulerId not null).
+            // Drop the "BOL" + "Desc" labels — the values speak for themselves.
+            $("#dlWsRateTypeLabel").text("");
+            $("#dlWsCustomDescLabel").text("");
+            $("#dlEditHaulerBtn").prop("hidden", true);
+            // New Load on a transfer WS goes to the transfer-specific load
+            // entry view, not the grower-delivery form.
+            $(sel.newLoadBtn).attr("href", "/GrowerDelivery/WeightSheetTransferLoad?wsId=" + row.WeightSheetId);
+            $(sel.wsHauler).closest(".gm-dl-header__detail").prop("hidden", !hasHauler);
+            $(sel.wsHauler).text(row.HaulerName || "—");
 
-        $(sel.wsCalcRateDetail).prop("hidden", true); // fetched async below
-        if (isAF && row.Miles) {
-            $.getJSON("/api/Lookups/HaulerRateForMiles?rateType=" + rt + "&miles=" + row.Miles)
-                .done(function (data) {
-                    $(sel.wsCalcRate).text("$" + data.Rate.toFixed(2) + " (up to " + data.MaxDistance + " mi)");
-                    $(sel.wsCalcRateDetail).prop("hidden", false);
-                });
+            $(sel.wsMilesDetail).prop("hidden", !hasHauler);
+            $(sel.wsMiles).text(row.Miles != null ? row.Miles : "—");
+
+            $(sel.wsCalcRateDetail).prop("hidden", !hasHauler);
+            $(sel.wsCalcRate).text(row.Rate != null ? "$" + Number(row.Rate).toFixed(2) : "—");
+
+            $(sel.wsCustomDescDetail).prop("hidden", !row.CustomRateDescription);
+            $(sel.wsCustomDesc).text(row.CustomRateDescription || "—");
+
+            // The separate custom-rate column duplicates the calc-rate column
+            // for transfers — keep it hidden to avoid double-printing.
+            $(sel.wsCustomRateDetail).prop("hidden", true);
+        } else {
+            $(sel.wsHauler).closest(".gm-dl-header__detail").prop("hidden", false);
+            $(sel.wsHauler).text(row.HaulerName || (rt === "U" ? "N/A" : "—"));
+
+            var isAF = rt === "A" || rt === "F";
+            var isC  = rt === "C";
+
+            $(sel.wsMilesDetail).prop("hidden", !isAF);
+            $(sel.wsMiles).text(row.Miles != null ? row.Miles : "—");
+
+            $(sel.wsCalcRateDetail).prop("hidden", true); // fetched async below
+            if (isAF && row.Miles) {
+                $.getJSON("/api/Lookups/HaulerRateForMiles?rateType=" + rt + "&miles=" + row.Miles)
+                    .done(function (data) {
+                        $(sel.wsCalcRate).text("$" + data.Rate.toFixed(2) + " (up to " + data.MaxDistance + " mi)");
+                        $(sel.wsCalcRateDetail).prop("hidden", false);
+                    });
+            }
+
+            $(sel.wsCustomDescDetail).prop("hidden", !isC);
+            $(sel.wsCustomDesc).text(row.CustomRateDescription || "—");
+            $(sel.wsCustomRateDetail).prop("hidden", !isC);
+            $(sel.wsCustomRate).text(row.Rate != null ? "$" + Number(row.Rate).toFixed(2) : "—");
         }
-
-        $(sel.wsCustomDescDetail).prop("hidden", !isC);
-        $(sel.wsCustomDesc).text(row.CustomRateDescription || "—");
-        $(sel.wsCustomRateDetail).prop("hidden", !isC);
-        $(sel.wsCustomRate).text(row.Rate != null ? "$" + Number(row.Rate).toFixed(2) : "—");
 
         // Comment (textarea)
         $(sel.wsComment).val(row.WsNotes || "");
@@ -506,7 +744,7 @@
                     allowEditing: false,
                     cellTemplate: function (container, options) {
                         $("<a>")
-                            .attr("href", "/GrowerDelivery/Index?wsId=" + _wsId + "&txnId=" + options.data.TransactionId)
+                            .attr("href", buildEditLoadUrl(options.data.TransactionId))
                             .text(formatId(options.data.TransactionId))
                             .css({ color: "#0d6efd", textDecoration: "underline", cursor: "pointer", fontSize: "0.85em" })
                             .appendTo(container);
@@ -521,8 +759,7 @@
                     cellTemplate: function (container, options) {
                         var val = options.data.StartedAt;
                         if (val) {
-                            var d = new Date(val);
-                            $("<span>").text(d.toLocaleString(undefined, { month: "2-digit", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }))
+                            $("<span>").text(window.gmFormatServerTime(val, "datetimeShort"))
                                 .css("font-size", "0.85em").appendTo(container);
                         }
                     },
@@ -536,8 +773,7 @@
                     cellTemplate: function (container, options) {
                         var val = options.data.CompletedAt;
                         if (val) {
-                            var d = new Date(val);
-                            $("<span>").text(d.toLocaleString(undefined, { month: "2-digit", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }))
+                            $("<span>").text(window.gmFormatServerTime(val, "datetimeShort"))
                                 .css("font-size", "0.85em").appendTo(container);
                         }
                     },
@@ -711,8 +947,7 @@
                     $(e.event.target).closest("button").length > 0) return;
 
                 var d = e.data;
-                var url = "/GrowerDelivery/Index?wsId=" + _wsId + "&txnId=" + d.TransactionId;
-                window.location.href = url;
+                window.location.href = buildEditLoadUrl(d.TransactionId);
             },
             onRowPrepared: function (e) {
                 if (e.rowType !== "data") return;
@@ -797,9 +1032,17 @@
             $("#dlStatTotal").text("0 loads");
             $("#dlStatComplete").text("0 complete");
             $("#dlStatTotalNet").text("Net: 0 lbs");
+            // No loads → empty WS is finishable (operator can mark it as
+            // Finished to clear it off the open list). Finish & Close Lot
+            // is still suppressed because there's nothing to verify here.
+            _allLoadsComplete = true;
+            _hasAnyLoads = false;
+            applyStatusGates();
             return;
         }
         var rows = _wsId > 0 ? data.filter(function (r) { return r.WeightSheetId === _wsId; }) : data;
+        // Treat voided rows as not-counted for completeness.
+        var liveRows = rows.filter(function (r) { return !r._isVoided; });
         var total = rows.length;
         var complete = rows.filter(function (r) {
             return isRowComplete(r) || isRowCompleteMissingProtein(r);
@@ -812,6 +1055,16 @@
         $("#dlStatTotal").text(total + " load" + (total !== 1 ? "s" : ""));
         $("#dlStatComplete").text(complete + " complete");
         $("#dlStatTotalNet").text("Net: " + Number(totalNet).toLocaleString(undefined, { maximumFractionDigits: 0 }) + " lbs");
+
+        // "Complete" for finish-button purposes ignores the protein gap (the
+        // protein-warning modal handles that case). An empty WS is treated
+        // as finishable; the Finish & Close Lot button is gated separately
+        // on _hasAnyLoads so it stays hidden on empty WSs.
+        _hasAnyLoads = liveRows.length > 0;
+        _allLoadsComplete = !_hasAnyLoads || liveRows.every(function (r) {
+            return isRowComplete(r) || isRowCompleteMissingProtein(r);
+        });
+        applyStatusGates();
     }
 
     // ── Inline attribute edit (Protein / Moisture) ───────────────────────────
@@ -1148,16 +1401,24 @@
     }
 
     // ── BOL Type modal open / save ────────────────────────────────────────────
-    function openHaulerModal() {
+    // Async — the hauler dxSelectBoxes use a CustomStore that hasn't fetched
+    // yet on first open. Setting `value` before items load leaves the box
+    // showing the raw id (or blank) instead of the hauler name. Waiting on
+    // the dataSource load resolves both before assigning.
+    async function openHaulerModal() {
         $(sel.haulerError).attr("hidden", true);
-        // Pre-fill current values
         var rt = _wsHeader ? _wsHeader.RateType : null;
         $("#dlBolTypeSelect").dxSelectBox("instance").option("value", rt);
+
         if (rt === "A" || rt === "F") {
-            $("#dlBolHauler").dxSelectBox("instance").option("value", _wsHeader.HaulerId || null);
+            var inst = $("#dlBolHauler").dxSelectBox("instance");
+            try { await inst.getDataSource().load(); } catch (_) {}
+            inst.option("value", _wsHeader.HaulerId || null);
             $("#dlBolMiles").dxNumberBox("instance").option("value", _wsHeader.Miles || null);
         } else if (rt === "C") {
-            $("#dlBolCustomHauler").dxSelectBox("instance").option("value", _wsHeader.HaulerId || null);
+            var customInst = $("#dlBolCustomHauler").dxSelectBox("instance");
+            try { await customInst.getDataSource().load(); } catch (_) {}
+            customInst.option("value", _wsHeader.HaulerId || null);
             $("#dlBolCustomRateDesc").val(_wsHeader.CustomRateDescription || "");
             $("#dlBolCustomRate").dxNumberBox("instance").option("value", _wsHeader.Rate || null);
         }
@@ -1249,9 +1510,12 @@
     }
 
     // ── Lot reassign modal ──────────────────────────────────────────────────
+    // Called only after the priv-10 PIN gate has succeeded — _pinGateLast holds
+    // the validated PIN so saveLot's existing PATCH path keeps working without
+    // re-prompting.
     function openLotModal() {
         $(sel.lotError).attr("hidden", true);
-        $(sel.lotPin).val("");
+        $(sel.lotPin).val(_pinGateLast ? _pinGateLast.pin : "");
         _selectedLotId = null;
         $(sel.lotSaveBtn).prop("disabled", true).text("Reassign Lot");
 
@@ -1278,8 +1542,10 @@
         if (grid) grid.clearSelection();
 
         _lotModal.show();
-        setTimeout(function () { $(sel.lotPin).focus(); }, 500);
     }
+
+    // PIN gate is provided globally by GM.requestPin (gm.pin-prompt.js); no
+    // page-local helpers needed here.
 
     // ── Update Edit Lot Properties link in header ─────────────────────────
     function updateEditLotLink() {
@@ -1428,99 +1694,78 @@
 
     function initVoidRestore() {
         $(sel.voidSaveBtn).on("click", submitVoid);
-        $(sel.restoreSaveBtn).on("click", submitRestore);
-        $(sel.voidPin).on("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $(sel.voidSaveBtn).click(); } });
-        $(sel.restorePin).on("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $(sel.restoreSaveBtn).click(); } });
+        // Restore has no modal anymore — openRestoreModal triggers GM.requestPin directly.
     }
 
     function openVoidModal(rowData) {
         $(sel.voidTxnId).val(rowData.TransactionId);
         $(sel.voidReason).val("");
-        $(sel.voidPin).val("");
         $(sel.voidError).attr("hidden", true);
         $(sel.voidSaveBtn).prop("disabled", false).text("Void Ticket");
         _voidModal.show();
-        setTimeout(function () { $(sel.voidPin).focus(); }, 500);
+        setTimeout(function () { $(sel.voidReason).trigger("focus"); }, 500);
     }
 
+    // Restore has no extra fields beyond PIN — skip the modal entirely and
+    // gate via the shared GM.requestPin directly.
     function openRestoreModal(rowData) {
-        $(sel.restoreTxnId).val(rowData.TransactionId);
-        $(sel.restorePin).val("");
-        $(sel.restoreError).attr("hidden", true);
-        $(sel.restoreSaveBtn).prop("disabled", false).text("Restore Ticket");
-        _restoreModal.show();
-        setTimeout(function () { $(sel.restorePin).focus(); }, 500);
+        var txnId = rowData.TransactionId;
+        GM.requestPin({ prompt: "Enter your PIN to restore this ticket." })
+            .then(function (result) {
+                $.ajax({
+                    url: "/api/GrowerDelivery/" + txnId + "/restore",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ Pin: result.pin }),
+                })
+                .done(function () {
+                    showAlert("Ticket " + txnId + " has been restored.", "success");
+                    loadData();
+                })
+                .fail(function (xhr) {
+                    var msg = xhr.responseJSON && xhr.responseJSON.message
+                        ? xhr.responseJSON.message : "Failed to restore ticket.";
+                    showAlert(msg, "danger");
+                });
+            })
+            .catch(function () { /* cancelled */ });
     }
 
+    // Void keeps its own modal so the operator can type the reason. The PIN
+    // is then gated via GM.requestPin once the reason is provided.
     function submitVoid() {
         var txnId  = $(sel.voidTxnId).val();
         var reason = $(sel.voidReason).val().trim();
-        var pin    = parseInt($(sel.voidPin).val(), 10);
-
         if (!reason) {
             $(sel.voidError).text("Void reason is required.").removeAttr("hidden");
             return;
         }
-        if (!pin || pin <= 0) {
-            $(sel.voidError).text("A valid PIN is required.").removeAttr("hidden");
-            return;
-        }
 
-        $(sel.voidSaveBtn).prop("disabled", true).text("Voiding…");
-        $(sel.voidError).attr("hidden", true);
-
-        $.ajax({
-            url: "/api/GrowerDelivery/" + txnId + "/void",
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ Pin: pin, VoidReason: reason }),
-        })
-        .done(function () {
-            _voidModal.hide();
-            showAlert("Ticket " + txnId + " has been voided.", "success");
-            loadData();
-        })
-        .fail(function (xhr) {
-            var msg = xhr.responseJSON && xhr.responseJSON.message
-                ? xhr.responseJSON.message : "Failed to void ticket.";
-            $(sel.voidError).text(msg).removeAttr("hidden");
-        })
-        .always(function () {
-            $(sel.voidSaveBtn).prop("disabled", false).text("Void Ticket");
-        });
-    }
-
-    function submitRestore() {
-        var txnId = $(sel.restoreTxnId).val();
-        var pin   = parseInt($(sel.restorePin).val(), 10);
-
-        if (!pin || pin <= 0) {
-            $(sel.restoreError).text("A valid PIN is required.").removeAttr("hidden");
-            return;
-        }
-
-        $(sel.restoreSaveBtn).prop("disabled", true).text("Restoring…");
-        $(sel.restoreError).attr("hidden", true);
-
-        $.ajax({
-            url: "/api/GrowerDelivery/" + txnId + "/restore",
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ Pin: pin }),
-        })
-        .done(function () {
-            _restoreModal.hide();
-            showAlert("Ticket " + txnId + " has been restored.", "success");
-            loadData();
-        })
-        .fail(function (xhr) {
-            var msg = xhr.responseJSON && xhr.responseJSON.message
-                ? xhr.responseJSON.message : "Failed to restore ticket.";
-            $(sel.restoreError).text(msg).removeAttr("hidden");
-        })
-        .always(function () {
-            $(sel.restoreSaveBtn).prop("disabled", false).text("Restore Ticket");
-        });
+        GM.requestPin({ prompt: "Enter your PIN to void this ticket." })
+            .then(function (result) {
+                $(sel.voidSaveBtn).prop("disabled", true).text("Voiding…");
+                $(sel.voidError).attr("hidden", true);
+                $.ajax({
+                    url: "/api/GrowerDelivery/" + txnId + "/void",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ Pin: result.pin, VoidReason: reason }),
+                })
+                .done(function () {
+                    _voidModal.hide();
+                    showAlert("Ticket " + txnId + " has been voided.", "success");
+                    loadData();
+                })
+                .fail(function (xhr) {
+                    var msg = xhr.responseJSON && xhr.responseJSON.message
+                        ? xhr.responseJSON.message : "Failed to void ticket.";
+                    $(sel.voidError).text(msg).removeAttr("hidden");
+                })
+                .always(function () {
+                    $(sel.voidSaveBtn).prop("disabled", false).text("Void Ticket");
+                });
+            })
+            .catch(function () { /* cancelled */ });
     }
 
     // ── Reprint ──────────────────────────────────────────────────────────────

@@ -17,8 +17,10 @@ public sealed class ReportStorageService : ReportStorageWebExtension
     private static readonly Dictionary<string, ReportDefinition> AllReports = new()
     {
         ["Load Ticket"] = new("Warehouse", () => new LoadTicketReport()),
-        ["Inbound Load Ticket"] = new("Warehouse", () => new InboundLoadTicketReport()),
-        ["Outbound Load Ticket"] = new("Warehouse", () => new OutboundLoadTicketReport()),
+        ["Recieved Inbound Load Ticket"] = new("Warehouse", () => new RecievedInboundLoadTicketReport()),
+        ["Recieved Outbound Load Ticket"] = new("Warehouse", () => new RecievedOutboundLoadTicketReport()),
+        ["Transfer Inbound Load Ticket"] = new("Warehouse", () => new TransferInboundLoadTicketReport()),
+        ["Transfer Outbound Load Ticket"] = new("Warehouse", () => new TransferOutboundLoadTicketReport()),
         ["Direct Quantity Load Ticket"] = new("Warehouse", () => new DirectQuantityLoadTicketReport()),
         ["Intake Weight Sheet"] = new("Warehouse", () => new IntakeWeightSheetReport()),
         ["Lot Label"] = new("Warehouse", () => new LotLabelReport()),

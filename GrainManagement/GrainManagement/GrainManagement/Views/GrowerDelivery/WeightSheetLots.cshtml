@@ -55,6 +55,45 @@
 
 </div>
 
+<!-- ── Close-lot blocker: incomplete loads on this lot's WSs ────────────── -->
+<div class="modal fade" id="wslCloseIncompleteModal" tabindex="-1" aria-labelledby="wslCloseIncompleteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="wslCloseIncompleteLabel">Cannot Close Lot — Incomplete Loads</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">The lot cannot be closed until every load on it is complete (outbound weight + bin). The following loads still need finishing:</p>
+                <ul class="mb-0" id="wslCloseIncompleteList"></ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Close-lot protein warning ──────────────────────────────────────── -->
+<div class="modal fade" id="wslCloseProteinModal" tabindex="-1" aria-labelledby="wslCloseProteinLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="wslCloseProteinLabel">Loads Missing Protein</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">The following loads on this lot have no protein recorded. You can still close the lot.</p>
+                <ul class="mb-0" id="wslCloseProteinList"></ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="wslCloseProteinContinue">Close Lot Anyway</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="~/js/pages/grower.wslots.js" asp-append-version="true"></script>
 }

@@ -1,0 +1,321 @@
+@{
+    ViewData["Title"] = "Transfer Load";
+}
+
+<link rel="stylesheet" href="~/css/pages/grower.delivery.css" asp-append-version="true" />
+
+<a id="tlModuleBar" href="#" class="gm-module-bar gm-module-bar--link" title="Back to Transfer Weight Sheet" hidden>
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span id="tlModuleBarIcon" class="gm-module-bar__icon gm-icon gm-icon--transfer gm-icon--flip" aria-hidden="true"></span>
+    <span id="tlModuleBarLabel" class="gm-module-bar__label"></span>
+</a>
+
+<div class="gm-gd">
+
+    <div id="tlAlert" class="alert" role="alert" hidden></div>
+
+    <!-- ── Transfer WS header ─────────────────────────────────────────────── -->
+    <div id="tlWsHeader" class="gm-dl-header" style="padding:8px 14px;font-size:0.8em;" hidden>
+        <!-- Title row: WS id (As400Id), optional Load id, action buttons. -->
+        <div class="gm-dl-header__title">
+            <span class="gm-dl-header__label">Weight Sheet</span>
+            <span class="gm-dl-header__wsid" id="tlWsIdFormattedTop"></span>
+            <span class="gm-dl-header__loadid" id="tlLoadIdDisplay" hidden style="margin-left:12px; font-size:0.9em; color:#555;">
+                <span style="font-weight:600;">Load ID:</span>
+                <span id="tlLoadIdValue"></span>
+            </span>
+            <div class="ms-auto d-flex gap-2">
+                <a id="tlCancelBtnTop" href="#" class="btn btn-outline-danger">Cancel</a>
+                <button type="button" class="btn btn-outline-primary" id="tlMoveLoadBtnTop" hidden>Move Load</button>
+                <button type="button" class="btn btn-primary" id="tlSaveLoadBtnTop" hidden>Save Load</button>
+            </div>
+        </div>
+        <div class="gm-dl-header__details" style="gap:16px;">
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Type</span>
+                <span class="gm-dl-header__detail-value fw-semibold" id="tlWsDirection">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Variety</span>
+                <span class="gm-dl-header__detail-value" id="tlWsVariety">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Source</span>
+                <span class="gm-dl-header__detail-value" id="tlWsSource">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Destination</span>
+                <span class="gm-dl-header__detail-value" id="tlWsDest">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Date</span>
+                <span class="gm-dl-header__detail-value" id="tlWsDate">—</span>
+            </div>
+        </div>
+        <div class="gm-dl-header__details" style="margin-top:4px; gap:16px; border-top:1px solid #eee; padding-top:4px;">
+            <div class="gm-dl-header__detail" id="tlWsHaulerWrap">
+                <span class="gm-dl-header__detail-label">Hauler</span>
+                <span class="gm-dl-header__detail-value" id="tlWsHauler">—</span>
+            </div>
+            <div class="gm-dl-header__detail" id="tlWsMilesWrap">
+                <span class="gm-dl-header__detail-label">Miles</span>
+                <span class="gm-dl-header__detail-value" id="tlWsMiles">—</span>
+            </div>
+            <div class="gm-dl-header__detail" id="tlWsRateWrap">
+                <span class="gm-dl-header__detail-label">Rate</span>
+                <span class="gm-dl-header__detail-value" id="tlWsRate">—</span>
+            </div>
+            <div class="gm-dl-header__detail" id="tlWsCustomDescWrap">
+                <span class="gm-dl-header__detail-value" id="tlWsCustomDesc">—</span>
+            </div>
+        </div>
+    </div>
+
+    <form id="tlForm" novalidate>
+
+        <!-- ── Section 1: Weight Capture (mirrors warehouse load layout) ── -->
+        <div class="gm-gd-section gm-gd-section--compact" id="tlFormBody" hidden>
+
+            <!-- Method + Bin on same row -->
+            <div class="gm-gd-method-row">
+                <div class="gm-gd-method-row__field">
+                    <label class="form-label">Weight Method</label>
+                    <div id="tlQtyMethod"></div>
+                    <input type="hidden" id="tlQtyMethodId" />
+                    <input type="hidden" id="tlQtyMethodCode" />
+                </div>
+                <div class="gm-gd-method-row__field gm-gd-method-row__field--grow">
+                    <label class="form-label">Bin</label>
+                    <div id="tlContainer"></div>
+                    <input type="hidden" id="tlContainerId" />
+                </div>
+            </div>
+
+            <!-- Scale mode (TRUCK_SCALE): In / Out / Net -->
+            <div id="tlScaleMode" class="gm-gd-weight-row">
+                <div class="gm-gd-weight-cell" id="tlGrossRow">
+                    <div class="gm-gd-weight-cell__head">
+                        <span class="gm-gd-weight-cell__label">In Weight <span class="badge bg-secondary" id="tlGrossSourceBadge" hidden></span></span>
+                        <span class="gm-gd-weight-cell__time" id="tlGrossTime"></span>
+                    </div>
+                    <div class="gm-gd-weight-cell__value" id="tlGrossDisplay">— lbs</div>
+                    <button type="button" class="btn btn-outline-primary btn-sm gm-gd-weight-cell__btn" id="tlCaptureGross">Capture</button>
+                    <input type="hidden" id="tlStartQty" />
+                    <input type="hidden" id="tlStartedAt" />
+                    <input type="hidden" id="tlStartQtyIsManual" />
+                </div>
+
+                <div class="gm-gd-weight-cell" id="tlTareRow" hidden>
+                    <div class="gm-gd-weight-cell__head">
+                        <span class="gm-gd-weight-cell__label">Out Weight <span class="badge bg-secondary" id="tlTareSourceBadge" hidden></span></span>
+                        <span class="gm-gd-weight-cell__time" id="tlTareTime"></span>
+                    </div>
+                    <div class="gm-gd-weight-cell__value" id="tlTareDisplay">— lbs</div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm gm-gd-weight-cell__btn" id="tlCaptureTare" disabled>Capture</button>
+                    <input type="hidden" id="tlEndQty" />
+                    <input type="hidden" id="tlCompletedAt" />
+                    <input type="hidden" id="tlEndQtyIsManual" />
+                </div>
+
+                <div class="gm-gd-weight-cell gm-gd-weight-cell--net" id="tlScaleNetRow" hidden>
+                    <div class="gm-gd-weight-cell__head">
+                        <span class="gm-gd-weight-cell__label">Net</span>
+                    </div>
+                    <div class="gm-gd-weight-cell__value gm-gd-weight-cell__value--net" id="tlNetDisplay">— lbs</div>
+                </div>
+            </div>
+
+            <!-- Direct mode -->
+            <div id="tlDirectMode" class="gm-gd-weight-row" hidden>
+                <div class="gm-gd-weight-cell">
+                    <div class="gm-gd-weight-cell__head">
+                        <span class="gm-gd-weight-cell__label">Net Weight <span class="badge bg-secondary">Manual</span></span>
+                        <span class="gm-gd-weight-cell__time" id="tlDirectTime"></span>
+                    </div>
+                    <div class="gm-gd-weight-cell__value" id="tlDirectDisplay">— lbs</div>
+                    <button type="button" class="btn btn-outline-primary btn-sm gm-gd-weight-cell__btn" id="tlEnterAmountBtn">Enter Amount</button>
+                    <input type="hidden" id="tlDirectQty" />
+                    <input type="hidden" id="tlDirectStartedAt" />
+                    <input type="hidden" id="tlDirectCompletedAt" />
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Load Details ─────────────────────────────────────────────── -->
+        <div class="gm-gd-section gm-gd-section--compact" id="tlLoadDetails" hidden>
+            <div class="gm-gd-section__title">Load Details</div>
+
+            <div class="gm-gd-load-top">
+                <div class="gm-gd-load-top__fields">
+                    <div class="gm-gd-field gm-gd-field--narrow">
+                        <label class="form-label" for="tlProtein">Protein (%)</label>
+                        <input type="number" class="form-control text-end" id="tlProtein"
+                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" style="text-align:right;" />
+                    </div>
+                    <div class="gm-gd-field gm-gd-field--narrow">
+                        <label class="form-label" for="tlMoisture">Moisture (%)</label>
+                        <input type="number" class="form-control text-end" id="tlMoisture"
+                               min="0" max="100" step="0.01" placeholder="0.00" inputmode="decimal" style="text-align:right;" />
+                    </div>
+                </div>
+                <div class="gm-gd-thumbs">
+                    <div class="gm-gd-thumb" id="tlThumbIn">
+                        <div class="gm-gd-thumb__placeholder">
+                            <i class="dx-icon dx-icon-photo" style="font-size:24px;opacity:.4;"></i>
+                        </div>
+                        <div class="gm-gd-thumb__label">In</div>
+                    </div>
+                    <div class="gm-gd-thumb" id="tlThumbOut">
+                        <div class="gm-gd-thumb__placeholder">
+                            <i class="dx-icon dx-icon-photo" style="font-size:24px;opacity:.4;"></i>
+                        </div>
+                        <div class="gm-gd-thumb__label">Out</div>
+                    </div>
+                    <div class="gm-gd-thumb" id="tlThumbBol">
+                        <div class="gm-gd-thumb__placeholder">
+                            <i class="dx-icon dx-icon-photo" style="font-size:24px;opacity:.4;"></i>
+                        </div>
+                        <div class="gm-gd-thumb__label">BOL</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gm-gd-fields gm-gd-fields--load-row2">
+                <div class="gm-gd-field gm-gd-field--bol">
+                    <label class="form-label" for="tlBol">Bill of Lading</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="tlBol"
+                               maxlength="100" placeholder="Bill of Lading"
+                               autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
+                        <button type="button" class="btn btn-outline-secondary" id="tlBolScanBtn" title="Scan BOL">
+                            <i class="dx-icon dx-icon-photo"></i> Scan
+                        </button>
+                    </div>
+                </div>
+                <div class="gm-gd-field">
+                    <label class="form-label" for="tlTruckId">Truck ID <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="tlTruckId" maxlength="100" placeholder="Truck ID" required />
+                </div>
+                <div class="gm-gd-field">
+                    <label class="form-label" for="tlDriver">Driver</label>
+                    <input type="text" class="form-control" id="tlDriver" maxlength="100" placeholder="Driver name" />
+                </div>
+            </div>
+
+            <div style="margin-top:8px;">
+                <div class="gm-gd-field">
+                    <label class="form-label" for="tlNotes">Notes</label>
+                    <textarea class="form-control" id="tlNotes" rows="1" maxlength="1000" placeholder="Optional"></textarea>
+                </div>
+            </div>
+
+            <!-- The Cancel / Move / Save buttons live in the WS header at the
+                 top of the page (mirrors the intake flow). These hidden duplicates
+                 keep existing JS hooks working until callers move to the *Top ids. -->
+            <div class="d-none">
+                <a id="tlCancelBtn" href="#"></a>
+                <button type="button" id="tlMoveLoadBtn"></button>
+                <button type="button" id="tlSaveLoadBtn"></button>
+            </div>
+        </div>
+    </form>
+
+    <!-- ── Move Load Modal ──────────────────────────────────────────────── -->
+    <div class="modal fade" id="tlMoveModal" tabindex="-1" aria-labelledby="tlMoveModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tlMoveModalLabel">Move Load to Another Weight Sheet</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info" style="font-size:0.875rem;">
+                        Select any open weight sheet (transfer or intake) at this location, under 25
+                        loads. Moving onto an intake sheet attaches the load to the sheet's lot;
+                        moving onto another transfer sheet re-stamps the direction (Receiving / Shipping).
+                    </div>
+                    <div id="tlMoveCrossWarn" class="alert alert-danger" style="font-size:0.9rem;" hidden>
+                        <i class="dx-icon dx-icon-warning" style="margin-right:4px;"></i>
+                        <strong>Warning:</strong>
+                        <span id="tlMoveCrossWarnText"></span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="fw-semibold">Available Weight Sheets</div>
+                    </div>
+                    <div id="tlMoveCandidatesGrid"></div>
+                    <!-- PIN is captured upfront via GM.requestPin before this modal opens. -->
+                    <div id="tlMoveError" class="text-danger small mt-2" hidden></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="tlMoveConfirmBtn" disabled>Move Load</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Enter Amount Modal (DirectQty mode) ────────────────────────── -->
+    <div class="modal fade" id="tlEnterAmountModal" tabindex="-1" aria-labelledby="tlEnterAmountModalLabel">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tlEnterAmountModalLabel">Enter Weight</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Weight (lbs) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control text-end" id="tlDirectAmountInput"
+                               min="1" step="1" placeholder="0" inputmode="numeric" style="text-align:right;" />
+                    </div>
+                    <!-- PIN is captured upfront via GM.requestPin before this modal opens. -->
+                    <div id="tlDirectAmountError" class="text-danger small" hidden></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="tlDirectAmountConfirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Capture Weight Modal (Scale mode) ──────────────────────────── -->
+    <div class="modal fade" id="tlCaptureWeightModal" tabindex="-1" aria-labelledby="tlCaptureWeightModalLabel">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tlCaptureWeightModalLabel">Select Scale</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="tlCaptureScaleList" class="d-grid gap-2 mb-3">
+                        <span class="text-muted small">Loading scales...</span>
+                    </div>
+                    <hr />
+                    <button type="button" class="btn btn-outline-secondary w-100" id="tlCaptureManualBtn">
+                        <i class="dx-icon dx-icon-edit"></i> Manual Entry
+                    </button>
+
+                    <div id="tlCaptureManualPanel" class="mt-3" hidden>
+                        <div class="mb-2">
+                            <label class="form-label">Weight (lbs) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control text-end" id="tlCaptureManualInput"
+                                   min="0" step="1" placeholder="0" inputmode="numeric" style="text-align:right;" />
+                        </div>
+                        <!-- PIN is captured upfront via GM.requestPin before this panel is revealed. -->
+                        <button type="button" class="btn btn-primary w-100" id="tlCaptureManualConfirm">
+                            Confirm Manual Weight
+                        </button>
+                    </div>
+
+                    <div id="tlCaptureWeightError" class="text-danger small mt-2" hidden></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/grower.transferload.js" asp-append-version="true"></script>
+}

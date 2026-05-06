@@ -144,43 +144,12 @@
             return; // PIN already validated on LoadType page
         }
 
-        // Fallback: show PIN modal if no PIN in URL
-        var pinModalEl = document.getElementById('nwsPinModal');
-        if (!pinModalEl) {
-            // No modal on page — redirect to LoadType
-            window.location.href = '/WeightSheets/LoadType';
-            return;
-        }
-
-        var pinModal = new bootstrap.Modal(pinModalEl);
-        setTimeout(function () { pinModal.show(); setTimeout(function () { $('#nwsPinInput').focus(); }, 500); }, 300);
-
-        $('#nwsPinInput').on('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('#nwsPinConfirmBtn').click(); } });
-        $('#nwsPinConfirmBtn').on('click', function () {
-            var pin = parseInt($('#nwsPinInput').val(), 10);
-            if (!pin || pin <= 0) {
-                $('#nwsPinError').text('A valid PIN is required.').removeAttr('hidden');
-                return;
-            }
-            $.ajax({
-                url: '/api/GrowerDelivery/ValidatePin?pin=' + pin,
-                method: 'GET',
-                dataType: 'json',
-            })
-            .done(function (data) {
-                _wsPin = pin;
-                pinModal.hide();
-            })
-            .fail(function (xhr) {
-                var msg = xhr.responseJSON && xhr.responseJSON.message
-                    ? xhr.responseJSON.message : 'Invalid PIN.';
-                $('#nwsPinError').text(msg).removeAttr('hidden');
-            });
-        });
-
-        pinModalEl.addEventListener('hidden.bs.modal', function () {
-            if (!_wsPin) window.location.href = '/WeightSheets';
-        });
+        // No PIN in URL — gate via the shared GM.requestPin. If the operator
+        // cancels, send them back to the WS list (this page is unusable
+        // without a validated PIN).
+        GM.requestPin({ prompt: 'Enter your PIN to create a new weight sheet.' })
+            .then(function (result) { _wsPin = result.pin; })
+            .catch(function () { window.location.href = '/WeightSheets'; });
     }
 
     // ── Location ─────────────────────────────────────────────────────────────
@@ -544,6 +513,27 @@
         $(SEL.createWsBtn).on('click', function () {
             createWeightSheet();
         });
+
+        // "None" rate bypass — hides BOL type / hauler / rate fields. The
+        // server stamps RateType='N', CustomRateDescription='None', Rate=0,
+        // Miles=0, no hauler. Requires CK_WeightSheets_RateType to allow 'N'
+        // (see SQL/AddInHouseRateType.sql).
+        $('#nwsNoneRate').on('change', function () {
+            var on = this.checked;
+            $('#nwsBolTypeWrap').prop('hidden', on);
+            $(SEL.haulerMilesDetails).prop('hidden', on ? true : $(SEL.haulerMilesDetails).prop('hidden'));
+            $(SEL.customDetails).prop('hidden', on ? true : $(SEL.customDetails).prop('hidden'));
+            $(SEL.bolTypeHint).prop('hidden', on || !$(SEL.bolTypeHint).text());
+            $(SEL.haulerError).prop('hidden', true);
+            if (on) {
+                var bolTypeInst = dxInstance(SEL.bolType);
+                if (bolTypeInst) bolTypeInst.reset();
+                resetBolAndHaulerFields();
+                $(SEL.createWsBtn).prop('disabled', false);
+            } else {
+                $(SEL.createWsBtn).prop('disabled', true);
+            }
+        });
     }
 
     async function onBolTypeChanged(val) {
@@ -646,17 +636,33 @@
             return;
         }
 
+        if (!_wsPin) {
+            $(SEL.haulerError).text('PIN is required. Please go back and enter your PIN.').prop('hidden', false);
+            return;
+        }
+
+        // ── "None" bypass: short-circuits BOL/hauler/rate validation ──
+        if ($('#nwsNoneRate').is(':checked')) {
+            var nonePayload = {
+                LocationId:            currentLocationId,
+                LotId:                 _selectedLot.LotId,
+                RateType:              'N',
+                HaulerId:              null,
+                Miles:                 0,
+                CustomRateDescription: 'None',
+                Rate:                  0,
+                Pin:                   _wsPin,
+            };
+            await postWeightSheet(nonePayload);
+            return;
+        }
+
         var bolTypeInst = dxInstance(SEL.bolType);
         var bolType = bolTypeInst ? bolTypeInst.option('value') : null;
 
         // ── Validate BOL Type ──
         if (!bolType) {
             $(SEL.haulerError).text('Please select a BOL Type.').prop('hidden', false);
-            return;
-        }
-
-        if (!_wsPin) {
-            $(SEL.haulerError).text('PIN is required. Please go back and enter your PIN.').prop('hidden', false);
             return;
         }
 
@@ -729,8 +735,11 @@
             payload.Rate = customRate;
         }
 
-        $(SEL.haulerError).prop('hidden', true);
+        await postWeightSheet(payload);
+    }
 
+    async function postWeightSheet(payload) {
+        $(SEL.haulerError).prop('hidden', true);
         var btn = $(SEL.createWsBtn);
         btn.prop('disabled', true);
 

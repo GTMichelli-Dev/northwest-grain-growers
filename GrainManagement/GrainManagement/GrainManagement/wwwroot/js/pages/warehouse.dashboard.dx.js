@@ -17,10 +17,12 @@
     function initActionButtons() {
         var $actions = $("#wdActions");
 
+        // End Of Day is a click handler, not a navigation. The other buttons
+        // navigate via their href.
         var buttons = [
             { text: "New Weight Sheet", icon: "doc",    href: "/WeightSheets/LoadType" },
             { text: "F.O.B Load",       icon: "export", href: "/WeightSheets/ShipLoad" },
-            { text: "End Of Day",       icon: "check",  href: "/WeightSheets/EndOfDay" },
+            { text: "End Of Day",       icon: "check",  onClick: openEndOfDayAudit },
             { text: "Lots",             icon: "folder", href: "/GrowerDelivery/WeightSheetLots" }
         ];
 
@@ -31,11 +33,113 @@
                 width: BTN_WIDTH,
                 stylingMode: "outlined",
                 type: "default",
-                onClick: function () {
-                    window.location.href = b.href;
-                }
+                onClick: b.onClick
+                    ? b.onClick
+                    : function () { window.location.href = b.href; }
             }).appendTo($actions);
         });
+    }
+
+    // ── End Of Day audit ───────────────────────────────────────────────────
+    // Calls /api/GrowerDelivery/EndOfDayCheck for the active location and
+    // shows the result list in the #wdEndOfDayModal. Each row carries a
+    // Status field ("Not Complete" / "No Moisture Set" / "No Moisture Set /
+    // Not Complete") that drives both the column text and the row tint.
+    var _endOfDayModal = null;
+
+    function endOfDayLink(row) {
+        var basePath = (row.WeightSheetType || "").toLowerCase() === "transfer"
+            ? "/GrowerDelivery/WeightSheetTransferLoads"
+            : "/GrowerDelivery/WeightSheetDeliveryLoads";
+        return basePath + "?wsId=" + row.WeightSheetId;
+    }
+
+    function openEndOfDayAudit() {
+        var locationId = _currentLocationId || getLocationId();
+        if (!locationId) return;
+
+        if (!_endOfDayModal) {
+            _endOfDayModal = new bootstrap.Modal(document.getElementById("wdEndOfDayModal"));
+        }
+
+        // Always rebuild the grid so the modal reflects the current snapshot.
+        $("#wdEndOfDayMsg").prop("hidden", true);
+
+        $.getJSON("/api/GrowerDelivery/EndOfDayCheck?locationId=" + encodeURIComponent(locationId))
+            .done(function (data) {
+                renderEndOfDayGrid(data || []);
+                _endOfDayModal.show();
+            })
+            .fail(function () {
+                renderEndOfDayGrid([]);
+                $("#wdEndOfDayMsg")
+                    .removeClass("alert-warning alert-success")
+                    .addClass("alert-danger")
+                    .text("Failed to load End Of Day audit. Please try again.")
+                    .prop("hidden", false);
+                _endOfDayModal.show();
+            });
+    }
+
+    function renderEndOfDayGrid(rows) {
+        var $grid = $("#wdEndOfDayGrid");
+        var $msg  = $("#wdEndOfDayMsg");
+
+        if (!rows.length) {
+            $msg.removeClass("alert-warning alert-danger")
+                .addClass("alert-success")
+                .text("All open weight sheets are complete and have moisture entered. Ready for End Of Day.")
+                .prop("hidden", false);
+        } else {
+            $msg.removeClass("alert-success alert-danger")
+                .addClass("alert-warning")
+                .text("The following weight sheets need attention before End Of Day can be completed.")
+                .prop("hidden", false);
+        }
+
+        var existing;
+        try { existing = $grid.dxDataGrid("instance"); } catch (e) { existing = null; }
+
+        var options = {
+            dataSource: rows,
+            keyExpr: "WeightSheetId",
+            showBorders: true,
+            columnAutoWidth: true,
+            paging: { enabled: false },
+            columns: [
+                { dataField: "WeightSheetIdDisplay", caption: "WS #" },
+                { dataField: "Status",               caption: "Status",           width: 220 },
+                { dataField: "WeightSheetType",      caption: "Type", width: 100 },
+                { dataField: "LotIdDisplay",         caption: "Lot #" },
+                { dataField: "LotDescription",       caption: "Lot" },
+                { dataField: "TotalLoads",           caption: "Loads",            width: 80,  alignment: "right" },
+                { dataField: "IncompleteLoadCount",  caption: "Incomplete",       width: 110, alignment: "right" },
+                { dataField: "MissingMoistureCount", caption: "No Moisture",      width: 120, alignment: "right" },
+            ],
+            onRowClick: function (e) {
+                if (e.rowType !== "data" || !e.data) return;
+                window.location.href = endOfDayLink(e.data);
+            },
+            onRowPrepared: function (e) {
+                if (e.rowType !== "data" || !e.data) return;
+                var status = e.data.Status || "";
+                // Tint the row by status. "Both" is the most severe so it gets
+                // the strongest red; pure incomplete is a warm amber; pure
+                // missing-moisture is a softer blue.
+                if (status.indexOf("Not Complete") >= 0 && status.indexOf("No Moisture") >= 0) {
+                    $(e.rowElement).css("background-color", "rgba(220, 53, 69, 0.18)");
+                } else if (status === "Not Complete") {
+                    $(e.rowElement).css("background-color", "rgba(255, 193, 7, 0.22)");
+                } else if (status === "No Moisture Set") {
+                    $(e.rowElement).css("background-color", "rgba(13, 110, 253, 0.14)");
+                }
+                // The whole row is clickable — show a pointer cursor so the
+                // affordance is obvious.
+                $(e.rowElement).css("cursor", "pointer");
+            }
+        };
+        if (existing) existing.option(options);
+        else          $grid.dxDataGrid(options);
     }
 
     function initOpenWeightSheetsGrid(locationId) {
@@ -61,58 +165,71 @@
                     alignment: "center",
                     sortOrder: "desc",
                     calculateCellValue: function (row) {
-                        // Prefer the AS400 / Agvantage id when present;
-                        // fall back to the formatted internal WeightSheetId.
                         return row.As400Id ? String(row.As400Id) : formatId(row.WeightSheetId);
                     }
                 },
                 {
-                    dataField: "WeightSheetType",
+                    // Combined type — "Seed Transfer", "Warehouse Delivery", etc.
                     caption: "Type",
-                    width: 80
+                    width: 150,
+                    calculateCellValue: function (row) {
+                        var wsType = (row.WeightSheetType || "").toLowerCase();
+                        var lotType = row.LotType;
+                        var flavor = lotType === 0 ? "Seed" : (lotType === 1 ? "Warehouse" : "");
+                        if (wsType === "transfer") return (flavor ? flavor + " " : "") + "Transfer";
+                        if (wsType === "delivery") return (flavor ? flavor + " " : "") + "Delivery";
+                        return row.WeightSheetType || "";
+                    }
+                },
+                {
+                    dataField: "LoadCount",
+                    caption: "Loads",
+                    width: 70,
+                    alignment: "center"
+                },
+                {
+                    dataField: "LoadsInYard",
+                    caption: "In Yard",
+                    width: 80,
+                    alignment: "center"
                 },
                 {
                     dataField: "ItemDescription",
                     caption: "Item"
                 },
                 {
-                    dataField: "SplitGroupDescription",
-                    caption: "Split Group"
+                    // Source for Received transfers, Destination for Shipped.
+                    // Hidden value for Delivery WSs (the column stays in the
+                    // grid layout but the cell is empty).
+                    caption: "Source / Dest",
+                    calculateCellValue: function (row) {
+                        if ((row.WeightSheetType || "").toLowerCase() !== "transfer") return "";
+                        // Receiving = current location is destination → show source.
+                        // Shipping  = current location is source → show destination.
+                        if (row.DestinationLocationId === row.LocationId) return row.SourceLocationName || "";
+                        if (row.SourceLocationId      === row.LocationId) return row.DestinationLocationName || "";
+                        return "";
+                    }
                 },
                 {
-                    dataField: "AccountName",
-                    caption: "Account"
-                },
-                {
-                    dataField: "LotDescription",
-                    caption: "Lot",
-                    visible: false
-                },
-                {
-                    dataField: "LoadCount",
-                    caption: "Loads",
-                    width: 60,
-                    alignment: "center"
+                    caption: "Lot #",
+                    width: 110,
+                    calculateCellValue: function (row) {
+                        if (row.LotAs400Id) return String(row.LotAs400Id);
+                        return row.LotId ? String(row.LotId) : "";
+                    }
                 },
                 {
                     dataField: "HaulerName",
                     caption: "Hauler",
                     calculateCellValue: function (row) {
-                        return row.HaulerName || "Grower";
+                        if (row.HaulerName) return row.HaulerName;
+                        return (row.WeightSheetType || "").toLowerCase() === "delivery" ? "Grower" : "";
                     }
                 },
                 {
-                    dataField: "CustomRateDescription",
-                    caption: "Rate Type",
-                    calculateCellValue: function (row) {
-                        return row.CustomRateDescription || row.RateType || "";
-                    }
-                },
-                {
-                    dataField: "CreationDate",
-                    caption: "Created",
-                    width: 95,
-                    alignment: "center"
+                    dataField: "WsNotes",
+                    caption: "Notes"
                 }
             ],
             onRowClick: function (e) {
@@ -128,14 +245,18 @@
                 if (e.rowType === "data") {
                     e.rowElement.css("cursor", "pointer");
 
-                    // Color rows by LotType:
-                    //   0 = Seed       → translucent seed green
-                    //   1 = Warehouse  → translucent grower-delivery brown
+                    // Color rows by LotType + WeightSheetType:
+                    //   Delivery + 0 = Seed       → translucent seed green
+                    //   Delivery + 1 = Warehouse  → translucent warehouse gold
+                    //   Transfer + 0 = Seed       → translucent transfer-seed teal
+                    //   Transfer + 1 = Warehouse  → translucent transfer-warehouse rust
                     var lotType = e.data.LotType;
+                    var wsType  = (e.data.WeightSheetType || "").toLowerCase();
+                    var isTransfer = wsType === "transfer";
                     if (lotType === 0) {
-                        e.rowElement.addClass("gm-ws-row--seed");
+                        e.rowElement.addClass(isTransfer ? "gm-ws-row--transfer-seed" : "gm-ws-row--seed");
                     } else if (lotType === 1) {
-                        e.rowElement.addClass("gm-ws-row--warehouse");
+                        e.rowElement.addClass(isTransfer ? "gm-ws-row--transfer-warehouse" : "gm-ws-row--warehouse");
                     }
                 }
             }
@@ -143,6 +264,13 @@
 
         if (locationId > 0) {
             loadOpenWeightSheets(locationId);
+            // Auto-refresh the open WS grid on any WS mutation broadcast for
+            // this location (push from WarehouseHub via WeightSheetNotifier).
+            if (window.gmWarehouseRealtime && typeof window.gmWarehouseRealtime.onWeightSheetUpdated === "function") {
+                window.gmWarehouseRealtime.onWeightSheetUpdated(function () {
+                    loadOpenWeightSheets(locationId);
+                }, locationId);
+            }
         }
     }
 
@@ -222,7 +350,7 @@
 
     function bucketTitle(bucket) {
         switch (bucket) {
-            case "pending": return "Pending Weight Sheets";
+            case "pending": return "Finished Weight Sheets";
             case "closed":  return "Closed Weight Sheets";
             case "all":     return "All Weight Sheets";
             default:        return "Open Weight Sheets";
@@ -322,6 +450,17 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
+        // Reset the cached PIN whenever the operator lands on the WS
+        // dashboard. The dashboard is the "logged-out" home for kiosk
+        // operators, so any follow-up sensitive action (new lot, void,
+        // manual entry, etc.) must re-prompt for a fresh PIN rather than
+        // ride a stale session. Done here (not at IIFE top) because this
+        // script tag is parsed inside @RenderBody, before gm.pin-prompt.js
+        // is loaded — so window.GM isn't defined until DOMContentLoaded.
+        if (window.GM && typeof window.GM.clearLastPin === "function") {
+            window.GM.clearLastPin();
+        }
+
         initActionButtons();
 
         var locationId = getLocationId();

@@ -114,6 +114,16 @@
     background-color: rgba(212, 160, 23, 0.14) !important;
 }
 
+/* Transfer Seed rows — translucent cyan (matches gm-tile--transfer-seed #0e7490) */
+.gm-ws-row--transfer-seed > td {
+    background-color: rgba(14, 116, 144, 0.14) !important;
+}
+
+/* Transfer Warehouse rows — translucent blue (matches gm-tile--transfer-warehouse #1e40af) */
+.gm-ws-row--transfer-warehouse > td {
+    background-color: rgba(30, 64, 175, 0.14) !important;
+}
+
 /* Row hover — slightly stronger tint */
 #wdOpenWsGrid .dx-data-row:hover > td {
     background-color: rgba(0, 0, 0, 0.08) !important;
@@ -123,6 +133,12 @@
 }
 #wdOpenWsGrid .gm-ws-row--warehouse:hover > td {
     background-color: rgba(212, 160, 23, 0.26) !important;
+}
+#wdOpenWsGrid .gm-ws-row--transfer-seed:hover > td {
+    background-color: rgba(14, 116, 144, 0.26) !important;
+}
+#wdOpenWsGrid .gm-ws-row--transfer-warehouse:hover > td {
+    background-color: rgba(30, 64, 175, 0.26) !important;
 }
 
 .gm-wd-panel__title {

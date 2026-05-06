@@ -85,6 +85,9 @@ builder.Services.Configure<GrainManagement.Services.Print.PrintDispatchOptions>(
     builder.Configuration.GetSection(GrainManagement.Services.Print.PrintDispatchOptions.SectionName));
 builder.Services.AddScoped<GrainManagement.Services.Print.IPrintDispatchService, GrainManagement.Services.Print.PrintDispatchService>();
 
+// Pushes "weight sheet updated" SignalR notifications to subscribed pages.
+builder.Services.AddScoped<GrainManagement.Services.IWeightSheetNotifier, GrainManagement.Services.WeightSheetNotifier>();
+
 
 
 builder.Services.AddDistributedSqlServerCache(o =>

@@ -9,7 +9,9 @@ public partial class InventoryTransactionDetail
 {
     public long TransactionId { get; set; }
 
-    public long LotId { get; set; }
+    // LotId is required for TxnType='RECEIVE' and NULL for transfer
+    // rows. Enforced by CK_ITD_TxnTypeLotId on the database side.
+    public long? LotId { get; set; }
 
     public int ProductId { get; set; }
 

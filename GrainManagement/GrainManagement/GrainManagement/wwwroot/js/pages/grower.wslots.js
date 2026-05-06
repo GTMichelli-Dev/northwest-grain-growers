@@ -109,6 +109,17 @@
         initLotsGrid();
         initItemPicker();
         initAccountPicker();
+
+        // Close-lot protein-warning modal: when the operator confirms, replay
+        // the close request with AcceptMissingProtein = true.
+        $('#wslCloseProteinContinue').on('click', function () {
+            if (_pendingCloseLotId != null) {
+                var lotId = _pendingCloseLotId;
+                _pendingCloseLotId = null;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('wslCloseProteinModal')).hide();
+                toggleLot(lotId, 'close', true);
+            }
+        });
         initSplitGroupPicker();
         initStateCountyPickers();
         wireButtons();
@@ -968,20 +979,76 @@
         }
     });
 
-    async function toggleLot(id, action) {
+    // Close: validates every lot load is complete (server returns
+    //   400 + incompleteLoads when not). Loads complete-but-no-protein get
+    //   200 + requiresProteinAck so we can confirm and retry.
+    // Open: same-day-only on the server; the prior-day refusal carries
+    //   `cannotReopen: true` so we surface a friendlier error.
+    async function toggleLot(id, action, acceptMissingProtein) {
         try {
+            const body = action === 'close'
+                ? JSON.stringify({ AcceptMissingProtein: !!acceptMissingProtein })
+                : '';
             const resp = await fetch('/api/GrowerDelivery/WeightSheetLots/' + id + '/' + action, {
-                method: 'POST',
+                method:  'POST',
+                headers: action === 'close' ? { 'Content-Type': 'application/json' } : undefined,
+                body:    body || undefined,
             });
+
+            if (resp.status === 400) {
+                var err = await resp.json().catch(function () { return {}; });
+                if (action === 'close' && Array.isArray(err.incompleteLoads) && err.incompleteLoads.length > 0) {
+                    showCloseLotIncompleteLoads(err.incompleteLoads);
+                    return;
+                }
+                if (action === 'open' && err.cannotReopen) {
+                    showAlert(err.message || 'This lot cannot be re-opened. Please contact the office.', 'danger');
+                    return;
+                }
+                showAlert('Error: ' + (err.message || (resp.status + ' ' + resp.statusText)), 'danger');
+                return;
+            }
             if (!resp.ok) {
                 const detail = await tryParseError(resp);
                 showAlert('Error: ' + detail, 'danger');
                 return;
             }
+
+            // 200 may still indicate "needs operator confirmation" for missing protein.
+            var result = await resp.json().catch(function () { return {}; });
+            if (action === 'close' && result.requiresProteinAck) {
+                _pendingCloseLotId = id;
+                showCloseLotProteinWarning(result.missingProteinLoads || []);
+                return;
+            }
+
             refreshLots();
         } catch (ex) {
             showAlert('Network error: ' + ex.message, 'danger');
         }
+    }
+
+    var _pendingCloseLotId = null;
+
+    function showCloseLotIncompleteLoads(rows) {
+        var $list = $('#wslCloseIncompleteList').empty();
+        rows.forEach(function (r) {
+            var wsLabel = r.As400Id ? String(r.As400Id) : ('WS #' + r.WeightSheetId);
+            var txnLabel = r.TransactionId ? (' — Load ' + r.TransactionId) : '';
+            var reason = r.Reason ? (' (' + r.Reason + ')') : '';
+            $('<li/>').text(wsLabel + txnLabel + reason).appendTo($list);
+        });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('wslCloseIncompleteModal')).show();
+    }
+
+    function showCloseLotProteinWarning(rows) {
+        var $list = $('#wslCloseProteinList').empty();
+        rows.forEach(function (r) {
+            var wsLabel = r.As400Id ? String(r.As400Id) : ('WS #' + r.WeightSheetId);
+            var txnLabel = r.TransactionId ? (' — Load ' + r.TransactionId) : '';
+            $('<li/>').text(wsLabel + txnLabel).appendTo($list);
+        });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('wslCloseProteinModal')).show();
     }
 
     // ── Create form ───────────────────────────────────────────────────────────
@@ -1734,9 +1801,15 @@
             return;
         }
 
-        // Prompt for PIN — required to populate CreatedByUserName
-        var createPin = await promptForPin();
-        if (createPin === null) return; // user cancelled
+        // Gate priv 9 (Add Lots) via the shared modal. Cached pin reused.
+        var createPin;
+        try {
+            var createPinResult = await GM.requestPin({
+                prompt: 'Enter your PIN to create the lot.',
+                requiredPrivilegeId: 9 // PRIV_ADD_LOT
+            });
+            createPin = createPinResult.pin;
+        } catch (e) { return; /* cancelled or insufficient privilege */ }
 
         const btn = $(SEL.saveBtn);
         btn.prop('disabled', true).text('Creating\u2026');
@@ -1769,12 +1842,19 @@
             var result = await resp.json();
             console.log('[wslots] Lot created:', result, 'returnTo:', _deepLinkReturnTo, 'wsId:', _deepLinkWsId);
 
-            // If creating from delivery loads, prompt for PIN and reassign the lot to the weight sheet
+            // If creating from delivery loads, gate priv 10 to reassign the
+            // lot to the weight sheet. Cache reuse means no double-prompt
+            // when the same operator just validated for create.
             if (_deepLinkReturnTo === 'deliveryLoads' && _deepLinkWsId && result.LotId) {
                 console.log('[wslots] Prompting for PIN to assign lot', result.LotId, 'to WS', _deepLinkWsId);
-                var pin = await promptForPin();
-                console.log('[wslots] PIN result:', pin);
-                if (pin === null) {
+                var pin;
+                try {
+                    var assignPinResult = await GM.requestPin({
+                        prompt: 'Enter your PIN to assign the new lot to the weight sheet.',
+                        requiredPrivilegeId: 10 // PRIV_MODIFY_LOT
+                    });
+                    pin = assignPinResult.pin;
+                } catch (e) {
                     // User cancelled PIN — lot was created but not assigned, go back to weight sheet
                     window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _deepLinkWsId;
                     return;
@@ -1856,9 +1936,15 @@
             }
         }
 
-        // Show PIN popup and wait for user input
-        var pin = await promptForPin();
-        if (pin === null) {
+        // Gate priv 10 (Modify Lot) via the shared modal.
+        var pin;
+        try {
+            var savePinResult = await GM.requestPin({
+                prompt: 'Enter your PIN to save the lot changes.',
+                requiredPrivilegeId: 10 // PRIV_MODIFY_LOT
+            });
+            pin = savePinResult.pin;
+        } catch (e) {
             // If deep-linked from delivery loads, redirect back to weight sheet
             if (_deepLinkReturnTo === 'deliveryLoads' && _deepLinkWsId) {
                 window.location.href = '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + _deepLinkWsId;
@@ -1903,18 +1989,29 @@
     // ── New Lot prompt — lot type → PIN → navigate ────────────────────────
 
     async function promptNewLot() {
-        // Step 1: Ask for lot type
+        // Step 1: Gate on priv 9 (Add Lots) via the shared PIN prompt. The
+        // cache in GM.requestPin auto-reuses an already-validated PIN if the
+        // user holds priv 9 (or admin), so there's no double-prompt when
+        // arriving here mid-flow from a weight-sheet edit. Asking for the PIN
+        // first means an unauthorized operator never sees the lot-type picker.
+        var pinResult;
+        try {
+            pinResult = await GM.requestPin({
+                prompt: 'Enter your PIN to create a new lot.',
+                requiredPrivilegeId: 9 // PRIV_ADD_LOT
+            });
+        } catch (e) {
+            return; // cancelled or failed validation
+        }
+
+        // Step 2: Ask for lot type (Seed vs Warehouse).
         var lotType = await promptLotType();
         if (!lotType) return; // cancelled
-
-        // Step 2: Ask for PIN
-        var pin = await promptForPin();
-        if (pin === null) return; // cancelled
 
         // Navigate to the edit lot page in create mode
         window.location.href = '/GrowerDelivery/EditWeightSheetLot'
             + '?lotType=' + encodeURIComponent(lotType)
-            + '&pin=' + encodeURIComponent(pin)
+            + '&pin=' + encodeURIComponent(pinResult.pin)
             + '&returnTo=lots';
     }
 
@@ -1953,55 +2050,7 @@
         });
     }
 
-    // ── PIN prompt popup ────────────────────────────────────────────────────
-
-    function promptForPin() {
-        return new Promise(function (resolve) {
-            var $overlay = $('<div class="gm-pin-overlay"></div>');
-            var $dialog  = $(
-                '<div class="gm-pin-dialog">' +
-                    '<h5>Enter Your PIN</h5>' +
-                    '<p class="text-muted small mb-2">A valid user PIN is required to save changes.</p>' +
-                    '<input type="text" class="form-control gm-pin-input" placeholder="PIN" inputmode="numeric" autocomplete="off" autofocus style="-webkit-text-security:disc" />' +
-                    '<div class="gm-pin-error text-danger small mt-1" hidden></div>' +
-                    '<div class="d-flex gap-2 mt-3">' +
-                        '<button type="button" class="btn btn-primary gm-pin-confirm flex-fill">Confirm</button>' +
-                        '<button type="button" class="btn btn-outline-secondary gm-pin-cancel flex-fill">Cancel</button>' +
-                    '</div>' +
-                '</div>'
-            );
-
-            $overlay.append($dialog);
-            $('body').append($overlay);
-
-            var $input   = $dialog.find('.gm-pin-input');
-            var $error   = $dialog.find('.gm-pin-error');
-
-            function close(val) {
-                $overlay.remove();
-                resolve(val);
-            }
-
-            $dialog.find('.gm-pin-cancel').on('click', function () { close(null); });
-
-            $dialog.find('.gm-pin-confirm').on('click', function () {
-                var val = parseInt($input.val(), 10);
-                if (!val || val <= 0) {
-                    $error.text('Please enter a valid numeric PIN.').prop('hidden', false);
-                    $input.focus();
-                    return;
-                }
-                close(val);
-            });
-
-            $input.on('keydown', function (e) {
-                if (e.key === 'Enter') $dialog.find('.gm-pin-confirm').click();
-                if (e.key === 'Escape') close(null);
-            });
-
-            setTimeout(function () { $input.focus(); }, 100);
-        });
-    }
+    // PIN prompts go through GM.requestPin (gm.pin-prompt.js).
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 

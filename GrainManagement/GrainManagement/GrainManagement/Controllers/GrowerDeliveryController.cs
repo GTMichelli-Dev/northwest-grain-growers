@@ -27,5 +27,8 @@ namespace GrainManagement.Controllers
             ViewData["WsType"] = "transfer";
             return View("WeightSheetDeliveryLoads");
         }
+
+        [HttpGet]
+        public IActionResult WeightSheetTransferLoad() => View();
     }
 }

@@ -1,8 +1,12 @@
 @inject ILocationContext LocationCtx
 @inject SystemInfoSnapshot SystemInfo
 @inject IModuleContext Modules
+@inject Microsoft.Extensions.Configuration.IConfiguration AppConfig
 @{
     var themeKey = Context.Items["ThemeKey"]?.ToString() ?? "default";
+    // Server-configured IANA tz id used by JS display helpers + reports. The
+    // helpers fall back to the browser TZ when this is empty.
+    var serverTimeZone = AppConfig["TimeZone"] ?? "";
 }
 <!DOCTYPE html>
 
@@ -13,6 +17,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="description" content="">
     <meta name="author" content="">
+    <meta name="server-timezone" content="@serverTimeZone">
+    <script>
+        // Server timezone hint for JS datetime display. Storage stays UTC;
+        // every render that needs to show a stored value should run it
+        // through window.gmFormatServerTime / .gmFormatServerDate so it
+        // reads in the configured zone instead of the browser's locale.
+        window.gmServerTimeZone = '@serverTimeZone';
+    </script>
+    <script src="~/js/shared/server-time.js" asp-append-version="true"></script>
 
    
 
@@ -137,6 +150,11 @@
 
         @RenderBody()
     </main>
+
+    @* Shared PIN-prompt modal — single instance for the whole app. Pages use
+       GM.requestPin({...}) to drive it; do NOT define your own copy of the
+       gm-pin-prompt-* IDs anywhere else. *@
+    @await Html.PartialAsync("_GmPinPromptModal")
    
 
 
@@ -179,6 +197,7 @@
  
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/gm.cookies.js" asp-append-version="true"></script>
+    <script src="~/js/gm.pin-prompt.js" asp-append-version="true"></script>
     <script src="~/js/location-selector.js" asp-append-version="true"></script>
     <script src="~/lib/signalr/signalr.min.js"></script>
     <script src="~/js/gm.print-alerts.js" asp-append-version="true"></script>

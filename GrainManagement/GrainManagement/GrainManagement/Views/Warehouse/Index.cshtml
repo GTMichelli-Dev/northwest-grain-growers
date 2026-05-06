@@ -28,7 +28,7 @@
             <div id="wdWsStatusToolbar" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                 <div class="btn-group" role="group" aria-label="Weight sheet status filter">
                     <button type="button" class="btn btn-outline-secondary btn-sm active" data-wd-status="open">Open</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="pending">Pending</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="pending">Finished</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="closed">Closed</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="all">All</button>
                 </div>
@@ -51,4 +51,32 @@
     </div>
 </div>
 
+<!-- ── End Of Day audit modal ─────────────────────────────────────────────
+     Populated by warehouse.dashboard.dx.js when the End Of Day button is
+     clicked. Lists every still-open weight sheet that has incomplete loads
+     or missing-moisture loads, with a status column and a link back to the
+     loads page so the operator can fix the issue without navigating manually. -->
+<div class="modal fade" id="wdEndOfDayModal" tabindex="-1" aria-labelledby="wdEndOfDayLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="wdEndOfDayLabel">End Of Day &mdash; Weight Sheet Audit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="wdEndOfDayMsg" class="alert alert-warning" hidden>
+                    The following weight sheets need attention before End Of Day can be completed.
+                </div>
+                <div id="wdEndOfDayGrid"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* signalr.min.js is already loaded by _Layout. warehouse.signalr.js publishes
+    weightSheetUpdated events to subscribers + provides the connection helper. *@
+<script src="~/js/pages/warehouse.signalr.js" asp-append-version="true"></script>
 <script src="~/js/pages/warehouse.dashboard.dx.js" asp-append-version="true"></script>

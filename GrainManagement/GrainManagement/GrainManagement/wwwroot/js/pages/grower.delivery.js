@@ -85,7 +85,7 @@
         // Enter Amount Modal
         enterAmountModal:   '#gdEnterAmountModal',
         directAmountInput:  '#gdDirectAmountInput',
-        directPinInput:     '#gdDirectPinInput',
+        // gdDirectPinInput removed — PIN captured upfront via GM.requestPin.
         directAmountError:  '#gdDirectAmountError',
         directAmountConfirm:'#gdDirectAmountConfirm',
 
@@ -95,7 +95,7 @@
         captureManualBtn:   '#gdCaptureManualBtn',
         captureManualPanel: '#gdCaptureManualPanel',
         captureManualInput: '#gdCaptureManualInput',
-        capturePinInput:    '#gdCapturePinInput',
+        // gdCapturePinInput removed — PIN captured upfront via GM.requestPin.
         captureManualConfirm:'#gdCaptureManualConfirm',
         captureWeightError: '#gdCaptureWeightError',
 
@@ -722,55 +722,43 @@
     // ══════════════════════════════════════════════════════════════════════════
 
     function wireDirectQtyModal() {
+        // Gate priv 6 (Manual Entry) BEFORE opening the dialog. If the user
+        // already validated when creating this brand-new WS, _firstLoadOnNewWsPin
+        // carries that pin forward — skip the prompt.
         $(SEL.enterAmountBtn).on('click', function () {
-            if (!enterAmountModalInst) {
-                enterAmountModalInst = new bootstrap.Modal(document.querySelector(SEL.enterAmountModal));
+            var openDialog = function (pin, userId, userName) {
+                if (!enterAmountModalInst) {
+                    enterAmountModalInst = new bootstrap.Modal(document.querySelector(SEL.enterAmountModal));
+                }
+                $(SEL.directAmountInput).val('');
+                $(SEL.directAmountError).prop('hidden', true);
+                lastPinUserId   = userId   || lastPinUserId;
+                lastPinUserName = userName || lastPinUserName;
+                _directAmountPinValidated = pin;
+                enterAmountModalInst.show();
+            };
+
+            if (_firstLoadOnNewWsPin) {
+                openDialog(_firstLoadOnNewWsPin, lastPinUserId, lastPinUserName);
+                return;
             }
-            $(SEL.directAmountInput).val('');
-            $(SEL.directPinInput).val('');
-            $(SEL.directAmountError).prop('hidden', true);
 
-            // Hide the PIN input on the first load of a just-created WS — the
-            // user already validated when creating the WS.
-            var pinReused = !!_firstLoadOnNewWsPin;
-            $(SEL.directPinInput).closest('.mb-3').prop('hidden', pinReused);
-
-            enterAmountModalInst.show();
+            GM.requestPin({
+                title: 'Enter PIN for Manual Entry',
+                prompt: 'Manual weight entry requires the Manual Entry privilege.',
+                requiredPrivilegeId: PRIVILEGE_MANUAL_ENTRY
+            })
+            .then(function (result) { openDialog(result.pin, result.userId, result.userName); })
+            .catch(function () { /* cancelled or insufficient privilege */ });
         });
 
-        $(SEL.directAmountConfirm).on('click', async function () {
+        $(SEL.directAmountConfirm).on('click', function () {
             var amount = parseInt($(SEL.directAmountInput).val(), 10);
-            var pin    = _firstLoadOnNewWsPin
-                ? String(_firstLoadOnNewWsPin)
-                : $(SEL.directPinInput).val().trim();
-
             if (isNaN(amount) || amount <= 0) {
                 $(SEL.directAmountError).text('Weight must be greater than 0.').prop('hidden', false);
                 return;
             }
-            if (!pin) {
-                $(SEL.directAmountError).text('PIN is required.').prop('hidden', false);
-                return;
-            }
-
-            // Validate PIN
-            var pinResult = await validatePin(parseInt(pin, 10));
-            if (!pinResult.valid) {
-                $(SEL.directAmountError).text(pinResult.message).prop('hidden', false);
-                return;
-            }
-
-            // PrivilegeId 6 = Manual Entry. Block if missing.
-            if ((pinResult.privileges || []).indexOf(PRIVILEGE_MANUAL_ENTRY) === -1) {
-                $(SEL.directAmountError)
-                    .text('User ' + (pinResult.userName || '') + ' does not have privileges for Manual Entry.')
-                    .prop('hidden', false);
-                return;
-            }
-
-            lastPinUserId   = pinResult.userId;
-            lastPinUserName = pinResult.userName;
-
+            // PIN was validated upfront — see the Enter Amount click handler.
             var now = new Date();
             $(SEL.directQty).val(amount);
             $(SEL.directStartedAt).val(now.toISOString());
@@ -782,6 +770,7 @@
             enterAmountModalInst.hide();
         });
     }
+    var _directAmountPinValidated = null;
 
     // ══════════════════════════════════════════════════════════════════════════
     // CAPTURE WEIGHT MODAL (Scale mode — lists scales + manual entry)
@@ -791,22 +780,33 @@
         // Load available scales at this location
         loadCachedScales();
 
+        // Gate priv 6 (Manual Entry) BEFORE revealing the manual-entry panel.
+        // The new-WS short-circuit reuses the upfront-validated PIN.
         $(SEL.captureManualBtn).on('click', function () {
-            $(SEL.captureManualPanel).prop('hidden', false);
-            $(SEL.captureManualInput).val('');
-            $(SEL.capturePinInput).val('');
-            $(SEL.captureWeightError).prop('hidden', true);
+            var revealPanel = function () {
+                $(SEL.captureManualPanel).prop('hidden', false);
+                $(SEL.captureManualInput).val('');
+                $(SEL.captureWeightError).prop('hidden', true);
+                setTimeout(function () { $(SEL.captureManualInput).trigger('focus'); }, 100);
+            };
 
-            // Hide the PIN input on the first load of a just-created WS.
-            var pinReused = !!_firstLoadOnNewWsPin;
-            $(SEL.capturePinInput).closest('.mb-2').prop('hidden', pinReused);
+            if (_firstLoadOnNewWsPin) { revealPanel(); return; }
+
+            GM.requestPin({
+                title: 'Enter PIN for Manual Entry',
+                prompt: 'Manual weight entry requires the Manual Entry privilege.',
+                requiredPrivilegeId: PRIVILEGE_MANUAL_ENTRY
+            })
+            .then(function (result) {
+                lastPinUserId   = result.userId;
+                lastPinUserName = result.userName;
+                revealPanel();
+            })
+            .catch(function () { /* cancelled or insufficient privilege */ });
         });
 
-        $(SEL.captureManualConfirm).on('click', async function () {
+        $(SEL.captureManualConfirm).on('click', function () {
             var weight = parseInt($(SEL.captureManualInput).val(), 10);
-            var pin    = _firstLoadOnNewWsPin
-                ? String(_firstLoadOnNewWsPin)
-                : $(SEL.capturePinInput).val().trim();
 
             if (isNaN(weight) || weight < 0) {
                 $(SEL.captureWeightError).text('Weight must be 0 or greater.').prop('hidden', false);
@@ -823,28 +823,7 @@
                     return;
                 }
             }
-            if (!pin) {
-                $(SEL.captureWeightError).text('PIN is required for manual entry.').prop('hidden', false);
-                return;
-            }
-
-            var pinResult = await validatePin(parseInt(pin, 10));
-            if (!pinResult.valid) {
-                $(SEL.captureWeightError).text(pinResult.message).prop('hidden', false);
-                return;
-            }
-
-            // PrivilegeId 6 = Manual Entry. Block if missing.
-            if ((pinResult.privileges || []).indexOf(PRIVILEGE_MANUAL_ENTRY) === -1) {
-                $(SEL.captureWeightError)
-                    .text('User ' + (pinResult.userName || '') + ' does not have privileges for Manual Entry.')
-                    .prop('hidden', false);
-                return;
-            }
-
-            lastPinUserId   = pinResult.userId;
-            lastPinUserName = pinResult.userName;
-
+            // PIN validated upfront — see the captureManualBtn click handler.
             var ok = applyScaleWeight(weight, true, null);
             if (ok) {
                 captureWeightModalInst.hide();
@@ -964,7 +943,6 @@
         $(SEL.captureManualPanel).prop('hidden', true);
         $(SEL.captureWeightError).prop('hidden', true);
         $(SEL.captureManualInput).val('');
-        $(SEL.capturePinInput).val('');
 
         // Initial load and render
         await loadCachedScales();
@@ -1132,7 +1110,7 @@
             } catch (ex) {
                 showAlert('Network error: ' + ex.message, 'danger');
             } finally {
-                btn.prop('disabled', false).text(editTxnId ? 'Update Delivery' : 'Save Delivery');
+                btn.prop('disabled', false).text(editTxnId ? 'Update Load' : 'Save Load');
             }
     }
 
@@ -1155,25 +1133,9 @@
         if (!modalEl) return;
         _moveLoadModalInst = new bootstrap.Modal(modalEl);
 
-        var promptEl = document.getElementById('gdMovePinPromptModal');
-        if (promptEl) _movePinPromptInst = new bootstrap.Modal(promptEl);
-
         $('#gdMoveLoadBtn').on('click', openMovePinPrompt);
         $('#gdMoveCreateWsBtn').on('click', moveLoadCreateNewWs);
         $('#gdMoveConfirmBtn').on('click', moveLoadConfirm);
-
-        // PIN prompt — Enter submits, Confirm validates server-side
-        $('#gdMovePinPromptInput').on('keydown', function (e) {
-            if (e.key === 'Enter') { e.preventDefault(); $('#gdMovePinPromptConfirm').click(); }
-        });
-        $('#gdMovePinPromptConfirm').on('click', confirmMovePin);
-
-        if (promptEl) {
-            $(promptEl).on('hidden.bs.modal', function () {
-                $('#gdMovePinPromptInput').val('');
-                $('#gdMovePinPromptError').prop('hidden', true).text('');
-            });
-        }
 
         // Reset selection when the move modal closes so a re-open starts fresh
         $(modalEl).on('hidden.bs.modal', function () {
@@ -1187,48 +1149,22 @@
         });
     }
 
+    // Move-Load gate — runs the shared GM.requestPin against priv 2 (Move
+    // Loads). The cached PIN is reused on the actual move PATCH so the
+    // operator only enters it once per move.
     function openMovePinPrompt() {
         if (!editTxnId) return;
-        if (!_movePinPromptInst) return;
         _movePinValidated = null;
-        $('#gdMovePinPromptInput').val('');
-        $('#gdMovePinPromptError').prop('hidden', true).text('');
-        _movePinPromptInst.show();
-        setTimeout(function () { $('#gdMovePinPromptInput').focus(); }, 200);
-    }
-
-    async function confirmMovePin() {
-        $('#gdMovePinPromptError').prop('hidden', true).text('');
-        var pin = parseInt($('#gdMovePinPromptInput').val(), 10);
-        if (!pin || pin <= 0) {
-            $('#gdMovePinPromptError').text('A valid PIN is required.').prop('hidden', false);
-            return;
-        }
-
-        var btn = $('#gdMovePinPromptConfirm');
-        btn.prop('disabled', true).text('Validating\u2026');
-        try {
-            var pinResult = await validatePin(pin);
-            if (!pinResult.valid) {
-                $('#gdMovePinPromptError').text(pinResult.message || 'Invalid PIN.').prop('hidden', false);
-                return;
-            }
-            if ((pinResult.privileges || []).indexOf(PRIVILEGE_MOVE_LOADS) === -1) {
-                $('#gdMovePinPromptError')
-                    .text('User ' + (pinResult.userName || '') + ' does not have privileges to Move Loads.')
-                    .prop('hidden', false);
-                return;
-            }
-
-            // Cache the validated PIN — moveLoadConfirm reuses it.
-            _movePinValidated = pin;
-            _movePinPromptInst.hide();
+        GM.requestPin({
+            title: 'Enter PIN to Move Load',
+            prompt: 'Moving a load requires the Move Loads privilege.',
+            requiredPrivilegeId: PRIVILEGE_MOVE_LOADS
+        })
+        .then(function (result) {
+            _movePinValidated = result.pin;
             openMoveLoadModal();
-        } catch (ex) {
-            $('#gdMovePinPromptError').text('Network error: ' + ex.message).prop('hidden', false);
-        } finally {
-            btn.prop('disabled', false).text('Continue');
-        }
+        })
+        .catch(function () { /* cancelled or insufficient privilege */ });
     }
 
     async function openMoveLoadModal() {
@@ -1277,9 +1213,9 @@
                       customizeText: function (c) { return formatWsId(c.value); } },
                     { dataField:'As400Id',       caption:'Agvantage #' },
                     { dataField:'CreationDate',  caption:'Created', dataType:'date',
-                      format: 'M/d/yyyy' },
+                      customizeText: window.gmDxServerTime('date') },
                     { dataField:'StatusId',      caption:'Status', width:120,
-                      customizeText: function (c) { return c.value === 1 ? 'Pending' : 'Open'; } },
+                      customizeText: function (c) { return c.value === 1 ? 'Finished' : 'Open'; } },
                     { dataField:'LotId',         caption:'Lot #', width:120 },
                     { dataField:'Variety',       caption:'Variety' },
                     { dataField:'LoadCount',     caption:'Loads',  width:90, alignment:'right' },
@@ -1517,7 +1453,7 @@
                     $(SEL.grossRow).addClass('gm-gd-weight-cell--captured');
                     if (d.StartedAt) {
                         $(SEL.startedAt).val(d.StartedAt);
-                        $(SEL.grossTime).text(new Date(d.StartedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                        $(SEL.grossTime).text(window.gmFormatServerTime(d.StartedAt, 'time'));
                     }
                     if (d.StartQtyLocationQuantityMethodDescription)
                         $(SEL.grossSourceBadge).text(d.StartQtyLocationQuantityMethodDescription).prop('hidden', false);
@@ -1531,7 +1467,7 @@
                     $(SEL.tareRow).addClass('gm-gd-weight-cell--captured');
                     if (d.CompletedAt) {
                         $(SEL.completedAt).val(d.CompletedAt);
-                        $(SEL.tareTime).text(new Date(d.CompletedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                        $(SEL.tareTime).text(window.gmFormatServerTime(d.CompletedAt, 'time'));
                     }
                     if (d.EndQtyLocationQuantityMethodDescription)
                         $(SEL.tareSourceBadge).text(d.EndQtyLocationQuantityMethodDescription).prop('hidden', false);
@@ -1580,7 +1516,7 @@
             };
 
             // Update submit button text + reveal the Move Load button (edit mode only)
-            $(SEL.submit).text('Update Delivery').prop('hidden', false);
+            $(SEL.submit).text('Update Load').prop('hidden', false);
             $('#gdMoveLoadBtn').prop('hidden', false);
 
             // Move-load round-trip: handle return from the New WS / LoadType
@@ -1774,7 +1710,9 @@
     }
 
     function fmtTime(date) {
-        return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        // Render in the server timezone so all weight-cell capture-time
+        // displays read consistently regardless of the operator's browser.
+        return window.gmFormatServerTime(date, 'time');
     }
 
     // ── Weight sheet panel ───────────────────────────────────────────────────
@@ -1853,45 +1791,21 @@
 
     function wireWeightSheetPanel() {
 
-        // ── Open the New WS panel — show PIN popup first ──────────────────────
-        var newWsPinModal = new bootstrap.Modal(document.getElementById('gdNewWsPinModal'));
-
+        // ── Open the New WS panel — gate on shared GM.requestPin ─────────────
         $(SEL.newWsBtn).on('click', function () {
             _nwsPin = null;
-            $('#gdNewWsPinInput').val('');
-            $('#gdNewWsPinError').attr('hidden', true);
-            newWsPinModal.show();
-            setTimeout(function () { $('#gdNewWsPinInput').focus(); }, 500);
-        });
-
-        $('#gdNewWsPinInput').on('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('#gdNewWsPinConfirmBtn').click(); } });
-        $('#gdNewWsPinConfirmBtn').on('click', function () {
-            var pin = parseInt($('#gdNewWsPinInput').val(), 10);
-            if (!pin || pin <= 0) {
-                $('#gdNewWsPinError').text('A valid PIN is required.').removeAttr('hidden');
-                return;
-            }
-            $.ajax({
-                url: '/api/GrowerDelivery/ValidatePin?pin=' + pin,
-                method: 'GET',
-                dataType: 'json',
-            })
-            .done(function () {
-                _nwsPin = pin;
-                newWsPinModal.hide();
-                // Now show the New WS panel
-                $(SEL.wsPanel).prop('hidden', true);
-                $(SEL.newWsPanel).prop('hidden', false);
-                setNwsLot(null, null);
-                resetNwsCreateForm();
-                var locationId = $(SEL.locationId).val();
-                if (locationId) refreshNwsLots(locationId);
-            })
-            .fail(function (xhr) {
-                var msg = xhr.responseJSON && xhr.responseJSON.message
-                    ? xhr.responseJSON.message : 'Invalid PIN.';
-                $('#gdNewWsPinError').text(msg).removeAttr('hidden');
-            });
+            GM.requestPin({ prompt: 'Enter your PIN to create a new weight sheet.' })
+                .then(function (result) {
+                    _nwsPin = result.pin;
+                    // Now show the New WS panel
+                    $(SEL.wsPanel).prop('hidden', true);
+                    $(SEL.newWsPanel).prop('hidden', false);
+                    setNwsLot(null, null);
+                    resetNwsCreateForm();
+                    var locationId = $(SEL.locationId).val();
+                    if (locationId) refreshNwsLots(locationId);
+                })
+                .catch(function () { /* cancelled */ });
         });
 
         // ── Back to weight sheet list ─────────────────────────────────────────
@@ -2159,17 +2073,28 @@
     var lotChangeModalInstance = null;
     var selectedChangeLotId = null;
 
+    // PIN validated upfront via the priv-10 gate (Modify Lots) before the
+    // lot picker opens. saveLotChange() reuses the cached pin.
+    var _lotChangePinValidated = null;
+
     $(document).on('click', '#gdChangeLotBtn', function () {
-        if (!lotChangeModalInstance) {
-            lotChangeModalInstance = new bootstrap.Modal(document.getElementById('gdLotChangeModal'));
-            initLotChangeGrid();
-        }
-        selectedChangeLotId = null;
-        $('#gdLotChangeSaveBtn').prop('disabled', true);
-        $('#gdLotChangePin').val('');
-        $('#gdLotChangeError').prop('hidden', true);
-        loadLotChangeGrid();
-        lotChangeModalInstance.show();
+        GM.requestPin({
+            prompt: 'Enter your PIN to change the lot on this weight sheet.',
+            requiredPrivilegeId: 10
+        })
+        .then(function (result) {
+            _lotChangePinValidated = result.pin;
+            if (!lotChangeModalInstance) {
+                lotChangeModalInstance = new bootstrap.Modal(document.getElementById('gdLotChangeModal'));
+                initLotChangeGrid();
+            }
+            selectedChangeLotId = null;
+            $('#gdLotChangeSaveBtn').prop('disabled', true);
+            $('#gdLotChangeError').prop('hidden', true);
+            loadLotChangeGrid();
+            lotChangeModalInstance.show();
+        })
+        .catch(function () { /* cancelled or insufficient privilege */ });
     });
 
     function initLotChangeGrid() {
@@ -2227,13 +2152,11 @@
             });
     }
 
-    // Save lot change
+    // Save lot change — PIN was validated upfront, reuse the cached value.
     $('#gdLotChangeSaveBtn').on('click', function () {
         if (!activeWsId || !selectedChangeLotId) return;
-
-        var pin = parseInt($('#gdLotChangePin').val(), 10);
-        if (!pin) {
-            $('#gdLotChangeError').text('PIN is required to change the lot.').prop('hidden', false);
+        if (!_lotChangePinValidated) {
+            $('#gdLotChangeError').text('PIN validation lost. Please re-open the lot picker.').prop('hidden', false);
             return;
         }
 
@@ -2241,7 +2164,7 @@
             url: '/api/GrowerDelivery/WeightSheet/' + activeWsId,
             method: 'PATCH',
             contentType: 'application/json',
-            data: JSON.stringify({ LotId: selectedChangeLotId, Pin: pin })
+            data: JSON.stringify({ LotId: selectedChangeLotId, Pin: _lotChangePinValidated })
         })
         .done(function () {
             lotChangeModalInstance.hide();

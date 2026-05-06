@@ -1,0 +1,266 @@
+@{
+    ViewData["Title"] = "Transfer Weight Sheet";
+
+    // Flavor the module bar by lot type so the Transfer Seed / Transfer
+    // Warehouse views are visually distinct (matches the LoadType tile).
+    var lotType = (Context.Request.Query["lotType"].ToString() ?? "").Trim().ToLowerInvariant();
+    var transferModuleClass = lotType == "seed"
+        ? "gm-module-bar--transfer-seed"
+        : (lotType == "warehouse" ? "gm-module-bar--transfer-warehouse" : "gm-module-bar--transfer");
+    var transferLabel = lotType == "seed"
+        ? "TRANSFER SEED WEIGHT SHEET"
+        : (lotType == "warehouse" ? "TRANSFER WAREHOUSE WEIGHT SHEET" : "TRANSFER WEIGHT SHEET");
+}
+
+<a id="trModuleBar" href="/WeightSheets/LoadType" class="gm-module-bar @transferModuleClass gm-module-bar--link" title="Back to Weight Sheet Type">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--transfer gm-icon--flip" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">@transferLabel</span>
+</a>
+
+<div class="gm-gd">
+
+    <div id="trAlert" class="alert" role="alert" hidden></div>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         WS Picker — visible until the weight sheet has been created.
+         Combines Variety, Direction (Received/Shipped), counterpart Location,
+         and Hauler/Rate fields on one view per the spec.
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div id="trPicker" class="card mt-3">
+        <div class="card-header bg-light">
+            <h4 class="mb-0">New Transfer Weight Sheet</h4>
+        </div>
+        <div class="card-body">
+
+            <!-- Direction toggle (Received default) -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Transfer Type</label>
+                    <div class="btn-group" role="group" aria-label="Transfer type">
+                        <input type="radio" class="btn-check" name="trDirection" id="trDirRcv" value="Received" checked>
+                        <label class="btn btn-outline-success" for="trDirRcv">Received Transfer</label>
+                        <input type="radio" class="btn-check" name="trDirection" id="trDirShp" value="Shipped">
+                        <label class="btn btn-outline-warning" for="trDirShp">Shipped Transfer</label>
+                    </div>
+                    <div class="form-text">
+                        <span id="trDirHelpRcv">Source picked below; destination is the current location.</span>
+                        <span id="trDirHelpShp" hidden>Destination picked below; source is the current location.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Variety -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Variety <span class="text-danger">*</span></label>
+                    <!-- Warehouse mode renders a dxSelectBox here; seed mode renders an
+                         input + button that opens the popup picker (same UX as the
+                         seed-lot variety chooser). -->
+                    <div id="trItem"></div>
+                    <div id="trItemSeedWrap" hidden>
+                        <div class="input-group">
+                            <input type="text" id="trItemSeedDisplay" class="form-control" readonly placeholder="Click to select variety…" />
+                            <button type="button" class="btn btn-outline-secondary" id="trItemSeedBtn">Select…</button>
+                        </div>
+                        <input type="hidden" id="trItemSeedId" />
+                    </div>
+                    <div id="trItemSeedPopup"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                        <span id="trCounterpartLabelRcv">Source Location</span>
+                        <span id="trCounterpartLabelShp" hidden>Destination Location</span>
+                        <span class="text-danger">*</span>
+                    </label>
+                    <div id="trCounterpartLocation"></div>
+                    <div class="form-text" id="trCurrentLocationLabel">Current location: <span id="trCurrentLocationName">—</span></div>
+                </div>
+            </div>
+
+            <!-- In House toggle: own equipment, no hauler/rate. -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="trInHouse">
+                        <label class="form-check-label fw-semibold" for="trInHouse">
+                            In House &mdash; using our own equipment (no hauler / no rate)
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hauler / Rate -->
+            <div class="row mb-3 align-items-end">
+                <div class="col-md-4" id="trHaulerWrap">
+                    <label class="form-label fw-semibold">Hauler <span class="text-danger">*</span></label>
+                    <div id="trHauler"></div>
+                </div>
+                <div class="col-md-3" id="trRateTypeWrap">
+                    <label class="form-label fw-semibold">Rate Type <span class="text-danger">*</span></label>
+                    <div id="trRateType"></div>
+                </div>
+                <div class="col-auto" id="trMilesWrap">
+                    <label class="form-label fw-semibold">Miles</label>
+                    <input type="number" class="form-control" id="trMiles" min="0" step="0.1" maxlength="8" style="max-width:120px;">
+                </div>
+                <div class="col-auto" id="trCalcRateWrap">
+                    <label class="form-label fw-semibold">Calculated Rate</label>
+                    <input type="text" class="form-control" id="trCalcRate" readonly style="max-width:120px;background:#f8f9fa;">
+                </div>
+            </div>
+            <div class="row mb-3" id="trCustomRateRow" hidden>
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">Custom Rate Description</label>
+                    <input type="text" class="form-control" id="trCustomDesc" maxlength="100">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label fw-semibold">Rate</label>
+                    <input type="number" class="form-control" id="trCustomRate" min="0" step="0.01" maxlength="8" style="max-width:120px;">
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <a href="/WeightSheets/LoadType" class="btn btn-outline-danger">Cancel</a>
+                <button type="button" class="btn btn-primary" id="trCreateWsBtn">Create Weight Sheet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         WS Header summary — visible AFTER the WS is created.
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div id="trHeader" class="gm-dl-header" hidden>
+        <div class="gm-dl-header__title">
+            <span class="gm-dl-header__label">Transfer Weight Sheet</span>
+            <span class="gm-dl-header__wsid" id="trHeaderWsId"></span>
+            <div class="ms-auto d-flex gap-2">
+                <a href="/WeightSheets" class="btn btn-outline-secondary">Done</a>
+            </div>
+        </div>
+        <div class="gm-dl-header__details">
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Direction</span>
+                <span class="gm-dl-header__detail-value" id="trHeaderDirection">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Variety</span>
+                <span class="gm-dl-header__detail-value" id="trHeaderVariety">—</span>
+            </div>
+        </div>
+        <div class="gm-dl-header__details" style="margin-top:8px;">
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Source</span>
+                <span class="gm-dl-header__detail-value" id="trHeaderSource">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Destination</span>
+                <span class="gm-dl-header__detail-value" id="trHeaderDest">—</span>
+            </div>
+        </div>
+        <div class="gm-dl-header__details" style="margin-top:8px;">
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Hauler</span>
+                <span class="gm-dl-header__detail-value" id="trHeaderHauler">—</span>
+            </div>
+            <div class="gm-dl-header__detail">
+                <span class="gm-dl-header__detail-label">Rate Type</span>
+                <span class="gm-dl-header__detail-value" id="trHeaderRateType">—</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Load entry — visible AFTER the WS is created.
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div id="trLoadEntry" class="card mt-3" hidden>
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Add Load</h4>
+            <span class="text-muted small">Total loads: <span id="trLoadCount">0</span></span>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Capture Mode</label>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="trMode" id="trModeTruck" value="truck" checked>
+                        <label class="btn btn-outline-secondary" for="trModeTruck">Truck Weights</label>
+                        <input type="radio" class="btn-check" name="trMode" id="trModeDirect" value="direct">
+                        <label class="btn btn-outline-secondary" for="trModeDirect">Direct Quantity</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Truck mode -->
+            <div class="row mb-3" id="trTruckFields">
+                <div class="col-md-3">
+                    <label class="form-label">In Weight (lbs)</label>
+                    <input type="number" class="form-control" id="trStartQty" min="0" step="1">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Out Weight (lbs)</label>
+                    <input type="number" class="form-control" id="trEndQty" min="0" step="1">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Bin / Container</label>
+                    <div id="trBin"></div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Truck ID</label>
+                    <input type="text" class="form-control" id="trTruckId" maxlength="20">
+                </div>
+            </div>
+
+            <!-- Direct mode -->
+            <div class="row mb-3" id="trDirectFields" hidden>
+                <div class="col-md-4">
+                    <label class="form-label">Direct Quantity (lbs)</label>
+                    <input type="number" class="form-control" id="trDirectQty" min="0" step="1">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Bin / Container</label>
+                    <div id="trDirectBin"></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Truck ID</label>
+                    <input type="text" class="form-control" id="trDirectTruckId" maxlength="20">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">BOL #</label>
+                    <input type="text" class="form-control" id="trBol" maxlength="40">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Driver</label>
+                    <input type="text" class="form-control" id="trDriver" maxlength="80">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Notes</label>
+                    <input type="text" class="form-control" id="trNotes" maxlength="200">
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-outline-secondary" id="trClearLoadBtn">Clear</button>
+                <button type="button" class="btn btn-primary" id="trSaveLoadBtn">Save Load</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loads list -->
+    <div id="trLoadsList" class="card mt-3" hidden>
+        <div class="card-header bg-light">
+            <h4 class="mb-0">Loads on this Weight Sheet</h4>
+        </div>
+        <div class="card-body">
+            <div id="trLoadsGrid"></div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/warehouse.transfer.js" asp-append-version="true"></script>
+}

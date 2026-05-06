@@ -57,7 +57,7 @@
             </a>
         </div>
         <div class="col-12 col-lg-4">
-            <a class="gm-tile gm-tile--link gm-tile--transfer" href="#" data-ws-type="transfer">
+            <a id="ltTransferTile" class="gm-tile gm-tile--link gm-tile--transfer" href="#" data-ws-type="transfer">
                 <div class="gm-tile__header">
                     <div class="gm-tile__icon gm-tile__icon--bold gm-icon gm-icon--transfer gm-icon--flip" aria-hidden="true"></div>
                     <h2 class="gm-tile__title">Transfer</h2>
@@ -81,33 +81,7 @@
 <!-- Authenticated user display -->
 <div id="ltAuthInfo" class="text-center mt-3 text-muted" hidden></div>
 
-<!-- ── PIN popup (Step 3) ────────────────────────────────────────── -->
-<div class="modal fade" id="ltPinModal" tabindex="-1" aria-labelledby="ltPinModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="ltPinModalLabel">Enter PIN</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="text-muted small mb-2">Enter your PIN to create a new weight sheet.</p>
-                <div>
-                    <label class="form-label">PIN <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="ltPinInput"
-                           inputmode="numeric" maxlength="10" placeholder="Enter PIN"
-                           autocomplete="off" data-lpignore="true" data-1p-ignore="true"
-                           data-form-type="other"
-                           style="max-width:160px; -webkit-text-security:disc;" />
-                </div>
-                <div id="ltPinError" class="text-danger small mt-2" hidden></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="ltPinConfirmBtn">Continue</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- PIN entry uses the shared GM.requestPin modal — see _GmPinPromptModal. -->
 
 @section Scripts {
 <script>
@@ -117,11 +91,8 @@
     var _wsType = null;    // 'delivery' or 'transfer'
     var _pin = null;
     var _userName = null;
-    var _pinModal = null;
 
     $(function () {
-        _pinModal = new bootstrap.Modal(document.getElementById('ltPinModal'));
-
         // If we arrived from the Move Load flow with a PIN already validated
         // upstream, skip our own PIN modal. The PIN rides through to the
         // next page via the existing pass-through.
@@ -156,6 +127,11 @@
         $('#ltStep1 [data-lot-type]').on('click', function (e) {
             e.preventDefault();
             _lotType = $(this).data('lot-type');
+            // Re-flavor the Transfer tile so its border / glow / icon match
+            // the lot type the operator just picked.
+            var $t = $('#ltTransferTile');
+            $t.removeClass('gm-tile--transfer gm-tile--transfer-seed gm-tile--transfer-warehouse')
+              .addClass(_lotType === 'seed' ? 'gm-tile--transfer-seed' : 'gm-tile--transfer-warehouse');
             $('#ltStep1').attr('hidden', '');
             $('#ltStep2').removeAttr('hidden');
         });
@@ -172,10 +148,13 @@
                 return;
             }
 
-            $('#ltPinInput').val('');
-            $('#ltPinError').attr('hidden', '');
-            _pinModal.show();
-            setTimeout(function () { $('#ltPinInput').focus(); }, 500);
+            GM.requestPin({ prompt: 'Enter your PIN to create a new weight sheet.' })
+                .then(function (result) {
+                    _pin = result.pin;
+                    _userName = result.userName;
+                    navigateForward();
+                })
+                .catch(function () { /* cancelled — stay on step 2 */ });
         });
 
         // Build the next-page URL and navigate. Used by both the in-modal
@@ -192,7 +171,7 @@
             if (_wsType === 'delivery') {
                 url = '/GrowerDelivery/NewWeightSheet?pin=' + _pin + '&lotType=' + _lotType + passThrough;
             } else {
-                url = '/WeightSheets/TransferIn?pin=' + _pin + '&lotType=' + _lotType + passThrough;
+                url = '/WeightSheets/Transfer?pin=' + _pin + '&lotType=' + _lotType + passThrough;
             }
             window.location.href = url;
         }
@@ -205,41 +184,8 @@
             $('#ltStep1').removeAttr('hidden');
         });
 
-        // ── Step 3: PIN validation ──────────────────────────────────
-        $('#ltPinInput').on('keydown', function (e) {
-            if (e.key === 'Enter') { e.preventDefault(); $('#ltPinConfirmBtn').click(); }
-        });
-
-        $('#ltPinConfirmBtn').on('click', function () {
-            var pin = parseInt($('#ltPinInput').val(), 10);
-            if (!pin || pin <= 0) {
-                $('#ltPinError').text('A valid PIN is required.').removeAttr('hidden');
-                return;
-            }
-            $.ajax({
-                url: '/api/GrowerDelivery/ValidatePin?pin=' + pin,
-                method: 'GET',
-                dataType: 'json',
-            })
-            .done(function (data) {
-                _pin = pin;
-                _userName = data.UserName;
-                _pinModal.hide();
-                navigateForward();
-            })
-            .fail(function (xhr) {
-                var msg = xhr.responseJSON && xhr.responseJSON.message
-                    ? xhr.responseJSON.message : 'Invalid PIN.';
-                $('#ltPinError').text(msg).removeAttr('hidden');
-            });
-        });
-
-        // If modal dismissed without PIN, go back to step 2
-        document.getElementById('ltPinModal').addEventListener('hidden.bs.modal', function () {
-            if (!_pin) {
-                // Stay on step 2, user can re-select
-            }
-        });
+        // PIN validation is handled by the shared GM.requestPin in the
+        // step-2 click above.
     });
 })();
 </script>

@@ -4,6 +4,7 @@ using GrainManagement.Reporting;
 using DevExpress.XtraReports.UI;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace GrainManagement.Api
 {
@@ -13,11 +14,41 @@ namespace GrainManagement.Api
     {
         private readonly dbContext _db;
         private readonly ILogger<PrintJobsController> _log;
+        private readonly TimeZoneInfo _serverTz;
 
-        public PrintJobsController(dbContext db, ILogger<PrintJobsController> log)
+        public PrintJobsController(dbContext db, ILogger<PrintJobsController> log, IConfiguration config)
         {
             _db = db;
             _log = log;
+            _serverTz = ResolveServerTimeZone(config);
+        }
+
+        // Resolves the configured "TimeZone" key (IANA tz id) to a TimeZoneInfo,
+        // falling back to TimeZoneInfo.Local if unset or unrecognized. Used to
+        // convert UTC datetimes to the operator-facing zone before binding to
+        // reports — storage stays UTC.
+        private static TimeZoneInfo ResolveServerTimeZone(IConfiguration config)
+        {
+            var id = config["TimeZone"];
+            if (!string.IsNullOrWhiteSpace(id))
+            {
+                try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+                catch { /* fall through */ }
+            }
+            return TimeZoneInfo.Local;
+        }
+
+        // Converts a UTC datetime to the configured server zone for display.
+        // Returns null when the input is null. Treats already-Local kinds as UTC
+        // (every server-side write uses DateTime.UtcNow; values from EF come back
+        // as Unspecified — we coerce all of them to UTC before converting).
+        private DateTime? ToServerTime(DateTime? utc)
+        {
+            if (!utc.HasValue) return null;
+            var asUtc = utc.Value.Kind == DateTimeKind.Utc
+                ? utc.Value
+                : DateTime.SpecifyKind(utc.Value, DateTimeKind.Utc);
+            return TimeZoneInfo.ConvertTimeFromUtc(asUtc, _serverTz);
         }
 
         // ── Primary endpoint — auto-selects report based on transaction quantities ──
@@ -31,17 +62,40 @@ namespace GrainManagement.Api
         [HttpGet("load-ticket/{ticket}/pdf")]
         public IActionResult GetLoadTicketPdf([FromRoute] string ticket)
         {
-            var model = BuildLoadTicketDataModel(ticket, out var detail);
-            if (model == null || detail == null)
+            // Resolve the detail row first so we can branch on TxnType. Transfer
+            // rows (TRANSFER_IN/TRANSFER_OUT) bind to TransferLoadTicketDataModel
+            // and one of the Transfer*LoadTicketReport variants; everything else
+            // continues to use the Recieved* reports + LoadTicketDataModel.
+            var detail = ResolveLoadDetail(ticket);
+            if (detail == null)
                 return NotFound(new { error = $"Transaction {ticket} not found." });
 
-            var report = SelectReport(detail);
+            XtraReport report;
+            object dataRow;
+            string reportName;
+
+            if (IsTransferTxn(detail))
+            {
+                var transferModel = BuildTransferLoadTicketDataModel(detail);
+                report     = SelectTransferReport(detail);
+                dataRow    = transferModel;
+                reportName = report.GetType().Name;
+            }
+            else
+            {
+                var model = BuildLoadTicketDataModel(ticket, out var resolved);
+                if (model == null || resolved == null)
+                    return NotFound(new { error = $"Transaction {ticket} not found." });
+                report     = SelectReport(resolved);
+                dataRow    = model;
+                reportName = report.GetType().Name;
+            }
 
             _log.LogInformation(
                 "Generating {ReportType} PDF for transaction {TransactionId}",
-                report.GetType().Name, ticket);
+                reportName, ticket);
 
-            report.DataSource = new[] { model };
+            report.DataSource = new[] { dataRow };
             report.CreateDocument();
 
             if (report.Pages.Count == 0)
@@ -53,15 +107,29 @@ namespace GrainManagement.Api
             return File(ms.ToArray(), "application/pdf", $"LoadTicket-{ticket}.pdf");
         }
 
+        private static bool IsTransferTxn(InventoryTransactionDetail detail)
+            => detail.TxnType == "TRANSFER_IN" || detail.TxnType == "TRANSFER_OUT";
+
+        // Cheaply resolves just the detail row (no joins) so GetLoadTicketPdf
+        // can decide which build path to take before paying for the heavier
+        // join queries inside the build helpers.
+        private InventoryTransactionDetail? ResolveLoadDetail(string ticket)
+        {
+            if (!long.TryParse(ticket, out var id)) return null;
+            return _db.InventoryTransactionDetails
+                .AsNoTracking()
+                .FirstOrDefault(d => d.TransactionId == id);
+        }
+
         // ── Explicit endpoints (for when the caller knows which report they want) ──
 
         [HttpGet("inbound-ticket/{ticket}/pdf")]
         public IActionResult GetInboundTicketPdf([FromRoute] string ticket)
-            => RenderReport<InboundLoadTicketReport>(ticket, "InboundTicket");
+            => RenderReport<RecievedInboundLoadTicketReport>(ticket, "InboundTicket");
 
         [HttpGet("outbound-ticket/{ticket}/pdf")]
         public IActionResult GetOutboundTicketPdf([FromRoute] string ticket)
-            => RenderReport<OutboundLoadTicketReport>(ticket, "OutboundTicket");
+            => RenderReport<RecievedOutboundLoadTicketReport>(ticket, "OutboundTicket");
 
         [HttpGet("direct-ticket/{ticket}/pdf")]
         public IActionResult GetDirectTicketPdf([FromRoute] string ticket)
@@ -229,8 +297,8 @@ namespace GrainManagement.Api
         ///
         /// Rules:
         ///   1. DirectQty is set              → DirectQuantityLoadTicketReport
-        ///   2. StartQty set + EndQty set      → OutboundLoadTicketReport
-        ///   3. StartQty set + EndQty null      → InboundLoadTicketReport
+        ///   2. StartQty set + EndQty set      → RecievedOutboundLoadTicketReport
+        ///   3. StartQty set + EndQty null      → RecievedInboundLoadTicketReport
         /// </summary>
         private static XtraReport SelectReport(InventoryTransactionDetail detail)
         {
@@ -240,10 +308,174 @@ namespace GrainManagement.Api
 
             // Truck loads with both inbound and outbound weights
             if (detail.StartQty.HasValue && detail.EndQty.HasValue)
-                return new OutboundLoadTicketReport();
+                return new RecievedOutboundLoadTicketReport();
 
             // Truck loads with only inbound weight (not yet scaled out)
-            return new InboundLoadTicketReport();
+            return new RecievedInboundLoadTicketReport();
+        }
+
+        /// <summary>
+        /// Selects the correct transfer-flavored report based on the transaction's
+        /// quantity fields. Mirrors SelectReport but for TRANSFER_IN / TRANSFER_OUT.
+        ///
+        /// Rules:
+        ///   1. DirectQty is set              → DirectQuantityLoadTicketReport
+        ///      (transfers don't have a transfer-specific direct report yet — fall back
+        ///       to the shared direct report which uses LoadTicketDataModel; non-transfer
+        ///       direct loads dominate in practice)
+        ///   2. StartQty set + EndQty set      → TransferOutboundLoadTicketReport
+        ///   3. StartQty set + EndQty null      → TransferInboundLoadTicketReport
+        /// </summary>
+        private static XtraReport SelectTransferReport(InventoryTransactionDetail detail)
+        {
+            if (detail.DirectQty.HasValue)
+                return new DirectQuantityLoadTicketReport();
+
+            if (detail.StartQty.HasValue && detail.EndQty.HasValue)
+                return new TransferOutboundLoadTicketReport();
+
+            return new TransferInboundLoadTicketReport();
+        }
+
+        /// <summary>
+        /// Builds the TransferLoadTicketDataModel for a transfer transaction.
+        /// Joins to the WS for ItemId / Source / Destination, the Items table for
+        /// Variety, and Locations for source/destination names. No lot / account /
+        /// split fields — transfer loads aren't tied to a producer lot.
+        /// </summary>
+        private TransferLoadTicketDataModel BuildTransferLoadTicketDataModel(InventoryTransactionDetail detail)
+        {
+            var transactionId = detail.TransactionId;
+
+            // Re-fetch with the joins we need for the report (ResolveLoadDetail
+            // does a cheap, no-include lookup so the branch in GetLoadTicketPdf
+            // is fast).
+            var full = _db.InventoryTransactionDetails
+                .Include(d => d.Transaction).ThenInclude(t => t.Location)
+                .Include(d => d.Product)
+                .AsNoTracking()
+                .FirstOrDefault(d => d.TransactionId == transactionId)
+                ?? detail;
+
+            // ── Resolve the WS for hauler / BOL / source / destination ──────
+            string haulerName = "";
+            string wsDisplay = "";
+            string bolType = "";
+            long? sourceLocationId = null;
+            long? destinationLocationId = null;
+            long? wsItemId = null;
+            var ws = _db.WeightSheets
+                .Include(w => w.Hauler)
+                .AsNoTracking()
+                .FirstOrDefault(w => w.RowUid == full.RefId && full.RefType == "WeightSheet");
+            if (ws != null)
+            {
+                haulerName = ws.Hauler?.Description ?? "";
+                wsDisplay = ws.As400Id > 0
+                    ? ws.As400Id.ToString()
+                    : FormatId(ws.WeightSheetId);
+                bolType = ws.RateType switch
+                {
+                    "U" => "Universal",
+                    "A" => "Along Side Field",
+                    "F" => "Farm Storage",
+                    "C" => "Custom",
+                    _   => ws.RateType ?? ""
+                };
+                sourceLocationId = ws.SourceLocationId;
+                destinationLocationId = ws.DestinationLocationId;
+                wsItemId = ws.ItemId;
+            }
+
+            // ── Resolve source / destination location names ─────────────────
+            string sourceName = "";
+            if (sourceLocationId.HasValue)
+            {
+                sourceName = _db.Locations.AsNoTracking()
+                    .Where(l => l.LocationId == sourceLocationId.Value)
+                    .Select(l => l.Name)
+                    .FirstOrDefault() ?? "";
+            }
+            string destName = "";
+            if (destinationLocationId.HasValue)
+            {
+                destName = _db.Locations.AsNoTracking()
+                    .Where(l => l.LocationId == destinationLocationId.Value)
+                    .Select(l => l.Name)
+                    .FirstOrDefault() ?? "";
+            }
+
+            // ── Variety (item description) ──────────────────────────────────
+            string variety = "";
+            string itemIdStr = "";
+            if (wsItemId.HasValue)
+            {
+                itemIdStr = wsItemId.Value.ToString();
+                variety = _db.Items.AsNoTracking()
+                    .Where(i => i.ItemId == wsItemId.Value)
+                    .Select(i => i.Description)
+                    .FirstOrDefault() ?? "";
+            }
+            // Fall back to the detail's product description if the WS item didn't resolve
+            if (string.IsNullOrEmpty(variety))
+                variety = full.Product?.Description ?? "";
+
+            // ── Bin (container) ─────────────────────────────────────────────
+            var binName = _db.InventoryTransactionDetailToContainers
+                .Include(c => c.Container)
+                .AsNoTracking()
+                .Where(c => c.TransactionId == transactionId)
+                .Select(c => c.Container.Description)
+                .FirstOrDefault() ?? "";
+
+            // ── Net weight ──────────────────────────────────────────────────
+            int netWeight = full.DirectQty.HasValue
+                ? (int)full.DirectQty.Value
+                : (int)(full.NetQty ?? 0);
+
+            // ── Manual-entry legal flags ────────────────────────────────────
+            var manualSources = (from qs in _db.TransactionQuantitySources.AsNoTracking()
+                                 join st in _db.QuantitySourceTypes.AsNoTracking()
+                                    on qs.SourceTypeId equals st.QuantitySourceTypeId
+                                 where qs.TransactionId == transactionId
+                                 select new { qs.QuantityField, st.Code })
+                                .ToList();
+            string startManualFlag  = manualSources.Any(s => s.QuantityField == "START"  && s.Code == "MANUAL") ? "M" : " ";
+            string endManualFlag    = manualSources.Any(s => s.QuantityField == "END"    && s.Code == "MANUAL") ? "M" : " ";
+            string directManualFlag = manualSources.Any(s => s.QuantityField == "DIRECT" && s.Code == "MANUAL") ? "M" : " ";
+
+            // Direction is derived from where this row sits relative to the WS
+            // header: TRANSFER_IN at the destination = Received, TRANSFER_OUT at
+            // the source = Shipped.
+            string direction = full.TxnType == "TRANSFER_IN" ? "Received"
+                              : full.TxnType == "TRANSFER_OUT" ? "Shipped"
+                              : "";
+
+            return new TransferLoadTicketDataModel
+            {
+                LoadId              = FormatId(transactionId),
+                WeightSheetId       = wsDisplay,
+                Direction           = direction,
+                Variety             = variety,
+                ItemId              = itemIdStr,
+                SourceLocation      = sourceName,
+                DestinationLocation = destName,
+                BolType             = bolType,
+                Hauler              = haulerName,
+                InboundTime         = ToServerTime(full.StartedAt ?? full.TxnAt),
+                OutboundTime        = ToServerTime(full.CompletedAt),
+                InboundWeight       = (int)(full.StartQty ?? 0),
+                OutboundWeight      = (int)(full.EndQty ?? 0),
+                NetWeight           = netWeight,
+                DirectQty           = (int)(full.DirectQty ?? 0),
+                Location            = full.Transaction?.Location?.Name ?? "",
+                LocationId          = full.Transaction?.LocationId.ToString() ?? "",
+                Commodity           = full.Product?.Description ?? "",
+                Bin                 = binName,
+                StartManualFlag     = startManualFlag,
+                EndManualFlag       = endManualFlag,
+                DirectManualFlag    = directManualFlag,
+            };
         }
 
         /// <summary>
@@ -340,7 +572,7 @@ namespace GrainManagement.Api
             // ── Use As400 IDs when available ────────────────────────────────
             string lotDisplay = detail.Lot?.As400Id > 0
                 ? detail.Lot.As400Id.ToString()
-                : FormatId(detail.LotId);
+                : (detail.LotId.HasValue ? FormatId(detail.LotId.Value) : "");
             string wsDisplay = ws?.As400Id > 0
                 ? ws.As400Id.ToString()
                 : FormatId(wsId);
@@ -366,8 +598,8 @@ namespace GrainManagement.Api
                 SplitDescription = splitDesc,
                 BolType          = bolType,
                 Hauler           = haulerName,
-                InboundTime      = detail.StartedAt ?? detail.TxnAt,
-                OutboundTime     = detail.CompletedAt,
+                InboundTime      = ToServerTime(detail.StartedAt ?? detail.TxnAt),
+                OutboundTime     = ToServerTime(detail.CompletedAt),
                 InboundWeight    = (int)(detail.StartQty ?? 0),
                 OutboundWeight   = (int)(detail.EndQty ?? 0),
                 NetWeight        = netWeight,
@@ -578,8 +810,8 @@ namespace GrainManagement.Api
                         LoadNumber = txnId.ToString(),
                         TruckId = truckId.Length > 4 ? truckId[..4] : truckId,
                         BOL = bol,
-                        TimeIn = startedAt,
-                        TimeOut = completedAt,
+                        TimeIn = ToServerTime(startedAt),
+                        TimeOut = ToServerTime(completedAt),
                         Bin = container,
                         InWeight = inWt,
                         OutWeight = outWt,
@@ -647,12 +879,236 @@ namespace GrainManagement.Api
                 FarmNumber = lotFarmNumber,
                 State = lotState,
                 County = lotCounty,
-                PrintDate = DateTime.Now,
+                PrintDate = ToServerTime(DateTime.UtcNow),
                 CopyType = original ? "ORIGINAL" : "COPY",
                 TotalLoads = loads.Count,
                 CompletedLoads = completedCount,
                 TotalNetWeight = ((int)totalNet).ToString("N0") + " lbs",
                 Loads = loads,
+            };
+        }
+
+        // ── Transfer Weight Sheet ───────────────────────────────────────────────
+
+        [HttpGet("transfer-weight-sheet/{wsId:long}/pdf")]
+        public IActionResult GetTransferWeightSheetPdf([FromRoute] long wsId, [FromQuery] bool original = true)
+        {
+            var model = BuildTransferWeightSheet(wsId, original);
+            if (model == null)
+                return NotFound(new { error = $"Transfer weight sheet {wsId} not found." });
+
+            var report = new TransferWeightSheetReport();
+            report.DataSource = new[] { model };
+            report.CreateDocument();
+
+            if (report.Pages.Count == 0)
+                return Problem("Report rendered zero pages.");
+
+            using var ms = new MemoryStream();
+            report.ExportToPdf(ms);
+            return File(ms.ToArray(), "application/pdf", $"TransferWeightSheet-{wsId}.pdf");
+        }
+
+        /// <summary>
+        /// Builds the TransferWeightSheetDto by loading the transfer WS header +
+        /// all transfer loads. Mirrors BuildIntakeWeightSheet without the lot
+        /// joins and adds Source/Destination/Variety/Direction.
+        /// </summary>
+        private TransferWeightSheetDto? BuildTransferWeightSheet(long wsId, bool original = true)
+        {
+            var ws = _db.WeightSheets
+                .Include(w => w.Hauler)
+                .AsNoTracking()
+                .FirstOrDefault(w => w.WeightSheetId == wsId);
+
+            if (ws == null) return null;
+            if (!string.Equals(ws.WeightSheetType, "Transfer", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            string variety = "";
+            if (ws.ItemId.HasValue)
+            {
+                variety = _db.Items.AsNoTracking()
+                    .Where(i => i.ItemId == ws.ItemId.Value)
+                    .Select(i => i.Description)
+                    .FirstOrDefault() ?? "";
+            }
+
+            string sourceName = "";
+            if (ws.SourceLocationId.HasValue)
+            {
+                sourceName = _db.Locations.AsNoTracking()
+                    .Where(l => l.LocationId == ws.SourceLocationId.Value)
+                    .Select(l => l.Name)
+                    .FirstOrDefault() ?? "";
+            }
+            string destName = "";
+            if (ws.DestinationLocationId.HasValue)
+            {
+                destName = _db.Locations.AsNoTracking()
+                    .Where(l => l.LocationId == ws.DestinationLocationId.Value)
+                    .Select(l => l.Name)
+                    .FirstOrDefault() ?? "";
+            }
+
+            var locInfo = _db.Locations
+                .AsNoTracking()
+                .Where(l => l.LocationId == ws.LocationId)
+                .Select(l => new { l.Name, l.Licensed })
+                .FirstOrDefault();
+            string locationName = locInfo?.Name ?? "";
+            bool isLicensed = locInfo?.Licensed ?? true;
+
+            string bolType = ws.RateType switch
+            {
+                "U" => "Universal",
+                "A" => "Along Side Field",
+                "F" => "Farm Storage",
+                "C" => "Custom",
+                _ => ws.RateType ?? ""
+            };
+
+            // Same SQL as the intake report — works for transfer rows because
+            // ItemId on the detail comes from the WS header and all attribute
+            // joins are by transaction id.
+            var conn = (Microsoft.Data.SqlClient.SqlConnection)_db.Database.GetDbConnection();
+            if (conn.State != System.Data.ConnectionState.Open)
+                conn.Open();
+
+            const string sql = @"
+                SELECT
+                    itd.TransactionId,
+                    itd.StartedAt,
+                    itd.CompletedAt,
+                    itd.StartQty   AS InWeight,
+                    itd.EndQty     AS OutWeight,
+                    itd.NetQty     AS Net,
+                    itd.DirectQty  AS DirectQty,
+                    itd.Notes,
+                    c.Description  AS ContainerDescription,
+                    truckAttr.StringValue AS TruckId,
+                    bolAttr.StringValue AS BOL,
+                    CASE WHEN startSrcType.Code = 'MANUAL' THEN 1 ELSE 0 END AS StartIsManual,
+                    CASE WHEN endSrcType.Code = 'MANUAL' THEN 1 ELSE 0 END AS EndIsManual
+                FROM [warehouse].[WeightSheets] ws
+                INNER JOIN [Inventory].[InventoryTransactionDetails] itd ON itd.RefId = ws.RowUid AND itd.RefType = 'WeightSheet'
+                LEFT JOIN [Inventory].[InventoryTransactionDetailToContainers] tc ON tc.TransactionId = itd.TransactionId
+                LEFT JOIN [container].[Containers] c ON c.ContainerId = tc.ContainerId
+                LEFT JOIN [Inventory].[TransactionAttributes] truckAttr
+                    ON truckAttr.TransactionId = itd.TransactionId
+                    AND truckAttr.AttributeTypeId = (SELECT TOP 1 Id FROM [Inventory].[TransactionAttributeTypes] WHERE Code = 'TRUCK_ID')
+                LEFT JOIN [Inventory].[TransactionAttributes] bolAttr
+                    ON bolAttr.TransactionId = itd.TransactionId
+                    AND bolAttr.AttributeTypeId = (SELECT TOP 1 Id FROM [Inventory].[TransactionAttributeTypes] WHERE Code = 'BOL')
+                LEFT JOIN [Inventory].[TransactionQuantitySources] startSrc
+                    ON startSrc.TransactionId = itd.TransactionId AND startSrc.QuantityField = 'START'
+                LEFT JOIN [Inventory].[TransactionQuantitySources] endSrc
+                    ON endSrc.TransactionId = itd.TransactionId AND endSrc.QuantityField = 'END'
+                LEFT JOIN [Inventory].[QuantitySourceTypes] startSrcType
+                    ON startSrcType.QuantitySourceTypeId = startSrc.SourceTypeId
+                LEFT JOIN [Inventory].[QuantitySourceTypes] endSrcType
+                    ON endSrcType.QuantitySourceTypeId = endSrc.SourceTypeId
+                WHERE ws.WeightSheetId = @wsId
+                ORDER BY itd.TxnAt ASC";
+
+            var loads = new List<TransferWeightSheetLoadRow>();
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = sql;
+                cmd.Parameters.AddWithValue("@wsId", wsId);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    var txnId = reader.GetInt64(reader.GetOrdinal("TransactionId"));
+                    var inWt    = reader.IsDBNull(reader.GetOrdinal("InWeight"))    ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("InWeight"));
+                    var outWt   = reader.IsDBNull(reader.GetOrdinal("OutWeight"))   ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("OutWeight"));
+                    var net     = reader.IsDBNull(reader.GetOrdinal("Net"))         ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("Net"));
+                    var direct  = reader.IsDBNull(reader.GetOrdinal("DirectQty"))   ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("DirectQty"));
+                    var bin     = reader.IsDBNull(reader.GetOrdinal("ContainerDescription")) ? "" : reader.GetString(reader.GetOrdinal("ContainerDescription"));
+                    var startedAt   = reader.IsDBNull(reader.GetOrdinal("StartedAt"))   ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("StartedAt"));
+                    var completedAt = reader.IsDBNull(reader.GetOrdinal("CompletedAt")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("CompletedAt"));
+                    var notes   = reader.IsDBNull(reader.GetOrdinal("Notes"))    ? "" : reader.GetString(reader.GetOrdinal("Notes"));
+                    var truckId = reader.IsDBNull(reader.GetOrdinal("TruckId"))  ? "" : reader.GetString(reader.GetOrdinal("TruckId"));
+                    var bol     = reader.IsDBNull(reader.GetOrdinal("BOL"))      ? "" : reader.GetString(reader.GetOrdinal("BOL"));
+                    var startIsManual = reader.GetInt32(reader.GetOrdinal("StartIsManual")) == 1;
+                    var endIsManual   = reader.GetInt32(reader.GetOrdinal("EndIsManual"))   == 1;
+
+                    var effectiveNet = net ?? direct;
+                    bool complete = (outWt.HasValue || direct.HasValue) && !string.IsNullOrEmpty(bin);
+
+                    loads.Add(new TransferWeightSheetLoadRow
+                    {
+                        WeightSheetId = wsId.ToString(),
+                        As400Id       = ws.As400Id > 0 ? ws.As400Id.ToString() : "",
+                        LoadNumber    = txnId.ToString(),
+                        TruckId       = truckId.Length > 4 ? truckId[..4] : truckId,
+                        BOL           = bol,
+                        TimeIn        = ToServerTime(startedAt),
+                        TimeOut       = ToServerTime(completedAt),
+                        Bin           = bin,
+                        InWeight      = inWt,
+                        OutWeight     = outWt,
+                        Net           = effectiveNet,
+                        Notes         = notes,
+                        Status        = complete ? "Complete" : "Incomplete",
+                        StartManualFlag = startIsManual ? "M" : " ",
+                        EndManualFlag   = endIsManual   ? "M" : " ",
+                    });
+                }
+            }
+
+            for (int i = 0; i < loads.Count; i++)
+                loads[i].RowNumber = i + 1;
+
+            int completedCount = loads.Count(l => l.Status.StartsWith("Complete"));
+            decimal totalNet = loads.Where(l => l.Net.HasValue).Sum(l => l.Net.Value);
+
+            var as400Str = ws.As400Id.ToString();
+            var serverId = as400Str.Length >= 3 ? as400Str[..3] : as400Str;
+            var weightSheetNumber = as400Str.Length >= 6 ? as400Str[^6..] : as400Str;
+            var serverName = "";
+            if (int.TryParse(serverId, out var serverIdInt))
+            {
+                serverName = _db.Servers.AsNoTracking()
+                    .Where(s => s.ServerId == serverIdInt)
+                    .Select(s => s.FriendlyName)
+                    .FirstOrDefault() ?? "";
+            }
+
+            string direction = (ws.DestinationLocationId == ws.LocationId) ? "Received" : "Shipped";
+
+            return new TransferWeightSheetDto
+            {
+                WeightSheetId        = ws.As400Id > 0 ? ws.As400Id.ToString() : wsId.ToString(),
+                As400Id              = ws.As400Id > 0 ? ws.As400Id.ToString() : "",
+                ServerId             = serverId,
+                ServerName           = serverName,
+                WeightSheetNumber    = weightSheetNumber,
+                Direction            = direction,
+                Variety              = variety,
+                SourceLocation       = sourceName,
+                SourceLocationId     = ws.SourceLocationId?.ToString() ?? "",
+                DestinationLocation  = destName,
+                DestinationLocationId= ws.DestinationLocationId?.ToString() ?? "",
+                RateType             = bolType,
+                HaulerName           = ws.Hauler?.Description ?? "",
+                Miles                = ws.Miles,
+                Rate                 = ws.Rate,
+                CustomRateDescription= ws.CustomRateDescription ?? "",
+                WeightSheetNotes     = ws.Notes ?? "",
+                Location             = locationName,
+                LocationId           = ws.LocationId.ToString(),
+                CertificateTitle     = isLicensed
+                    ? "UNITED STATES WAREHOUSE ACT GRAIN WEIGHT CERTIFICATE"
+                    : "GRAIN WEIGHT CERTIFICATE",
+                WeightmasterName     = ws.WeightmasterName ?? "",
+                CreationDate         = ws.CreationDate.ToDateTime(TimeOnly.MinValue),
+                PrintDate            = ToServerTime(DateTime.UtcNow),
+                CopyType             = original ? "ORIGINAL" : "COPY",
+                TotalLoads           = loads.Count,
+                CompletedLoads       = completedCount,
+                TotalNetWeight       = ((int)totalNet).ToString("N0") + " lbs",
+                Loads                = loads,
             };
         }
     }

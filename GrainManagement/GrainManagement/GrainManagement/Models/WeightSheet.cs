@@ -41,6 +41,14 @@ public partial class WeightSheet
 
     public long? LotId { get; set; }
 
+    // Transfer-only header fields (NULL for Delivery sheets). Enforced
+    // by CK_WeightSheets_TypeFields on warehouse.WeightSheets.
+    public long? ItemId { get; set; }
+
+    public int? SourceLocationId { get; set; }
+
+    public int? DestinationLocationId { get; set; }
+
     public string Notes { get; set; }
 
     public DateTime? UpdatedAt { get; set; }

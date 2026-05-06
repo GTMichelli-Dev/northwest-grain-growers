@@ -2,9 +2,9 @@ using DevExpress.XtraReports.UI;
 
 namespace GrainManagement.Reporting
 {
-    public partial class OutboundLoadTicketReport : XtraReport
+    public partial class RecievedInboundLoadTicketReport : XtraReport
     {
-        public OutboundLoadTicketReport()
+        public RecievedInboundLoadTicketReport()
         {
             InitializeComponent();
             this.CanShrink = true;

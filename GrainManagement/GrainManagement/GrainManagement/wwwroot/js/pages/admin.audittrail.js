@@ -120,6 +120,37 @@
             rowAlternationEnabled: true,
             hoverStateEnabled: true,
             wordWrapEnabled: true,
+            // Operator-controlled column layout: drag headers to reorder,
+            // drag the right edge to resize, click the column-chooser icon
+            // to hide/show columns. State is persisted to a cookie via
+            // stateStoring below so the layout survives page reloads.
+            allowColumnReordering: true,
+            allowColumnResizing:   true,
+            columnResizingMode:    'widget',
+            columnChooser: { enabled: true, mode: 'select' },
+            stateStoring: (function () {
+                var COOKIE_KEY = 'GM.AuditTrailGridState';
+                return {
+                    enabled: true,
+                    type:    'custom',
+                    customLoad: function () {
+                        var raw = (window.GM && GM.getCookie) ? GM.getCookie(COOKIE_KEY) : null;
+                        if (!raw) return null;
+                        try { return JSON.parse(raw); }
+                        catch (_) { return null; }
+                    },
+                    customSave: function (state) {
+                        if (!window.GM || !GM.setCookie) return;
+                        try {
+                            // Persist the column layout only — cookies are tiny
+                            // and we don't want filter/sort state to leak across
+                            // sessions in unintended ways.
+                            var slim = { columns: (state && state.columns) || [] };
+                            GM.setCookie(COOKIE_KEY, JSON.stringify(slim), 365);
+                        } catch (_) { /* serializer failure → cookie skipped */ }
+                    },
+                };
+            })(),
             filterRow: { visible: true },
             headerFilter: { visible: true },
             searchPanel: { visible: true, width: 240, placeholder: 'Search audit log\u2026' },
@@ -136,6 +167,7 @@
             },
             toolbar: {
                 items: [
+                    { location: 'after', name: 'columnChooserButton' },
                     { location: 'after', name: 'searchPanel' },
                     { location: 'after', name: 'exportButton' },
                 ],
@@ -158,13 +190,13 @@
                 },
                 {
                     // CreatedAt is stored UTC in system.AuditTrail; the API
-                    // tags it Kind=Utc so the JSON carries a 'Z' suffix and
-                    // dxDataGrid converts to the browser's local timezone.
+                    // tags it Kind=Utc so the JSON carries a 'Z' suffix.
+                    // gmDxServerTime renders it in the configured server zone.
                     // Default sort newest-first.
                     dataField: 'CreatedAt',
-                    caption: 'Date (Local)',
+                    caption: 'Date',
                     dataType: 'datetime',
-                    format: 'MM/dd/yyyy HH:mm:ss',
+                    customizeText: window.gmDxServerTime('datetime'),
                     width: 170,
                     sortOrder: 'desc',
                     sortIndex: 0,

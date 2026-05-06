@@ -128,7 +128,7 @@
             caption: "Time",
             width: 140,
             dataType: "date",
-            format: "shortTime"
+            customizeText: window.gmDxServerTime("timeShort")
           },
           { dataField: "Bol", caption: "BOL", width: 90 },
           { dataField: "Bin", caption: "Bin" },

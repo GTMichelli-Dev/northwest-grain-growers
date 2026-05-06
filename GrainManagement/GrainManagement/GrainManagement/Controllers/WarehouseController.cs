@@ -99,6 +99,9 @@ public class WarehouseController : Controller
     [HttpGet("LoadType")]
     public IActionResult LoadType() => View();
 
+    [HttpGet("Transfer")]
+    public IActionResult Transfer() => View();
+
     [HttpGet("NewIntakeTruck")]
     public IActionResult _NewIntakeTruck()
     {

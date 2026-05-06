@@ -6,18 +6,20 @@ namespace GrainManagement.Reporting
     using System.ComponentModel;
     using DevExpress.DataAccess.ObjectBinding;
     using DevExpress.XtraPrinting;
+    using DevExpress.XtraPrinting.BarCode;
     using DevExpress.XtraReports.UI;
 
-    partial class OutboundLoadTicketReport
+    partial class TransferInboundLoadTicketReport
     {
         private IContainer components = null;
 
         private TopMarginBand topMarginBand1;
         private BottomMarginBand bottomMarginBand1;
         private DetailBand detailBand1;
+
         private ObjectDataSource objectDataSource1;
 
-        // Detail controls
+        // Detail controls — named meaningfully for Designer editing
         private XRLabel xrTitle;
         private XRLabel xrLoadId;
         private XRLine xrLine1;
@@ -25,23 +27,20 @@ namespace GrainManagement.Reporting
         private XRLabel capLocation;    private XRLabel xrLocation;
         private XRLabel capLocationId;  private XRLabel xrLocationId;
         private XRLabel capWeightSheet; private XRLabel xrWeightSheetId;
-        private XRLabel capLot;         private XRLabel xrLotNumber;
         private XRLabel capAccount;     private XRLabel xrCropAccount;
-        private XRLabel capSplitNum;    private XRLabel xrSplitNumber;
-        private XRLabel capSplit;       private XRLabel xrSplitDescription;
         private XRLabel capBol;         private XRLabel xrBolType;
         private XRLabel capHauler;      private XRLabel xrHauler;
 
         private XRLine xrLine2;
         private XRLabel capInTime;      private XRLabel xrInboundTime;
-        private XRLabel capOutTime;     private XRLabel xrOutboundTime;
         private XRLine xrLine3;
 
-        private XRLabel capInWeight;    private XRLabel xrInboundWeight;
-        private XRLabel capOutWeight;   private XRLabel xrOutboundWeight;
-        private XRLine xrLineNet;
-        private XRLabel capNet;         private XRLabel xrNetWeight;
+        private XRLabel capInWeight;
+        private XRLabel xrInboundWeight;
         private XRLabel xrFooter;
+
+        // Bottom margin
+        private XRBarCode xrBarcodeLoadId;
 
         protected override void Dispose(bool disposing)
         {
@@ -53,18 +52,13 @@ namespace GrainManagement.Reporting
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(OutboundLoadTicketReport));
+            DevExpress.XtraPrinting.BarCode.Code128Generator code128Generator3 = new DevExpress.XtraPrinting.BarCode.Code128Generator();
             this.topMarginBand1 = new DevExpress.XtraReports.UI.TopMarginBand();
-            this.xrPictureBox1 = new DevExpress.XtraReports.UI.XRPictureBox();
+            this.xrLabel1 = new DevExpress.XtraReports.UI.XRLabel();
+            this.xrBarcodeLoadId = new DevExpress.XtraReports.UI.XRBarCode();
             this.bottomMarginBand1 = new DevExpress.XtraReports.UI.BottomMarginBand();
             this.xrFooter = new DevExpress.XtraReports.UI.XRLabel();
             this.detailBand1 = new DevExpress.XtraReports.UI.DetailBand();
-            this.xrLabel6 = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrLabel5 = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrLabel3 = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrLabel4 = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrLabel1 = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrLabel2 = new DevExpress.XtraReports.UI.XRLabel();
             this.xrTitle = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLoadId = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLine1 = new DevExpress.XtraReports.UI.XRLine();
@@ -74,14 +68,8 @@ namespace GrainManagement.Reporting
             this.xrLocationId = new DevExpress.XtraReports.UI.XRLabel();
             this.capWeightSheet = new DevExpress.XtraReports.UI.XRLabel();
             this.xrWeightSheetId = new DevExpress.XtraReports.UI.XRLabel();
-            this.capLot = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrLotNumber = new DevExpress.XtraReports.UI.XRLabel();
             this.capAccount = new DevExpress.XtraReports.UI.XRLabel();
             this.xrCropAccount = new DevExpress.XtraReports.UI.XRLabel();
-            this.capSplitNum = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrSplitNumber = new DevExpress.XtraReports.UI.XRLabel();
-            this.capSplit = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrSplitDescription = new DevExpress.XtraReports.UI.XRLabel();
             this.capBol = new DevExpress.XtraReports.UI.XRLabel();
             this.xrBolType = new DevExpress.XtraReports.UI.XRLabel();
             this.capHauler = new DevExpress.XtraReports.UI.XRLabel();
@@ -89,34 +77,46 @@ namespace GrainManagement.Reporting
             this.xrLine2 = new DevExpress.XtraReports.UI.XRLine();
             this.capInTime = new DevExpress.XtraReports.UI.XRLabel();
             this.xrInboundTime = new DevExpress.XtraReports.UI.XRLabel();
-            this.capOutTime = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrOutboundTime = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLine3 = new DevExpress.XtraReports.UI.XRLine();
             this.capInWeight = new DevExpress.XtraReports.UI.XRLabel();
             this.xrInboundWeight = new DevExpress.XtraReports.UI.XRLabel();
-            this.capOutWeight = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrOutboundWeight = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrLineNet = new DevExpress.XtraReports.UI.XRLine();
-            this.capNet = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrNetWeight = new DevExpress.XtraReports.UI.XRLabel();
             this.objectDataSource1 = new DevExpress.DataAccess.ObjectBinding.ObjectDataSource(this.components);
+            this.xrLabel2 = new DevExpress.XtraReports.UI.XRLabel();
+            this.xrLabel3 = new DevExpress.XtraReports.UI.XRLabel();
             ((System.ComponentModel.ISupportInitialize)(this.objectDataSource1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
             // 
             // topMarginBand1
             // 
             this.topMarginBand1.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
-            this.xrPictureBox1});
-            this.topMarginBand1.HeightF = 157.2917F;
+            this.xrLabel1,
+            this.xrBarcodeLoadId});
+            this.topMarginBand1.HeightF = 182.2917F;
             this.topMarginBand1.Name = "topMarginBand1";
             // 
-            // xrPictureBox1
+            // xrLabel1
             // 
-            this.xrPictureBox1.ImageSource = new DevExpress.XtraPrinting.Drawing.ImageSource("img", resources.GetString("xrPictureBox1.ImageSource"));
-            this.xrPictureBox1.LocationFloat = new DevExpress.Utils.PointFloat(10.00001F, 23.95833F);
-            this.xrPictureBox1.Name = "xrPictureBox1";
-            this.xrPictureBox1.SizeF = new System.Drawing.SizeF(255.2083F, 129.1667F);
-            this.xrPictureBox1.Sizing = DevExpress.XtraPrinting.ImageSizeMode.ZoomImage;
+            this.xrLabel1.Font = new DevExpress.Drawing.DXFont("Arial", 12F, DevExpress.Drawing.DXFontStyle.Bold);
+            this.xrLabel1.LocationFloat = new DevExpress.Utils.PointFloat(0F, 156.25F);
+            this.xrLabel1.Multiline = true;
+            this.xrLabel1.Name = "xrLabel1";
+            this.xrLabel1.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
+            this.xrLabel1.SizeF = new System.Drawing.SizeF(269F, 23F);
+            this.xrLabel1.StylePriority.UseFont = false;
+            this.xrLabel1.StylePriority.UseTextAlignment = false;
+            this.xrLabel1.Text = "Northwest Grain Growers";
+            this.xrLabel1.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter;
+            // 
+            // xrBarcodeLoadId
+            // 
+            this.xrBarcodeLoadId.AutoModule = true;
+            this.xrBarcodeLoadId.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[LoadId]")});
+            this.xrBarcodeLoadId.LocationFloat = new DevExpress.Utils.PointFloat(10.00001F, 33.45833F);
+            this.xrBarcodeLoadId.Name = "xrBarcodeLoadId";
+            this.xrBarcodeLoadId.Padding = new DevExpress.XtraPrinting.PaddingInfo(10F, 10F, 0F, 0F, 100F);
+            this.xrBarcodeLoadId.SizeF = new System.Drawing.SizeF(254F, 112F);
+            this.xrBarcodeLoadId.Symbology = code128Generator3;
             // 
             // bottomMarginBand1
             // 
@@ -137,11 +137,7 @@ namespace GrainManagement.Reporting
             // detailBand1
             // 
             this.detailBand1.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
-            this.xrLabel6,
-            this.xrLabel5,
             this.xrLabel3,
-            this.xrLabel4,
-            this.xrLabel1,
             this.xrLabel2,
             this.xrTitle,
             this.xrLoadId,
@@ -152,14 +148,8 @@ namespace GrainManagement.Reporting
             this.xrLocationId,
             this.capWeightSheet,
             this.xrWeightSheetId,
-            this.capLot,
-            this.xrLotNumber,
             this.capAccount,
             this.xrCropAccount,
-            this.capSplitNum,
-            this.xrSplitNumber,
-            this.capSplit,
-            this.xrSplitDescription,
             this.capBol,
             this.xrBolType,
             this.capHauler,
@@ -167,76 +157,19 @@ namespace GrainManagement.Reporting
             this.xrLine2,
             this.capInTime,
             this.xrInboundTime,
-            this.capOutTime,
-            this.xrOutboundTime,
             this.xrLine3,
             this.capInWeight,
-            this.xrInboundWeight,
-            this.capOutWeight,
-            this.xrOutboundWeight,
-            this.xrLineNet,
-            this.capNet,
-            this.xrNetWeight});
-            this.detailBand1.HeightF = 409.4127F;
+            this.xrInboundWeight});
+            this.detailBand1.HeightF = 394.1666F;
             this.detailBand1.Name = "detailBand1";
-            // 
-            // xrLabel6
-            // 
-            this.xrLabel6.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[StartManualFlag]")});
-            this.xrLabel6.LocationFloat = new DevExpress.Utils.PointFloat(245.0001F, 317.0833F);
-            this.xrLabel6.Multiline = true;
-            this.xrLabel6.Name = "xrLabel6";
-            this.xrLabel6.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrLabel6.SizeF = new System.Drawing.SizeF(28.99995F, 23F);
-            this.xrLabel6.Text = "xrLabel5";
-            // 
-            // xrLabel5
-            // 
-            this.xrLabel5.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[EndManualFlag]")});
-            this.xrLabel5.LocationFloat = new DevExpress.Utils.PointFloat(245.0001F, 346.0834F);
-            this.xrLabel5.Multiline = true;
-            this.xrLabel5.Name = "xrLabel5";
-            this.xrLabel5.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrLabel5.SizeF = new System.Drawing.SizeF(28.99995F, 23F);
-            this.xrLabel5.Text = "xrLabel5";
-            // 
-            // xrLabel3
-            // 
-            this.xrLabel3.LocationFloat = new DevExpress.Utils.PointFloat(0F, 0F);
-            this.xrLabel3.Name = "xrLabel3";
-            this.xrLabel3.SizeF = new System.Drawing.SizeF(2F, 2F);
-            this.xrLabel3.Visible = false;
-            // 
-            // xrLabel4
-            // 
-            this.xrLabel4.LocationFloat = new DevExpress.Utils.PointFloat(0F, 0F);
-            this.xrLabel4.Name = "xrLabel4";
-            this.xrLabel4.SizeF = new System.Drawing.SizeF(2F, 2F);
-            this.xrLabel4.Visible = false;
-            // 
-            // xrLabel1
-            // 
-            this.xrLabel1.LocationFloat = new DevExpress.Utils.PointFloat(0F, 0F);
-            this.xrLabel1.Name = "xrLabel1";
-            this.xrLabel1.SizeF = new System.Drawing.SizeF(2F, 2F);
-            this.xrLabel1.Visible = false;
-            // 
-            // xrLabel2
-            // 
-            this.xrLabel2.LocationFloat = new DevExpress.Utils.PointFloat(0F, 0F);
-            this.xrLabel2.Name = "xrLabel2";
-            this.xrLabel2.SizeF = new System.Drawing.SizeF(2F, 2F);
-            this.xrLabel2.Visible = false;
             // 
             // xrTitle
             // 
-            this.xrTitle.LocationFloat = new DevExpress.Utils.PointFloat(0F, 2F);
+            this.xrTitle.LocationFloat = new DevExpress.Utils.PointFloat(0F, 0F);
             this.xrTitle.Name = "xrTitle";
             this.xrTitle.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.xrTitle.SizeF = new System.Drawing.SizeF(269F, 22F);
-            this.xrTitle.Text = "OUTBOUND TICKET";
+            this.xrTitle.Text = "INBOUND TRANSFER TICKET";
             this.xrTitle.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter;
             // 
             // xrLoadId
@@ -244,7 +177,7 @@ namespace GrainManagement.Reporting
             this.xrLoadId.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[LoadId]")});
             this.xrLoadId.Font = new DevExpress.Drawing.DXFont("Arial", 14F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrLoadId.LocationFloat = new DevExpress.Utils.PointFloat(0F, 27F);
+            this.xrLoadId.LocationFloat = new DevExpress.Utils.PointFloat(0F, 24F);
             this.xrLoadId.Name = "xrLoadId";
             this.xrLoadId.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.xrLoadId.SizeF = new System.Drawing.SizeF(269F, 26F);
@@ -320,40 +253,19 @@ namespace GrainManagement.Reporting
             this.xrWeightSheetId.StylePriority.UseFont = false;
             this.xrWeightSheetId.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopLeft;
             // 
-            // capLot
-            // 
-            this.capLot.LocationFloat = new DevExpress.Utils.PointFloat(0F, 124F);
-            this.capLot.Name = "capLot";
-            this.capLot.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.capLot.SizeF = new System.Drawing.SizeF(90F, 18F);
-            this.capLot.Text = "Lot #:";
-            this.capLot.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            // 
-            // xrLotNumber
-            // 
-            this.xrLotNumber.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[LotNumber]")});
-            this.xrLotNumber.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrLotNumber.LocationFloat = new DevExpress.Utils.PointFloat(90F, 124F);
-            this.xrLotNumber.Name = "xrLotNumber";
-            this.xrLotNumber.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrLotNumber.SizeF = new System.Drawing.SizeF(179F, 18F);
-            this.xrLotNumber.StylePriority.UseFont = false;
-            this.xrLotNumber.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopLeft;
-            // 
             // capAccount
             // 
             this.capAccount.LocationFloat = new DevExpress.Utils.PointFloat(0F, 144F);
             this.capAccount.Name = "capAccount";
             this.capAccount.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.capAccount.SizeF = new System.Drawing.SizeF(90F, 18F);
-            this.capAccount.Text = "Account:";
+            this.capAccount.Text = "Destination:";
             this.capAccount.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
             // 
             // xrCropAccount
             // 
             this.xrCropAccount.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[CropAccount]")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[CropAccount][[DestinationLocation]]")});
             this.xrCropAccount.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
             this.xrCropAccount.LocationFloat = new DevExpress.Utils.PointFloat(90F, 144F);
             this.xrCropAccount.Name = "xrCropAccount";
@@ -361,48 +273,6 @@ namespace GrainManagement.Reporting
             this.xrCropAccount.SizeF = new System.Drawing.SizeF(179F, 18F);
             this.xrCropAccount.StylePriority.UseFont = false;
             this.xrCropAccount.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopLeft;
-            // 
-            // capSplitNum
-            // 
-            this.capSplitNum.LocationFloat = new DevExpress.Utils.PointFloat(0F, 164F);
-            this.capSplitNum.Name = "capSplitNum";
-            this.capSplitNum.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.capSplitNum.SizeF = new System.Drawing.SizeF(90F, 18F);
-            this.capSplitNum.Text = "Split #:";
-            this.capSplitNum.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            // 
-            // xrSplitNumber
-            // 
-            this.xrSplitNumber.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[SplitNumber]")});
-            this.xrSplitNumber.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrSplitNumber.LocationFloat = new DevExpress.Utils.PointFloat(90F, 164F);
-            this.xrSplitNumber.Name = "xrSplitNumber";
-            this.xrSplitNumber.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrSplitNumber.SizeF = new System.Drawing.SizeF(179F, 18F);
-            this.xrSplitNumber.StylePriority.UseFont = false;
-            this.xrSplitNumber.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopLeft;
-            // 
-            // capSplit
-            // 
-            this.capSplit.LocationFloat = new DevExpress.Utils.PointFloat(0F, 184F);
-            this.capSplit.Name = "capSplit";
-            this.capSplit.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.capSplit.SizeF = new System.Drawing.SizeF(90F, 18F);
-            this.capSplit.Text = "Split:";
-            this.capSplit.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            // 
-            // xrSplitDescription
-            // 
-            this.xrSplitDescription.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[SplitDescription]")});
-            this.xrSplitDescription.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrSplitDescription.LocationFloat = new DevExpress.Utils.PointFloat(90F, 184F);
-            this.xrSplitDescription.Name = "xrSplitDescription";
-            this.xrSplitDescription.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrSplitDescription.SizeF = new System.Drawing.SizeF(179F, 18F);
-            this.xrSplitDescription.StylePriority.UseFont = false;
-            this.xrSplitDescription.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopLeft;
             // 
             // capBol
             // 
@@ -453,17 +323,17 @@ namespace GrainManagement.Reporting
             // 
             // xrLine2
             // 
-            this.xrLine2.LocationFloat = new DevExpress.Utils.PointFloat(0F, 247.0833F);
+            this.xrLine2.LocationFloat = new DevExpress.Utils.PointFloat(0F, 289.7083F);
             this.xrLine2.Name = "xrLine2";
             this.xrLine2.SizeF = new System.Drawing.SizeF(269F, 2F);
             // 
             // capInTime
             // 
-            this.capInTime.LocationFloat = new DevExpress.Utils.PointFloat(0F, 257.0833F);
+            this.capInTime.LocationFloat = new DevExpress.Utils.PointFloat(0F, 299.7083F);
             this.capInTime.Name = "capInTime";
             this.capInTime.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.capInTime.SizeF = new System.Drawing.SizeF(90F, 18F);
-            this.capInTime.Text = "In Time:";
+            this.capInTime.Text = "Inbound Time:";
             this.capInTime.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
             // 
             // xrInboundTime
@@ -471,7 +341,7 @@ namespace GrainManagement.Reporting
             this.xrInboundTime.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[InboundTime]")});
             this.xrInboundTime.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrInboundTime.LocationFloat = new DevExpress.Utils.PointFloat(90F, 257.0833F);
+            this.xrInboundTime.LocationFloat = new DevExpress.Utils.PointFloat(90F, 299.7083F);
             this.xrInboundTime.Name = "xrInboundTime";
             this.xrInboundTime.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
             this.xrInboundTime.SizeF = new System.Drawing.SizeF(179F, 18F);
@@ -479,118 +349,62 @@ namespace GrainManagement.Reporting
             this.xrInboundTime.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopLeft;
             this.xrInboundTime.TextFormatString = "{0:g}";
             // 
-            // capOutTime
-            // 
-            this.capOutTime.LocationFloat = new DevExpress.Utils.PointFloat(0F, 277.0833F);
-            this.capOutTime.Name = "capOutTime";
-            this.capOutTime.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.capOutTime.SizeF = new System.Drawing.SizeF(90F, 18F);
-            this.capOutTime.Text = "Out Time:";
-            this.capOutTime.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            // 
-            // xrOutboundTime
-            // 
-            this.xrOutboundTime.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[OutboundTime]")});
-            this.xrOutboundTime.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrOutboundTime.LocationFloat = new DevExpress.Utils.PointFloat(90F, 277.0833F);
-            this.xrOutboundTime.Name = "xrOutboundTime";
-            this.xrOutboundTime.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrOutboundTime.SizeF = new System.Drawing.SizeF(179F, 18F);
-            this.xrOutboundTime.StylePriority.UseFont = false;
-            this.xrOutboundTime.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopLeft;
-            this.xrOutboundTime.TextFormatString = "{0:g}";
-            // 
             // xrLine3
             // 
-            this.xrLine3.LocationFloat = new DevExpress.Utils.PointFloat(0F, 303.0833F);
+            this.xrLine3.LocationFloat = new DevExpress.Utils.PointFloat(0F, 325.7083F);
             this.xrLine3.Name = "xrLine3";
             this.xrLine3.SizeF = new System.Drawing.SizeF(269F, 2F);
             // 
             // capInWeight
             // 
-            this.capInWeight.Font = new DevExpress.Drawing.DXFont("Arial", 12F);
-            this.capInWeight.LocationFloat = new DevExpress.Utils.PointFloat(7.999992F, 313.0833F);
+            this.capInWeight.LocationFloat = new DevExpress.Utils.PointFloat(0F, 335.7083F);
             this.capInWeight.Name = "capInWeight";
             this.capInWeight.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.capInWeight.SizeF = new System.Drawing.SizeF(104.0001F, 27F);
-            this.capInWeight.StylePriority.UseFont = false;
-            this.capInWeight.Text = "Gross (lbs):";
-            this.capInWeight.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
+            this.capInWeight.SizeF = new System.Drawing.SizeF(269F, 20F);
+            this.capInWeight.Text = "Inbound Weight";
+            this.capInWeight.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter;
             // 
             // xrInboundWeight
             // 
             this.xrInboundWeight.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[InboundWeight]")});
-            this.xrInboundWeight.Font = new DevExpress.Drawing.DXFont("Arial", 16F);
-            this.xrInboundWeight.LocationFloat = new DevExpress.Utils.PointFloat(119.5834F, 313.0833F);
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[InboundWeight]+[StartManualFlag]")});
+            this.xrInboundWeight.Font = new DevExpress.Drawing.DXFont("Arial", 16F, DevExpress.Drawing.DXFontStyle.Bold);
+            this.xrInboundWeight.LocationFloat = new DevExpress.Utils.PointFloat(22F, 359.7083F);
             this.xrInboundWeight.Name = "xrInboundWeight";
             this.xrInboundWeight.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrInboundWeight.SizeF = new System.Drawing.SizeF(125.4167F, 27F);
+            this.xrInboundWeight.SizeF = new System.Drawing.SizeF(230F, 30F);
             this.xrInboundWeight.StylePriority.UseFont = false;
-            this.xrInboundWeight.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
+            this.xrInboundWeight.StylePriority.UseTextAlignment = false;
+            this.xrInboundWeight.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
             this.xrInboundWeight.TextFormatString = "{0:n0}";
-            // 
-            // capOutWeight
-            // 
-            this.capOutWeight.Font = new DevExpress.Drawing.DXFont("Arial", 12F);
-            this.capOutWeight.LocationFloat = new DevExpress.Utils.PointFloat(7.999992F, 342.0833F);
-            this.capOutWeight.Name = "capOutWeight";
-            this.capOutWeight.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.capOutWeight.SizeF = new System.Drawing.SizeF(104.0001F, 27F);
-            this.capOutWeight.StylePriority.UseFont = false;
-            this.capOutWeight.Text = "Tare(lbs):";
-            this.capOutWeight.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            // 
-            // xrOutboundWeight
-            // 
-            this.xrOutboundWeight.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[OutboundWeight]")});
-            this.xrOutboundWeight.Font = new DevExpress.Drawing.DXFont("Tahoma", 16F);
-            this.xrOutboundWeight.LocationFloat = new DevExpress.Utils.PointFloat(119.5834F, 342.0833F);
-            this.xrOutboundWeight.Name = "xrOutboundWeight";
-            this.xrOutboundWeight.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrOutboundWeight.SizeF = new System.Drawing.SizeF(125.4167F, 27F);
-            this.xrOutboundWeight.StylePriority.UseFont = false;
-            this.xrOutboundWeight.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
-            this.xrOutboundWeight.TextFormatString = "{0:n0}";
-            // 
-            // xrLineNet
-            // 
-            this.xrLineNet.LocationFloat = new DevExpress.Utils.PointFloat(8F, 373.0833F);
-            this.xrLineNet.Name = "xrLineNet";
-            this.xrLineNet.SizeF = new System.Drawing.SizeF(251F, 2F);
-            // 
-            // capNet
-            // 
-            this.capNet.Font = new DevExpress.Drawing.DXFont("Arial", 12F);
-            this.capNet.LocationFloat = new DevExpress.Utils.PointFloat(7.999992F, 379.0833F);
-            this.capNet.Name = "capNet";
-            this.capNet.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.capNet.SizeF = new System.Drawing.SizeF(104.0001F, 27F);
-            this.capNet.StylePriority.UseFont = false;
-            this.capNet.Text = "Net(lbs):";
-            this.capNet.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
-            // 
-            // xrNetWeight
-            // 
-            this.xrNetWeight.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NetWeight]")});
-            this.xrNetWeight.Font = new DevExpress.Drawing.DXFont("Tahoma", 16F);
-            this.xrNetWeight.LocationFloat = new DevExpress.Utils.PointFloat(119.5834F, 379.0833F);
-            this.xrNetWeight.Name = "xrNetWeight";
-            this.xrNetWeight.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
-            this.xrNetWeight.SizeF = new System.Drawing.SizeF(125.4167F, 27F);
-            this.xrNetWeight.StylePriority.UseFont = false;
-            this.xrNetWeight.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleRight;
-            this.xrNetWeight.TextFormatString = "{0:n0}";
             // 
             // objectDataSource1
             // 
-            this.objectDataSource1.DataSource = typeof(global::GrainManagement.Dtos.Warehouse.LoadTicketDataModel);
+            this.objectDataSource1.DataSource = typeof(global::GrainManagement.Dtos.Warehouse.TransferLoadTicketDataModel);
             this.objectDataSource1.Name = "objectDataSource1";
             // 
-            // OutboundLoadTicketReport
+            // xrLabel2
+            // 
+            this.xrLabel2.LocationFloat = new DevExpress.Utils.PointFloat(0F, 124F);
+            this.xrLabel2.Name = "xrLabel2";
+            this.xrLabel2.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
+            this.xrLabel2.SizeF = new System.Drawing.SizeF(90F, 18F);
+            this.xrLabel2.Text = "Variety:";
+            this.xrLabel2.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
+            // 
+            // xrLabel3
+            // 
+            this.xrLabel3.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[Commodity]")});
+            this.xrLabel3.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
+            this.xrLabel3.LocationFloat = new DevExpress.Utils.PointFloat(91F, 124F);
+            this.xrLabel3.Name = "xrLabel3";
+            this.xrLabel3.Padding = new DevExpress.XtraPrinting.PaddingInfo(2F, 2F, 0F, 0F, 100F);
+            this.xrLabel3.SizeF = new System.Drawing.SizeF(179F, 18F);
+            this.xrLabel3.StylePriority.UseFont = false;
+            this.xrLabel3.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopLeft;
+            // 
+            // TransferInboundLoadTicketReport
             // 
             this.Bands.AddRange(new DevExpress.XtraReports.UI.Band[] {
             this.topMarginBand1,
@@ -600,7 +414,7 @@ namespace GrainManagement.Reporting
             this.objectDataSource1});
             this.DataSource = this.objectDataSource1;
             this.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
-            this.Margins = new DevExpress.Drawing.DXMargins(22F, 19F, 157.2917F, 40F);
+            this.Margins = new DevExpress.Drawing.DXMargins(22F, 19F, 182.2917F, 40F);
             this.PageWidthF = 315F;
             this.PaperKind = DevExpress.Drawing.Printing.DXPaperKind.Custom;
             this.RollPaper = true;
@@ -610,12 +424,8 @@ namespace GrainManagement.Reporting
 
         }
 
-        private XRPictureBox xrPictureBox1;
-        private XRLabel xrLabel3;
-        private XRLabel xrLabel4;
         private XRLabel xrLabel1;
+        private XRLabel xrLabel3;
         private XRLabel xrLabel2;
-        private XRLabel xrLabel6;
-        private XRLabel xrLabel5;
     }
 }

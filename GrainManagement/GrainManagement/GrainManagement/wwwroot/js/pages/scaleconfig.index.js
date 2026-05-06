@@ -280,7 +280,7 @@
         document.getElementById("diagOk").textContent = String(ok);
         document.getElementById("diagMotion").textContent = String(motion);
         var lu = dto.LastUpdate || dto.lastUpdate;
-        document.getElementById("diagLastUpdate").textContent = lu ? new Date(lu).toLocaleTimeString() : "--";
+        document.getElementById("diagLastUpdate").textContent = lu ? window.gmFormatServerTime(lu, "time") : "--";
     }
 
     // ── Public API ────────────────────────────────────────────────────────
