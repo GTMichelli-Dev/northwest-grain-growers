@@ -17,12 +17,9 @@
     function initActionButtons() {
         var $actions = $("#wdActions");
 
-        // End Of Day is a click handler, not a navigation. The other buttons
-        // navigate via their href.
         var buttons = [
             { text: "New Weight Sheet", icon: "doc",    href: "/WeightSheets/LoadType" },
             { text: "F.O.B Load",       icon: "export", href: "/WeightSheets/ShipLoad" },
-            { text: "End Of Day",       icon: "check",  onClick: openEndOfDayAudit },
             { text: "Lots",             icon: "folder", href: "/GrowerDelivery/WeightSheetLots" }
         ];
 
@@ -33,113 +30,9 @@
                 width: BTN_WIDTH,
                 stylingMode: "outlined",
                 type: "default",
-                onClick: b.onClick
-                    ? b.onClick
-                    : function () { window.location.href = b.href; }
+                onClick: function () { window.location.href = b.href; }
             }).appendTo($actions);
         });
-    }
-
-    // ── End Of Day audit ───────────────────────────────────────────────────
-    // Calls /api/GrowerDelivery/EndOfDayCheck for the active location and
-    // shows the result list in the #wdEndOfDayModal. Each row carries a
-    // Status field ("Not Complete" / "No Moisture Set" / "No Moisture Set /
-    // Not Complete") that drives both the column text and the row tint.
-    var _endOfDayModal = null;
-
-    function endOfDayLink(row) {
-        var basePath = (row.WeightSheetType || "").toLowerCase() === "transfer"
-            ? "/GrowerDelivery/WeightSheetTransferLoads"
-            : "/GrowerDelivery/WeightSheetDeliveryLoads";
-        return basePath + "?wsId=" + row.WeightSheetId;
-    }
-
-    function openEndOfDayAudit() {
-        var locationId = _currentLocationId || getLocationId();
-        if (!locationId) return;
-
-        if (!_endOfDayModal) {
-            _endOfDayModal = new bootstrap.Modal(document.getElementById("wdEndOfDayModal"));
-        }
-
-        // Always rebuild the grid so the modal reflects the current snapshot.
-        $("#wdEndOfDayMsg").prop("hidden", true);
-
-        $.getJSON("/api/GrowerDelivery/EndOfDayCheck?locationId=" + encodeURIComponent(locationId))
-            .done(function (data) {
-                renderEndOfDayGrid(data || []);
-                _endOfDayModal.show();
-            })
-            .fail(function () {
-                renderEndOfDayGrid([]);
-                $("#wdEndOfDayMsg")
-                    .removeClass("alert-warning alert-success")
-                    .addClass("alert-danger")
-                    .text("Failed to load End Of Day audit. Please try again.")
-                    .prop("hidden", false);
-                _endOfDayModal.show();
-            });
-    }
-
-    function renderEndOfDayGrid(rows) {
-        var $grid = $("#wdEndOfDayGrid");
-        var $msg  = $("#wdEndOfDayMsg");
-
-        if (!rows.length) {
-            $msg.removeClass("alert-warning alert-danger")
-                .addClass("alert-success")
-                .text("All open weight sheets are complete and have moisture entered. Ready for End Of Day.")
-                .prop("hidden", false);
-        } else {
-            $msg.removeClass("alert-success alert-danger")
-                .addClass("alert-warning")
-                .text("The following weight sheets need attention before End Of Day can be completed.")
-                .prop("hidden", false);
-        }
-
-        var existing;
-        try { existing = $grid.dxDataGrid("instance"); } catch (e) { existing = null; }
-
-        var options = {
-            dataSource: rows,
-            keyExpr: "WeightSheetId",
-            showBorders: true,
-            columnAutoWidth: true,
-            paging: { enabled: false },
-            columns: [
-                { dataField: "WeightSheetIdDisplay", caption: "WS #" },
-                { dataField: "Status",               caption: "Status",           width: 220 },
-                { dataField: "WeightSheetType",      caption: "Type", width: 100 },
-                { dataField: "LotIdDisplay",         caption: "Lot #" },
-                { dataField: "LotDescription",       caption: "Lot" },
-                { dataField: "TotalLoads",           caption: "Loads",            width: 80,  alignment: "right" },
-                { dataField: "IncompleteLoadCount",  caption: "Incomplete",       width: 110, alignment: "right" },
-                { dataField: "MissingMoistureCount", caption: "No Moisture",      width: 120, alignment: "right" },
-            ],
-            onRowClick: function (e) {
-                if (e.rowType !== "data" || !e.data) return;
-                window.location.href = endOfDayLink(e.data);
-            },
-            onRowPrepared: function (e) {
-                if (e.rowType !== "data" || !e.data) return;
-                var status = e.data.Status || "";
-                // Tint the row by status. "Both" is the most severe so it gets
-                // the strongest red; pure incomplete is a warm amber; pure
-                // missing-moisture is a softer blue.
-                if (status.indexOf("Not Complete") >= 0 && status.indexOf("No Moisture") >= 0) {
-                    $(e.rowElement).css("background-color", "rgba(220, 53, 69, 0.18)");
-                } else if (status === "Not Complete") {
-                    $(e.rowElement).css("background-color", "rgba(255, 193, 7, 0.22)");
-                } else if (status === "No Moisture Set") {
-                    $(e.rowElement).css("background-color", "rgba(13, 110, 253, 0.14)");
-                }
-                // The whole row is clickable — show a pointer cursor so the
-                // affordance is obvious.
-                $(e.rowElement).css("cursor", "pointer");
-            }
-        };
-        if (existing) existing.option(options);
-        else          $grid.dxDataGrid(options);
     }
 
     function initOpenWeightSheetsGrid(locationId) {

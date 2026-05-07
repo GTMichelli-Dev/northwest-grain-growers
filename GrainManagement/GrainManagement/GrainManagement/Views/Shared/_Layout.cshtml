@@ -107,6 +107,14 @@
 
             <div id="navbar" class="collapse navbar-collapse">
                 <div class="d-flex ms-auto align-items-center">
+                    @if (Modules.IsEnabled("WarehouseIntake"))
+                    {
+                        <button type="button" class="btn btn-outline-light btn-sm me-2" id="gmNavEndOfDayBtn"
+                                title="End Of Day — Weight Sheet Audit">
+                            End Of Day
+                        </button>
+                    }
+
                     @if (Modules.IsRemote)
                     {
                         // On Remote we don't use the regular Microsoft Identity login;
@@ -155,6 +163,13 @@
        GM.requestPin({...}) to drive it; do NOT define your own copy of the
        gm-pin-prompt-* IDs anywhere else. *@
     @await Html.PartialAsync("_GmPinPromptModal")
+
+    @* Shared End-Of-Day audit modal — single instance, driven by gm.endofday.js
+       via window.GM.openEndOfDayAudit(). *@
+    @if (Modules.IsEnabled("WarehouseIntake"))
+    {
+        @await Html.PartialAsync("_EndOfDayAuditModal")
+    }
    
 
 
@@ -201,6 +216,21 @@
     <script src="~/js/location-selector.js" asp-append-version="true"></script>
     <script src="~/lib/signalr/signalr.min.js"></script>
     <script src="~/js/gm.print-alerts.js" asp-append-version="true"></script>
+    @if (Modules.IsEnabled("WarehouseIntake"))
+    {
+        <script src="~/js/gm.endofday.js" asp-append-version="true"></script>
+        <script>
+            (function () {
+                var btn = document.getElementById("gmNavEndOfDayBtn");
+                if (!btn) return;
+                btn.addEventListener("click", function () {
+                    if (window.GM && typeof window.GM.openEndOfDayAudit === "function") {
+                        window.GM.openEndOfDayAudit();
+                    }
+                });
+            })();
+        </script>
+    }
 
     @await RenderSectionAsync("Scripts", required: false)
 

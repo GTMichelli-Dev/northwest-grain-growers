@@ -1,0 +1,27 @@
+@* Shared End-Of-Day audit modal — single instance for the whole app.
+   Driven by gm.endofday.js via window.GM.openEndOfDayAudit(). Included
+   from _Layout for any deployment that has the WarehouseIntake module. *@
+<div class="modal fade" id="wdEndOfDayModal" tabindex="-1" aria-labelledby="wdEndOfDayLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="wdEndOfDayLabel">End Of Day &mdash; Weight Sheet Audit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center justify-content-between mb-2" style="gap:12px;flex-wrap:wrap;">
+                    <div id="wdEndOfDayLocation" class="fw-semibold" style="font-size:1.05rem;"></div>
+                    <div id="wdEndOfDayProgress" class="text-muted" style="font-size:0.9rem;"></div>
+                </div>
+                <div id="wdEndOfDayMsg" class="alert alert-warning" hidden>
+                    The following weight sheets need attention before End Of Day can be completed.
+                </div>
+                <div id="wdEndOfDayGrid"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="wdEndOfDayContinue">Confirm &amp; Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
