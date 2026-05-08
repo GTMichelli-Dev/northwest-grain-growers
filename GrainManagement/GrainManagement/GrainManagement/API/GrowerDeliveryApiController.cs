@@ -35,19 +35,42 @@ public sealed class GrowerDeliveryApiController : ControllerBase
     private readonly ILogger<GrowerDeliveryApiController> _logger;
     private readonly SystemInfoSnapshot _systemInfo;
     private readonly IWeightSheetNotifier _notifier;
+    private readonly GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard _priorDayGuard;
 
     public GrowerDeliveryApiController(
         dbContext ctx,
         ICurrentUser currentUser,
         ILogger<GrowerDeliveryApiController> logger,
         SystemInfoSnapshot systemInfo,
-        IWeightSheetNotifier notifier)
+        IWeightSheetNotifier notifier,
+        GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard priorDayGuard)
     {
         _ctx = ctx;
         _currentUser = currentUser;
         _logger = logger;
         _systemInfo = systemInfo;
         _notifier = notifier;
+        _priorDayGuard = priorDayGuard;
+    }
+
+    /// <summary>
+    /// Returns a 409 Conflict result when there are open weight sheets at
+    /// the given location that were created on a prior day, so creation
+    /// endpoints (new WS, new load) refuse to add today's work until the
+    /// operator runs End Of Day on those stale sheets. Returns null when
+    /// it's clear to proceed.
+    /// </summary>
+    private async Task<IActionResult?> RejectIfPriorDayOpenAsync(int locationId, CancellationToken ct)
+    {
+        var stale = await _priorDayGuard.GetPriorDayOpenWeightSheetIdsAsync(locationId, ct);
+        if (stale.Count == 0) return null;
+        return Conflict(new
+        {
+            message = stale.Count == 1
+                ? "There is an open weight sheet from a previous day. Run End Of Day on it before creating new work."
+                : $"There are {stale.Count} open weight sheets from previous days. Run End Of Day on them before creating new work.",
+            staleWeightSheetIds = stale,
+        });
     }
 
     // Resolves a user-name to attribute audit rows to when no PIN was required
@@ -70,6 +93,63 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         return "system";
     }
 
+    // GET /api/GrowerDelivery/Location/{locationId}/AddWeightSheetCheck
+    //
+    // Returns 200 OK when a new weight sheet can be created at this
+    // location, or 4xx with { message } describing why not. Mirrors the
+    // prior-day gate that POST /api/GrowerDelivery/WeightSheets enforces at
+    // save-time so the New Weight Sheet button can fail fast instead of
+    // letting the operator fill the entire form first.
+    [HttpGet("Location/{locationId:int}/AddWeightSheetCheck")]
+    public async Task<IActionResult> AddWeightSheetCheck(int locationId, CancellationToken ct)
+    {
+        if (locationId <= 0)
+            return BadRequest(new { message = "locationId is required." });
+
+        var stale = await RejectIfPriorDayOpenAsync(locationId, ct);
+        if (stale != null) return stale;
+
+        return Ok();
+    }
+
+    // GET /api/GrowerDelivery/WeightSheet/{wsId}/AddLoadCheck
+    //
+    // Returns 200 OK when a new load can be added to this weight sheet, or
+    // 4xx with { message } describing why not. Mirrors the gates that POST
+    // /api/GrowerDelivery enforces at save-time so the UI can fail fast on
+    // the New Load button click instead of after the operator fills the
+    // entire load form.
+    [HttpGet("WeightSheet/{wsId:long}/AddLoadCheck")]
+    public async Task<IActionResult> AddLoadCheck(long wsId, CancellationToken ct)
+    {
+        var ws = await _ctx.WeightSheets.AsNoTracking()
+            .Where(w => w.WeightSheetId == wsId)
+            .Select(w => new { w.LotId, w.LocationId, w.StatusId })
+            .FirstOrDefaultAsync(ct);
+        if (ws is null)
+            return NotFound(new { message = "Weight sheet not found." });
+
+        // StatusId > 0 means Pending or Closed — no new loads regardless of
+        // lot or prior-day state.
+        if (ws.StatusId > 0)
+            return Conflict(new { message = "This weight sheet is no longer open. New loads cannot be added." });
+
+        if (!ws.LotId.HasValue)
+            return BadRequest(new { message = "This weight sheet has no lot assigned." });
+
+        var lotIsOpen = await _ctx.Lots.AsNoTracking()
+            .Where(l => l.LotId == ws.LotId.Value)
+            .Select(l => (bool?)l.IsOpen)
+            .FirstOrDefaultAsync(ct);
+        if (lotIsOpen != true)
+            return Conflict(new { message = "This lot has been closed. New loads cannot be added to weight sheets on a closed lot." });
+
+        var stale = await RejectIfPriorDayOpenAsync(ws.LocationId, ct);
+        if (stale != null) return stale;
+
+        return Ok();
+    }
+
     // POST /api/GrowerDelivery
     [HttpPost]
     public async Task<IActionResult> Create(
@@ -84,6 +164,10 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             return BadRequest(new { message = "LotId is required." });
         if (dto.LocationId <= 0)
             return BadRequest(new { message = "LocationId is required." });
+
+        // ── Prior-day guard: refuse new loads while yesterday's WSs are open ──
+        var staleResult = await RejectIfPriorDayOpenAsync(dto.LocationId, ct);
+        if (staleResult != null) return staleResult;
 
         // ── Closed-lot guard: block new loads on a closed lot ────────────────
         var lotStatus = await _ctx.Lots
@@ -1094,14 +1178,14 @@ public sealed class GrowerDeliveryApiController : ControllerBase
     // Audits every still-open weight sheet at the location for End-Of-Day
     // readiness. A weight sheet is reported back when at least one of its
     // non-voided loads is "incomplete" (missing outbound weight or bin) or is
-    // missing a moisture reading. The status string is composed for direct
+    // missing a protein reading. The status string is composed for direct
     // use as the grid column on the dashboard's End-Of-Day modal:
     //
-    //   "Not Complete"                     — incomplete loads only
-    //   "No Moisture Set"                  — missing-moisture loads only
-    //   "No Moisture Set / Not Complete"   — both
+    //   "Not Complete"                    — incomplete loads only
+    //   "No Protein Set"                  — missing-protein loads only
+    //   "No Protein Set / Not Complete"   — both
     //
-    // WSs where every load is complete AND has moisture are omitted — they
+    // WSs where every load is complete AND has protein are omitted — they
     // need no operator attention.
     [HttpGet("EndOfDayCheck")]
     public async Task<IActionResult> EndOfDayCheck(
@@ -1111,21 +1195,21 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         if (locationId <= 0)
             return BadRequest(new { message = "locationId is required." });
 
-        // Resolve the moisture attribute type id once. If the code is missing
+        // Resolve the protein attribute type id once. If the code is missing
         // the audit can't run — fail loudly so a misconfigured DB is obvious.
-        var moistureAttrId = await _ctx.TransactionAttributeTypes
+        var proteinAttrId = await _ctx.TransactionAttributeTypes
             .AsNoTracking()
-            .Where(t => t.Code == "MOISTURE")
+            .Where(t => t.Code == "PROTEIN")
             .Select(t => (int?)t.Id)
             .FirstOrDefaultAsync(ct);
-        if (moistureAttrId is null)
-            return Problem("MOISTURE transaction attribute type is not configured.");
+        if (proteinAttrId is null)
+            return Problem("PROTEIN transaction attribute type is not configured.");
 
         // Pull every open WS at this location/server, with per-WS counts of
-        // incomplete vs missing-moisture loads. Subqueries are inlined into
+        // incomplete vs missing-protein loads. Subqueries are inlined into
         // the projection so EF doesn't see a bare IQueryable in the result
         // shape (which would fail translation).
-        var moistureId = moistureAttrId.Value;
+        var proteinId = proteinAttrId.Value;
         var rows = await (
             from ws in _ctx.WeightSheets.AsNoTracking()
             where ws.LocationId == locationId
@@ -1157,13 +1241,13 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                     && itd.DirectQty == null
                     && (itd.EndQty == null
                         || !_ctx.InventoryTransactionDetailToContainers.Any(tc => tc.TransactionId == itd.TransactionId))),
-                MissingMoistureCount = _ctx.InventoryTransactionDetails.Count(itd =>
+                MissingProteinCount = _ctx.InventoryTransactionDetails.Count(itd =>
                     itd.RefId == ws.RowUid
                     && itd.RefType == "WeightSheet"
                     && !itd.IsVoided
                     && !_ctx.TransactionAttributes.Any(a =>
                         a.TransactionId == itd.TransactionId
-                        && a.AttributeTypeId == moistureId
+                        && a.AttributeTypeId == proteinId
                         && a.DecimalValue != null
                         && a.DecimalValue > 0)),
             })
@@ -1173,11 +1257,11 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         var issues = rows
             .Select(r =>
             {
-                var status = (r.IncompleteLoadCount > 0, r.MissingMoistureCount > 0) switch
+                var status = (r.IncompleteLoadCount > 0, r.MissingProteinCount > 0) switch
                 {
-                    (true,  true)  => "No Moisture Set / Not Complete",
+                    (true,  true)  => "No Protein Set / Not Complete",
                     (true,  false) => "Not Complete",
-                    (false, true)  => "No Moisture Set",
+                    (false, true)  => "No Protein Set",
                     _              => "Complete",
                 };
                 return new
@@ -1193,7 +1277,7 @@ public sealed class GrowerDeliveryApiController : ControllerBase
                     r.LotDescription,
                     r.TotalLoads,
                     r.IncompleteLoadCount,
-                    r.MissingMoistureCount,
+                    r.MissingProteinCount,
                     Status = status,
                 };
             })
@@ -2087,6 +2171,10 @@ public sealed class GrowerDeliveryApiController : ControllerBase
     {
         if (dto.LocationId <= 0)
             return BadRequest(new { message = "LocationId is required." });
+
+        // ── Prior-day guard: refuse new WSs while yesterday's are open ────
+        var staleResult = await RejectIfPriorDayOpenAsync(dto.LocationId, ct);
+        if (staleResult != null) return staleResult;
 
         // ── PIN validation ──────────────────────────────────────────────────
         if (!dto.Pin.HasValue || dto.Pin.Value <= 0)
@@ -3161,6 +3249,138 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             ct);
 
         return Ok(new { id = transactionId, isVoided = true });
+    }
+
+    public sealed class DeleteLoadDto
+    {
+        public int Pin { get; set; }
+    }
+
+    // DELETE /api/GrowerDelivery/{transactionId}
+    //
+    // Hard-deletes a load that hasn't been weighed out yet — used to clean
+    // up a no-show truck or a mis-typed entry without leaving a void row in
+    // the audit trail. Refuses to touch loads that have an outbound weight,
+    // a direct quantity, or a CompletedAt — those must go through Void.
+    //
+    // Requires PIN + DeleteLoad privilege (14, with admin priv 7 bypass).
+    [HttpDelete("{transactionId:long}")]
+    public async Task<IActionResult> DeleteUnweighedLoad(
+        long transactionId,
+        [FromBody] DeleteLoadDto dto,
+        CancellationToken ct)
+    {
+        if (dto is null || dto.Pin <= 0)
+            return BadRequest(new { message = "PIN is required." });
+
+        var pinUser = await _ctx.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Pin == dto.Pin && u.IsActive, ct);
+        if (pinUser is null)
+            return Unauthorized(new { message = "Invalid or inactive PIN." });
+
+        var pinPrivIds = await _ctx.UserPrivileges.AsNoTracking()
+            .Where(p => p.UserId == pinUser.UserId)
+            .Select(p => p.PrivilegeId)
+            .ToListAsync(ct);
+        if (!GrainManagement.Constants.Privileges.HasPrivilege(
+                pinPrivIds, GrainManagement.Constants.Privileges.DeleteLoad))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { message = "User does not have permission to delete loads." });
+
+        var detail = await _ctx.InventoryTransactionDetails
+            .FirstOrDefaultAsync(d => d.TransactionId == transactionId, ct);
+        if (detail is null)
+            return NotFound(new { message = $"Transaction {transactionId} not found." });
+
+        // Precondition: load must be unweighed-out. Once a load has an
+        // outbound weight, a direct quantity, or a completion timestamp,
+        // it can no longer be deleted.
+        if (detail.EndQty.HasValue || detail.DirectQty.HasValue || detail.CompletedAt.HasValue)
+            return BadRequest(new
+            {
+                message = "This load has already been weighed out and cannot be deleted."
+            });
+
+        var locationId = await _ctx.InventoryTransactions.AsNoTracking()
+            .Where(t => t.TransactionId == transactionId)
+            .Select(t => (int?)t.LocationId)
+            .FirstOrDefaultAsync(ct) ?? 0;
+
+        // Pull the WS info + TruckId attribute so the audit row carries the
+        // human-meaningful identifiers (WS number, truck) alongside the raw
+        // FKs. Without these, an audit reader has to chase the deleted
+        // RefId guid across schemas to recover what was removed.
+        var wsInfo = (detail.RefType == "WeightSheet" && detail.RefId.HasValue)
+            ? await _ctx.WeightSheets.AsNoTracking()
+                .Where(w => w.RowUid == detail.RefId.Value)
+                .Select(w => new { w.WeightSheetId, w.As400Id })
+                .FirstOrDefaultAsync(ct)
+            : null;
+
+        var truckId = await _ctx.TransactionAttributes.AsNoTracking()
+            .Where(a => a.TransactionId == transactionId
+                        && a.AttributeType.Code == "TRUCK_ID")
+            .Select(a => a.StringValue)
+            .FirstOrDefaultAsync(ct);
+
+        // Snapshot for audit before the rows disappear. Captures everything
+        // an investigator would need to identify what was deleted: the WS
+        // it lived on, the truck, the inbound weight, and when it arrived.
+        var oldJson = JsonSerializer.Serialize(new
+        {
+            detail.TransactionId,
+            WeightSheetId = wsInfo?.WeightSheetId,
+            WeightSheetAs400Id = wsInfo?.As400Id,
+            detail.RefId,
+            detail.RefType,
+            detail.LotId,
+            detail.AccountId,
+            detail.ProductId,
+            TruckId = truckId,
+            StartQty = detail.StartQty,
+            StartedAt = detail.StartedAt,
+            detail.EndQty,
+            detail.DirectQty,
+            detail.CompletedAt,
+        });
+
+        // Cascade-delete the FK chain. Order matters: child rows first so
+        // we don't trip an RI constraint. InventoryMovements are only
+        // created on completion — guaranteed empty for an unweighed load.
+        try
+        {
+            await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                DELETE FROM [Inventory].[TransactionAttributes]
+                WHERE TransactionId = {transactionId}", ct);
+            await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                DELETE FROM [Inventory].[TransactionQuantitySources]
+                WHERE TransactionId = {transactionId}", ct);
+            await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                DELETE FROM [Inventory].[InventoryTransactionDetailToContainers]
+                WHERE TransactionId = {transactionId}", ct);
+            await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                DELETE FROM [Inventory].[InventoryTransactionDetails]
+                WHERE TransactionId = {transactionId}", ct);
+            await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+                DELETE FROM [Inventory].[InventoryTransactions]
+                WHERE TransactionId = {transactionId}", ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Failed to delete load TransactionId={TxnId}", transactionId);
+            return StatusCode(500, new { message = "Database error while deleting the load." });
+        }
+
+        // Audit row.
+        string keyJson   = JsonSerializer.Serialize(new { TransactionId = transactionId });
+        string tableName = "Inventory.InventoryTransactionDetails";
+        string action    = "DELETE";
+        await _ctx.Database.ExecuteSqlInterpolatedAsync($@"
+            INSERT INTO [system].[AuditTrail] (LocationId, UserName, TableName, Action, KeyJson, OldJson, NewJson)
+            VALUES ({locationId}, {pinUser.UserName}, {tableName}, {action}, {keyJson}, {oldJson}, NULL)",
+            ct);
+
+        return Ok(new { id = transactionId, deleted = true });
     }
 
     // POST /api/GrowerDelivery/{transactionId}/restore

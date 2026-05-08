@@ -38,6 +38,13 @@ public static class Privileges
     public const int ModifyTransferWeightSheet = 13;
 
     /// <summary>
+    /// Hard-delete a load that hasn't been weighed out yet. Distinct from
+    /// Void (priv 6) — a delete physically removes the transaction whereas
+    /// Void leaves it on the audit trail.
+    /// </summary>
+    public const int DeleteLoad = 14;
+
+    /// <summary>
     /// Returns true when <paramref name="held"/> contains <paramref name="required"/>
     /// OR when it contains <see cref="RemoteAdmin"/>. Use this as the single
     /// source of truth for priv checks so the admin bypass is consistent

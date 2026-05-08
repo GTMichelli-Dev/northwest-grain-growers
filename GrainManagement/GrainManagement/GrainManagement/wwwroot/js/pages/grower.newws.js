@@ -55,8 +55,6 @@
         haulerMilesDetails: '#nwsHaulerMilesDetails',
         hauler:             '#nwsHauler',
         miles:              '#nwsMiles',
-        calcRateGroup:      '#nwsCalcRateGroup',
-        calcRate:           '#nwsCalcRate',
         customDetails:      '#nwsCustomDetails',
         customHauler:       '#nwsCustomHaulerSelect',
         customRateDesc:     '#nwsCustomRateDesc',
@@ -224,9 +222,19 @@
     }
 
     function showStep3(wsId) {
-        // Store the weight sheet ID in a cookie so the delivery page auto-selects it
+        // Store the weight sheet ID in a cookie so the delivery page auto-selects it.
         document.cookie = "GrainMgmt_WsId=" + wsId + ";path=/;max-age=86400;SameSite=Lax";
-        window.location.href = '/GrowerDelivery/Index';
+
+        // Carry the PIN forward in the URL so the FIRST load on this freshly-
+        // created WS doesn't re-prompt — the operator just validated. The
+        // delivery page reads ?newWs=1&pin= once on init, sets its in-page
+        // first-load PIN, then strips both from the URL bar so a refresh
+        // can't reuse a stale pin. Subsequent loads always re-prompt.
+        var params = new URLSearchParams();
+        params.set('wsId', String(wsId));
+        params.set('newWs', '1');
+        if (_wsPin) params.set('pin', String(_wsPin));
+        window.location.href = '/GrowerDelivery/Index?' + params.toString();
     }
 
     // ── Wire navigation buttons ──────────────────────────────────────────────
@@ -256,6 +264,19 @@
             paging: { enabled: true, pageSize: 20 },
             pager: { visible: true, showPageSizeSelector: true, allowedPageSizes: [10, 20, 50], showInfo: true },
             sorting: { mode: 'multiple' },
+            // Whole-row click acts as Select. The dedicated Select button
+            // stays for discoverability, but operators on touch screens
+            // (kiosk weighmasters) hit the row faster than the small btn.
+            // The masterDetail expand icon has its own click region — DX
+            // suppresses our row-click when that icon is the actual target.
+            onRowClick: function (e) {
+                if (e.rowType !== 'data' || !e.data) return;
+                _selectedLot = e.data;
+                showStep2();
+            },
+            onRowPrepared: function (e) {
+                if (e.rowType === 'data') e.rowElement.css('cursor', 'pointer');
+            },
             columns: [
                 {
                     dataField: 'LotId',
@@ -389,32 +410,50 @@
         // "New Lot" navigates to the dedicated EditWeightSheetLot page.
         // After the lot is created there, EditWeightSheetLot returns to this
         // page with ?selectLotId=<id>, which refreshLots() auto-selects.
+        //
+        // Lot create is gated on AddLots (priv 9). The operator already
+        // entered a PIN to start this WS — if that PIN satisfies,
+        // GM.requestPin resolves immediately from the cache and there is no
+        // second prompt. Otherwise we prompt for a PIN that does, and
+        // forward THAT pin to EditWeightSheetLot (overriding the WS pin)
+        // so the lot-create endpoint accepts it.
         $(SEL.newLotBtn).dxButton({
             text: 'New Lot',
             icon: 'add',
             stylingMode: 'outlined',
             type: 'default',
             onClick: function () {
-                var params = new URLSearchParams();
-                params.set('lotType', _lotType);
-                if (_wsPin) params.set('pin', String(_wsPin));
-                params.set('returnTo', 'newws');
-                // Carry source variety through so EditWeightSheetLot can warn
-                // when the operator's about to save a cross-variety lot during
-                // a move-load round-trip.
-                if (_sourceVarietyForMove) params.set('sourceVariety', _sourceVarietyForMove);
+                GM.requestPin({
+                    prompt: 'Enter a PIN with lot privileges to create a new lot.',
+                    requiredPrivilegeId: 9 // AddLots
+                }).then(function (lotPin) {
+                    var params = new URLSearchParams();
+                    params.set('lotType', _lotType);
+                    // Prefer the lot-priv PIN we just validated. It satisfies
+                    // both the New Lot gate AND any subsequent WS-create call
+                    // since lot-priv users almost always also have basic
+                    // create-WS rights. If for some reason it doesn't, the
+                    // server will surface a clear error.
+                    var pinForUrl = (lotPin && lotPin.pin) || _wsPin;
+                    if (pinForUrl) params.set('pin', String(pinForUrl));
+                    params.set('returnTo', 'newws');
+                    // Carry source variety through so EditWeightSheetLot can warn
+                    // when the operator's about to save a cross-variety lot during
+                    // a move-load round-trip.
+                    if (_sourceVarietyForMove) params.set('sourceVariety', _sourceVarietyForMove);
 
-                // Forward move-flow context (when present) so EditWeightSheetLot
-                // can echo it back on return — preserves the move flow across the
-                // lot-creation sub-trip, so NewWeightSheet won't lose its
-                // returnTo=move / txnId / fromWsId after the lot is saved.
-                var here = new URLSearchParams(window.location.search);
-                var moveTxnId    = here.get('txnId');
-                var moveFromWsId = here.get('fromWsId');
-                if (moveTxnId)    params.set('moveTxnId',    moveTxnId);
-                if (moveFromWsId) params.set('moveFromWsId', moveFromWsId);
+                    // Forward move-flow context (when present) so EditWeightSheetLot
+                    // can echo it back on return — preserves the move flow across the
+                    // lot-creation sub-trip, so NewWeightSheet won't lose its
+                    // returnTo=move / txnId / fromWsId after the lot is saved.
+                    var here = new URLSearchParams(window.location.search);
+                    var moveTxnId    = here.get('txnId');
+                    var moveFromWsId = here.get('fromWsId');
+                    if (moveTxnId)    params.set('moveTxnId',    moveTxnId);
+                    if (moveFromWsId) params.set('moveFromWsId', moveFromWsId);
 
-                window.location.href = '/GrowerDelivery/EditWeightSheetLot?' + params.toString();
+                    window.location.href = '/GrowerDelivery/EditWeightSheetLot?' + params.toString();
+                }).catch(function () { /* user cancelled or invalid PIN */ });
             }
         });
 
@@ -472,19 +511,8 @@
             format: '#0.##',
             placeholder: 'Miles\u2026',
             inputAttr: { style: 'text-align:right;font-size:15px;' },
-            onValueChanged: async function (e) {
+            onValueChanged: function (e) {
                 _milesEntered = (e.value !== null && e.value !== undefined);
-                if (!_milesEntered) { $(SEL.calcRate).val(''); $(SEL.calcRateGroup).prop('hidden', true); return; }
-                var bolTypeInst = dxInstance(SEL.bolType);
-                var rt = bolTypeInst ? bolTypeInst.option('value') : 'A';
-                try {
-                    var data = await $.getJSON('/api/Lookups/HaulerRateForMiles?rateType=' + rt + '&miles=' + e.value);
-                    $(SEL.calcRate).val('$' + data.Rate.toFixed(2) + ' (up to ' + data.MaxDistance + ' mi)');
-                    $(SEL.calcRateGroup).prop('hidden', false);
-                } catch (ex) {
-                    $(SEL.calcRate).val('No rate found for this mileage');
-                    $(SEL.calcRateGroup).prop('hidden', false);
-                }
             },
         });
 
@@ -540,7 +568,6 @@
         // Hide everything first
         $(SEL.haulerMilesDetails).prop('hidden', true);
         $(SEL.customDetails).prop('hidden', true);
-        $(SEL.calcRateGroup).prop('hidden', true);
         $(SEL.haulerError).prop('hidden', true).text('');
         $(SEL.bolTypeHint).prop('hidden', true);
         $(SEL.createWsBtn).prop('disabled', true);
@@ -550,7 +577,6 @@
         if (haulerInst) haulerInst.reset();
         var milesInst = dxNumberInstance(SEL.miles);
         if (milesInst) milesInst.reset();
-        $(SEL.calcRate).val('');
         _milesEntered = false;
 
         var customHaulerInst = dxInstance(SEL.customHauler);
@@ -608,8 +634,6 @@
         if (haulerInst) haulerInst.reset();
         var milesInst = dxNumberInstance(SEL.miles);
         if (milesInst) milesInst.option('value', undefined);
-        $(SEL.calcRate).val('');
-        $(SEL.calcRateGroup).prop('hidden', true);
         _milesEntered = false;
 
         // Custom fields

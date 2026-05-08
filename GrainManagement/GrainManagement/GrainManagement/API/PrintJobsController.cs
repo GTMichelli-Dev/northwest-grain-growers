@@ -1,10 +1,14 @@
 using GrainManagement.Dtos.Warehouse;
 using GrainManagement.Models;
 using GrainManagement.Reporting;
+using GrainManagement.Services;
+using GrainManagement.Services.Email;
+using GrainManagement.Services.Warehouse;
 using DevExpress.XtraReports.UI;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace GrainManagement.Api
 {
@@ -15,12 +19,27 @@ namespace GrainManagement.Api
         private readonly dbContext _db;
         private readonly ILogger<PrintJobsController> _log;
         private readonly TimeZoneInfo _serverTz;
+        private readonly IEndOfDayReportService _eodService;
+        private readonly IEmailService _email;
+        private readonly IWeightSheetNotifier _notifier;
+        private readonly EmailOptions _emailOpts;
 
-        public PrintJobsController(dbContext db, ILogger<PrintJobsController> log, IConfiguration config)
+        public PrintJobsController(
+            dbContext db,
+            ILogger<PrintJobsController> log,
+            IConfiguration config,
+            IEndOfDayReportService eodService,
+            IEmailService email,
+            IWeightSheetNotifier notifier,
+            IOptions<EmailOptions> emailOpts)
         {
             _db = db;
             _log = log;
             _serverTz = ResolveServerTimeZone(config);
+            _eodService = eodService;
+            _email = email;
+            _notifier = notifier;
+            _emailOpts = emailOpts.Value;
         }
 
         // Resolves the configured "TimeZone" key (IANA tz id) to a TimeZoneInfo,
@@ -37,6 +56,12 @@ namespace GrainManagement.Api
             }
             return TimeZoneInfo.Local;
         }
+
+        // The current calendar day in the configured server time zone.
+        // Used by End-Of-Day so a 5pm-PST run (which is already "tomorrow"
+        // in UTC) still lands on today's date for the operator.
+        private DateTime ServerToday() =>
+            TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _serverTz).Date;
 
         // Converts a UTC datetime to the configured server zone for display.
         // Returns null when the input is null. Treats already-Local kinds as UTC
@@ -169,7 +194,94 @@ namespace GrainManagement.Api
 
             using var ms = new MemoryStream();
             report.ExportToPdf(ms);
-            return File(ms.ToArray(), "application/pdf", $"WeightSheet-{wsId}.pdf");
+            // Inline so the iframe in the warehouse-dashboard preview modal
+            // (and a window.open in another tab) renders the PDF in the
+            // browser viewer instead of forcing a download. The 3-arg
+            // File(bytes, contentType, fileDownloadName) overload sets
+            // Content-Disposition: attachment under the hood, which is
+            // exactly what we don't want here.
+            Response.Headers["Content-Disposition"] = $"inline; filename=\"WeightSheet-{wsId}.pdf\"";
+            return File(ms.ToArray(), "application/pdf");
+        }
+
+        // ── Combined Weight Sheets (multi-WS PDF) ───────────────────────────────
+        //
+        // POST /api/printjobs/weight-sheets/combined-pdf
+        //   { "WeightSheetIds": [123, 456, 789] }
+        //
+        // Renders an Intake or Transfer report per WS (based on each row's
+        // WeightSheetType) and merges the page collections into one PDF —
+        // same approach the EOD endpoint uses. Used by the warehouse
+        // dashboard's toolbar Print button to print every WS currently
+        // visible in the grid (after filters / search) as a single document.
+        public sealed class CombinedWeightSheetsRequest
+        {
+            public List<long> WeightSheetIds { get; set; } = new();
+        }
+
+        [HttpPost("weight-sheets/combined-pdf")]
+        public async Task<IActionResult> GetCombinedWeightSheetsPdf(
+            [FromBody] CombinedWeightSheetsRequest req,
+            CancellationToken ct)
+        {
+            if (req == null || req.WeightSheetIds == null || req.WeightSheetIds.Count == 0)
+                return BadRequest(new { message = "At least one weight sheet id is required." });
+
+            // Cap to a sane upper bound so a runaway "All bucket + Print"
+            // can't pin the server building a 10k-WS PDF. The dashboard's
+            // typical filtered view is well under this.
+            const int MaxBatch = 500;
+            if (req.WeightSheetIds.Count > MaxBatch)
+                return BadRequest(new { message = $"Too many weight sheets ({req.WeightSheetIds.Count}); maximum is {MaxBatch} per print." });
+
+            // Pull the type per id in one round-trip so we can dispatch to
+            // the right report builder. Preserves the caller's order so
+            // the printed batch matches the on-screen sort.
+            var typeMap = await _db.WeightSheets.AsNoTracking()
+                .Where(w => req.WeightSheetIds.Contains(w.WeightSheetId))
+                .Select(w => new { w.WeightSheetId, w.WeightSheetType })
+                .ToDictionaryAsync(x => x.WeightSheetId, x => x.WeightSheetType, ct);
+
+            var reports = new List<XtraReport>();
+            foreach (var wsId in req.WeightSheetIds)
+            {
+                if (!typeMap.TryGetValue(wsId, out var wsType) || string.IsNullOrEmpty(wsType))
+                    continue;
+
+                if (string.Equals(wsType, "Transfer", StringComparison.OrdinalIgnoreCase))
+                {
+                    var dto = BuildTransferWeightSheet(wsId, original: true);
+                    if (dto == null) continue;
+                    var rpt = new TransferWeightSheetReport { DataSource = new[] { dto } };
+                    rpt.CreateDocument();
+                    if (rpt.Pages.Count > 0) reports.Add(rpt);
+                }
+                else
+                {
+                    var dto = BuildIntakeWeightSheet(wsId, original: true);
+                    if (dto == null) continue;
+                    var rpt = new IntakeWeightSheetReport { DataSource = new[] { dto } };
+                    rpt.CreateDocument();
+                    if (rpt.Pages.Count > 0) reports.Add(rpt);
+                }
+            }
+
+            if (reports.Count == 0)
+                return Problem("None of the requested weight sheets rendered any pages.");
+
+            // Same merge pattern as GetEndOfDayPdf: keep the first report
+            // as the master, append each subsequent report's Pages, then
+            // export once.
+            var master = reports[0];
+            for (int i = 1; i < reports.Count; i++)
+                master.Pages.AddRange(reports[i].Pages);
+            master.PrintingSystem.ContinuousPageNumbering = true;
+
+            using var ms = new MemoryStream();
+            master.ExportToPdf(ms);
+            var stamp = DateTime.Now.ToString("yyyy-MM-dd");
+            Response.Headers["Content-Disposition"] = $"inline; filename=\"WeightSheets {stamp}.pdf\"";
+            return File(ms.ToArray(), "application/pdf");
         }
 
         // ── Lot Label ───────────────────────────────────────────────────────────
@@ -444,6 +556,13 @@ namespace GrainManagement.Api
             string endManualFlag    = manualSources.Any(s => s.QuantityField == "END"    && s.Code == "MANUAL") ? "M" : " ";
             string directManualFlag = manualSources.Any(s => s.QuantityField == "DIRECT" && s.Code == "MANUAL") ? "M" : " ";
 
+            // ── Truck Id (TRUCK_ID transaction attribute) ───────────────────
+            string truckIdValue = _db.TransactionAttributes.AsNoTracking()
+                .Where(a => a.TransactionId == transactionId
+                            && a.AttributeType.Code == "TRUCK_ID")
+                .Select(a => a.StringValue)
+                .FirstOrDefault() ?? "";
+
             // Direction is derived from where this row sits relative to the WS
             // header: TRANSFER_IN at the destination = Received, TRANSFER_OUT at
             // the source = Shipped.
@@ -459,9 +578,12 @@ namespace GrainManagement.Api
                 Variety             = variety,
                 ItemId              = itemIdStr,
                 SourceLocation      = sourceName,
+                SourceLocationId    = sourceLocationId?.ToString() ?? "",
                 DestinationLocation = destName,
+                DestinationLocationId = destinationLocationId?.ToString() ?? "",
                 BolType             = bolType,
                 Hauler              = haulerName,
+                TruckId             = truckIdValue,
                 InboundTime         = ToServerTime(full.StartedAt ?? full.TxnAt),
                 OutboundTime        = ToServerTime(full.CompletedAt),
                 InboundWeight       = (int)(full.StartQty ?? 0),
@@ -588,6 +710,13 @@ namespace GrainManagement.Api
             string endManualFlag    = manualSources.Any(s => s.QuantityField == "END"    && s.Code == "MANUAL") ? "M" : " ";
             string directManualFlag = manualSources.Any(s => s.QuantityField == "DIRECT" && s.Code == "MANUAL") ? "M" : " ";
 
+            // ── Truck Id (TRUCK_ID transaction attribute) ───────────────────
+            string truckIdValue = _db.TransactionAttributes.AsNoTracking()
+                .Where(a => a.TransactionId == transactionId
+                            && a.AttributeType.Code == "TRUCK_ID")
+                .Select(a => a.StringValue)
+                .FirstOrDefault() ?? "";
+
             return new LoadTicketDataModel
             {
                 LoadId           = FormatId(ticket),
@@ -598,6 +727,7 @@ namespace GrainManagement.Api
                 SplitDescription = splitDesc,
                 BolType          = bolType,
                 Hauler           = haulerName,
+                TruckId          = truckIdValue,
                 InboundTime      = ToServerTime(detail.StartedAt ?? detail.TxnAt),
                 OutboundTime     = ToServerTime(detail.CompletedAt),
                 InboundWeight    = (int)(detail.StartQty ?? 0),
@@ -607,6 +737,7 @@ namespace GrainManagement.Api
                 Location         = detail.Transaction?.Location?.Name ?? "",
                 LocationId       = detail.Transaction?.LocationId.ToString() ?? "",
                 Commodity        = detail.Product?.Description ?? "",
+                ItemId           = detail.ItemId?.ToString() ?? "",
                 Bin              = binName,
                 StartManualFlag  = startManualFlag,
                 EndManualFlag    = endManualFlag,
@@ -1110,6 +1241,350 @@ namespace GrainManagement.Api
                 TotalNetWeight       = ((int)totalNet).ToString("N0") + " lbs",
                 Loads                = loads,
             };
+        }
+
+        // ── End Of Day ──────────────────────────────────────────────────────
+
+        public sealed class EndOfDayFinalizeRequest
+        {
+            public int Pin { get; set; }
+        }
+
+        /// <summary>
+        /// GET /api/printjobs/eod/{locationId}/pdf
+        ///
+        /// Builds the End-Of-Day combined PDF for the operator: Daily Intake
+        /// + Daily Transfer + Closed Lots summaries first, then every today-
+        /// open weight sheet's full report appended after. Returned as a
+        /// single PDF stream so the browser shows it inline; the operator
+        /// reviews, then confirms email + close via the finalize endpoint.
+        /// </summary>
+        [HttpGet("eod/{locationId:int}/pdf")]
+        public async Task<IActionResult> GetEndOfDayPdf(int locationId, [FromQuery] DateTime? day, CancellationToken ct)
+        {
+            if (locationId <= 0) return BadRequest(new { message = "locationId is required." });
+
+            // "Today" is the calendar day in the operator's local zone, not
+            // UTC — otherwise an evening EOD lands on tomorrow's date.
+            var dayValue = (day ?? ServerToday()).Date;
+
+            // 1. Daily summaries
+            var intakeDto    = await _eodService.BuildDailyIntakeAsync(locationId, dayValue, ct);
+            var transferDto  = await _eodService.BuildDailyTransferAsync(locationId, dayValue, ct);
+            var closedDto    = await _eodService.BuildClosedLotsAsync(locationId, dayValue, dayValue, ct);
+
+            var intakeReport   = new DailyIntakeReport   { DataSource = new[] { intakeDto } };
+            var transferReport = new DailyTransferReport { DataSource = new[] { transferDto } };
+            var closedReport   = new ClosedLotsReport    { DataSource = new[] { closedDto } };
+            intakeReport.CreateDocument();
+            transferReport.CreateDocument();
+            closedReport.CreateDocument();
+
+            // 2. Per-WS reports for every still-open WS today at this location
+            var wsIds = await _eodService.GetTodaysOpenWeightSheetIdsAsync(locationId, dayValue, ct);
+            var perWsReports = new List<XtraReport>();
+            foreach (var wsId in wsIds)
+            {
+                var wsType = await _db.WeightSheets.AsNoTracking()
+                    .Where(w => w.WeightSheetId == wsId)
+                    .Select(w => w.WeightSheetType)
+                    .FirstOrDefaultAsync(ct);
+                if (string.IsNullOrEmpty(wsType)) continue;
+
+                if (string.Equals(wsType, "Transfer", StringComparison.OrdinalIgnoreCase))
+                {
+                    var dto = BuildTransferWeightSheet(wsId, original: true);
+                    if (dto == null) continue;
+                    var rpt = new TransferWeightSheetReport { DataSource = new[] { dto } };
+                    rpt.CreateDocument();
+                    perWsReports.Add(rpt);
+                }
+                else
+                {
+                    var dto = BuildIntakeWeightSheet(wsId, original: true);
+                    if (dto == null) continue;
+                    var rpt = new IntakeWeightSheetReport { DataSource = new[] { dto } };
+                    rpt.CreateDocument();
+                    perWsReports.Add(rpt);
+                }
+            }
+
+            // 3. Merge into one master XtraReport's pages so we can export a
+            //    single PDF. Documented merge path: keep the first report
+            //    as the master and AddRange the others' pages after each
+            //    has CreateDocument'd. Continuous page numbering ensures
+            //    appended pages re-number correctly.
+            var allReports = new List<XtraReport>
+            {
+                intakeReport, transferReport, closedReport
+            };
+            allReports.AddRange(perWsReports);
+
+            // Drop reports that produced zero pages so we don't pick a
+            // blank one as the master.
+            allReports = allReports.Where(r => r.Pages.Count > 0).ToList();
+            if (allReports.Count == 0)
+                return Problem("End-Of-Day report rendered zero pages.");
+
+            var master = allReports[0];
+            for (int i = 1; i < allReports.Count; i++)
+            {
+                master.Pages.AddRange(allReports[i].Pages);
+            }
+            master.PrintingSystem.ContinuousPageNumbering = true;
+
+            using var ms = new MemoryStream();
+            master.ExportToPdf(ms);
+            // Inline so the browser displays the PDF in a tab instead of
+            // forcing a download. Filename: "EOD For {LocationName} MM-dd-yy.pdf".
+            // Stripped of any chars that browsers won't accept in a quoted
+            // filename token; falls back to the location id if the name is
+            // unavailable.
+            var locName = intakeDto.LocationName;
+            if (string.IsNullOrWhiteSpace(locName)) locName = locationId.ToString();
+            var safeName = new string(locName
+                .Select(c => "\"\\/<>|:*?\r\n".IndexOf(c) >= 0 ? '_' : c)
+                .ToArray())
+                .Trim();
+            var fileName = $"EOD For {safeName} {dayValue:MM-dd-yy}.pdf";
+            Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
+            return File(ms.ToArray(), "application/pdf");
+        }
+
+        /// <summary>
+        /// POST /api/printjobs/eod/{locationId}/finalize
+        ///
+        /// Finalizes End Of Day for the location:
+        ///   1. Validates the operator's PIN.
+        ///   2. For every today-open Received (Delivery) weight sheet at this
+        ///      location, looks up the lot's split-group accounts. Any account
+        ///      flagged EmailWeightSheet with a valid Email gets the per-WS
+        ///      PDF (marked COPY) emailed via <see cref="IEmailService"/>.
+        ///   3. Closes every today-open WS at this location (StatusId = 3,
+        ///      ClosedAt = now). Transfer WSs aren't emailed (no producer
+        ///      split group) but ARE closed.
+        ///
+        /// Returns a summary { closed, emailed, failures }.
+        /// </summary>
+        [HttpPost("eod/{locationId:int}/finalize")]
+        public async Task<IActionResult> FinalizeEndOfDay(
+            int locationId,
+            [FromQuery] DateTime? day,
+            [FromBody] EndOfDayFinalizeRequest req,
+            CancellationToken ct)
+        {
+            if (locationId <= 0) return BadRequest(new { message = "locationId is required." });
+            if (req == null || req.Pin <= 0)
+                return BadRequest(new { message = "PIN is required." });
+
+            // PIN must belong to an active user. Privilege isn't currently
+            // enforced for End Of Day — the operator who's running EOD is
+            // typically the warehouse weighmaster. Add a priv check here if
+            // you want to gate further.
+            var pinUser = await _db.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Pin == req.Pin && u.IsActive, ct);
+            if (pinUser == null)
+                return Unauthorized(new { message = "Invalid or inactive PIN." });
+
+            // Operator-local "today" — see GetEndOfDayPdf.
+            var dayValue = (day ?? ServerToday()).Date;
+            var wsIds = await _eodService.GetTodaysOpenWeightSheetIdsAsync(locationId, dayValue, ct);
+
+            int closed = 0;
+            int emailed = 0;
+            var failures = new List<string>();
+
+            // Test-mode behavior: skip the recipient dedupe and send one
+            // email per qualifying account (the EmailService rewrites each
+            // call to the configured test inbox, so the dev sees one
+            // delivery per account in the split group — useful for
+            // confirming that every EmailWeightSheet=true account is being
+            // resolved correctly). In production we keep the distinct +
+            // single-send behavior so producers don't get duplicates.
+            var testMode = _emailOpts.TestMode.Enabled;
+
+            foreach (var wsId in wsIds)
+            {
+                var ws = await _db.WeightSheets
+                    .FirstOrDefaultAsync(w => w.WeightSheetId == wsId, ct);
+                if (ws == null) continue;
+
+                // Email Received WSs (Delivery type) to the lot's split-group
+                // accounts that opted in. Transfer WSs skip the email step.
+                if (string.Equals(ws.WeightSheetType, "Delivery", StringComparison.OrdinalIgnoreCase)
+                    && ws.LotId.HasValue)
+                {
+                    var recipients = await ResolveWsEmailRecipientsAsync(
+                        ws.LotId.Value, ct, distinct: !testMode);
+                    if (recipients.Count > 0)
+                    {
+                        var dto = BuildIntakeWeightSheet(wsId, original: false); // COPY
+                        if (dto != null)
+                        {
+                            var rpt = new IntakeWeightSheetReport { DataSource = new[] { dto } };
+                            rpt.CreateDocument();
+                            using var pdfStream = new MemoryStream();
+                            rpt.ExportToPdf(pdfStream);
+                            var subject = $"Weight Sheet {dto.WeightSheetId} ({dto.CropName})";
+                            var body =
+                                $"Weight Sheet: {dto.WeightSheetId}\n" +
+                                $"Location: {dto.Location}\n" +
+                                $"Producer: {dto.PrimaryAccountName}\n" +
+                                $"Lot: {dto.LotId}\n" +
+                                $"Crop: {dto.CropName}\n";
+                            var attachment = new EmailAttachment
+                            {
+                                FileName = $"WeightSheet-{dto.WeightSheetId}.pdf",
+                                ContentType = "application/pdf",
+                                Content = pdfStream.ToArray(),
+                            };
+
+                            if (testMode)
+                            {
+                                // One SendAsync per account so the test inbox
+                                // sees N separate deliveries.
+                                bool anySucceeded = false;
+                                foreach (var addr in recipients)
+                                {
+                                    var ok = await _email.SendAsync(
+                                        new[] { addr }, subject, body, new[] { attachment }, ct);
+                                    if (ok) anySucceeded = true;
+                                    else failures.Add($"Email failed for WS {wsId} → {addr}");
+                                }
+                                if (anySucceeded) emailed++;
+                            }
+                            else
+                            {
+                                var ok = await _email.SendAsync(recipients, subject, body, new[] { attachment }, ct);
+                                if (ok) emailed++;
+                                else failures.Add($"Email failed for WS {wsId}");
+                            }
+                        }
+                    }
+                }
+
+                // Close the WS unconditionally as part of EOD.
+                ws.StatusId = 3;
+                ws.ClosedAt = DateTime.UtcNow;
+                ws.UpdatedAt = DateTime.UtcNow;
+                closed++;
+            }
+
+            await _db.SaveChangesAsync(ct);
+
+            _log.LogInformation(
+                "EOD finalize at location {LocationId} day {Day} by {User}: closed={Closed} emailed={Emailed} failures={Failures}",
+                locationId, dayValue, pinUser.UserName, closed, emailed, failures.Count);
+
+            // Broadcast to every subscriber at this location so dashboards,
+            // open WeightSheetDeliveryLoads / WeightSheetTransferLoads pages,
+            // etc. all refresh — same channel WeightSheetNotifier uses for
+            // single-WS edits. weightSheetId=0 means "all WSs at this
+            // location"; the dashboard handler ignores wsId and the loads
+            // pages short-circuit their wsId filter on a falsy value, so
+            // every open client at this location refreshes once.
+            if (closed > 0)
+            {
+                await _notifier.NotifyAsync(locationId, 0, "EodFinalize", ct);
+            }
+
+            return Ok(new
+            {
+                day = dayValue.ToString("yyyy-MM-dd"),
+                closed,
+                emailed,
+                failures,
+            });
+        }
+
+        /// <summary>
+        /// GET /api/printjobs/eod/candidates?ids=1,2,3
+        ///
+        /// Returns EOD-relevant info for each requested location: open WS
+        /// count and whether any of them are dated before today. The
+        /// multi-location EOD orchestrator calls this with the user's
+        /// accessible-location ids (from /api/LocationContextApi/available)
+        /// to decide which sites still need to be processed and to drive
+        /// the per-location progress UI.
+        /// </summary>
+        [HttpGet("eod/candidates")]
+        public async Task<IActionResult> GetEodCandidates(
+            [FromQuery] string ids,
+            [FromQuery] DateTime? day,
+            CancellationToken ct)
+        {
+            var parsed = (ids ?? "")
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => int.TryParse(s.Trim(), out var n) ? n : 0)
+                .Where(n => n > 0)
+                .Distinct()
+                .ToList();
+            if (parsed.Count == 0)
+                return Ok(Array.Empty<object>());
+
+            var dayValue = (day ?? ServerToday()).Date;
+            var candidates = await _eodService.GetEodCandidatesAsync(parsed, dayValue, ct);
+            return Ok(candidates);
+        }
+
+        /// <summary>
+        /// GET /api/printjobs/eod/{locationId}/has-stale
+        ///
+        /// Returns whether this location has any prior-day open weight
+        /// sheets (i.e. WSs that were created on a previous server-day and
+        /// are still not closed). The warehouse dashboard hits this on
+        /// load to decide whether to auto-prompt for End Of Day.
+        /// </summary>
+        [HttpGet("eod/{locationId:int}/has-stale")]
+        public async Task<IActionResult> GetEodHasStale(
+            int locationId,
+            [FromServices] IPriorDayWeightSheetGuard guard,
+            CancellationToken ct)
+        {
+            if (locationId <= 0) return BadRequest(new { message = "locationId is required." });
+            var ids = await guard.GetPriorDayOpenWeightSheetIdsAsync(locationId, ct);
+            return Ok(new { hasStale = ids.Count > 0, count = ids.Count });
+        }
+
+        /// <summary>
+        /// Resolves the producer email recipients for a Received weight
+        /// sheet. Sources accounts from the canonical SplitGroupPercents
+        /// (the split group's authoritative percent definition) — every
+        /// SplitGroupPercents row whose SplitGroupId matches the lot's
+        /// SplitGroupId is mapped to its Account, then filtered to those
+        /// flagged EmailWeightSheet with a non-empty Email.
+        ///
+        /// distinct=true (production default) deduplicates by email so an
+        /// address that appears on more than one account is only emailed
+        /// once. distinct=false returns one entry per qualifying account
+        /// — used in test mode so the test inbox sees one delivery per
+        /// account, making it easy to verify every account in the split
+        /// group resolved correctly.
+        ///
+        /// Returns an empty list when the lot has no split group or
+        /// nobody on the split group opted in.
+        /// </summary>
+        private async Task<List<string>> ResolveWsEmailRecipientsAsync(
+            long lotId, CancellationToken ct, bool distinct = true)
+        {
+            var splitGroupId = await _db.Lots.AsNoTracking()
+                .Where(l => l.LotId == lotId)
+                .Select(l => l.SplitGroupId)
+                .FirstOrDefaultAsync(ct);
+            if (splitGroupId is null) return new List<string>();
+
+            var query = _db.SplitGroupPercents.AsNoTracking()
+                .Where(sgp => sgp.SplitGroupId == splitGroupId.Value)
+                .Join(_db.Accounts.AsNoTracking(),
+                      sgp => sgp.AccountId,
+                      a => a.AccountId,
+                      (sgp, a) => a)
+                .Where(a => a.EmailWeightSheet && a.Email != null && a.Email != "")
+                .Select(a => a.Email);
+
+            if (distinct) query = query.Distinct();
+
+            return await query.ToListAsync(ct);
         }
     }
 }

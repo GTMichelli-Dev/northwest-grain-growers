@@ -24,12 +24,18 @@ public class TransferLoadTicketDataModel
     public string ItemId { get; set; } = "";
     /// <summary>Source location name (where the grain is coming from).</summary>
     public string SourceLocation { get; set; } = "";
+    /// <summary>Source location id (string for clean report binding — empty when unknown).</summary>
+    public string SourceLocationId { get; set; } = "";
     /// <summary>Destination location name (where the grain is going).</summary>
     public string DestinationLocation { get; set; } = "";
+    /// <summary>Destination location id (string for clean report binding — empty when unknown).</summary>
+    public string DestinationLocationId { get; set; } = "";
 
     // ── BOL / Hauler ────────────────────────────────────────────────────────
     public string BolType { get; set; } = "";
     public string Hauler { get; set; } = "";
+    /// <summary>Operator-entered truck identifier (TRUCK_ID transaction attribute). Empty when not captured.</summary>
+    public string TruckId { get; set; } = "";
 
     // ── Timestamps ──────────────────────────────────────────────────────────
     public DateTime? InboundTime { get; set; }

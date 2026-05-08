@@ -15,10 +15,17 @@
             </div>
             <div class="modal-body">
                 <p class="text-muted small mb-2" id="gm-pin-prompt-text">Enter your PIN to continue.</p>
+                @* autocomplete="new-password" — Chrome ignores plain "off"
+                   on inputs that look password-like (the disc-masked text
+                   here qualifies). "new-password" is the only value Chrome
+                   honors for "do not offer saved values". data-lpignore /
+                   data-1p-ignore / data-form-type / spellcheck cover the
+                   password managers + spell-check underline. *@
                 <input type="text" class="form-control" id="gm-pin-prompt-input"
                        inputmode="numeric" maxlength="10" placeholder="PIN"
-                       autocomplete="off" data-lpignore="true" data-1p-ignore="true"
-                       data-form-type="other"
+                       autocomplete="new-password"
+                       data-lpignore="true" data-1p-ignore="true"
+                       data-form-type="other" spellcheck="false"
                        style="-webkit-text-security:disc;" />
                 <div id="gm-pin-prompt-error" class="text-danger small mt-2" hidden></div>
             </div>

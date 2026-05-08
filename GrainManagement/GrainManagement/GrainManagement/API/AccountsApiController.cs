@@ -31,6 +31,7 @@ public class AccountsApiController : ControllerBase
         public bool IsWholesale { get; set; }
         public string? Phone1 { get; set; }
         public string? Email { get; set; }
+        public bool EmailWeightSheet { get; set; }
         public int SplitGroupCount { get; set; }
     }
 
@@ -50,7 +51,23 @@ public class AccountsApiController : ControllerBase
             baseQuery = baseQuery.Where(a => !a.IsProducer);
 
         if (!string.IsNullOrWhiteSpace(search))
-            baseQuery = baseQuery.Where(a => a.LookupName.Contains(search));
+        {
+            // Match any of the practical text-bearing fields. Numeric
+            // As400AccountId is matched by string-containment so a search
+            // like "12345" hits both "Lookup" wins (e.g. account named
+            // "12345") and partial Agvantage IDs. Null-safe via the
+            // (field ?? "") shim so EF emits ISNULL(field, '') LIKE '%s%'.
+            baseQuery = baseQuery.Where(a =>
+                   (a.LookupName     ?? "").Contains(search)
+                || (a.EntityName     ?? "").Contains(search)
+                || (a.OwnerFirstName ?? "").Contains(search)
+                || (a.OwnerLastName  ?? "").Contains(search)
+                || (a.Email          ?? "").Contains(search)
+                || (a.Phone1         ?? "").Contains(search)
+                || (a.City           ?? "").Contains(search)
+                || (a.Address1       ?? "").Contains(search)
+                || a.As400AccountId.ToString().Contains(search));
+        }
 
         if (splitFilter == "none")
             baseQuery = baseQuery.Where(a => a.IsProducer && !_ctx.SplitGroups.Any(sg => sg.PrimaryAccountId == a.AccountId));
@@ -68,6 +85,7 @@ public class AccountsApiController : ControllerBase
                 IsWholesale = a.IsWholesale,
                 Phone1 = a.Phone1,
                 Email = a.Email,
+                EmailWeightSheet = a.EmailWeightSheet,
                 SplitGroupCount = _ctx.SplitGroups.Count(sg => sg.PrimaryAccountId == a.AccountId)
             });
 

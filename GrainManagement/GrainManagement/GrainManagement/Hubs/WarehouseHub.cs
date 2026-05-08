@@ -1,4 +1,5 @@
 using GrainManagement.Services;
+using GrainManagement.Services.Warehouse;
 using Microsoft.AspNetCore.SignalR;
 
 namespace GrainManagement.Hubs;
@@ -11,10 +12,14 @@ public sealed class WarehouseHub : Hub
     public const string HubRoute = "/hubs/warehouse";
 
     private readonly IWarehouseIntakeDataService _intakeService;
+    private readonly IPriorDayWeightSheetGuard _priorDayGuard;
 
-    public WarehouseHub(IWarehouseIntakeDataService intakeService)
+    public WarehouseHub(
+        IWarehouseIntakeDataService intakeService,
+        IPriorDayWeightSheetGuard priorDayGuard)
     {
         _intakeService = intakeService;
+        _priorDayGuard = priorDayGuard;
     }
 
     /// <summary>
@@ -47,4 +52,19 @@ public sealed class WarehouseHub : Hub
 
     /// <summary>Group name used by IWeightSheetNotifier for per-location fan-out.</summary>
     public static string LocationGroup(int locationId) => $"loc-{locationId}";
+
+    /// <summary>
+    /// Returns the count of prior-day open weight sheets at the given
+    /// location. Called by the warehouse dashboard on connect; a non-zero
+    /// count drives an auto-prompt to launch End Of Day. Routed through
+    /// SignalR (rather than HTTP) so it rides the dashboard's existing
+    /// hub connection without an extra network round-trip on page load.
+    /// </summary>
+    public async Task<int> CheckPriorDayOpenWeightSheets(int locationId)
+    {
+        if (locationId <= 0) return 0;
+        var ids = await _priorDayGuard.GetPriorDayOpenWeightSheetIdsAsync(
+            locationId, Context.ConnectionAborted);
+        return ids.Count;
+    }
 }

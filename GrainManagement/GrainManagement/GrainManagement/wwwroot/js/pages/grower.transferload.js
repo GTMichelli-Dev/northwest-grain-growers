@@ -116,6 +116,12 @@
     var _wsHasHauler    = false;
     var _currentLocId   = 0;
     var _currentLocName = '';
+    // Read-only lockdown: when the active transfer weight sheet is Finished
+    // (StatusId 2) or Closed (StatusId 3) the entire load form is read-only
+    // — Save / Move / Delete hide, every input is disabled, and the in-form
+    // Capture / Enter Amount buttons hide. The save / move / delete handlers
+    // also bail on this flag. Name kept as _wsClosed to minimize churn.
+    var _wsClosed       = false;
     // 'Received' (this location is the destination, In > Out — same as intake)
     // or 'Shipped' (this location is the source, In < Out — empty truck arrives,
     // gets loaded, leaves heavier).
@@ -225,6 +231,46 @@
         // Reveal once the correct color/label have been applied so the user
         // never sees a default-color flash on first paint.
         $bar.prop('hidden', false);
+
+        // Finished or Closed transfer WS — clamp to read-only.
+        _wsClosed = (ws.StatusId >= 2);
+        if (_wsClosed) applyClosedLockdown(ws.StatusId);
+    }
+
+    // Apply the read-only lockdown to the transfer load form. Idempotent.
+    // Hides the top-bar action buttons (Save / Move / Delete) so only Cancel
+    // remains, disables every input/select/textarea inside the form, hides
+    // the weight-capture / enter-amount triggers, and surfaces a banner
+    // directly under the module bar.
+    function applyClosedLockdown(statusId) {
+        var stateLabel = (statusId === 2) ? 'finished' : 'closed';
+        if (!$('#tlClosedBanner').length) {
+            var $banner = $(
+                '<div id="tlClosedBanner" class="alert alert-warning mb-0 rounded-0 text-center">' +
+                '<strong>This weight sheet is ' + stateLabel + '.</strong> ' +
+                'View only — no changes can be saved. Click Cancel to leave.' +
+                '</div>'
+            );
+            var $moduleBar = $(SEL.moduleBar);
+            if ($moduleBar.length) $banner.insertAfter($moduleBar);
+            else $('#tlPageRoot, body').first().prepend($banner);
+        }
+        // Hide top-bar edit actions; keep #tlCancelBtnTop visible.
+        $(SEL.saveLoadBtn).prop('hidden', true).hide();
+        $(SEL.moveLoadBtn).prop('hidden', true).hide();
+        $('#tlDeleteLoadBtnTop').prop('hidden', true).hide();
+        // Read-only form — disable inputs, selects, textareas inside the form.
+        $(SEL.form).find('input, select, textarea').prop('disabled', true);
+        // Hide the capture / enter-amount triggers entirely.
+        $(SEL.captureGross).prop('hidden', true).hide();
+        $(SEL.captureTare).prop('hidden', true).hide();
+        $(SEL.enterAmountBtn).prop('hidden', true).hide();
+        // Defense: also disable modal-internal confirms in case a modal
+        // somehow opens. Their parent modals shouldn't appear since the
+        // triggers above are gone.
+        $(SEL.captureManualBtn).prop('disabled', true);
+        $(SEL.captureManualConfirm).prop('disabled', true);
+        $(SEL.directAmountConfirm).prop('disabled', true);
     }
 
     // ── Pickers (method + bin) ────────────────────────────────────────────
@@ -287,6 +333,77 @@
 
         $(SEL.formBody).prop('hidden', false);
         $(SEL.loadDetails).prop('hidden', false);
+        focusTruckIdIfEmpty();
+    }
+
+    // ── Field-progression chain ─────────────────────────────────────────
+    // Truck ID → Bin → Protein → (capture buttons as needed) → BOL → Save.
+    // Bin is a DX SelectBox; focus targets its inner .dx-texteditor-input.
+    // After Protein, the chain skips to whichever capture/weight step is
+    // still missing, so a fully-weighed load skips straight to BOL.
+    function advanceFocusFrom(currentEl) {
+        if (!currentEl) return;
+        var $next = null;
+        if (currentEl.id === 'tlTruckId') {
+            $next = $('#tlContainer').find('.dx-texteditor-input').first();
+        } else if ($(currentEl).closest('#tlContainer').length) {
+            $next = $('#tlProtein');
+        } else if (currentEl.id === 'tlProtein'
+                || currentEl.id === 'tlCaptureGross'
+                || currentEl.id === 'tlCaptureTare'
+                || currentEl.id === 'tlEnterAmountBtn') {
+            $next = nextWeightOrBolTarget();
+        } else if (currentEl.id === 'tlBol') {
+            $next = $(SEL.notes);
+        } else if ($(currentEl).is(SEL.notes)) {
+            $next = $(SEL.saveLoadBtn);
+        }
+        focusTarget($next);
+    }
+
+    function nextWeightOrBolTarget() {
+        if (typeof isDirectMode === 'function' && isDirectMode()) {
+            var direct = parseFloat($(SEL.directQty).val()) || 0;
+            if (direct <= 0 && $(SEL.enterAmountBtn).is(':visible')) return $(SEL.enterAmountBtn);
+        } else {
+            var startQty = parseFloat($(SEL.startQty).val()) || 0;
+            if (startQty <= 0 && $(SEL.captureGross).is(':visible')) return $(SEL.captureGross);
+            var endQty = parseFloat($(SEL.endQty).val()) || 0;
+            if (endQty <= 0 && $(SEL.captureTare).is(':visible')) return $(SEL.captureTare);
+        }
+        // Every weight is captured. Park focus on BOL only if it's still
+        // empty — otherwise route to Notes (BOL → Notes → Save chain).
+        var $bol = $('#tlBol');
+        if (($bol.val() || '').trim() === '') return $bol;
+        return $(SEL.notes);
+    }
+
+    function focusTarget($target) {
+        if (!$target || !$target.length) return;
+        if ($target.prop('disabled')) return;
+        if (!$target.is(':visible')) return;
+        $target.trigger('focus');
+        var el = $target[0];
+        if (el && el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
+            try { el.select(); } catch (e) { /* ignore */ }
+        }
+    }
+
+    function advanceFocusAfterWeight() {
+        setTimeout(function () { focusTarget(nextWeightOrBolTarget()); }, 200);
+    }
+
+    // Auto-focus the Truck ID when the load form is first ready, but only
+    // if it's empty — operator usually starts there.
+    function focusTruckIdIfEmpty() {
+        setTimeout(function () {
+            var $tid = $(SEL.truckId);
+            if (!$tid.length) return;
+            if ($tid.prop('disabled')) return;
+            if (!$tid.is(':visible')) return;
+            if (($tid.val() || '').trim() !== '') return;
+            $tid.trigger('focus');
+        }, 200);
     }
 
     function findMethodIdByCode(code) {
@@ -430,11 +547,20 @@
             if (d.Notes)            $(SEL.notes).val(d.Notes);
 
             // Show Load ID in the title row + reveal Save + Move (Move requires
-            // the load to be saved/existing).
+            // the load to be saved/existing). Skip these reveals on a closed
+            // WS — applyClosedLockdown hid them and we don't want to undo that.
             $('#tlLoadIdValue').text(d.TransactionId);
             $('#tlLoadIdDisplay').prop('hidden', false);
-            $(SEL.saveLoadBtn).prop('hidden', false).text('Update Load');
-            $(SEL.moveLoadBtn).prop('hidden', false);
+            if (!_wsClosed) {
+                $(SEL.saveLoadBtn).prop('hidden', false).text('Update Load');
+                $(SEL.moveLoadBtn).prop('hidden', false);
+
+                // Reveal Delete only when this load hasn't been weighed out yet.
+                // Same precondition the server enforces — once an EndQty,
+                // DirectQty, or CompletedAt is on the row the load is final.
+                var weighedOut = (d.EndQty != null) || (d.DirectQty != null) || !!d.CompletedAt;
+                $('#tlDeleteLoadBtnTop').prop('hidden', weighedOut);
+            }
         } catch (ex) {
             showAlert('Could not load existing load: ' + (ex.statusText || ex.message), 'danger');
         }
@@ -477,9 +603,52 @@
         // Save
         $(SEL.saveLoadBtn).on('click', saveLoad);
 
+        // Form keyboard handling — see grower.delivery.js for the full
+        // rationale. Enter chain: Truck ID → Bin → Protein → (Capture
+        // buttons as needed) → BOL → Save Load. ESC = Cancel.
+        $(SEL.form).on('keydown', function (e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                var $cancel = $('#tlCancelBtnTop');
+                if ($cancel.length && $cancel.is(':visible') && !$cancel.prop('disabled')) {
+                    e.preventDefault();
+                    $cancel.trigger('click');
+                }
+                return;
+            }
+            if (e.key !== 'Enter' && e.keyCode !== 13) return;
+            var t = e.target;
+            if (!t) return;
+
+            // Save Load focused → trigger save explicitly via .click() so
+            // the click handler ($(SEL.saveLoadBtn).on('click', saveLoad))
+            // runs. The form has no submit handler that would otherwise
+            // pick this up.
+            if (t.id === 'tlSaveLoadBtnTop') {
+                e.preventDefault();
+                t.click();
+                return;
+            }
+
+            var tag = (t.tagName || '').toUpperCase();
+            // Notes textarea participates in the chain — Enter advances
+            // to Save Load instead of inserting a newline. Other textareas
+            // would keep newline behavior.
+            if (tag === 'TEXTAREA' && !$(t).is(SEL.notes)) return;
+            if (t.id === 'tlCaptureGross' || t.id === 'tlCaptureTare' || t.id === 'tlEnterAmountBtn') return;
+            if (tag === 'BUTTON' || t.type === 'submit' || t.type === 'button') return;
+
+            e.preventDefault();
+            advanceFocusFrom(t);
+        });
+        // The form has no submit handler today, but block default submit
+        // anyway so a stray Enter from a focused field can't trigger a
+        // page reload.
+        $(SEL.form).on('submit', function (e) { e.preventDefault(); });
+
         // Move Load — gate priv 2 (Move Loads) BEFORE opening the candidate
         // picker. Selection alone now enables the Confirm button.
         $(SEL.moveLoadBtn).on('click', function () {
+            if (_wsClosed) return; // closed-WS defense — button should be hidden anyway
             GM.requestPin({
                 title: 'Enter PIN to Move Load',
                 prompt: 'Moving a load requires the Move Loads privilege.',
@@ -492,14 +661,81 @@
             .catch(function () { /* cancelled or insufficient privilege */ });
         });
         $('#tlMoveConfirmBtn').on('click', confirmMove);
+
+        // Delete Load — Bootstrap confirm, then PIN gate (priv 14, admin
+        // priv 7 bypass), then DELETE. The button itself is only revealed
+        // by loadExistingLoad when the load isn't weighed out.
+        var deleteLoadModalEl = document.getElementById('tlDeleteLoadModal');
+        var deleteLoadModalInst = deleteLoadModalEl ? new bootstrap.Modal(deleteLoadModalEl) : null;
+        $('#tlDeleteLoadBtnTop').on('click', function () {
+            if (!_editTxnId || !deleteLoadModalInst) return;
+            if (_wsClosed) return; // closed-WS defense — button should be hidden anyway
+            deleteLoadModalInst.show();
+        });
+        $('#tlDeleteLoadConfirmBtn').on('click', function () {
+            if (!_editTxnId) return;
+            if (deleteLoadModalInst) deleteLoadModalInst.hide();
+            // Wait for the modal close animation before raising the PIN
+            // prompt so backdrop stacking stays clean.
+            setTimeout(performDeleteTransferLoad, 250);
+        });
     }
     var _movePinValidated = null;
+
+    function performDeleteTransferLoad() {
+        var txnId = _editTxnId;
+        if (!txnId) return;
+
+        GM.requestPin({
+            title: 'Enter PIN to Delete Load',
+            prompt: 'Deleting a load requires the Delete Load privilege.',
+            requiredPrivilegeId: 14, // PRIV_DELETE_LOAD
+            forcePrompt: true
+        })
+        .then(function (pinResult) {
+            return $.ajax({
+                url: '/api/GrowerDelivery/' + encodeURIComponent(txnId),
+                method: 'DELETE',
+                contentType: 'application/json',
+                data: JSON.stringify({ Pin: pinResult.pin })
+            });
+        })
+        .then(function () {
+            // Land back on the transfer loads grid for this WS, since the
+            // deleted load no longer makes sense to keep editing.
+            var qp = new URLSearchParams(window.location.search);
+            var wsId = qp.get('wsId');
+            window.location.href = wsId
+                ? '/GrowerDelivery/WeightSheetTransferLoads?wsId=' + encodeURIComponent(wsId)
+                : '/WeightSheets';
+        })
+        .catch(function (err) {
+            if (!err) return;
+            if (err.message === 'cancelled' || err.message === 'superseded') return;
+            var msg = (err.responseJSON && err.responseJSON.message)
+                ? err.responseJSON.message
+                : (err.status
+                    ? 'Delete failed (HTTP ' + err.status + ').'
+                    : (err.message || 'Delete failed.'));
+            showAlert(msg, 'danger');
+        });
+    }
 
     // ── Capture Weight modal ──────────────────────────────────────────────
     async function openCaptureWeightModal() {
         if (!_captureModalInst) {
             _captureModalInst = new bootstrap.Modal(document.querySelector(SEL.captureWeightModal));
             document.querySelector(SEL.captureWeightModal).addEventListener('hidden.bs.modal', stopScalePoll);
+
+            // After the Select Scale popup closes — by capture, by X, by
+            // ESC, or by backdrop — drop focus into BOL when it's empty
+            // so the operator's next keystroke goes there. If BOL is
+            // already filled, fall through to Notes (BOL → Notes → Save).
+            document.querySelector(SEL.captureWeightModal).addEventListener('hidden.bs.modal', function () {
+                var $bol = $('#tlBol');
+                if (($bol.val() || '').trim() === '') focusTarget($bol);
+                else                                  focusTarget($(SEL.notes));
+            });
         }
         $(SEL.captureManualPanel).prop('hidden', true);
         $(SEL.captureWeightError).prop('hidden', true);
@@ -593,7 +829,10 @@
                 .prop('disabled', disabled)
                 .on('click', function () {
                     var ok = applyScaleWeight(weight, false, s.Description);
-                    if (ok) _captureModalInst.hide();
+                    if (ok) {
+                        _captureModalInst.hide();
+                        advanceFocusAfterWeight();
+                    }
                 });
             $list.append(btn);
         });
@@ -628,7 +867,10 @@
         // PIN was validated upfront when the user clicked "Manual Entry" —
         // see the captureManualBtn handler. _lastPinUserId already set.
         var ok = applyScaleWeight(weight, true, null);
-        if (ok) _captureModalInst.hide();
+        if (ok) {
+            _captureModalInst.hide();
+            advanceFocusAfterWeight();
+        }
     }
 
     function applyScaleWeight(weight, isManual, scaleDesc) {
@@ -708,11 +950,13 @@
         $(SEL.directTime).text(fmtTime(now));
         $(SEL.saveLoadBtn).prop('hidden', false);
         _enterAmountModalInst.hide();
+        advanceFocusAfterWeight();
     }
 
     // ── Save load → POST /api/Transfer ────────────────────────────────────
     async function saveLoad() {
         if (!_wsRowUid) { showAlert('Weight sheet not loaded.', 'danger'); return; }
+        if (_wsClosed)  { showAlert('This weight sheet is closed and cannot be edited.', 'danger'); return; }
 
         var isTruck = !isDirectMode();
         var startQty = isTruck ? (parseInt($(SEL.startQty).val(), 10) || null) : null;

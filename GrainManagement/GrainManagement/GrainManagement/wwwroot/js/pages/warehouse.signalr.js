@@ -22,7 +22,11 @@
 
         connection = new signalR.HubConnectionBuilder()
             .withUrl("/hubs/warehouse")
-            .withAutomaticReconnect()
+            // Aggressive retry schedule — default gives up after ~42s.
+            // Servers commonly restart for several seconds during dev, and
+            // a quietly-dead connection means the page silently stops
+            // receiving weightSheetUpdated broadcasts.
+            .withAutomaticReconnect([0, 2000, 5000, 10000, 30000, 60000, 60000, 60000, 120000])
             .build();
 
         // Intake snapshot pushed from server
@@ -53,7 +57,26 @@
             }
         });
 
+        // If the connection fully closes (auto-reconnect gave up), drop the
+        // module-level reference so the next ensureConnected call rebuilds
+        // a fresh one instead of returning the dead handle.
+        connection.onclose(() => {
+            connection = null;
+        });
+
         starting = connection.start()
+            .then(async () => {
+                // Re-join any previously-active location group. Group
+                // memberships are tied to ConnectionId, so a freshly built
+                // connection (after a full disconnect / dev-server restart)
+                // is NOT in the group even if joinedLocationId is set.
+                // onreconnected only fires for in-place state transitions,
+                // not for new-connection rebuilds — this catches that case.
+                if (joinedLocationId > 0) {
+                    try { await connection.invoke("JoinLocation", joinedLocationId); }
+                    catch (e) { /* ignore — group join failures don't fail connect */ }
+                }
+            })
             .catch(err => {
                 console.error("SignalR connect failed", err);
                 throw err;
@@ -70,6 +93,23 @@
 
         const conn = await ensureConnected();
         await conn.invoke("RequestIntakeRefresh", loc);
+    }
+
+    /**
+     * Asks the server how many open weight sheets at this location were
+     * created on a previous server-day. Returns 0 when none / on error;
+     * callers use it to decide whether to auto-prompt End Of Day.
+     */
+    async function checkPriorDayOpenWeightSheets(locationId) {
+        const loc = locationId || getLocationId();
+        if (!loc) return 0;
+        try {
+            const conn = await ensureConnected();
+            const n = await conn.invoke("CheckPriorDayOpenWeightSheets", loc);
+            return Number(n) || 0;
+        } catch (e) {
+            return 0;
+        }
     }
 
     /**
@@ -102,5 +142,6 @@
         ensureConnected,
         requestIntakeRefresh,
         onWeightSheetUpdated,
+        checkPriorDayOpenWeightSheets,
     };
 })();

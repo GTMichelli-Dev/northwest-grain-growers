@@ -73,7 +73,7 @@
                             }).appendTo($wrap);
                             $("<div>").dxTextBox({
                                 width: 260,
-                                placeholder: "Search accounts...",
+                                placeholder: "Search any field…",
                                 mode: "search",
                                 value: _search,
                                 onValueChanged: function (e) {
@@ -199,6 +199,13 @@
                 },
                 { dataField: "Phone1", caption: "Phone", width: 120 },
                 { dataField: "Email", caption: "Email" },
+                {
+                    dataField: "EmailWeightSheet",
+                    caption: "Email Weight Sheets",
+                    width: 130,
+                    allowSearch: false,
+                    cellTemplate: function (el, info) { el.text(info.value ? "Yes" : "No"); }
+                },
                 {
                     dataField: "SplitGroupCount",
                     caption: "Split Groups",

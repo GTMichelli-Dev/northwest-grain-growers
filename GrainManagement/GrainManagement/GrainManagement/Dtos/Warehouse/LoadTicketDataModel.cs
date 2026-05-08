@@ -19,6 +19,8 @@ public class LoadTicketDataModel
     // ── BOL / Hauler ────────────────────────────────────────────────────────
     public string BolType { get; set; } = "";
     public string Hauler { get; set; } = "";
+    /// <summary>Operator-entered truck identifier (TRUCK_ID transaction attribute). Empty for direct loads or when not captured.</summary>
+    public string TruckId { get; set; } = "";
 
     // ── Timestamps ──────────────────────────────────────────────────────────
     public DateTime? InboundTime { get; set; }
@@ -41,6 +43,8 @@ public class LoadTicketDataModel
     public string Location { get; set; } = "";
     public string LocationId { get; set; } = "";
     public string Commodity { get; set; } = "";
+    /// <summary>Item id on the load (string for clean report binding — empty when unknown).</summary>
+    public string ItemId { get; set; } = "";
     public string Bin { get; set; } = "";
 
     // ── Manual-entry legal flags ────────────────────────────────────────────

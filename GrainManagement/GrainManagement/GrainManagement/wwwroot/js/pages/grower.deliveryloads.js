@@ -128,9 +128,40 @@
 
         _wsId = parseInt(new URLSearchParams(window.location.search).get("wsId"), 10) || 0;
 
-        // Update New Load button to pass current weight sheet
+        // Update New Load button to pass current weight sheet, and gate the
+        // navigation behind the same eligibility checks the save endpoint
+        // enforces (closed lot / prior-day open WSs / WS no longer open).
+        // Failing here is much cleaner than letting the operator fill out
+        // the whole load form and discovering it can't be saved.
         if (_wsId > 0) {
             $(sel.newLoadBtn).attr("href", "/GrowerDelivery/Index?wsId=" + _wsId);
+            $(sel.newLoadBtn).on("click", async function (e) {
+                e.preventDefault();
+                var $btn = $(this);
+                if ($btn.data("checking")) return;
+                $btn.data("checking", true);
+                try {
+                    var resp = await fetch(
+                        "/api/GrowerDelivery/WeightSheet/" + _wsId + "/AddLoadCheck",
+                        { headers: { "Accept": "application/json" } });
+                    if (resp.ok) {
+                        window.location.href = $btn.attr("href");
+                        return;
+                    }
+                    var msg;
+                    try {
+                        var data = await resp.json();
+                        msg = (data && data.message) || ("Cannot add a new load (HTTP " + resp.status + ").");
+                    } catch (e2) {
+                        msg = "Cannot add a new load (HTTP " + resp.status + ").";
+                    }
+                    showAlert(msg, "danger");
+                } catch (ex) {
+                    showAlert("Network error checking new-load eligibility: " + ex.message, "danger");
+                } finally {
+                    $btn.data("checking", false);
+                }
+            });
         }
 
         if (!_locationId) {
@@ -296,9 +327,12 @@
             $print.attr('hidden', true).hide();
         }
 
-        // Closed — lock down header editing too. Pending states (1,2) still
-        // allow load edits, so we leave them alone.
-        if (_wsStatusId >= 3) {
+        // Finished or Closed — lock down header editing too. PendingNotFinished
+        // (StatusId 1) still allows load edits, so it's left alone. The
+        // Re-open button stays available for Finished (the only escape
+        // hatch back to editable); applyStatusGates above already handles
+        // its visibility.
+        if (_wsStatusId >= 2) {
             $(sel.editHaulerBtn).attr("hidden", true).hide();
             $(sel.editLotBtn).attr("hidden", true).hide();
             $(sel.editLotLink).attr("hidden", true).hide();
@@ -307,9 +341,11 @@
         }
     }
 
-    // True when the weight sheet is closed and no edits are allowed.
+    // True when the weight sheet is no longer editable (Finished or Closed).
+    // Used by the load-grid cell-click handler to suppress inline edits and
+    // the row-click navigation that opens full-edit mode.
     function isEditingLocked() {
-        return _wsStatusId >= 3;
+        return _wsStatusId >= 2;
     }
 
     // ── Set Pending / Re-open ───────────────────────────────────────────────
@@ -514,6 +550,21 @@
 
         var fmtId = row.WsAs400Id ? String(row.WsAs400Id) : formatId(row.WeightSheetId);
         $(sel.wsIdFmt).text(fmtId);
+
+        // Status badge next to the WS number — Open / Finished / Closed.
+        // Color matches the bucket: open neutral grey, finished amber,
+        // closed red. Hidden for unknown status.
+        var $badge = $("#dlWsStatusBadge");
+        $badge.removeClass("bg-secondary bg-warning bg-danger text-dark");
+        if (_wsStatusId === 0 || _wsStatusId === 1) {
+            $badge.text("Open").addClass("bg-secondary").prop("hidden", false);
+        } else if (_wsStatusId === 2) {
+            $badge.text("Finished").addClass("bg-warning text-dark").prop("hidden", false);
+        } else if (_wsStatusId === 3) {
+            $badge.text("Closed").addClass("bg-danger").prop("hidden", false);
+        } else {
+            $badge.prop("hidden", true);
+        }
 
         // Lot details — Delivery only. Transfer WSs hide lot/account/split
         // entirely and surface the WS Item as the variety.
@@ -784,7 +835,8 @@
                     width: 90,
                     allowEditing: false,
                 },
-                // Bin — click to open bin picker, yellow if not set
+                // Bin — click to open bin picker, yellow if not set.
+                // Locked once the WS is Finished or Closed.
                 {
                     dataField: "ContainerDescription",
                     caption: "Bin",
@@ -792,8 +844,15 @@
                     cellTemplate: function (container, options) {
                         var val = options.data.ContainerDescription;
                         var $cell = $("<span>").text(val || "— select —")
-                            .css({ cursor: "pointer", textDecoration: "underline dotted", display: "block", padding: "2px 4px" })
-                            .on("click", function (e) { e.stopPropagation(); openBinModal(options.data); });
+                            .css({ display: "block", padding: "2px 4px" })
+                            .on("click", function (e) {
+                                e.stopPropagation();
+                                if (isEditingLocked()) return;
+                                openBinModal(options.data);
+                            });
+                        if (!isEditingLocked()) {
+                            $cell.css({ cursor: "pointer", textDecoration: "underline dotted" });
+                        }
                         if (!val) container.css("background-color", "#fff9c4");
                         container.append($cell);
                     },
@@ -833,7 +892,8 @@
                     cssClass: "fw-bold",
                     allowEditing: false,
                 },
-                // Protein — inline editable, highlighted if not set
+                // Protein — inline editable, highlighted if not set.
+                // Locked once the WS is Finished or Closed.
                 {
                     dataField: "Attr1Value",
                     caption: "Protein",
@@ -845,8 +905,13 @@
                         var val = d.Attr1Value;
                         var display = (val != null && val > 0) ? Number(val).toFixed(2) : "";
                         var $cell = $("<span>").text(display)
-                            .css({ display: "block", textAlign: "right", cursor: "pointer", padding: "2px 4px" })
-                            .on("click", function (e) { e.stopPropagation(); openAttrInlineEdit(d, 1, container); });
+                            .css({ display: "block", textAlign: "right", padding: "2px 4px" })
+                            .on("click", function (e) {
+                                e.stopPropagation();
+                                if (isEditingLocked()) return;
+                                openAttrInlineEdit(d, 1, container);
+                            });
+                        if (!isEditingLocked()) $cell.css("cursor", "pointer");
                         if (!val || val <= 0) {
                             // Orange highlight if row is otherwise complete, yellow if not
                             var urgent = isRowCompleteMissingProtein(d);
@@ -859,22 +924,10 @@
                         container.append($cell);
                     },
                 },
-                // Moisture — inline editable
-                {
-                    dataField: "Attr2Value",
-                    caption: "Moisture",
-                    width: 90,
-                    dataType: "number",
-                    allowEditing: false,
-                    cellTemplate: function (container, options) {
-                        var val = options.data.Attr2Value;
-                        var display = (val != null && val > 0) ? Number(val).toFixed(2) : "";
-                        var $cell = $("<span>").text(display)
-                            .css({ display: "block", textAlign: "right", cursor: "pointer", padding: "2px 4px" })
-                            .on("click", function (e) { e.stopPropagation(); openAttrInlineEdit(options.data, 2, container); });
-                        container.append($cell);
-                    },
-                },
+                // Moisture column hidden — operators don't capture moisture
+                // on this page anymore. The Attr2Value field stays on the
+                // server / DTO so existing data and any other consumers
+                // aren't disturbed; we just don't render the column here.
                 {
                     dataField: "Notes",
                     caption: "Notes",
@@ -1197,6 +1250,15 @@
                 var rows = e.selectedRowsData;
                 _selectedBinId = rows.length > 0 ? rows[0].ContainerId : null;
                 $("#dlBinSaveBtn").prop("disabled", !_selectedBinId);
+            },
+            // Double-click a row → same as clicking Assign Bin. Saves the
+            // operator a second click in the common "I know which bin"
+            // workflow. saveBin() has its own _binTargetRow / _selectedBinId
+            // guards, so a stray dbl-click on a non-data row is harmless.
+            onRowDblClick: function (e) {
+                if (e.rowType !== "data" || !e.data) return;
+                _selectedBinId = e.data.ContainerId;
+                saveBin();
             },
         });
 

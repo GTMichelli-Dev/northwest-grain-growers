@@ -17,9 +17,13 @@
     function initActionButtons() {
         var $actions = $("#wdActions");
 
+        // End Of Day was here; it now lives in the global navbar via gm.eod.js.
+        // F.O.B Load hidden for now — re-enable by restoring its row.
+        // gateNewWs=true runs the prior-day-open guard before navigating so
+        // the operator hits the same alert the save endpoint enforces,
+        // before filling out the whole new-WS form.
         var buttons = [
-            { text: "New Weight Sheet", icon: "doc",    href: "/WeightSheets/LoadType" },
-            { text: "F.O.B Load",       icon: "export", href: "/WeightSheets/ShipLoad" },
+            { text: "New Weight Sheet", icon: "doc",    href: "/WeightSheets/LoadType", gateNewWs: true },
             { text: "Lots",             icon: "folder", href: "/GrowerDelivery/WeightSheetLots" }
         ];
 
@@ -30,9 +34,62 @@
                 width: BTN_WIDTH,
                 stylingMode: "outlined",
                 type: "default",
-                onClick: function () { window.location.href = b.href; }
+                onClick: b.gateNewWs
+                    ? function () { gateAndNavigateNewWs(b.href); }
+                    : function () { window.location.href = b.href; }
             }).appendTo($actions);
         });
+    }
+
+    // Calls /api/GrowerDelivery/Location/{id}/AddWeightSheetCheck and either
+    // navigates to the new-WS form or notifies the operator with the same
+    // message the save endpoint would have returned (e.g. "open weight
+    // sheets from a previous day — run End Of Day first").
+    //
+    // Uses fetch (not $.ajax) deliberately: the success path returns 200
+    // with an empty body, which jQuery's dataType:"json" would treat as a
+    // parse error and route to .fail() with xhr.status=200, surfacing the
+    // confusing "Cannot create… (HTTP 200)" message even on a clean OK.
+    var _newWsChecking = false;
+    async function gateAndNavigateNewWs(href) {
+        if (_newWsChecking) return;
+        var locationId = getLocationId();
+        if (!locationId) {
+            DevExpress.ui.notify(
+                "Please select a location from the Warehouse dashboard first.",
+                "warning", 4000);
+            return;
+        }
+        _newWsChecking = true;
+        try {
+            var resp = await fetch(
+                "/api/GrowerDelivery/Location/" + locationId + "/AddWeightSheetCheck",
+                { headers: { "Accept": "application/json" } });
+            if (resp.ok) {
+                window.location.href = href;
+                return;
+            }
+            var msg;
+            try {
+                var data = await resp.json();
+                msg = (data && data.message) || ("Cannot create a new weight sheet (HTTP " + resp.status + ").");
+            } catch (parseErr) {
+                msg = "Cannot create a new weight sheet (HTTP " + resp.status + ").";
+            }
+            DevExpress.ui.notify({
+                message: msg,
+                width: 480,
+                shading: false
+            }, "error", 6000);
+        } catch (ex) {
+            DevExpress.ui.notify({
+                message: "Network error checking new-weight-sheet eligibility: " + ex.message,
+                width: 480,
+                shading: false
+            }, "error", 6000);
+        } finally {
+            _newWsChecking = false;
+        }
     }
 
     function initOpenWeightSheetsGrid(locationId) {
@@ -51,7 +108,54 @@
             noDataText: "No Weight Sheets",
             paging: { enabled: false },
             sorting: { mode: "single" },
+            // Search is driven by the inline #wdWsSearch input in the
+            // toolbar (wired below) — keep the in-grid panel hidden so we
+            // get a single, consistent filter row. searchByText still works
+            // when the panel itself isn't visible.
+            searchPanel: { visible: false, highlightSearchText: true },
             columns: [
+                {
+                    // Print button — only visible when the Closed bucket is
+                    // active. Clicking opens #wdWsPreviewModal with the WS
+                    // PDF in an iframe + explicit Print / Download buttons.
+                    name: "wsPrintCol",
+                    caption: "",
+                    width: 70,
+                    alignment: "center",
+                    visible: false,
+                    allowSorting: false,
+                    allowFiltering: false,
+                    allowSearch: false,
+                    cellTemplate: function (container, options) {
+                        var row = options.data || {};
+                        $("<button>")
+                            .addClass("btn btn-outline-primary btn-sm")
+                            .attr("title", "View / Print weight sheet")
+                            .html('<i class="dx-icon dx-icon-print"></i>')
+                            .on("click", function (e) {
+                                e.stopPropagation();
+                                openWsPreview(row);
+                            })
+                            .appendTo(container);
+                    }
+                },
+                {
+                    // Lifecycle status — hidden unless the All bucket is
+                    // active (the bucket-specific buckets already imply
+                    // status). Toggled by applyWsStatusColumnVisibility.
+                    name: "wsStatusCol",
+                    caption: "Status",
+                    width: 90,
+                    alignment: "center",
+                    visible: false,
+                    calculateCellValue: function (row) {
+                        var s = row.StatusId;
+                        if (s === 0 || s === 1) return "Open";
+                        if (s === 2) return "Finished";
+                        if (s === 3) return "Closed";
+                        return "";
+                    }
+                },
                 {
                     dataField: "As400Id",
                     caption: "WS #",
@@ -151,6 +255,22 @@
                     } else if (lotType === 1) {
                         e.rowElement.addClass(isTransfer ? "gm-ws-row--transfer-warehouse" : "gm-ws-row--warehouse");
                     }
+                }
+            },
+            // Highlight the In Yard cell pink when any loads are still in
+            // yard for this weight sheet — operator attention. Overrides
+            // the row's lot/type tint so the alert reads at a glance.
+            // Uses setProperty(..., 'important') because the row tints
+            // (.gm-ws-row--seed > td, etc.) are themselves declared with
+            // !important — jQuery .css() can't beat that.
+            onCellPrepared: function (e) {
+                if (e.rowType !== "data") return;
+                if (e.column.dataField !== "LoadsInYard") return;
+                if ((e.value || 0) > 0) {
+                    var el = e.cellElement[0] || e.cellElement;
+                    el.style.setProperty("background-color", "pink", "important");
+                    el.style.setProperty("color", "black", "important");
+                    el.style.setProperty("font-weight", "bold", "important");
                 }
             }
         });
@@ -254,14 +374,164 @@
         setBucketButtonActive(_currentBucket);
         $("#wdWsGridTitle").text(bucketTitle(_currentBucket));
 
-        // Date range is only visible/meaningful on non-Open buckets.
-        if (_currentBucket === "open") {
+        // Date range is only visible/meaningful on Closed / All buckets.
+        // Open shows live worklist (no dates). Finished is treated the same
+        // — operators are expected to close every finished WS the same day,
+        // so a date filter would just hide things they should be acting on.
+        if (_currentBucket === "open" || _currentBucket === "pending") {
             $("#wdWsDateRange").hide();
         } else {
             $("#wdWsDateRange").css("display", "flex");
             $("#wdWsFromDate").val(_currentFromDate || "");
             $("#wdWsToDate").val(_currentToDate || "");
         }
+
+        applyWsStatusColumnVisibility();
+    }
+
+    // The lifecycle Status column is only meaningful when the All bucket
+    // is active — every other bucket already filters to a single status
+    // value. The Print column is only meaningful on Closed (those are the
+    // WSs the operator might want to re-issue). Toggle both safely; bails
+    // when the grid isn't built yet (applyBucketToUI runs once before
+    // initOpenWeightSheetsGrid).
+    function applyWsStatusColumnVisibility() {
+        var grid;
+        try { grid = $("#wdOpenWsGrid").dxDataGrid("instance"); } catch (e) { return; }
+        if (!grid) return;
+        grid.columnOption("wsStatusCol", "visible", _currentBucket === "all");
+        grid.columnOption("wsPrintCol",  "visible", _currentBucket === "closed");
+    }
+
+    // ── WS print preview ─────────────────────────────────────────────────
+    // Opens a PDF in #wdWsPreviewFrame inside #wdWsPreviewModal. Two
+    // entry points:
+    //   openWsPreview(row)        → single-WS PDF via the existing
+    //                               GET /api/printjobs/intake-weight-sheet/{id}/pdf
+    //                               (used by the per-row Print button on
+    //                               the Closed bucket).
+    //   openCombinedWsPreview()   → POST every visible row's WS id to
+    //                               /api/printjobs/weight-sheets/combined-pdf
+    //                               and load the merged PDF as a blob URL
+    //                               (used by the toolbar Print button).
+    // Print/download UI is intentionally not in the modal — the browser's
+    // built-in PDF viewer toolbar exposes both, which gives operators
+    // consistent controls regardless of where the PDF originated.
+    var _wsPreviewModal = null;
+    var _wsPreviewBlobUrl = null;
+
+    function freeWsPreviewBlob() {
+        if (_wsPreviewBlobUrl) {
+            try { URL.revokeObjectURL(_wsPreviewBlobUrl); } catch (e) {}
+            _wsPreviewBlobUrl = null;
+        }
+    }
+
+    // Show the spinner with a label, hide the iframe.
+    function showWsPreviewSpinner(label) {
+        document.getElementById("wdWsPreviewFrame").style.display = "none";
+        document.getElementById("wdWsPreviewSpinnerText").textContent = label || "Loading…";
+        document.getElementById("wdWsPreviewSpinner").style.display = "";
+    }
+    // Hide the spinner, reveal the iframe.
+    function hideWsPreviewSpinner() {
+        document.getElementById("wdWsPreviewSpinner").style.display = "none";
+        document.getElementById("wdWsPreviewFrame").style.display = "";
+    }
+
+    function openWsPreview(row) {
+        if (!row || !row.WeightSheetId) return;
+        var wsLabel = row.As400Id ? String(row.As400Id) : formatId(row.WeightSheetId);
+        var url = "/api/printjobs/intake-weight-sheet/" + encodeURIComponent(row.WeightSheetId) + "/pdf?original=true";
+        ensureWsPreviewWired();
+        freeWsPreviewBlob();
+        $("#wdWsPreviewLabel").text("Weight Sheet " + wsLabel);
+        showWsPreviewSpinner("Loading weight sheet…");
+        // The iframe's "load" event fires once the PDF stream finishes —
+        // ensureWsPreviewWired hooks it to hide the spinner.
+        document.getElementById("wdWsPreviewFrame").src = url;
+        _wsPreviewModal.show();
+    }
+
+    async function openCombinedWsPreview() {
+        var grid;
+        try { grid = $("#wdOpenWsGrid").dxDataGrid("instance"); } catch (e) { return; }
+        if (!grid) return;
+
+        // Visible rows reflect the active bucket / type filter / search +
+        // any sort. Headers (rowType !== "data") are skipped.
+        var ids = grid.getVisibleRows()
+            .filter(function (r) { return r.rowType === "data" && r.data && r.data.WeightSheetId; })
+            .map(function (r) { return r.data.WeightSheetId; });
+
+        if (!ids.length) {
+            DevExpress.ui.notify({ message: "No weight sheets to print.", width: 320 }, "info", 3000);
+            return;
+        }
+
+        ensureWsPreviewWired();
+        $("#wdWsPreviewLabel").text("Weight Sheets — " + ids.length + " sheet" + (ids.length === 1 ? "" : "s"));
+        // Spinner up immediately — combining many WSs into one PDF can take
+        // several seconds, so the operator needs visible "still working"
+        // feedback while the server renders.
+        document.getElementById("wdWsPreviewFrame").src = "about:blank";
+        showWsPreviewSpinner("Building " + ids.length + " weight sheet" + (ids.length === 1 ? "" : "s") + " into a single PDF…");
+        _wsPreviewModal.show();
+
+        try {
+            var resp = await fetch("/api/printjobs/weight-sheets/combined-pdf", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ WeightSheetIds: ids })
+            });
+            if (!resp.ok) {
+                var msg;
+                try { msg = (await resp.json()).message; } catch (e2) { msg = "HTTP " + resp.status; }
+                DevExpress.ui.notify({ message: "Failed to build combined PDF: " + msg, width: 480 }, "error", 6000);
+                _wsPreviewModal.hide();
+                return;
+            }
+            var blob = await resp.blob();
+            freeWsPreviewBlob();
+            _wsPreviewBlobUrl = URL.createObjectURL(blob);
+            // The iframe load event will hide the spinner once the PDF
+            // viewer has finished rendering. Until then keep the spinner
+            // visible — server response received != browser ready to show.
+            document.getElementById("wdWsPreviewFrame").src = _wsPreviewBlobUrl;
+        } catch (ex) {
+            DevExpress.ui.notify({ message: "Network error: " + ex.message, width: 480 }, "error", 6000);
+            _wsPreviewModal.hide();
+        }
+    }
+
+    function ensureWsPreviewWired() {
+        if (_wsPreviewModal) return;
+        var modalEl = document.getElementById("wdWsPreviewModal");
+        if (!modalEl) return;
+        _wsPreviewModal = new bootstrap.Modal(modalEl);
+
+        // Iframe finished loading the PDF (single or merged) — swap the
+        // spinner out for the rendered content. Skip when src was reset
+        // to about:blank during cleanup so we don't flash the iframe with
+        // a blank page.
+        document.getElementById("wdWsPreviewFrame").addEventListener("load", function () {
+            var src = document.getElementById("wdWsPreviewFrame").src || "";
+            if (src && src !== "about:blank" && src.indexOf("about:") !== 0) {
+                hideWsPreviewSpinner();
+            }
+        });
+
+        // Free the iframe src + any blob URL on close so the PDF stops
+        // downloading in the background, the blob is GC'd, and a stale
+        // frame doesn't flash on the next open.
+        $(modalEl).on("hidden.bs.modal", function () {
+            document.getElementById("wdWsPreviewFrame").src = "about:blank";
+            freeWsPreviewBlob();
+            // Reset visual state so the next open starts with the spinner
+            // ready to be shown again.
+            hideWsPreviewSpinner();
+            document.getElementById("wdWsPreviewFrame").style.display = "none";
+        });
     }
 
     function initStatusFilterToolbar() {
@@ -292,6 +562,23 @@
         $("#wdWsTypeFilter").on("change", function () {
             applyTypeFilterToGrid();
         });
+
+        // Toolbar Print → combine every visible row's weight sheet into one
+        // PDF and open it in the preview modal. Uses the grid's visible-rows
+        // snapshot, so the active bucket / type / date filters / search +
+        // sort all carry through to what gets printed.
+        $("#wdWsPrintAllBtn").on("click", openCombinedWsPreview);
+
+        // Inline grid search — drives the dxDataGrid's built-in search via
+        // searchByText. Bails silently when the grid isn't built yet (the
+        // input fires "input" only on user typing, so the grid will exist
+        // by the time this runs).
+        $("#wdWsSearch").on("input", function () {
+            var grid;
+            try { grid = $("#wdOpenWsGrid").dxDataGrid("instance"); } catch (e) { return; }
+            if (!grid) return;
+            grid.searchByText($(this).val() || "");
+        });
     }
 
     function loadOpenWeightSheets(locationId) {
@@ -299,7 +586,9 @@
         var url = "/api/GrowerDelivery/OpenWeightSheets"
             + "?locationId=" + encodeURIComponent(locationId)
             + "&statusBucket=" + encodeURIComponent(_currentBucket);
-        if (_currentBucket !== "open") {
+        // Date range gates only Closed / All. Open and Finished (pending)
+        // never get date params so the operator sees the full live set.
+        if (_currentBucket === "closed" || _currentBucket === "all") {
             if (_currentFromDate) url += "&fromDate=" + encodeURIComponent(_currentFromDate);
             if (_currentToDate)   url += "&toDate="   + encodeURIComponent(_currentToDate);
         }
@@ -360,5 +649,29 @@
         _currentLocationId = locationId;
         initStatusFilterToolbar();
         initOpenWeightSheetsGrid(locationId);
+        // Sync the Status column visibility to the (possibly persisted)
+        // bucket now that the grid exists — applyBucketToUI ran during
+        // initStatusFilterToolbar before the grid was built and the call
+        // there silently no-op'd.
+        applyWsStatusColumnVisibility();
+
+        // Stale-WS auto-trigger. Asks the warehouse hub how many open
+        // weight sheets at this location were created on a previous
+        // server-day. >0 means yesterday's work never got closed out, so
+        // we offer to launch the multi-location EOD loop. The
+        // confirm-prompt is gated by sessionStorage inside gm.eod.js so
+        // a SignalR reconnect or page refresh doesn't re-prompt within
+        // the same browser tab.
+        if (locationId && window.gmWarehouseRealtime
+            && typeof window.gmWarehouseRealtime.checkPriorDayOpenWeightSheets === "function") {
+            window.gmWarehouseRealtime
+                .checkPriorDayOpenWeightSheets(locationId)
+                .then(function (count) {
+                    if (count > 0 && window.GM && window.GM.eod
+                        && typeof window.GM.eod.promptForStaleStart === "function") {
+                        window.GM.eod.promptForStaleStart(locationId, count);
+                    }
+                });
+        }
     });
 })();

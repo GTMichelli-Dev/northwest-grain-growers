@@ -24,6 +24,10 @@ public sealed class ReportStorageService : ReportStorageWebExtension
         ["Direct Quantity Load Ticket"] = new("Warehouse", () => new DirectQuantityLoadTicketReport()),
         ["Intake Weight Sheet"] = new("Warehouse", () => new IntakeWeightSheetReport()),
         ["Lot Label"] = new("Warehouse", () => new LotLabelReport()),
+        // End-Of-Day summary reports (designer-friendly, bound to typed DTOs)
+        ["Daily Intake (End Of Day)"] = new("Warehouse", () => new DailyIntakeReport()),
+        ["Daily Transfer (End Of Day)"] = new("Warehouse", () => new DailyTransferReport()),
+        ["Closed Lots"] = new("Warehouse", () => new ClosedLotsReport()),
         ["Test Ticket"] = new("Master", () => new TestTicketReport())
     };
 

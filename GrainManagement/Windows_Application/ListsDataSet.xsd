@@ -1,0 +1,840 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="ListsDataSet" targetNamespace="http://tempuri.org/ListsDataSet.xsd" xmlns:mstns="http://tempuri.org/ListsDataSet.xsd" xmlns="http://tempuri.org/ListsDataSet.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections>
+          <Connection AppSettingsObjectName="Settings" AppSettingsPropertyName="NW_DataConnectionString" ConnectionStringObject="" IsAppSettingsProperty="true" Modifier="Assembly" Name="NW_DataConnectionString (Settings)" ParameterPrefix="@" PropertyReference="ApplicationSettings.NWGrain.Properties.Settings.GlobalReference.Default.NW_DataConnectionString" Provider="System.Data.SqlClient" />
+        </Connections>
+        <Tables>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="Weigh_Scale_ListTableAdapter" GeneratorDataComponentClassName="Weigh_Scale_ListTableAdapter" Name="Weigh_Scale_List" UserDataComponentName="Weigh_Scale_ListTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_Data.dbo.Weigh_Scales" DbObjectType="Table" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Description, 1 AS IDX
+FROM            Weigh_Scales
+WHERE        (Server_Name = @@SERVERNAME) AND (Description &lt;&gt; 'Manual')
+UNION
+SELECT        'Manual' AS Description, 0 AS IDX
+ORDER BY IDX, Description</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Description" DataSetColumn="Description" />
+              <Mapping SourceColumn="IDX" DataSetColumn="IDX" />
+            </Mappings>
+            <Sources>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_DataTEST.dbo.Weigh_Scales" DbObjectType="Table" FillMethodModifier="Public" FillMethodName="FillBySelect" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorGetMethodName="GetDataBy" GeneratorSourceName="FillBySelect" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy" UserSourceName="FillBySelect">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Description, 1 AS IDX
+FROM            Weigh_Scales
+WHERE        (Server_Name = @@SERVERNAME) AND (Description &lt;&gt; 'Manual')
+UNION
+SELECT        'Select Scale' AS Description, 0 AS IDX
+ORDER BY IDX, Description</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </Sources>
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="Lot_Landlords_Drop_Down_ListTableAdapter" GeneratorDataComponentClassName="Lot_Landlords_Drop_Down_ListTableAdapter" Name="Lot_Landlords_Drop_Down_List" UserDataComponentName="Lot_Landlords_Drop_Down_ListTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>SELECT        'All Landlords' AS text, NULL AS value, 0 AS idx
+UNION
+SELECT DISTINCT Landlord AS text, Landlord AS value, 1 AS idx
+FROM            vw_Lots
+WHERE        (Landlord IS NOT NULL)
+ORDER BY idx, text</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="text" DataSetColumn="text" />
+              <Mapping SourceColumn="value" DataSetColumn="value" />
+              <Mapping SourceColumn="idx" DataSetColumn="idx" />
+            </Mappings>
+            <Sources>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_DataTEST.dbo.LandlordDropDownList" DbObjectType="Function" FillMethodModifier="Public" FillMethodName="FillByOpenLots" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByOpenLots" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy" UserSourceName="FillByOpenLots">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        text, value, idx
+FROM            dbo.LandlordDropDownList(@Location_Id) AS LandlordDropDownList_1
+ORDER BY idx, text</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Location_Id" ColumnName="" DataSourceName="" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Location_Id" Precision="0" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </Sources>
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="Lot_Producer_Drop_Down_ListTableAdapter" GeneratorDataComponentClassName="Lot_Producer_Drop_Down_ListTableAdapter" Name="Lot_Producer_Drop_Down_List" UserDataComponentName="Lot_Producer_Drop_Down_ListTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>SELECT        'All Producers' AS text, NULL AS value, 0 AS idx
+UNION
+SELECT DISTINCT Producer AS text, Producer AS value, 1 AS idx
+FROM            vw_Lots
+WHERE        (Location_Id = @Location_Id) AND (Sequence_ID = dbo.GetLotSequence(@Location_Id))
+ORDER BY idx, text</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Location_Id" ColumnName="" DataSourceName="" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Location_Id" Precision="0" Scale="0" Size="4" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="text" DataSetColumn="text" />
+              <Mapping SourceColumn="value" DataSetColumn="value" />
+              <Mapping SourceColumn="idx" DataSetColumn="idx" />
+            </Mappings>
+            <Sources>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_DataTEST.dbo.LotProducerDropDownList" DbObjectType="Function" FillMethodModifier="Public" FillMethodName="FillByOpenLots" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByOpenLots" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy" UserSourceName="FillByOpenLots">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        text, value, idx
+FROM            dbo.LotProducerDropDownList(@Location_Id) AS LotProducerDropDownList_1
+ORDER BY idx, text</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Location_Id" ColumnName="" DataSourceName="" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Location_Id" Precision="0" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </Sources>
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="Lot_Farms_Drop_Down_ListTableAdapter" GeneratorDataComponentClassName="Lot_Farms_Drop_Down_ListTableAdapter" Name="Lot_Farms_Drop_Down_List" UserDataComponentName="Lot_Farms_Drop_Down_ListTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>SELECT        'All Farms' AS text, NULL AS value, 0 AS idx
+UNION
+SELECT DISTINCT Farm AS text, Farm AS value, 1 AS idx
+FROM            vw_Lots
+WHERE        (Farm IS NOT NULL) AND (LTRIM(Farm) &lt;&gt; '')
+ORDER BY idx, text</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="text" DataSetColumn="text" />
+              <Mapping SourceColumn="value" DataSetColumn="value" />
+              <Mapping SourceColumn="idx" DataSetColumn="idx" />
+            </Mappings>
+            <Sources>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_DataTEST.dbo.FarmDropDownList" DbObjectType="Function" FillMethodModifier="Public" FillMethodName="FillByOpenLots" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByOpenLots" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy" UserSourceName="FillByOpenLots">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        text, value, idx
+FROM            dbo.FarmDropDownList(@Location_Id) AS FarmDropDownList_1
+ORDER BY idx, text</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Location_Id" ColumnName="" DataSourceName="" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Location_Id" Precision="0" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </Sources>
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="Locations_DropDownTableAdapter" GeneratorDataComponentClassName="Locations_DropDownTableAdapter" Name="Locations_DropDown" UserDataComponentName="Locations_DropDownTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_Data_Master.dbo.Locations" DbObjectType="Table" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="true" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <DeleteCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>DELETE FROM [Locations] WHERE (([Id] = @Original_Id) AND ([Description] = @Original_Description) AND ([UID] = @Original_UID))</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="Int32" Direction="Input" ParameterName="@Original_Id" Precision="0" ProviderType="Int" Scale="0" Size="0" SourceColumn="Id" SourceColumnNullMapping="false" SourceVersion="Original" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="String" Direction="Input" ParameterName="@Original_Description" Precision="0" ProviderType="NVarChar" Scale="0" Size="0" SourceColumn="Description" SourceColumnNullMapping="false" SourceVersion="Original" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="Guid" Direction="Input" ParameterName="@Original_UID" Precision="0" ProviderType="UniqueIdentifier" Scale="0" Size="0" SourceColumn="UID" SourceColumnNullMapping="false" SourceVersion="Original" />
+                    </Parameters>
+                  </DbCommand>
+                </DeleteCommand>
+                <InsertCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>INSERT INTO [Locations] ([Id], [Description], [UID]) VALUES (@Id, @Description, @UID)</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="Int32" Direction="Input" ParameterName="@Id" Precision="0" ProviderType="Int" Scale="0" Size="0" SourceColumn="Id" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="String" Direction="Input" ParameterName="@Description" Precision="0" ProviderType="NVarChar" Scale="0" Size="0" SourceColumn="Description" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="Guid" Direction="Input" ParameterName="@UID" Precision="0" ProviderType="UniqueIdentifier" Scale="0" Size="0" SourceColumn="UID" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </InsertCommand>
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>SELECT        Id, Description, LTRIM(STR(Id)) + '-' + Description AS ID_Description, UID
+FROM            Locations
+ORDER BY Id</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+                <UpdateCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>UPDATE [Locations] SET [Id] = @Id, [Description] = @Description, [UID] = @UID WHERE (([Id] = @Original_Id) AND ([Description] = @Original_Description) AND ([UID] = @Original_UID))</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="Int32" Direction="Input" ParameterName="@Id" Precision="0" ProviderType="Int" Scale="0" Size="0" SourceColumn="Id" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="String" Direction="Input" ParameterName="@Description" Precision="0" ProviderType="NVarChar" Scale="0" Size="0" SourceColumn="Description" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="Guid" Direction="Input" ParameterName="@UID" Precision="0" ProviderType="UniqueIdentifier" Scale="0" Size="0" SourceColumn="UID" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="Int32" Direction="Input" ParameterName="@Original_Id" Precision="0" ProviderType="Int" Scale="0" Size="0" SourceColumn="Id" SourceColumnNullMapping="false" SourceVersion="Original" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="String" Direction="Input" ParameterName="@Original_Description" Precision="0" ProviderType="NVarChar" Scale="0" Size="0" SourceColumn="Description" SourceColumnNullMapping="false" SourceVersion="Original" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="Guid" Direction="Input" ParameterName="@Original_UID" Precision="0" ProviderType="UniqueIdentifier" Scale="0" Size="0" SourceColumn="UID" SourceColumnNullMapping="false" SourceVersion="Original" />
+                    </Parameters>
+                  </DbCommand>
+                </UpdateCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Id" DataSetColumn="Id" />
+              <Mapping SourceColumn="Description" DataSetColumn="Description" />
+              <Mapping SourceColumn="ID_Description" DataSetColumn="ID_Description" />
+              <Mapping SourceColumn="UID" DataSetColumn="UID" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="Producer_Drop_Down_ListTableAdapter" GeneratorDataComponentClassName="Producer_Drop_Down_ListTableAdapter" Name="Producer_Drop_Down_List" UserDataComponentName="Producer_Drop_Down_ListTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_DataDev.dbo.vwProducerList" DbObjectType="View" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Id, Description, Full_Description
+FROM            vwProducerList
+ORDER BY Description</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Id" DataSetColumn="Id" />
+              <Mapping SourceColumn="Description" DataSetColumn="Description" />
+              <Mapping SourceColumn="Full_Description" DataSetColumn="Full_Description" />
+            </Mappings>
+            <Sources>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_DataDev.dbo.vwProducerList" DbObjectType="View" FillMethodModifier="Public" FillMethodName="FillByDescription" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByDescription" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy" UserSourceName="FillByDescription">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Id, Description, Full_Description
+FROM            vwProducerList
+WHERE         (Description = @Description)
+ORDER BY Description</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Description" ColumnName="Description" DataSourceName="NW_DataDev.dbo.vwProducerList" DataTypeServer="nvarchar(255)" DbType="String" Direction="Input" ParameterName="@Description" Precision="0" ProviderType="NVarChar" Scale="0" Size="255" SourceColumn="Description" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </Sources>
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="Locations_ListTableAdapter" GeneratorDataComponentClassName="Locations_ListTableAdapter" Name="Locations_List" UserDataComponentName="Locations_ListTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_Data.dbo.Locations" DbObjectType="Table" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>SELECT        Locations.Id, RTRIM(Locations.Description) + ' - ' + LTRIM(STR(Locations.Id)) AS text, 1 AS idx
+FROM            Locations INNER JOIN
+                         Site_Setup ON Locations.Id = Site_Setup.Location_Id
+WHERE        (Site_Setup.Server_Name = @@SERVERNAME)
+UNION
+SELECT        - 1 AS ID, 'Not Set' AS text, 0 AS idx
+ORDER BY idx, text</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Id" DataSetColumn="Id" />
+              <Mapping SourceColumn="text" DataSetColumn="text" />
+              <Mapping SourceColumn="idx" DataSetColumn="idx" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="Current_ScalesTableAdapter" GeneratorDataComponentClassName="Current_ScalesTableAdapter" Name="Current_Scales" UserDataComponentName="Current_ScalesTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_DataTEST.dbo.Weigh_Scales" DbObjectType="Table" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT Weigh_Scales.UID, CASE WHEN Location_Id = 0 THEN ' Not Set ' ELSE Weigh_Scales.Description END AS Description, Weigh_Scales.IP_Address, Weigh_Scales.Port, Weigh_Scales.Scale_Type, Weigh_Scales.Server_Name, Locations.Description + N'-' + LTRIM(STR(Weigh_Scales.Location_Id)) AS Location, Weigh_Scales.Location_Id FROM Weigh_Scales INNER JOIN Locations ON Weigh_Scales.Location_Id = Locations.Id WHERE (Weigh_Scales.Server_Name = @@SERVERNAME)</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="UID" DataSetColumn="UID" />
+              <Mapping SourceColumn="Description" DataSetColumn="Description" />
+              <Mapping SourceColumn="IP_Address" DataSetColumn="IP_Address" />
+              <Mapping SourceColumn="Port" DataSetColumn="Port" />
+              <Mapping SourceColumn="Scale_Type" DataSetColumn="Scale_Type" />
+              <Mapping SourceColumn="Server_Name" DataSetColumn="Server_Name" />
+              <Mapping SourceColumn="Location" DataSetColumn="Location" />
+              <Mapping SourceColumn="Location_Id" DataSetColumn="Location_Id" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="ServerLocationsTableAdapter" GeneratorDataComponentClassName="ServerLocationsTableAdapter" Name="ServerLocations" UserDataComponentName="ServerLocationsTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Locations.Id, Locations.Description, Site_Setup.Server_Name
+FROM            Locations INNER JOIN
+                         Site_Setup ON Locations.Id = Site_Setup.Location_Id
+WHERE        (Site_Setup.Server_Name = @@SERVERNAME)
+ORDER BY Site_Setup.Location_Id</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Id" DataSetColumn="Id" />
+              <Mapping SourceColumn="Description" DataSetColumn="Description" />
+              <Mapping SourceColumn="Server_Name" DataSetColumn="Server_Name" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="Locations_Not_ClosedTableAdapter" GeneratorDataComponentClassName="Locations_Not_ClosedTableAdapter" Name="Locations_Not_Closed" UserDataComponentName="Locations_Not_ClosedTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT DISTINCT vw_Weight_Sheet_By_Type.Location_Id, Locations.Description, Weight_Sheets.Original_Printed
+FROM            vw_Weight_Sheet_By_Type INNER JOIN
+                         Locations ON vw_Weight_Sheet_By_Type.Location_Id = Locations.Id INNER JOIN
+                         Weight_Sheets ON vw_Weight_Sheet_By_Type.Weight_Sheet_UID = Weight_Sheets.UID
+WHERE        (vw_Weight_Sheet_By_Type.Server_Name = @@SERVERNAME) AND (vw_Weight_Sheet_By_Type.Closed = 0) OR
+                         (vw_Weight_Sheet_By_Type.Server_Name = @@SERVERNAME) AND (Weight_Sheets.Original_Printed = 0)
+ORDER BY vw_Weight_Sheet_By_Type.Location_Id DESC</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Location_Id" DataSetColumn="Location_Id" />
+              <Mapping SourceColumn="Description" DataSetColumn="Description" />
+              <Mapping SourceColumn="Original_Printed" DataSetColumn="Original_Printed" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="WS_LocationsTableAdapter" GeneratorDataComponentClassName="WS_LocationsTableAdapter" Name="WS_Locations" UserDataComponentName="WS_LocationsTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_DataTEST.dbo.vw_Weight_Sheet_By_Type" DbObjectType="View" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT DISTINCT Location_Id, Server_Name
+FROM            vw_Weight_Sheet_By_Type
+WHERE        (DATEDIFF(day, GETDATE(), Creation_Date) &gt;= 0) AND (DATEDIFF(day, Creation_Date, GETDATE()) &gt;= 0) AND (Server_Name = @@SERVERNAME)
+ORDER BY Location_Id</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Location_Id" DataSetColumn="Location_Id" />
+              <Mapping SourceColumn="Server_Name" DataSetColumn="Server_Name" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="TruckTareListTableAdapter" GeneratorDataComponentClassName="TruckTareListTableAdapter" Name="TruckTareList" UserDataComponentName="TruckTareListTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="SELECT MAX(Time_Out) AS MaxDate, Truck_Id FROM Loads WHERE (DATEDIFF(day, Time_Out, GETDATE()) &lt; 365) AND (Location_Id = @Location_Id) AND (LEN(Truck_Id) &gt; @TruckStringLength) GROUP BY Truck_Id" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="false" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        tblLastLoad.Truck_Id, CASE WHEN Weight_In &gt; Weight_Out THEN Weight_Out ELSE Weight_In END AS Tare, 'Select' AS btnSelect
+FROM            (SELECT        MAX(Time_Out) AS MaxDate, Truck_Id
+                          FROM            Loads
+                          WHERE        (DATEDIFF(day, Time_Out, GETDATE()) &lt; 365) AND (Location_Id = @Location_Id) AND (LEN(Truck_Id) &gt; @TruckStringLength)
+                          GROUP BY Truck_Id) AS tblLastLoad INNER JOIN
+                         Loads AS Loads_1 ON tblLastLoad.Truck_Id = Loads_1.Truck_Id AND tblLastLoad.MaxDate = Loads_1.Time_Out
+WHERE        (NOT (Loads_1.Weight_In IS NULL)) AND (NOT (Loads_1.Weight_Out IS NULL)) AND (CASE WHEN Weight_In &gt; Weight_Out THEN Weight_Out ELSE Weight_In END &gt; 5000)
+ORDER BY tblLastLoad.Truck_Id</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Location_Id" ColumnName="" DataSourceName="" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Location_Id" Precision="0" Scale="0" Size="4" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="TruckStringLength" ColumnName="" DataSourceName="" DataTypeServer="unknown" DbType="Int32" Direction="Input" ParameterName="@TruckStringLength" Precision="0" Scale="0" Size="0" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Truck_Id" DataSetColumn="Truck_Id" />
+              <Mapping SourceColumn="Tare" DataSetColumn="Tare" />
+              <Mapping SourceColumn="btnSelect" DataSetColumn="btnSelect" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="Variety_Drop_Down_ListTableAdapter" GeneratorDataComponentClassName="Variety_Drop_Down_ListTableAdapter" Name="Variety_Drop_Down_List" UserDataComponentName="Variety_Drop_Down_ListTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="SELECT Description AS Text, Item_Id AS Value, 1 AS idx FROM Crop_Varieties WHERE (Crop = @Crop) AND (UPPER(Description) NOT LIKE '%DO NOT USE%') UNION SELECT '' AS Text, NULL AS Value, 0 AS idx" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>
+
+ SELECT Text, Value, idx FROM (SELECT Description AS Text, Item_Id AS Value, 1 AS idx FROM Crop_Varieties WHERE (Crop = @Crop) AND (UPPER(Description) NOT LIKE '%DO NOT USE%') UNION SELECT '' AS Text, NULL AS Value, 0 AS idx) AS varieties ORDER BY idx, Text
+
+</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Crop" ColumnName="" DataSourceName="" DataTypeServer="nvarchar(255)" DbType="String" Direction="Input" ParameterName="@Crop" Precision="0" Scale="0" Size="255" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Text" DataSetColumn="Text" />
+              <Mapping SourceColumn="Value" DataSetColumn="Value" />
+              <Mapping SourceColumn="idx" DataSetColumn="idx" />
+            </Mappings>
+            <Sources>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="SELECT Crop_Varieties.Description AS Text, Crop_Varieties.Item_Id AS Value, 1 AS idx FROM Crop_Varieties INNER JOIN Crops ON Crop_Varieties.Crop = Crops.Description WHERE (UPPER(Crop_Varieties.Description) NOT LIKE '%DO NOT USE%') AND (Crops.Id = @Crop_Id) UNION SELECT '' AS Text, NULL AS Value, 0 AS idx" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByCrop_Id" GenerateMethods="Both" GenerateShortCommands="true" GeneratorGetMethodName="GetDataByCrop_Id" GeneratorSourceName="FillByCrop_Id" GetMethodModifier="Public" GetMethodName="GetDataByCrop_Id" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataByCrop_Id" UserSourceName="FillByCrop_Id">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        Text, Value, idx
+FROM            (SELECT        Crop_Varieties.Description AS Text, Crop_Varieties.Item_Id AS Value, 1 AS idx
+                          FROM            Crop_Varieties INNER JOIN
+                                                    Crops ON Crop_Varieties.Crop = Crops.Description
+                          WHERE        (UPPER(Crop_Varieties.Description) NOT LIKE '%DO NOT USE%') AND (Crops.Id = @Crop_Id)
+                          UNION
+                          SELECT        '' AS Text, NULL AS Value, 0 AS idx) AS varieties
+ORDER BY idx, Text</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Crop_Id" ColumnName="" DataSourceName="" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Crop_Id" Precision="0" Scale="0" Size="4" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="SELECT Crop_Varieties.Description AS Text,Crop_Varieties.Item_Id AS Value, 1 AS idx FROM Lots INNER JOIN Crop_Varieties ON Lots.Variety_Id = Crop_Varieties.Item_Id INNER JOIN Crops ON Lots.Crop_Id = Crops.Id WHERE (Lots.Variety_Id IS NOT NULL AND Lots.Lot_Number=@Lot) UNION SELECT Description AS Text, Item_Id AS Value, 1 AS idx FROM Crop_Varieties WHERE Crop=@Crop AND Upper(Description) NOT LIKE '%DO NOT USE%' UNION SELECT '' AS Text, NULL AS Value ,0 AS idx" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByLotId" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByLotId" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy" UserSourceName="FillByLotId">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>
+select  distinct * from
+(
+SELECT        Crop_Varieties.Description as Text,Crop_Varieties.Item_Id as Value, 1 as idx
+FROM            Lots INNER JOIN
+                         Crop_Varieties ON Lots.Variety_Id = Crop_Varieties.Item_Id INNER JOIN
+                         Crops ON Lots.Crop_Id = Crops.Id
+WHERE        (Lots.Variety_Id IS NOT NULL and Lots.Lot_Number=@Lot)
+
+
+
+union
+
+SELECT        Description AS Text, Item_Id AS Value, 1 AS idx
+FROM            Crop_Varieties where Crop=@Crop and  Upper(Description) not like '%DO NOT USE%'
+
+union
+ select '' as Text, null as Value ,0 as idx
+
+ ) as Varieties
+ Order by idx,Text
+</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Lot" ColumnName="" DataSourceName="" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Lot" Precision="0" Scale="0" Size="4" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="Crop" ColumnName="" DataSourceName="" DataTypeServer="nvarchar(255)" DbType="String" Direction="Input" ParameterName="@Crop" Precision="0" Scale="0" Size="255" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="SELECT Description AS Text, Item_Id AS Value, 1 AS idx FROM Crop_Varieties WHERE (Description = @VarietyDescription) UNION SELECT '' AS Text, NULL AS Value, 0 AS idx" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByVarietyDescription" GenerateMethods="Both" GenerateShortCommands="true" GeneratorGetMethodName="GetDataByVarietyDescription" GeneratorSourceName="FillByVarietyDescription" GetMethodModifier="Public" GetMethodName="GetDataByVarietyDescription" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataByVarietyDescription" UserSourceName="FillByVarietyDescription">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT Text, Value, idx FROM (SELECT Description AS Text, Item_Id AS Value, 1 AS idx FROM Crop_Varieties WHERE (Description = @VarietyDescription) UNION SELECT '' AS Text, NULL AS Value, 0 AS idx) AS varieties ORDER BY idx, Text</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="VarietyDescription" ColumnName="" DataSourceName="" DataTypeServer="nvarchar(255)" DbType="String" Direction="Input" ParameterName="@VarietyDescription" Precision="0" Scale="0" Size="255" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="SELECT Crop_Varieties.Description AS Text, Crop_Varieties.Item_Id AS Value, 1 AS idx FROM Crop_Varieties INNER JOIN Weight_Sheet_Transfer_Loads INNER JOIN Weight_Sheets ON Weight_Sheet_Transfer_Loads.Weight_Sheet_UID = Weight_Sheets.UID ON Crop_Varieties.Item_Id = Weight_Sheet_Transfer_Loads.Variety_Id WHERE (Weight_Sheets.WS_Id = @WS_Id) UNION SELECT Description AS Text, Item_Id AS Value, 1 AS idx FROM Crop_Varieties WHERE Crop=@Crop AND Upper(Description) NOT LIKE '%DO NOT USE%' UNION SELECT '' AS Text, NULL AS Value ,0 AS idx" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByWeightSheet_Id" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByWeightSheet_Id" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy1" UserSourceName="FillByWeightSheet_Id">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>
+select  distinct * from
+(
+SELECT        Crop_Varieties.Description AS Text, Crop_Varieties.Item_Id AS Value, 1 AS idx
+FROM            Crop_Varieties INNER JOIN
+                         Weight_Sheet_Transfer_Loads INNER JOIN
+                         Weight_Sheets ON Weight_Sheet_Transfer_Loads.Weight_Sheet_UID = Weight_Sheets.UID ON Crop_Varieties.Item_Id = Weight_Sheet_Transfer_Loads.Variety_Id
+WHERE        (Weight_Sheets.WS_Id = @WS_Id)
+union
+
+SELECT        Description AS Text, Item_Id AS Value, 1 AS idx
+FROM            Crop_Varieties where Crop=@Crop and  Upper(Description) not like '%DO NOT USE%'
+
+union
+ select '' as Text, null as Value ,0 as idx
+
+ ) as Varieties
+ Order by idx,Text
+</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="WS_Id" ColumnName="" DataSourceName="" DataTypeServer="bigint" DbType="Int64" Direction="Input" ParameterName="@WS_Id" Precision="0" Scale="0" Size="8" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="Crop" ColumnName="" DataSourceName="" DataTypeServer="nvarchar(255)" DbType="String" Direction="Input" ParameterName="@Crop" Precision="0" Scale="0" Size="255" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </Sources>
+          </TableAdapter>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="BinsTableAdapter" GeneratorDataComponentClassName="BinsTableAdapter" Name="Bins" UserDataComponentName="BinsTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectName="NW_DataDev.dbo.Bins" DbObjectType="Table" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="true" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <DeleteCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>DELETE FROM [Bins] WHERE (([Bin] = @Original_Bin) AND ([UID] = @Original_UID))</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="String" Direction="Input" ParameterName="@Original_Bin" Precision="0" ProviderType="NVarChar" Scale="0" Size="0" SourceColumn="Bin" SourceColumnNullMapping="false" SourceVersion="Original" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="Guid" Direction="Input" ParameterName="@Original_UID" Precision="0" ProviderType="UniqueIdentifier" Scale="0" Size="0" SourceColumn="UID" SourceColumnNullMapping="false" SourceVersion="Original" />
+                    </Parameters>
+                  </DbCommand>
+                </DeleteCommand>
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT Bin, UID FROM Bins WHERE (Location_Id = @Location_Id) ORDER BY Bin</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Location_Id" ColumnName="Location_Id" DataSourceName="NW_DataDev.dbo.Bins" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Location_Id" Precision="0" ProviderType="Int" Scale="0" Size="4" SourceColumn="Location_Id" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+                <UpdateCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="false">
+                    <CommandText>UPDATE [Bins] SET [Bin] = @Bin, [UID] = @UID WHERE (([Bin] = @Original_Bin) AND ([UID] = @Original_UID));
+SELECT Bin, UID FROM Bins WHERE (UID = @UID) ORDER BY Bin</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="String" Direction="Input" ParameterName="@Bin" Precision="0" ProviderType="NVarChar" Scale="0" Size="0" SourceColumn="Bin" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="Guid" Direction="Input" ParameterName="@UID" Precision="0" ProviderType="UniqueIdentifier" Scale="0" Size="0" SourceColumn="UID" SourceColumnNullMapping="false" SourceVersion="Current" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="String" Direction="Input" ParameterName="@Original_Bin" Precision="0" ProviderType="NVarChar" Scale="0" Size="0" SourceColumn="Bin" SourceColumnNullMapping="false" SourceVersion="Original" />
+                      <Parameter AllowDbNull="false" AutogeneratedName="" DataSourceName="" DbType="Guid" Direction="Input" ParameterName="@Original_UID" Precision="0" ProviderType="UniqueIdentifier" Scale="0" Size="0" SourceColumn="UID" SourceColumnNullMapping="false" SourceVersion="Original" />
+                    </Parameters>
+                  </DbCommand>
+                </UpdateCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Bin" DataSetColumn="Bin" />
+              <Mapping SourceColumn="UID" DataSetColumn="UID" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+        </Tables>
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="ListsDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:EnableTableAdapterManager="true" msprop:Generator_DataSetName="ListsDataSet" msprop:Generator_UserDSName="ListsDataSet">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="Weigh_Scale_List" msprop:Generator_TableClassName="Weigh_Scale_ListDataTable" msprop:Generator_TableVarName="tableWeigh_Scale_List" msprop:Generator_TablePropName="Weigh_Scale_List" msprop:Generator_RowDeletingName="Weigh_Scale_ListRowDeleting" msprop:Generator_RowChangingName="Weigh_Scale_ListRowChanging" msprop:Generator_RowEvHandlerName="Weigh_Scale_ListRowChangeEventHandler" msprop:Generator_RowDeletedName="Weigh_Scale_ListRowDeleted" msprop:Generator_UserTableName="Weigh_Scale_List" msprop:Generator_RowChangedName="Weigh_Scale_ListRowChanged" msprop:Generator_RowEvArgName="Weigh_Scale_ListRowChangeEvent" msprop:Generator_RowClassName="Weigh_Scale_ListRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Description" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="IDX" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnIDX" msprop:Generator_ColumnPropNameInRow="IDX" msprop:Generator_ColumnPropNameInTable="IDXColumn" msprop:Generator_UserColumnName="IDX" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Lot_Landlords_Drop_Down_List" msprop:Generator_TableClassName="Lot_Landlords_Drop_Down_ListDataTable" msprop:Generator_TableVarName="tableLot_Landlords_Drop_Down_List" msprop:Generator_TablePropName="Lot_Landlords_Drop_Down_List" msprop:Generator_RowDeletingName="Lot_Landlords_Drop_Down_ListRowDeleting" msprop:Generator_RowChangingName="Lot_Landlords_Drop_Down_ListRowChanging" msprop:Generator_RowEvHandlerName="Lot_Landlords_Drop_Down_ListRowChangeEventHandler" msprop:Generator_RowDeletedName="Lot_Landlords_Drop_Down_ListRowDeleted" msprop:Generator_UserTableName="Lot_Landlords_Drop_Down_List" msprop:Generator_RowChangedName="Lot_Landlords_Drop_Down_ListRowChanged" msprop:Generator_RowEvArgName="Lot_Landlords_Drop_Down_ListRowChangeEvent" msprop:Generator_RowClassName="Lot_Landlords_Drop_Down_ListRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="text" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columntext" msprop:Generator_ColumnPropNameInRow="text" msprop:Generator_ColumnPropNameInTable="textColumn" msprop:Generator_UserColumnName="text" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="value" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnvalue" msprop:Generator_ColumnPropNameInRow="value" msprop:Generator_ColumnPropNameInTable="valueColumn" msprop:Generator_UserColumnName="value" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="idx" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnidx" msprop:Generator_ColumnPropNameInRow="idx" msprop:Generator_ColumnPropNameInTable="idxColumn" msprop:Generator_UserColumnName="idx" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Lot_Producer_Drop_Down_List" msprop:Generator_TableClassName="Lot_Producer_Drop_Down_ListDataTable" msprop:Generator_TableVarName="tableLot_Producer_Drop_Down_List" msprop:Generator_TablePropName="Lot_Producer_Drop_Down_List" msprop:Generator_RowDeletingName="Lot_Producer_Drop_Down_ListRowDeleting" msprop:Generator_RowChangingName="Lot_Producer_Drop_Down_ListRowChanging" msprop:Generator_RowEvHandlerName="Lot_Producer_Drop_Down_ListRowChangeEventHandler" msprop:Generator_RowDeletedName="Lot_Producer_Drop_Down_ListRowDeleted" msprop:Generator_UserTableName="Lot_Producer_Drop_Down_List" msprop:Generator_RowChangedName="Lot_Producer_Drop_Down_ListRowChanged" msprop:Generator_RowEvArgName="Lot_Producer_Drop_Down_ListRowChangeEvent" msprop:Generator_RowClassName="Lot_Producer_Drop_Down_ListRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="text" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columntext" msprop:Generator_ColumnPropNameInRow="text" msprop:Generator_ColumnPropNameInTable="textColumn" msprop:Generator_UserColumnName="text" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="273" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="value" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnvalue" msprop:Generator_ColumnPropNameInRow="value" msprop:Generator_ColumnPropNameInTable="valueColumn" msprop:Generator_UserColumnName="value" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="273" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="idx" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnidx" msprop:Generator_ColumnPropNameInRow="idx" msprop:Generator_ColumnPropNameInTable="idxColumn" msprop:Generator_UserColumnName="idx" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Lot_Farms_Drop_Down_List" msprop:Generator_TableClassName="Lot_Farms_Drop_Down_ListDataTable" msprop:Generator_TableVarName="tableLot_Farms_Drop_Down_List" msprop:Generator_TablePropName="Lot_Farms_Drop_Down_List" msprop:Generator_RowDeletingName="Lot_Farms_Drop_Down_ListRowDeleting" msprop:Generator_RowChangingName="Lot_Farms_Drop_Down_ListRowChanging" msprop:Generator_RowEvHandlerName="Lot_Farms_Drop_Down_ListRowChangeEventHandler" msprop:Generator_RowDeletedName="Lot_Farms_Drop_Down_ListRowDeleted" msprop:Generator_UserTableName="Lot_Farms_Drop_Down_List" msprop:Generator_RowChangedName="Lot_Farms_Drop_Down_ListRowChanged" msprop:Generator_RowEvArgName="Lot_Farms_Drop_Down_ListRowChangeEvent" msprop:Generator_RowClassName="Lot_Farms_Drop_Down_ListRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="text" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columntext" msprop:Generator_ColumnPropNameInRow="text" msprop:Generator_ColumnPropNameInTable="textColumn" msprop:Generator_UserColumnName="text" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="value" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnvalue" msprop:Generator_ColumnPropNameInRow="value" msprop:Generator_ColumnPropNameInTable="valueColumn" msprop:Generator_UserColumnName="value" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="idx" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnidx" msprop:Generator_ColumnPropNameInRow="idx" msprop:Generator_ColumnPropNameInTable="idxColumn" msprop:Generator_UserColumnName="idx" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Locations_DropDown" msprop:Generator_TableClassName="Locations_DropDownDataTable" msprop:Generator_TableVarName="tableLocations_DropDown" msprop:Generator_TablePropName="Locations_DropDown" msprop:Generator_RowDeletingName="Locations_DropDownRowDeleting" msprop:Generator_RowChangingName="Locations_DropDownRowChanging" msprop:Generator_RowEvHandlerName="Locations_DropDownRowChangeEventHandler" msprop:Generator_RowDeletedName="Locations_DropDownRowDeleted" msprop:Generator_UserTableName="Locations_DropDown" msprop:Generator_RowChangedName="Locations_DropDownRowChanged" msprop:Generator_RowEvArgName="Locations_DropDownRowChangeEvent" msprop:Generator_RowClassName="Locations_DropDownRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Id" msprop:Generator_ColumnVarNameInTable="columnId" msprop:Generator_ColumnPropNameInRow="Id" msprop:Generator_ColumnPropNameInTable="IdColumn" msprop:Generator_UserColumnName="Id" type="xs:int" />
+              <xs:element name="Description" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="ID_Description" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnID_Description" msprop:Generator_ColumnPropNameInRow="ID_Description" msprop:Generator_ColumnPropNameInTable="ID_DescriptionColumn" msprop:Generator_UserColumnName="ID_Description" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="61" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Producer_Drop_Down_List" msprop:Generator_TableClassName="Producer_Drop_Down_ListDataTable" msprop:Generator_TableVarName="tableProducer_Drop_Down_List" msprop:Generator_TablePropName="Producer_Drop_Down_List" msprop:Generator_RowDeletingName="Producer_Drop_Down_ListRowDeleting" msprop:Generator_RowChangingName="Producer_Drop_Down_ListRowChanging" msprop:Generator_RowEvHandlerName="Producer_Drop_Down_ListRowChangeEventHandler" msprop:Generator_RowDeletedName="Producer_Drop_Down_ListRowDeleted" msprop:Generator_UserTableName="Producer_Drop_Down_List" msprop:Generator_RowChangedName="Producer_Drop_Down_ListRowChanged" msprop:Generator_RowEvArgName="Producer_Drop_Down_ListRowChangeEvent" msprop:Generator_RowClassName="Producer_Drop_Down_ListRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Id" msprop:Generator_ColumnVarNameInTable="columnId" msprop:Generator_ColumnPropNameInRow="Id" msprop:Generator_ColumnPropNameInTable="IdColumn" msprop:Generator_UserColumnName="Id" type="xs:int" />
+              <xs:element name="Description" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Full_Description" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnFull_Description" msprop:Generator_ColumnPropNameInRow="Full_Description" msprop:Generator_ColumnPropNameInTable="Full_DescriptionColumn" msprop:Generator_UserColumnName="Full_Description" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="270" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Locations_List" msprop:Generator_TableClassName="Locations_ListDataTable" msprop:Generator_TableVarName="tableLocations_List" msprop:Generator_TablePropName="Locations_List" msprop:Generator_RowDeletingName="Locations_ListRowDeleting" msprop:Generator_RowChangingName="Locations_ListRowChanging" msprop:Generator_RowEvHandlerName="Locations_ListRowChangeEventHandler" msprop:Generator_RowDeletedName="Locations_ListRowDeleted" msprop:Generator_UserTableName="Locations_List" msprop:Generator_RowChangedName="Locations_ListRowChanged" msprop:Generator_RowEvArgName="Locations_ListRowChangeEvent" msprop:Generator_RowClassName="Locations_ListRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Id" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnId" msprop:Generator_ColumnPropNameInRow="Id" msprop:Generator_ColumnPropNameInTable="IdColumn" msprop:Generator_UserColumnName="Id" type="xs:int" minOccurs="0" />
+              <xs:element name="text" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columntext" msprop:Generator_ColumnPropNameInRow="text" msprop:Generator_ColumnPropNameInTable="textColumn" msprop:Generator_UserColumnName="text" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="63" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="idx" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnidx" msprop:Generator_ColumnPropNameInRow="idx" msprop:Generator_ColumnPropNameInTable="idxColumn" msprop:Generator_UserColumnName="idx" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Current_Scales" msprop:Generator_TableClassName="Current_ScalesDataTable" msprop:Generator_TableVarName="tableCurrent_Scales" msprop:Generator_RowChangedName="Current_ScalesRowChanged" msprop:Generator_TablePropName="Current_Scales" msprop:Generator_RowDeletingName="Current_ScalesRowDeleting" msprop:Generator_RowChangingName="Current_ScalesRowChanging" msprop:Generator_RowEvHandlerName="Current_ScalesRowChangeEventHandler" msprop:Generator_RowDeletedName="Current_ScalesRowDeleted" msprop:Generator_RowClassName="Current_ScalesRow" msprop:Generator_UserTableName="Current_Scales" msprop:Generator_RowEvArgName="Current_ScalesRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
+              <xs:element name="Description" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="IP_Address" msprop:Generator_ColumnVarNameInTable="columnIP_Address" msprop:Generator_ColumnPropNameInRow="IP_Address" msprop:Generator_ColumnPropNameInTable="IP_AddressColumn" msprop:Generator_UserColumnName="IP_Address">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Port" msprop:Generator_ColumnVarNameInTable="columnPort" msprop:Generator_ColumnPropNameInRow="Port" msprop:Generator_ColumnPropNameInTable="PortColumn" msprop:Generator_UserColumnName="Port" type="xs:int" />
+              <xs:element name="Scale_Type" msprop:Generator_ColumnVarNameInTable="columnScale_Type" msprop:Generator_ColumnPropNameInRow="Scale_Type" msprop:Generator_ColumnPropNameInTable="Scale_TypeColumn" msprop:Generator_UserColumnName="Scale_Type">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="20" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Server_Name" msprop:Generator_ColumnVarNameInTable="columnServer_Name" msprop:Generator_ColumnPropNameInRow="Server_Name" msprop:Generator_ColumnPropNameInTable="Server_NameColumn" msprop:Generator_UserColumnName="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnLocation" msprop:Generator_ColumnPropNameInRow="Location" msprop:Generator_ColumnPropNameInTable="LocationColumn" msprop:Generator_UserColumnName="Location" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="61" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Location_Id" msprop:Generator_ColumnVarNameInTable="columnLocation_Id" msprop:Generator_ColumnPropNameInRow="Location_Id" msprop:Generator_ColumnPropNameInTable="Location_IdColumn" msprop:Generator_UserColumnName="Location_Id" type="xs:int" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="ServerLocations" msprop:Generator_TableClassName="ServerLocationsDataTable" msprop:Generator_TableVarName="tableServerLocations" msprop:Generator_RowChangedName="ServerLocationsRowChanged" msprop:Generator_TablePropName="ServerLocations" msprop:Generator_RowDeletingName="ServerLocationsRowDeleting" msprop:Generator_RowChangingName="ServerLocationsRowChanging" msprop:Generator_RowEvHandlerName="ServerLocationsRowChangeEventHandler" msprop:Generator_RowDeletedName="ServerLocationsRowDeleted" msprop:Generator_RowClassName="ServerLocationsRow" msprop:Generator_UserTableName="ServerLocations" msprop:Generator_RowEvArgName="ServerLocationsRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Id" msprop:Generator_ColumnVarNameInTable="columnId" msprop:Generator_ColumnPropNameInRow="Id" msprop:Generator_ColumnPropNameInTable="IdColumn" msprop:Generator_UserColumnName="Id" type="xs:int" />
+              <xs:element name="Description" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Server_Name" msprop:Generator_ColumnVarNameInTable="columnServer_Name" msprop:Generator_ColumnPropNameInRow="Server_Name" msprop:Generator_ColumnPropNameInTable="Server_NameColumn" msprop:Generator_UserColumnName="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Locations_Not_Closed" msprop:Generator_TableClassName="Locations_Not_ClosedDataTable" msprop:Generator_TableVarName="tableLocations_Not_Closed" msprop:Generator_RowChangedName="Locations_Not_ClosedRowChanged" msprop:Generator_TablePropName="Locations_Not_Closed" msprop:Generator_RowDeletingName="Locations_Not_ClosedRowDeleting" msprop:Generator_RowChangingName="Locations_Not_ClosedRowChanging" msprop:Generator_RowEvHandlerName="Locations_Not_ClosedRowChangeEventHandler" msprop:Generator_RowDeletedName="Locations_Not_ClosedRowDeleted" msprop:Generator_RowClassName="Locations_Not_ClosedRow" msprop:Generator_UserTableName="Locations_Not_Closed" msprop:Generator_RowEvArgName="Locations_Not_ClosedRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Location_Id" msprop:Generator_ColumnVarNameInTable="columnLocation_Id" msprop:Generator_ColumnPropNameInRow="Location_Id" msprop:Generator_ColumnPropNameInTable="Location_IdColumn" msprop:Generator_UserColumnName="Location_Id" type="xs:int" />
+              <xs:element name="Description" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Original_Printed" msprop:Generator_ColumnVarNameInTable="columnOriginal_Printed" msprop:Generator_ColumnPropNameInRow="Original_Printed" msprop:Generator_ColumnPropNameInTable="Original_PrintedColumn" msprop:Generator_UserColumnName="Original_Printed" type="xs:boolean" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="WS_Locations" msprop:Generator_TableClassName="WS_LocationsDataTable" msprop:Generator_TableVarName="tableWS_Locations" msprop:Generator_TablePropName="WS_Locations" msprop:Generator_RowDeletingName="WS_LocationsRowDeleting" msprop:Generator_RowChangingName="WS_LocationsRowChanging" msprop:Generator_RowEvHandlerName="WS_LocationsRowChangeEventHandler" msprop:Generator_RowDeletedName="WS_LocationsRowDeleted" msprop:Generator_UserTableName="WS_Locations" msprop:Generator_RowChangedName="WS_LocationsRowChanged" msprop:Generator_RowEvArgName="WS_LocationsRowChangeEvent" msprop:Generator_RowClassName="WS_LocationsRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Location_Id" msprop:Generator_ColumnVarNameInTable="columnLocation_Id" msprop:Generator_ColumnPropNameInRow="Location_Id" msprop:Generator_ColumnPropNameInTable="Location_IdColumn" msprop:Generator_UserColumnName="Location_Id" type="xs:int" />
+              <xs:element name="Server_Name" msprop:Generator_ColumnVarNameInTable="columnServer_Name" msprop:Generator_ColumnPropNameInRow="Server_Name" msprop:Generator_ColumnPropNameInTable="Server_NameColumn" msprop:Generator_UserColumnName="Server_Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="30" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="TruckTareList" msprop:Generator_TableClassName="TruckTareListDataTable" msprop:Generator_TableVarName="tableTruckTareList" msprop:Generator_RowChangedName="TruckTareListRowChanged" msprop:Generator_TablePropName="TruckTareList" msprop:Generator_RowDeletingName="TruckTareListRowDeleting" msprop:Generator_RowChangingName="TruckTareListRowChanging" msprop:Generator_RowEvHandlerName="TruckTareListRowChangeEventHandler" msprop:Generator_RowDeletedName="TruckTareListRowDeleted" msprop:Generator_RowClassName="TruckTareListRow" msprop:Generator_UserTableName="TruckTareList" msprop:Generator_RowEvArgName="TruckTareListRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Truck_Id" msprop:Generator_ColumnVarNameInTable="columnTruck_Id" msprop:Generator_ColumnPropNameInRow="Truck_Id" msprop:Generator_ColumnPropNameInTable="Truck_IdColumn" msprop:Generator_UserColumnName="Truck_Id" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Tare" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnTare" msprop:Generator_ColumnPropNameInRow="Tare" msprop:Generator_ColumnPropNameInTable="TareColumn" msprop:Generator_UserColumnName="Tare" type="xs:int" minOccurs="0" />
+              <xs:element name="btnSelect" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnbtnSelect" msprop:Generator_ColumnPropNameInRow="btnSelect" msprop:Generator_ColumnPropNameInTable="btnSelectColumn" msprop:Generator_UserColumnName="btnSelect" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="6" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Variety_Drop_Down_List" msprop:Generator_TableClassName="Variety_Drop_Down_ListDataTable" msprop:Generator_TableVarName="tableVariety_Drop_Down_List" msprop:Generator_TablePropName="Variety_Drop_Down_List" msprop:Generator_RowDeletingName="Variety_Drop_Down_ListRowDeleting" msprop:Generator_RowChangingName="Variety_Drop_Down_ListRowChanging" msprop:Generator_RowEvHandlerName="Variety_Drop_Down_ListRowChangeEventHandler" msprop:Generator_RowDeletedName="Variety_Drop_Down_ListRowDeleted" msprop:Generator_UserTableName="Variety_Drop_Down_List" msprop:Generator_RowChangedName="Variety_Drop_Down_ListRowChanged" msprop:Generator_RowEvArgName="Variety_Drop_Down_ListRowChangeEvent" msprop:Generator_RowClassName="Variety_Drop_Down_ListRow">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Text" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnText" msprop:Generator_ColumnPropNameInRow="Text" msprop:Generator_ColumnPropNameInTable="TextColumn" msprop:Generator_UserColumnName="Text" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Value" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnValue" msprop:Generator_ColumnPropNameInRow="Value" msprop:Generator_ColumnPropNameInTable="ValueColumn" msprop:Generator_UserColumnName="Value" type="xs:int" minOccurs="0" />
+              <xs:element name="idx" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnidx" msprop:Generator_ColumnPropNameInRow="idx" msprop:Generator_ColumnPropNameInTable="idxColumn" msprop:Generator_UserColumnName="idx" type="xs:int" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Bins" msprop:Generator_TableClassName="BinsDataTable" msprop:Generator_TableVarName="tableBins" msprop:Generator_RowChangedName="BinsRowChanged" msprop:Generator_TablePropName="Bins" msprop:Generator_RowDeletingName="BinsRowDeleting" msprop:Generator_RowChangingName="BinsRowChanging" msprop:Generator_RowEvHandlerName="BinsRowChangeEventHandler" msprop:Generator_RowDeletedName="BinsRowDeleted" msprop:Generator_RowClassName="BinsRow" msprop:Generator_UserTableName="Bins" msprop:Generator_RowEvArgName="BinsRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Bin" msprop:Generator_ColumnVarNameInTable="columnBin" msprop:Generator_ColumnPropNameInRow="Bin" msprop:Generator_ColumnPropNameInTable="BinColumn" msprop:Generator_UserColumnName="Bin">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="UID" msdata:DataType="System.Guid, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" msprop:Generator_ColumnVarNameInTable="columnUID" msprop:Generator_ColumnPropNameInRow="UID" msprop:Generator_ColumnPropNameInTable="UIDColumn" msprop:Generator_UserColumnName="UID" type="xs:string" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:Locations_DropDown" />
+      <xs:field xpath="mstns:UID" />
+    </xs:unique>
+    <xs:unique name="Current_Scales_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:Current_Scales" />
+      <xs:field xpath="mstns:UID" />
+    </xs:unique>
+    <xs:unique name="Bins_Constraint1" msdata:ConstraintName="Constraint1" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//mstns:Bins" />
+      <xs:field xpath="mstns:UID" />
+    </xs:unique>
+  </xs:element>
+</xs:schema>

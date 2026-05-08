@@ -114,13 +114,52 @@ var GM = window.GM || {};
         $(SEL.input).on("keydown", function (e) {
             if (e.key === "Enter") { e.preventDefault(); submit(); }
         });
-        // Reject the in-flight promise on dismiss-without-submit.
+        // Stacked-modal z-index fix. When PIN opens on top of another visible
+        // modal (e.g. the EOD orchestrator's gm-eod-modal, which uses
+        // data-bs-backdrop="static"), Bootstrap 5.3 does not bump z-index for
+        // the second modal — it ends up at the same 1055 as the first and
+        // the underlying modal-content visually covers the smaller PIN
+        // dialog. Bump the PIN modal above whatever's already showing, and
+        // bump ONLY the new backdrop Bootstrap appends — touching the
+        // existing backdrop would leave it elevated above the underlying
+        // modal's content after PIN closes, locking the screen.
+        $(el).on("show.bs.modal", function () {
+            var others = document.querySelectorAll(".modal.show");
+            if (!others.length) return; // not stacked — default styling is fine
+            var maxZ = 1055;
+            others.forEach(function (m) {
+                var z = parseInt(getComputedStyle(m).zIndex, 10) || 1055;
+                if (z > maxZ) maxZ = z;
+            });
+            el.style.zIndex = (maxZ + 10);
+            // Snapshot pre-existing backdrops so we can identify the new one
+            // Bootstrap appends on the deferred tick.
+            var preExisting = new Set(document.querySelectorAll(".modal-backdrop"));
+            setTimeout(function () {
+                document.querySelectorAll(".modal-backdrop").forEach(function (b) {
+                    if (!preExisting.has(b)) {
+                        b.style.zIndex = (maxZ + 5);
+                    }
+                });
+            }, 0);
+        });
+        // Reject the in-flight promise on dismiss-without-submit, and reset
+        // any stacked-modal z-index override so the next open recalculates.
         $(el).on("hidden.bs.modal", function () {
+            el.style.zIndex = "";
             if (_reject) {
                 var reject = _reject;
                 _resolve = null; _reject = null;
                 reject(new Error("cancelled"));
             }
+        });
+        // Focus the PIN input as soon as Bootstrap's open animation finishes.
+        // Using shown.bs.modal (not a setTimeout race) makes this reliable
+        // even when the modal is stacked on top of another modal — operator
+        // can start keying the PIN without an extra click.
+        $(el).on("shown.bs.modal", function () {
+            var input = document.querySelector(SEL.input);
+            if (input) input.focus();
         });
         return _bsModal;
     }
@@ -211,7 +250,8 @@ var GM = window.GM || {};
             $(SEL.submit).prop("disabled", false).text("Continue");
 
             _bsModal.show();
-            setTimeout(function () { $(SEL.input).trigger("focus"); }, 250);
+            // Focus is wired in ensureBound via shown.bs.modal — no need for
+            // a fragile setTimeout race here.
         });
     };
 })(GM);

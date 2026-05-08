@@ -1,4 +1,11 @@
+using System.Collections;
+using System.ComponentModel;
+using System.Drawing;
+using System.Linq;
+using DevExpress.Drawing;
+using DevExpress.XtraPrinting.Drawing;
 using DevExpress.XtraReports.UI;
+using GrainManagement.Dtos.Warehouse;
 
 namespace GrainManagement.Reporting
 {
@@ -17,6 +24,22 @@ namespace GrainManagement.Reporting
             InitializeComponent();
             this.CanShrink = true;
             this.CanGrow = true;
+            this.BeforePrint += ApplyVoidWatermarkIfEmpty;
+        }
+
+        private void ApplyVoidWatermarkIfEmpty(object sender, CancelEventArgs e)
+        {
+            var dto = (this.DataSource as IEnumerable)?
+                .OfType<TransferWeightSheetDto>()
+                .FirstOrDefault();
+            if (dto?.Loads is { Count: > 0 }) return;
+
+            this.Watermark.Text = "VOID";
+            this.Watermark.Font = new DXFont("Arial", 72f, DXFontStyle.Bold);
+            this.Watermark.TextDirection = DirectionMode.ForwardDiagonal;
+            this.Watermark.ForeColor = Color.Red;
+            this.Watermark.TextTransparency = 200;
+            this.Watermark.ShowBehind = false;
         }
     }
 }

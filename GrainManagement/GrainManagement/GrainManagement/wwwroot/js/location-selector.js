@@ -38,7 +38,10 @@
                 // Sync to global cookie so all pages can read it
                 if (window.GM && GM.setLocationId) GM.setLocationId(current.LocationId);
             } else if (availableIds.length === 1) {
-                // Only one location available — auto-select it
+                // Only one location available — auto-select it. After the
+                // cookie is set, send the user to the home page so every
+                // module's nav reflects the new location's capabilities
+                // from a clean slate.
                 fetch("/api/LocationContextApi/select", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -48,7 +51,7 @@
                 .then(function (result) {
                     if (result.HasLocation) {
                         if (window.GM && GM.setLocationId) GM.setLocationId(availableIds[0]);
-                        window.location.reload();
+                        window.location.href = "/";
                     }
                 });
             }
@@ -57,7 +60,11 @@
             console.warn("Location selector error:", err);
         });
 
-    // Handle location change
+    // Handle location change. After switching, we send the operator to
+    // the home page rather than reloading in place — the new location
+    // may not even support the page they were on (e.g. a Seed-only site
+    // when they were on the warehouse dashboard), and the index page is
+    // the canonical landing for whatever modules the new site enables.
     dropdown.addEventListener("change", function () {
         var locId = parseInt(dropdown.value, 10);
         if (!locId) return;
@@ -70,10 +77,8 @@
         .then(function (r) { return r.json(); })
         .then(function (result) {
             if (result.HasLocation) {
-                // Sync to global cookie before reload
                 if (window.GM && GM.setLocationId) GM.setLocationId(locId);
-                // Reload page to reflect new location capabilities
-                window.location.reload();
+                window.location.href = "/";
             }
         })
         .catch(function (err) {

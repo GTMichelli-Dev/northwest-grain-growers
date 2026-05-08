@@ -32,6 +32,10 @@
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="closed">Closed</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="all">All</button>
                 </div>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="wdWsPrintAllBtn"
+                        title="Print every weight sheet currently shown in the grid as a single PDF">
+                    <i class="dx-icon dx-icon-print" style="margin-right:4px;"></i>Print
+                </button>
                 <select class="form-select form-select-sm" id="wdWsTypeFilter" style="width:auto;min-width:160px;">
                     <option value="all" selected>All Types</option>
                     <option value="seed-intake">Seed Intake</option>
@@ -39,6 +43,8 @@
                     <option value="seed-transfer">Seed Transfer</option>
                     <option value="warehouse-transfer">Warehouse Transfer</option>
                 </select>
+                <input autocomplete="off" type="search" class="form-control form-control-sm" id="wdWsSearch"
+                       placeholder="Search…" style="width:240px;" />
                 <div id="wdWsDateRange" style="display:none;align-items:center;gap:6px;">
                     <label for="wdWsFromDate" class="form-label mb-0" style="font-weight:600;font-size:0.85rem;">From</label>
                     <input type="date" class="form-control form-control-sm" id="wdWsFromDate" />
@@ -48,6 +54,34 @@
             </div>
         </div>
         <div id="wdOpenWsGrid"></div>
+    </div>
+</div>
+
+<!-- ── WS print preview modal ─────────────────────────────────────────────
+     Opened by the per-row Print button (Closed bucket) for a single WS,
+     and by the toolbar Print button for a combined PDF of every visible
+     row. Just an iframe + Close — print / download use the browser's
+     built-in PDF viewer toolbar. -->
+<div class="modal fade" id="wdWsPreviewModal" tabindex="-1" aria-labelledby="wdWsPreviewLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width:1100px;">
+        <div class="modal-content" style="height:88vh;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="wdWsPreviewLabel">Weight Sheet</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 position-relative" style="overflow:hidden;background:#222;">
+                <iframe id="wdWsPreviewFrame" style="width:100%;height:100%;border:0;background:#fff;display:none;"></iframe>
+                <div id="wdWsPreviewSpinner" class="position-absolute top-50 start-50 translate-middle text-light text-center" style="display:none;">
+                    <div class="spinner-border" role="status" style="width:3rem;height:3rem;">
+                        <span class="visually-hidden">Loading…</span>
+                    </div>
+                    <div class="mt-2" id="wdWsPreviewSpinnerText">Loading…</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
 </div>
 

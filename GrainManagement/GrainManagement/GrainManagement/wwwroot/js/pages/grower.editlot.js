@@ -1061,10 +1061,16 @@
     // Also echoes the outer move-flow context (txnId, fromWsId, returnTo=move)
     // when present so NewWeightSheet keeps its move-load awareness across the
     // round-trip and can auto-perform the move after WS create.
-    function buildNewWsUrl(lotId) {
+    //
+    // pinOverride lets a save flow that already consumed _prePin (via getPin,
+    // which nulls it after first use) re-supply the PIN it actually validated
+    // — without that, NewWeightSheet would re-prompt because the pre-pin slot
+    // is gone by the time we navigate back.
+    function buildNewWsUrl(lotId, pinOverride) {
         var params = new URLSearchParams();
         if (_lotType) params.set('lotType', _lotType);
-        if (_prePin)  params.set('pin', String(_prePin));
+        var pinToCarry = pinOverride || _prePin;
+        if (pinToCarry) params.set('pin', String(pinToCarry));
         if (lotId)    params.set('selectLotId', String(lotId));
         if (_moveTxnId && _moveFromWsId) {
             params.set('returnTo', 'move');
@@ -1505,7 +1511,10 @@
             }
 
             if (_returnTo === 'newws' && result.LotId) {
-                window.location.href = buildNewWsUrl(result.LotId);
+                // Pass the PIN we just used for the create back to the
+                // NewWeightSheet page — getPin nulled _prePin so without
+                // this override the page would prompt the operator again.
+                window.location.href = buildNewWsUrl(result.LotId, createPin);
                 return;
             }
 

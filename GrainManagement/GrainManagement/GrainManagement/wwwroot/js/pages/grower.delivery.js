@@ -139,6 +139,15 @@
     let editOriginalWeights   = null;  // { StartQty, EndQty, DirectQty } at load time
     let bolModalInstance      = null;
 
+    // Closed-WS lockdown: when the active weight sheet is Finished
+    // (StatusId 2) or Closed (StatusId 3) the entire load form is read-only
+    // — Save / Move / Delete buttons hide, every input/select/textarea is
+    // disabled, and the in-form Capture / Enter Amount buttons can't open
+    // their modals. The submit handler also bails on this flag as a defense
+    // if a button somehow gets re-enabled. Name kept as _wsClosed to
+    // minimize churn; semantically it's "WS is no longer open for edits".
+    let _wsClosed             = false;
+
     // Weight method state
     let currentQtyMethodId    = null;
     let currentQtyMethodCode  = null;
@@ -172,9 +181,30 @@
 
         $(SEL.locationId).val(locationId);
 
-        // Check for active weight sheet: cookie first, then URL param
-        var wsId = getWsIdCookie()
-                || parseInt(new URLSearchParams(window.location.search).get('wsId'), 10) || 0;
+        // Check for active weight sheet: URL param wins, falling back to
+        // the cookie. The previous order (cookie first) caused a stale
+        // wsId cookie from an earlier session to override the explicit
+        // wsId in the URL — which is exactly what happens when an operator
+        // clicks a load row in WeightSheetDeliveryLoads and the editor
+        // ended up showing some other WS's header.
+        var urlParamsForInit = new URLSearchParams(window.location.search);
+        var urlWsId = parseInt(urlParamsForInit.get('wsId'), 10) || 0;
+        var wsId = urlWsId > 0 ? urlWsId : (getWsIdCookie() || 0);
+
+        // New-WS hand-off: NewWeightSheet adds ?newWs=1&pin=<pin> when it
+        // navigates here after creating a fresh WS. Seed the in-page first-
+        // load PIN so the operator doesn't have to re-key it for the very
+        // first load on this WS. Always strip both params from the URL
+        // afterwards so a refresh / share can't reuse a stale pin.
+        if (urlParamsForInit.get('newWs') === '1') {
+            var carriedNewWsPin = parseInt(urlParamsForInit.get('pin'), 10) || 0;
+            if (carriedNewWsPin > 0) _firstLoadOnNewWsPin = carriedNewWsPin;
+            urlParamsForInit.delete('newWs');
+            urlParamsForInit.delete('pin');
+            var cleanQs = urlParamsForInit.toString();
+            var cleanUrl = window.location.pathname + (cleanQs ? '?' + cleanQs : '');
+            try { window.history.replaceState({}, '', cleanUrl); } catch (e) { /* old browser — ignore */ }
+        }
 
         if (wsId > 0) {
             // Weight sheet is known — hide the WS list, show form directly.
@@ -194,6 +224,11 @@
             $('#gdFormBody').prop('hidden', false);
             refreshWeightSheets(locationId);
         }
+
+        // Auto-focus Truck ID if it's empty — operator usually starts here.
+        // Wrapped in a timeout inside the helper to give DX widgets time
+        // to render so the focus call doesn't race with their init.
+        focusTruckIdIfEmpty();
 
         // Check for edit mode early so init functions can detect it
         var txnId = parseInt(new URLSearchParams(window.location.search).get('txnId'), 10) || 0;
@@ -230,6 +265,135 @@
     }
 
     var BOL_LABELS = { N: 'None', U: 'Universal', A: 'Along Side Field', F: 'Farm Storage', C: 'Custom' };
+
+    // ── Field-progression chain ─────────────────────────────────────────
+    // Truck ID → Bin → Protein → (capture buttons as needed) → BOL → Save.
+    // Bin is a DX SelectBox; focus targets its inner .dx-texteditor-input.
+    // After Protein, the chain skips to whichever capture/weight step is
+    // still missing, so a fully-weighed load skips straight to BOL.
+    function advanceFocusFrom(currentEl) {
+        if (!currentEl) return;
+        var $next = null;
+        if (currentEl.id === 'gdTruckId') {
+            $next = $('#gdContainer').find('.dx-texteditor-input').first();
+        } else if ($(currentEl).closest('#gdContainer').length) {
+            $next = $('#gdProtein');
+        } else if (currentEl.id === 'gdProtein'
+                || currentEl.id === 'gdCaptureGross'
+                || currentEl.id === 'gdCaptureTare'
+                || currentEl.id === 'gdEnterAmountBtn') {
+            $next = nextWeightOrBolTarget();
+        } else if (currentEl.id === 'gdBOL') {
+            $next = $('#gdNotes');
+        } else if (currentEl.id === 'gdNotes') {
+            $next = $('#gmGdSubmitTop');
+        }
+        focusTarget($next);
+    }
+
+    // Returns the next "weight stage" element to focus based on what's
+    // already captured. Order:
+    //   Truck mode  : In Capture (no StartQty) → Out Capture (no EndQty)
+    //                  → BOL (if empty) → Save Load.
+    //   Direct mode : Enter Amount (no DirectQty)
+    //                  → BOL (if empty) → Save Load.
+    // Once every weight is captured we only park focus on BOL when it's
+    // still blank — otherwise the operator goes straight to Save Load.
+    function nextWeightOrBolTarget() {
+        if (typeof isDirectMode === 'function' && isDirectMode()) {
+            var direct = parseFloat($(SEL.directQty).val()) || 0;
+            if (direct <= 0 && $(SEL.enterAmountBtn).is(':visible')) return $(SEL.enterAmountBtn);
+        } else {
+            var startQty = parseFloat($(SEL.startQty).val()) || 0;
+            if (startQty <= 0 && $(SEL.captureGross).is(':visible')) return $(SEL.captureGross);
+            var endQty = parseFloat($(SEL.endQty).val()) || 0;
+            if (endQty <= 0 && $(SEL.captureTare).is(':visible')) return $(SEL.captureTare);
+        }
+        var $bol = $('#gdBOL');
+        if (($bol.val() || '').trim() === '') return $bol;
+        // BOL filled — slot Notes between BOL and Save so the operator
+        // can type a comment by pressing Enter once more.
+        return $('#gdNotes');
+    }
+
+    // Focus a jQuery target if present, visible, and enabled. Selects the
+    // input contents on text/number inputs so the operator can immediately
+    // overtype.
+    function focusTarget($target) {
+        if (!$target || !$target.length) return;
+        if ($target.prop('disabled')) return;
+        if (!$target.is(':visible')) return;
+        $target.trigger('focus');
+        var el = $target[0];
+        if (el && el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
+            try { el.select(); } catch (e) { /* ignore */ }
+        }
+    }
+
+    // Called by capture / direct-amount handlers after a successful
+    // weight commit so focus naturally advances without an extra Tab.
+    function advanceFocusAfterWeight() {
+        // setTimeout lets the modal finish hiding before we re-focus,
+        // otherwise the modal-trapping logic can yank focus back.
+        setTimeout(function () { focusTarget(nextWeightOrBolTarget()); }, 200);
+    }
+
+    // Auto-focus the Truck ID when the load form is first ready, but only
+    // if it's empty — the operator typically arrives ready to scan/key a
+    // truck id, so saving a click is real ergonomics. Skipped on closed/
+    // finished WSs (input is disabled) and when the field already has a
+    // value (e.g. editing an existing load).
+    function focusTruckIdIfEmpty() {
+        setTimeout(function () {
+            var $tid = $('#gdTruckId');
+            if (!$tid.length) return;
+            if ($tid.prop('disabled')) return;
+            if (!$tid.is(':visible')) return;
+            if (($tid.val() || '').trim() !== '') return;
+            $tid.trigger('focus');
+        }, 200);
+    }
+
+    // Apply the closed-WS lockdown to the load form. Idempotent. Hides the
+    // top-bar action buttons (Save / Move / Delete) so only Cancel remains,
+    // disables every input/select/textarea inside the form, hides the
+    // weight-capture / enter-amount triggers (so the operator can't even
+    // attempt to capture), and surfaces a banner.
+    function applyClosedLockdown(statusId) {
+        // Status 2 = Finished, 3 = Closed. The lockdown is identical; only
+        // the banner wording differs so the operator knows which state they
+        // landed in (and that re-open is the only path back from Finished).
+        var stateLabel = (statusId === 2) ? 'finished' : 'closed';
+        if (!$('#gdClosedBanner').length) {
+            // Place directly under the module bar (e.g. "WAREHOUSE GROWER
+            // DELIVERY") so the closed-WS notice sits on top of the page
+            // body but below the section banner. Falls back to prepending
+            // the gm-gd wrapper if the module bar isn't present.
+            var $banner = $(
+                '<div id="gdClosedBanner" class="alert alert-warning mb-0 rounded-0 text-center">' +
+                '<strong>This weight sheet is ' + stateLabel + '.</strong> ' +
+                'View only — no changes can be saved. Click Cancel to leave.' +
+                '</div>'
+            );
+            var $moduleBar = $('#gdModuleBar');
+            if ($moduleBar.length) $banner.insertAfter($moduleBar);
+            else $('.gm-gd').prepend($banner);
+        }
+        // Hide top-bar edit actions; keep #gdCancelDeliveryBtn visible.
+        $('#gmGdSubmitTop, #gdMoveLoadBtn, #gdDeleteLoadBtn').prop('hidden', true).hide();
+        // Read-only form: disable inputs, selects, textareas inside the form.
+        $('#gmGdForm').find('input, select, textarea').prop('disabled', true);
+        // Hide the capture / enter-amount triggers entirely — there's no
+        // useful "disabled" state for these, the operator just wants them
+        // gone. The captured-weight values remain visible (read-only) so
+        // the load history is still reviewable.
+        $('#gdCaptureGross, #gdCaptureTare, #gdEnterAmountBtn').prop('hidden', true).hide();
+        // Defense: also disable the modal-internal confirm buttons in case
+        // a modal somehow opens. Their parent modals shouldn't ever appear
+        // since the triggers above are gone.
+        $('#gdCaptureManualBtn, #gdDirectAmountConfirm, #gdCaptureManualConfirm,' +
+          '#gdBolScanBtn').prop('disabled', true);
+    }
 
     function loadWsHeader(locationId, wsId) {
         $.ajax({
@@ -303,6 +467,12 @@
             // Pre-fill hidden form fields from the weight sheet
             if (ws.LotId) $(SEL.lotId).val(ws.LotId);
             if (ws.LocationId) $(SEL.locationId).val(ws.LocationId);
+
+            // Finished or Closed WS — clamp to read-only. Sets _wsClosed and
+            // disables the form. Idempotent so re-calling loadWsHeader (e.g.
+            // after a SignalR refresh) keeps the lockdown applied.
+            _wsClosed = (ws.StatusId >= 2);
+            if (_wsClosed) applyClosedLockdown(ws.StatusId);
 
             // Store the WS RowUid for load submission — fetch from open weight sheets
             $.getJSON('/api/GrowerDelivery/OpenWeightSheets', { locationId: locationId })
@@ -743,10 +913,16 @@
                 return;
             }
 
+            // Always force a fresh PIN entry — manual weight entry is a
+            // legal-record-affecting action (the "M" flag prints on the
+            // weight sheet), so each occurrence must be attributable to
+            // a person typing their PIN at the keypad. The cached PIN
+            // (10-min) is bypassed here on purpose.
             GM.requestPin({
                 title: 'Enter PIN for Manual Entry',
                 prompt: 'Manual weight entry requires the Manual Entry privilege.',
-                requiredPrivilegeId: PRIVILEGE_MANUAL_ENTRY
+                requiredPrivilegeId: PRIVILEGE_MANUAL_ENTRY,
+                forcePrompt: true
             })
             .then(function (result) { openDialog(result.pin, result.userId, result.userName); })
             .catch(function () { /* cancelled or insufficient privilege */ });
@@ -768,6 +944,7 @@
             $(SEL.submit).prop('hidden', false);
 
             enterAmountModalInst.hide();
+            advanceFocusAfterWeight();
         });
     }
     var _directAmountPinValidated = null;
@@ -792,10 +969,15 @@
 
             if (_firstLoadOnNewWsPin) { revealPanel(); return; }
 
+            // Force a fresh PIN every time the manual-entry panel is
+            // opened — see the matching note on the Enter Amount handler
+            // above. Skipping the cache here so the keypad prompt is the
+            // gate, not a 10-minute-old session.
             GM.requestPin({
                 title: 'Enter PIN for Manual Entry',
                 prompt: 'Manual weight entry requires the Manual Entry privilege.',
-                requiredPrivilegeId: PRIVILEGE_MANUAL_ENTRY
+                requiredPrivilegeId: PRIVILEGE_MANUAL_ENTRY,
+                forcePrompt: true
             })
             .then(function (result) {
                 lastPinUserId   = result.userId;
@@ -827,6 +1009,7 @@
             var ok = applyScaleWeight(weight, true, null);
             if (ok) {
                 captureWeightModalInst.hide();
+                advanceFocusAfterWeight();
             }
         });
     }
@@ -919,7 +1102,10 @@
                 .prop('disabled', isDisabled)
                 .on('click', function () {
                     var ok = applyScaleWeight(weight, false, s.Description);
-                    if (ok) captureWeightModalInst.hide();
+                    if (ok) {
+                        captureWeightModalInst.hide();
+                        advanceFocusAfterWeight();
+                    }
                 });
 
             listEl.append(btn);
@@ -939,6 +1125,16 @@
 
             // Stop polling when the modal is closed by any means (X, backdrop, ESC, programmatic)
             document.querySelector(SEL.captureWeightModal).addEventListener('hidden.bs.modal', stopScalePoll);
+
+            // After the Select Scale popup closes — by capture, by X, by
+            // ESC, or by backdrop — drop focus into BOL when it's empty so
+            // the operator's next keystroke goes there. If BOL is already
+            // filled, fall through to Notes (chain: BOL → Notes → Save).
+            document.querySelector(SEL.captureWeightModal).addEventListener('hidden.bs.modal', function () {
+                var $bol = $('#gdBOL');
+                if (($bol.val() || '').trim() === '') focusTarget($bol);
+                else                                  focusTarget($('#gdNotes'));
+            });
         }
         $(SEL.captureManualPanel).prop('hidden', true);
         $(SEL.captureWeightError).prop('hidden', true);
@@ -997,6 +1193,7 @@
         });
 
         wireMoveLoad();
+        wireDeleteLoad();
 
         $('#gdWeightEditPin').on('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('#gdWeightEditPinConfirm').click(); } });
         $('#gdWeightEditPinConfirm').on('click', function () {
@@ -1013,9 +1210,65 @@
             }
         });
 
+        // Form keyboard handling.
+        //   • Enter advances along Truck ID → Bin → Protein → (capture
+        //     buttons as needed) → BOL → Save Load. The form never submits
+        //     on Enter from a field — it submits only when Save Load is
+        //     focused and Enter is pressed (or when the operator clicks).
+        //   • ESC triggers the Cancel button (cancel the in-progress load).
+        //   • Capture buttons (gdCaptureGross/Tare, gdEnterAmountBtn) keep
+        //     their browser-default Enter activation — pressing Enter on
+        //     a focused capture button opens the capture modal.
+        //   • Textareas keep Enter for line breaks.
+        $(SEL.form).on('keydown', function (e) {
+            // ESC = Cancel the in-progress load.
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                var $cancel = $('#gdCancelDeliveryBtn');
+                if ($cancel.length && $cancel.is(':visible') && !$cancel.prop('disabled')) {
+                    e.preventDefault();
+                    $cancel.trigger('click');
+                }
+                return;
+            }
+            if (e.key !== 'Enter' && e.keyCode !== 13) return;
+            var t = e.target;
+            if (!t) return;
+
+            // Save Load focused → trigger save explicitly. Calling .click()
+            // fires the click event and also triggers form submit, but our
+            // submit handler runs preventDefault and then calls the save
+            // flow once.
+            if (t.id === 'gmGdSubmitTop') {
+                e.preventDefault();
+                t.click();
+                return;
+            }
+
+            var tag = (t.tagName || '').toUpperCase();
+            // Notes is a single-row textarea used as a comment field —
+            // Enter advances the chain (→ Save Load) instead of inserting
+            // a newline. Other textareas would keep newline behavior.
+            if (tag === 'TEXTAREA' && t.id !== 'gdNotes') return;
+            // Capture/Enter Amount buttons: let the browser activate them
+            // on Enter so the operator can keyboard-drive the capture.
+            if (t.id === 'gdCaptureGross' || t.id === 'gdCaptureTare' || t.id === 'gdEnterAmountBtn') return;
+            // Other plain buttons: also let browser default fire.
+            if (tag === 'BUTTON' || t.type === 'submit' || t.type === 'button') return;
+
+            e.preventDefault();
+            advanceFocusFrom(t);
+        });
+
         $(SEL.form).on('submit', async function (e) {
             e.preventDefault();
             hideAlert();
+
+            // Closed-WS defense — applyClosedLockdown already hid the submit
+            // button, but guard here too in case anything re-enables it.
+            if (_wsClosed) {
+                showAlert('This weight sheet is closed and cannot be edited.', 'danger');
+                return;
+            }
 
             const payload = buildPayload();
             const err = validate(payload);
@@ -1128,6 +1381,72 @@
     // PrivilegeId 2 = Move Loads. Mirrors PrivilegeIdMoveLoads in the controller.
     var PRIVILEGE_MOVE_LOADS = 2;
 
+    // ── Delete unweighed-out load ──────────────────────────────────────────
+    // Shown only when editing an existing load that hasn't been weighed
+    // out (loadExistingDelivery flips the button visible based on EndQty /
+    // DirectQty / CompletedAt). The Bootstrap confirm modal gates the
+    // PIN prompt; the server enforces priv 14 (DeleteLoad, with admin
+    // priv 7 bypass) and the not-weighed-out precondition again.
+    var _deleteLoadModalInst = null;
+    function wireDeleteLoad() {
+        var modalEl = document.getElementById('gdDeleteLoadModal');
+        if (!modalEl) return;
+        _deleteLoadModalInst = new bootstrap.Modal(modalEl);
+
+        $('#gdDeleteLoadBtn').on('click', function () {
+            if (!editTxnId) return;
+            if (_wsClosed) return; // closed-WS defense — button should be hidden anyway
+            _deleteLoadModalInst.show();
+        });
+
+        $('#gdDeleteLoadConfirmBtn').on('click', function () {
+            if (!editTxnId) return;
+            _deleteLoadModalInst.hide();
+            // Wait for the modal close animation before raising the PIN
+            // prompt so backdrop stacking stays clean.
+            setTimeout(performDeleteLoad, 250);
+        });
+    }
+
+    function performDeleteLoad() {
+        var txnId = editTxnId;
+        if (!txnId) return;
+
+        GM.requestPin({
+            title: 'Enter PIN to Delete Load',
+            prompt: 'Deleting a load requires the Delete Load privilege.',
+            requiredPrivilegeId: 14, // PRIV_DELETE_LOAD
+            forcePrompt: true
+        })
+        .then(function (pinResult) {
+            return $.ajax({
+                url: '/api/GrowerDelivery/' + encodeURIComponent(txnId),
+                method: 'DELETE',
+                contentType: 'application/json',
+                data: JSON.stringify({ Pin: pinResult.pin })
+            });
+        })
+        .then(function () {
+            // Land back on the loads grid that owns this WS, since the
+            // deleted load no longer makes sense to keep editing.
+            var qp = new URLSearchParams(window.location.search);
+            var wsId = qp.get('wsId');
+            window.location.href = wsId
+                ? '/GrowerDelivery/WeightSheetDeliveryLoads?wsId=' + encodeURIComponent(wsId)
+                : '/WeightSheets';
+        })
+        .catch(function (err) {
+            if (!err) return;
+            if (err.message === 'cancelled' || err.message === 'superseded') return;
+            var msg = (err.responseJSON && err.responseJSON.message)
+                ? err.responseJSON.message
+                : (err.status
+                    ? 'Delete failed (HTTP ' + err.status + ').'
+                    : (err.message || 'Delete failed.'));
+            showAlert(msg, 'danger');
+        });
+    }
+
     function wireMoveLoad() {
         var modalEl = document.getElementById('gdMoveLoadModal');
         if (!modalEl) return;
@@ -1154,6 +1473,7 @@
     // operator only enters it once per move.
     function openMovePinPrompt() {
         if (!editTxnId) return;
+        if (_wsClosed) return; // closed-WS defense — button should be hidden anyway
         _movePinValidated = null;
         GM.requestPin({
             title: 'Enter PIN to Move Load',
@@ -1515,9 +1835,20 @@
                 DirectQty: d.DirectQty,
             };
 
-            // Update submit button text + reveal the Move Load button (edit mode only)
-            $(SEL.submit).text('Update Load').prop('hidden', false);
-            $('#gdMoveLoadBtn').prop('hidden', false);
+            // Update submit button text + reveal the Move Load button (edit mode only).
+            // Skip the reveals entirely on a closed WS — applyClosedLockdown
+            // hid them and we don't want to undo that.
+            if (!_wsClosed) {
+                $(SEL.submit).text('Update Load').prop('hidden', false);
+                $('#gdMoveLoadBtn').prop('hidden', false);
+
+                // Reveal Delete only for loads that haven't been weighed out yet
+                // — same precondition the server enforces. Once an EndQty,
+                // DirectQty, or CompletedAt exists the load is final, so we
+                // hide the destructive button entirely.
+                var weighedOut = (d.EndQty != null) || (d.DirectQty != null) || !!d.CompletedAt;
+                $('#gdDeleteLoadBtn').prop('hidden', weighedOut);
+            }
 
             // Move-load round-trip: handle return from the New WS / LoadType
             // flow that was launched from the Move Load modal.

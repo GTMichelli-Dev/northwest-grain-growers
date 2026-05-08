@@ -3,6 +3,34 @@
    Block namespace: .gm-gd
    ========================================================= */
 
+/* Focus highlight — visible cue for keyboard navigation. Applies to
+   both native form controls and DevExtreme widgets inside the load
+   forms (#gmGdForm = delivery/intake, #tlForm = transfer). The amber
+   tint is loud enough to spot at a kiosk without fighting Bootstrap's
+   focus border. */
+#gmGdForm input:focus,
+#gmGdForm select:focus,
+#gmGdForm textarea:focus,
+#tlForm   input:focus,
+#tlForm   select:focus,
+#tlForm   textarea:focus {
+    background-color: #fff3cd !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.35) !important;
+}
+
+#gmGdForm .dx-state-focused .dx-texteditor-input,
+#tlForm   .dx-state-focused .dx-texteditor-input {
+    background-color: #fff3cd !important;
+}
+#gmGdForm .dx-state-focused.dx-texteditor.dx-editor-filled,
+#gmGdForm .dx-state-focused.dx-texteditor.dx-editor-outlined,
+#gmGdForm .dx-state-focused.dx-texteditor.dx-editor-underlined,
+#tlForm   .dx-state-focused.dx-texteditor.dx-editor-filled,
+#tlForm   .dx-state-focused.dx-texteditor.dx-editor-outlined,
+#tlForm   .dx-state-focused.dx-texteditor.dx-editor-underlined {
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.35) !important;
+}
+
 .gm-gd {
     max-width: 1060px;
     margin: 0 auto;

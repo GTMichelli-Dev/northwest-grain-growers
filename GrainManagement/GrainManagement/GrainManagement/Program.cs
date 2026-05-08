@@ -30,6 +30,24 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<ModuleOptions>(builder.Configuration.GetSection(ModuleOptions.SectionName));
 builder.Services.AddSingleton<IModuleContext, ModuleContext>();
 
+// Outbound email (smtp2go credentials in appsettings:Email; TestMode diverts
+// every send to a single configurable inbox so dev / staging never reaches
+// producers).
+builder.Services.Configure<GrainManagement.Services.Email.EmailOptions>(
+    builder.Configuration.GetSection("Email"));
+builder.Services.AddSingleton<GrainManagement.Services.Email.IEmailService,
+    GrainManagement.Services.Email.EmailService>();
+
+// End Of Day report data service — loads the three daily summary DTOs that
+// back the new XtraReports.
+builder.Services.AddScoped<GrainManagement.Services.Warehouse.IEndOfDayReportService,
+    GrainManagement.Services.Warehouse.EndOfDayReportService>();
+
+// Prior-day open-WS guard — used by the WS / load create endpoints to
+// hard-block new work while yesterday's weight sheets are still open.
+builder.Services.AddScoped<GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard,
+    GrainManagement.Services.Warehouse.PriorDayWeightSheetGuard>();
+
 // App readiness flag — set after EF warm-up
 builder.Services.AddSingleton<AppReadiness>();
 

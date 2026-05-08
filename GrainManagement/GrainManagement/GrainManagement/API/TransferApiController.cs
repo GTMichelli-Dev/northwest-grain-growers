@@ -29,17 +29,35 @@ public sealed class TransferApiController : ControllerBase
     private readonly ICurrentUser _currentUser;
     private readonly ILogger<TransferApiController> _logger;
     private readonly IWeightSheetNotifier _notifier;
+    private readonly GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard _priorDayGuard;
 
     public TransferApiController(
         dbContext ctx,
         ICurrentUser currentUser,
         ILogger<TransferApiController> logger,
-        IWeightSheetNotifier notifier)
+        IWeightSheetNotifier notifier,
+        GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard priorDayGuard)
     {
         _ctx = ctx;
         _currentUser = currentUser;
         _logger = logger;
         _notifier = notifier;
+        _priorDayGuard = priorDayGuard;
+    }
+
+    // Refuses new transfer work while prior-day open WSs exist at the
+    // location — operators must run End Of Day on yesterday's sheets first.
+    private async Task<IActionResult?> RejectIfPriorDayOpenAsync(int locationId, CancellationToken ct)
+    {
+        var stale = await _priorDayGuard.GetPriorDayOpenWeightSheetIdsAsync(locationId, ct);
+        if (stale.Count == 0) return null;
+        return Conflict(new
+        {
+            message = stale.Count == 1
+                ? "There is an open weight sheet from a previous day. Run End Of Day on it before creating new work."
+                : $"There are {stale.Count} open weight sheets from previous days. Run End Of Day on them before creating new work.",
+            staleWeightSheetIds = stale,
+        });
     }
 
     // POST /api/Transfer/WeightSheets
@@ -55,6 +73,10 @@ public sealed class TransferApiController : ControllerBase
             return BadRequest(new { message = "LocationId is required." });
         if (dto.ItemId <= 0)
             return BadRequest(new { message = "ItemId is required." });
+
+        // ── Prior-day guard: refuse new WSs while yesterday's are open ────
+        var staleResult = await RejectIfPriorDayOpenAsync(dto.LocationId, ct);
+        if (staleResult != null) return staleResult;
 
         var direction = (dto.Direction ?? "").Trim();
         if (direction != DirectionReceived && direction != DirectionShipped)
@@ -183,6 +205,10 @@ public sealed class TransferApiController : ControllerBase
             return BadRequest(new { message = "LocationId is required." });
         if (dto.WeightSheetUid is null || dto.WeightSheetUid == Guid.Empty)
             return BadRequest(new { message = "WeightSheetUid is required for transfer loads." });
+
+        // ── Prior-day guard: refuse new loads while yesterday's WSs are open ──
+        var staleResult = await RejectIfPriorDayOpenAsync(dto.LocationId, ct);
+        if (staleResult != null) return staleResult;
 
         // ── Resolve & validate the parent transfer weight sheet ─────────────
         var ws = await _ctx.WeightSheets
