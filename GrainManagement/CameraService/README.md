@@ -85,6 +85,116 @@ WHERE Id = 1;
 - `GET/PUT /api/settings` — read/write the SQLite `Settings` row
 - Swagger UI: `/swagger`
 
+## Adding a USB camera
+
+Step-by-step for both Windows and Pi. IP cameras (Hikvision, Dahua, etc.) skip steps 1–2 entirely — they only need a brand, an IP, and a user/password.
+
+### 1. Install ffmpeg
+
+USB capture is driven by ffmpeg. Install it on the same machine the CameraService runs on — see the [Installing ffmpeg](#installing-ffmpeg) section below for Windows / Pi-host / Pi-Docker recipes. The Pi installer script `install-pi.sh` already handles this for you.
+
+### 2. Find the device name
+
+The CameraService's `UsbDeviceName` field has to match what ffmpeg sees on the host.
+
+**Windows (DirectShow):**
+
+```powershell
+ffmpeg -list_devices true -f dshow -i dummy
+```
+
+Look for the `DirectShow video devices` block. Copy the exact name in quotes (case + spaces matter):
+
+```
+[dshow @ ...]  "USB Video Device"
+[dshow @ ...]     Alternative name "@device_pnp_..."
+```
+
+→ Use **`USB Video Device`** as `UsbDeviceName`.
+
+**Raspberry Pi (V4L2):**
+
+```bash
+v4l2-ctl --list-devices
+```
+
+You'll see entries like:
+
+```
+HD Pro Webcam C920 (usb-0000:01:00.0-1.2):
+        /dev/video0
+        /dev/video1
+```
+
+→ Use **`/dev/video0`** as `UsbDeviceName` (the first node is typically the one that produces frames; the second is often a metadata node).
+
+### 3. Add the camera
+
+Two paths — pick whichever fits your workflow:
+
+**A. From the web's Camera admin page (recommended):**
+
+The Camera admin page lists every announced CameraService and lets you Add / Edit / Delete cameras over SignalR. Fill in:
+
+| Field            | Windows                                    | Raspberry Pi                |
+|------------------|--------------------------------------------|-----------------------------|
+| `CameraId`       | A stable id, e.g. `inbound-usb-1`          | Same                        |
+| `DisplayName`    | "Inbound USB"                              | Same                        |
+| `CameraBrand`    | `USB Camera (Windows)`                     | `USB Camera (Linux)`        |
+| `UsbDeviceName`  | `USB Video Device` (from step 2)           | `/dev/video0` (from step 2) |
+| `Active`         | ✔                                          | ✔                           |
+| `IsDefault`      | ✔ if this is the only / primary camera     | Same                        |
+
+Leave `CameraIp` / `CameraUser` / `CameraPassword` / `CameraUrl` blank — they're for IP cameras only.
+
+**B. Direct SQL** (useful for first-time bootstrap before the web admin is reachable):
+
+Edit `camera-service.db` (SQLite, next to the binary) with any tool. Windows:
+
+```sql
+INSERT INTO Cameras
+    (CameraId, DisplayName, CameraBrand, UsbDeviceName, TimeoutSeconds, Active, IsDefault)
+VALUES
+    ('inbound-usb-1', 'Inbound USB', 'USB Camera (Windows)', 'USB Video Device', 10, 1, 1);
+```
+
+Raspberry Pi:
+
+```sql
+INSERT INTO Cameras
+    (CameraId, DisplayName, CameraBrand, UsbDeviceName, TimeoutSeconds, Active, IsDefault)
+VALUES
+    ('inbound-usb-1', 'Inbound USB', 'USB Camera (Linux)', '/dev/video0', 10, 1, 1);
+```
+
+Restart the service so it picks up the new row and re-announces to the web.
+
+### 4. Test capture
+
+In the web's Camera admin page, click **Test Capture** on the new camera. The service captures a frame, base64s it back over SignalR, and the admin UI shows the image inline. Any error appears in the same panel.
+
+CLI alternative — capture a frame manually using ffmpeg with the exact same arguments the service runs, to confirm the device name + driver:
+
+```powershell
+# Windows
+ffmpeg -f dshow -i video="USB Video Device" -frames:v 1 -q:v 2 -y test.jpg
+```
+
+```bash
+# Pi
+ffmpeg -f v4l2 -i /dev/video0 -frames:v 1 -q:v 2 -y test.jpg
+```
+
+A successful run drops a 50–200 KB `test.jpg`. If ffmpeg errors with "Could not open device" the device name in step 2 was wrong; if it errors with "Permission denied" on the Pi, the service user isn't in the `video` group — `install-pi.sh` handles that automatically via `SupplementaryGroups=video` in the systemd unit.
+
+### 5. (Optional) Custom ffmpeg command
+
+The brand definition's `CaptureCommandTemplate` covers most USB cameras. If you need extra flags (a specific resolution, framerate, input format, etc.) set `CameraBrand = Custom` and put the full command in `UsbCommand`, using `{deviceName}` as the placeholder. Example for a webcam that defaults to YUYV but supports MJPEG at full HD:
+
+```
+ffmpeg -f v4l2 -input_format mjpeg -video_size 1920x1080 -i {deviceName} -frames:v 1 -q:v 2 -y -
+```
+
 ## Installing ffmpeg
 
 USB cameras need ffmpeg on the PATH. IP cameras (Hikvision, Dahua, etc.) do **not** — they use plain HTTP snapshot URLs.
