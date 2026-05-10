@@ -340,7 +340,26 @@ dotnet run
 
 Logs print the Swagger URL on startup so you can edit settings the first time.
 
-### Install as Windows Service
+### Install as Windows Service (one-shot script)
+
+[`install-windows.ps1`](./install-windows.ps1) automates the whole Windows install: installs the .NET 8 ASP.NET Core runtime + Gyan.FFmpeg via winget, publishes the project win-x64, drops the binaries under `C:\Services\CameraService`, registers the Windows service via `sc.exe` (auto-start, restart-on-failure mirroring the Pi systemd unit), sets `ASPNETCORE_URLS=http://0.0.0.0:5210` as a machine-level env var, and starts the service. Idempotent — re-run after a `git pull` to upgrade (the SQLite settings DB + brand snapshot survive the rebuild).
+
+From an **elevated PowerShell** session, in the `CameraService` folder:
+
+```powershell
+.\install-windows.ps1
+```
+
+Optional parameters:
+
+```powershell
+.\install-windows.ps1 -Port 5310 -InstallDir D:\Services\CameraService
+.\install-windows.ps1 -ServiceAccount "DOMAIN\camera" -ServicePassword "..."
+```
+
+After the service is up, hit `http://<this-host>:5210/swagger` to set `ServerUrl`, `ServiceId`, `StreamBaseUrl`, and `BrandsUrl` via `PUT /api/settings`.
+
+### Install as Windows Service manually
 
 ```powershell
 dotnet publish -c Release -o C:\Services\CameraService
