@@ -24,6 +24,20 @@
     "use strict";
     window.GM = window.GM || {};
 
+    // Back-forward cache (bfcache) defence. Chrome aggressively keeps a
+    // page's JS context alive across Back / Forward navigations, which
+    // means the EOD orchestrator's modal element, in-flight fetches,
+    // and operatorChoiceResolver would all be restored when the user
+    // hits Back after fixing a load. A fresh runMultiLocation call on a
+    // bfcache-restored page got confused by the leftover state and the
+    // spinner hung at "Looking up locations…". Forcing a reload on
+    // restore guarantees every visit starts from a clean DOM.
+    window.addEventListener('pageshow', function (evt) {
+        if (evt.persisted) {
+            window.location.reload();
+        }
+    });
+
     var STATE = {
         modalEl: null,
         bsModal: null,
@@ -82,11 +96,20 @@
         document.getElementById('gm-eod-skip').addEventListener('click', function () {
             resolveChoice('skip');
         });
+        // Cancel All / X — resolve the pending operator choice (if any)
+        // AND always close the modal. Without the explicit hide(), the X
+        // did nothing during spinner phases (Preparing / Auditing /
+        // Building PDF / Emailing) because no operator resolver was
+        // awaiting and the modal was set up with data-bs-backdrop="static"
+        // + data-bs-keyboard="false", which disables every other dismiss
+        // path.
         document.getElementById('gm-eod-cancel-all').addEventListener('click', function () {
             resolveChoice('cancel');
+            STATE.bsModal.hide();
         });
         document.getElementById('gm-eod-cancel-x').addEventListener('click', function () {
             resolveChoice('cancel');
+            STATE.bsModal.hide();
         });
         // Audit-row click → cancel the EOD sweep, switch the global location
         // selector to the row's location (so the destination loads page sees
@@ -245,8 +268,31 @@
     }
 
     // ── Network ────────────────────────────────────────────────────────────
+    //
+    // Per-fetch timeout via AbortController. Without this a hanging
+    // server endpoint left the EOD modal spinning forever — the operator
+    // had no way out except to restart the browser. With it, a stalled
+    // endpoint trips the timeout, the chain rejects, and the outer
+    // .catch in runMultiLocation surfaces "End Of Day failed: …" so the
+    // operator can see what hung and retry. Keep the cap generous (45s)
+    // because the PDF endpoint touches DevExpress rendering on the server
+    // and can legitimately take 20+ seconds on a large day.
+    var FETCH_TIMEOUT_MS = 45000;
+    function fetchWithTimeout(url, init, timeoutMs) {
+        var ctrl = new AbortController();
+        var t = setTimeout(function () { ctrl.abort(); }, timeoutMs || FETCH_TIMEOUT_MS);
+        var opts = Object.assign({}, init || {}, { signal: ctrl.signal });
+        return fetch(url, opts).finally(function () { clearTimeout(t); })
+            .catch(function (err) {
+                if (err && err.name === 'AbortError') {
+                    throw new Error('Request timed out: ' + url);
+                }
+                throw err;
+            });
+    }
+
     function fetchPdf(locationId) {
-        return fetch('/api/printjobs/eod/' + encodeURIComponent(locationId) + '/pdf')
+        return fetchWithTimeout('/api/printjobs/eod/' + encodeURIComponent(locationId) + '/pdf')
             .then(function (r) {
                 if (!r.ok) {
                     return r.text().then(function (t) {
@@ -257,7 +303,7 @@
             });
     }
     function finalize(locationId, pin) {
-        return fetch('/api/printjobs/eod/' + encodeURIComponent(locationId) + '/finalize', {
+        return fetchWithTimeout('/api/printjobs/eod/' + encodeURIComponent(locationId) + '/finalize', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ Pin: pin })
@@ -271,11 +317,11 @@
         });
     }
     function fetchAccessible() {
-        return fetch('/api/LocationContextApi/available')
+        return fetchWithTimeout('/api/LocationContextApi/available')
             .then(function (r) { return r.ok ? r.json() : []; });
     }
     function fetchAudit(locationId) {
-        return fetch('/api/GrowerDelivery/EndOfDayCheck?locationId=' + encodeURIComponent(locationId))
+        return fetchWithTimeout('/api/GrowerDelivery/EndOfDayCheck?locationId=' + encodeURIComponent(locationId))
             .then(function (r) {
                 if (!r.ok) {
                     return r.text().then(function (t) {
@@ -348,7 +394,7 @@
     }
     function fetchCandidates(locationIds) {
         if (!locationIds.length) return Promise.resolve([]);
-        return fetch('/api/printjobs/eod/candidates?ids=' + locationIds.join(','))
+        return fetchWithTimeout('/api/printjobs/eod/candidates?ids=' + locationIds.join(','))
             .then(function (r) { return r.ok ? r.json() : []; });
     }
     function fetchCurrentLocationId() {
@@ -356,7 +402,7 @@
         // of the LocationContextApi surface. The same is true for
         // /available and /eod/candidates — every property read from
         // those payloads in this file is PascalCase by design.
-        return fetch('/api/LocationContextApi/current')
+        return fetchWithTimeout('/api/LocationContextApi/current')
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (j) { return j && j.HasLocation ? j.LocationId : 0; })
             .catch(function () { return 0; });
@@ -486,74 +532,135 @@
             '<p class="text-muted small mb-0">Returned to starting location.</p>';
     }
 
+    // Reset any leftover state from a previous run. Called at the very
+    // top of runSingle/runMultiLocation so a page restored from the
+    // browser's back-forward cache (which preserves JS state across
+    // back-button navigations) doesn't carry forward a stale resolver
+    // or blob URL from the prior run that the operator never finished.
+    //
+    // Also nukes any orphaned Bootstrap modal-backdrop elements and
+    // strips the modal-open class from <body>. A previously-failed run
+    // can leave these behind (especially when the EOD modal was open
+    // and the page navigated away mid-flight via the audit-row click).
+    // Without the cleanup, Bootstrap's next .show() call thinks a modal
+    // is still open, refuses to show a fresh backdrop, and the PIN
+    // dialog ends up hidden behind the stale backdrop.
+    function resetState() {
+        STATE.operatorChoiceResolver = null;
+        STATE.reloadOnClose = false;
+        clearBlob();
+        try {
+            document.querySelectorAll('.modal-backdrop').forEach(function (b) {
+                // Only sweep orphans — backdrops attached to a visible
+                // modal stay put.
+                if (!document.querySelector('.modal.show')) b.remove();
+            });
+            if (!document.querySelector('.modal.show')) {
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+            }
+        } catch (e) { /* defensive — never let cleanup throw */ }
+    }
+
     // ── Public: single-location flow ───────────────────────────────────────
+    //
+    // Order intentionally puts PIN entry BEFORE opening the EOD modal so
+    // the two modals never stack — the previous design wedged a small
+    // PIN dialog on top of the large EOD modal and a single off-by-one
+    // z-index or orphan backdrop made the PIN invisible. Now the PIN
+    // modal is the only modal on screen; once it resolves, the EOD
+    // modal opens with the answer already in hand.
     function runSingle(locationId) {
         if (!locationId) return Promise.reject(new Error('locationId required'));
-        ensureModal();
-        STATE.bsModal.show();
-        showSpinner('Looking up location…');
+        resetState();
+        console.log('[GM.eod] runSingle: starting (locationId=' + locationId + ')');
 
-        var cand = { LocationId: locationId, Name: 'Location ' + locationId, OpenCount: 0 };
-        // Resolve a friendlier name (and the open count) so the modal shows
-        // "Genesee — review and confirm" rather than "Location 4".
+        // Silent candidate fetch — no spinner yet because no modal is
+        // open. The per-fetch timeout (45s) will surface an error if
+        // the server hangs.
         return fetchCandidates([locationId]).then(function (cs) {
-            if (cs && cs.length) cand = cs[0];
+            var cand = (cs && cs.length)
+                ? cs[0]
+                : { LocationId: locationId, Name: 'Location ' + locationId, OpenCount: 0 };
+
             if ((cand.OpenCount || 0) === 0) {
+                // No work — just show a quick summary modal, no PIN.
+                ensureModal();
+                STATE.bsModal.show();
                 showSummary('<div class="alert alert-success mb-0">No open weight sheets to close at '
                     + escapeHtml(cand.Name) + '.</div>');
                 return null;
             }
-            // PIN once at the top, passed down to finalize.
+
+            // PIN FIRST (no EOD modal open yet → no stacking).
+            console.log('[GM.eod] runSingle: requesting PIN');
             return GM.requestPin({
                 title: 'Confirm End Of Day',
                 prompt: 'Enter your PIN to email weight sheets and close them at ' + cand.Name + '.',
                 forcePrompt: true
             }).then(function (pinRes) {
+                // PIN accepted — NOW open the EOD modal and run the loop.
+                console.log('[GM.eod] runSingle: PIN accepted, opening EOD modal');
+                ensureModal();
+                STATE.bsModal.show();
                 return runOneLocation(cand, 1, 1, pinRes.pin);
             }, function (err) {
                 if (err && err.message === 'cancelled') {
-                    STATE.bsModal.hide();
+                    console.log('[GM.eod] runSingle: PIN cancelled');
                     return null;
                 }
                 throw err;
+            }).then(function (row) {
+                if (!row) return null;
+                showSummary(renderSummary([row], locationId));
+                clearBlob();
+                return row;
             });
-        }).then(function (row) {
-            if (!row) return null;
-            showSummary(renderSummary([row], locationId));
-            clearBlob();
-            return row;
+        }).catch(function (err) {
+            console.error('[GM.eod] runSingle chain rejected:', err);
+            // EOD modal may not be open — fall back to alert if not.
+            if (document.getElementById('gm-eod-modal')
+                && document.getElementById('gm-eod-modal').classList.contains('show')) {
+                showSummary('<div class="alert alert-danger mb-0"><strong>End Of Day failed.</strong><br>'
+                    + escapeHtml(err.message || String(err)) + '</div>');
+            } else {
+                alert('End Of Day failed: ' + (err.message || err));
+            }
         });
     }
 
     // ── Public: multi-location flow ────────────────────────────────────────
+    //
+    // PIN is requested BEFORE the EOD modal opens (after a silent
+    // candidate fetch so the prompt can name the actual queue size).
+    // The PIN and EOD modals never stack — eliminates every z-index /
+    // orphan-backdrop edge case that used to silently hide the PIN.
     function runMultiLocation(opts) {
         opts = opts || {};
-        ensureModal();
-        STATE.bsModal.show();
-        showSpinner('Looking up locations…');
-        setProgress('Preparing…', 0);
+        resetState();
 
         var startingId = opts.startingLocationId || 0;
+        console.log('[GM.eod] runMultiLocation: starting (startingId=' + startingId + ')');
+
+        // Silent (no-modal) fetch chain. The per-fetch 45s timeout
+        // surfaces any hang as an alert below.
         var startPromise = startingId
             ? Promise.resolve(startingId)
             : fetchCurrentLocationId();
 
         return startPromise.then(function (startId) {
             startingId = startId || 0;
+            console.log('[GM.eod] /current resolved → startingId=' + startingId);
             return fetchAccessible().then(function (locs) {
-                // /available serializes PascalCase — see location-selector.js
-                // for the canonical example. Use l.LocationId, not l.locationId.
                 var ids = (locs || []).map(function (l) { return l.LocationId; });
                 if (startingId && ids.indexOf(startingId) < 0) ids.unshift(startingId);
+                console.log('[GM.eod] /available resolved → ids=' + ids.join(','));
                 return fetchCandidates(ids);
             });
         }).then(function (candidates) {
-            // Build the run queue: only locations that actually have open
-            // weight sheets — there's nothing to email or close otherwise.
-            // Starting location goes first (when it qualifies) so the
-            // operator sees the site they're standing at first. Candidate
-            // properties are PascalCase — they come straight from
-            // EodCandidateLocation.
+            console.log('[GM.eod] /candidates resolved →', candidates);
+
             var byId = {};
             candidates.forEach(function (c) { byId[c.LocationId] = c; });
             var queue = [];
@@ -564,9 +671,6 @@
                 if (c.LocationId !== startingId && (c.OpenCount || 0) > 0) queue.push(c);
             });
 
-            // Locations with no open weight sheets are skipped from the run
-            // but recorded so the final summary shows the operator why they
-            // didn't get paperwork for those sites.
             var noLoadResults = [];
             candidates.forEach(function (c) {
                 if ((c.OpenCount || 0) === 0) {
@@ -579,9 +683,15 @@
                 }
             });
 
+            console.log('[GM.eod] queue.length=' + queue.length
+                + ', noLoadResults.length=' + noLoadResults.length);
+
             if (queue.length === 0) {
-                // Nothing to do anywhere. Show the no-load list directly so
-                // the operator can confirm every accessible site was clean.
+                // No work — open the EOD modal just to render the
+                // summary so the operator sees confirmation. No PIN
+                // needed because nothing is being closed.
+                ensureModal();
+                STATE.bsModal.show();
                 if (noLoadResults.length) {
                     showSummary(renderSummary(noLoadResults, startingId));
                 } else {
@@ -590,10 +700,10 @@
                 return;
             }
 
-            // One PIN entry up front authorizes the entire sweep. The PIN is
-            // passed to each finalize call instead of re-prompting per
-            // location. Cancelling the PIN aborts EOD without touching
-            // anything server-side.
+            // PIN FIRST — no EOD modal open yet, so the PIN is the only
+            // modal on screen. Once it resolves we open the EOD modal
+            // and start the per-location loop.
+            console.log('[GM.eod] requesting PIN for ' + queue.length + ' location(s)');
             return GM.requestPin({
                 title: 'Confirm End Of Day',
                 prompt: 'Enter your PIN to email weight sheets and close them at '
@@ -602,6 +712,11 @@
                 forcePrompt: true
             }).then(function (pinRes) {
                 var pin = pinRes.pin;
+                console.log('[GM.eod] PIN accepted, opening EOD modal');
+                ensureModal();
+                STATE.bsModal.show();
+                setProgress('Preparing…', 0);
+
                 var results = [];
                 var p = Promise.resolve();
                 var cancelled = false;
@@ -620,17 +735,27 @@
                     showSummary(renderSummary(results.concat(noLoadResults), startingId));
                 });
             }, function (err) {
-                // PIN cancelled — close the EOD modal silently. Any other
-                // PIN error bubbles to the outer .catch as a failed sweep.
+                // PIN cancelled — there's no EOD modal open, so nothing
+                // to hide. Any other PIN error bubbles to the outer
+                // .catch as a failed sweep.
                 if (err && err.message === 'cancelled') {
-                    STATE.bsModal.hide();
+                    console.log('[GM.eod] PIN cancelled');
                     return;
                 }
                 throw err;
             });
         }).catch(function (err) {
-            showSummary('<div class="alert alert-danger mb-0"><strong>End Of Day failed.</strong><br>'
-                + escapeHtml(err && err.message ? err.message : String(err)) + '</div>');
+            console.error('[GM.eod] runMultiLocation chain rejected:', err);
+            var msg = err && err.message ? err.message : String(err);
+            // EOD modal may not be open if the failure happened during
+            // the silent fetch phase — fall back to an alert.
+            if (document.getElementById('gm-eod-modal')
+                && document.getElementById('gm-eod-modal').classList.contains('show')) {
+                showSummary('<div class="alert alert-danger mb-0"><strong>End Of Day failed.</strong><br>'
+                    + escapeHtml(msg) + '</div>');
+            } else {
+                alert('End Of Day failed: ' + msg);
+            }
         });
     }
 

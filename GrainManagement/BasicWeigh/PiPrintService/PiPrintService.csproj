@@ -7,6 +7,14 @@
     <RootNamespace>WebPrintService</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Version>1.0.1</Version>
+    <FileVersion>1.0.1</FileVersion>
+    <AssemblyVersion>1.0.1</AssemblyVersion>
+    <InformationalVersion>1.0.1</InformationalVersion>
+    <AssemblyTitle>PiPrintService</AssemblyTitle>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.*" />

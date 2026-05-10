@@ -147,6 +147,12 @@ var GM = window.GM || {};
         // any stacked-modal z-index override so the next open recalculates.
         $(el).on("hidden.bs.modal", function () {
             el.style.zIndex = "";
+            // Sweep the fallback-backdrop the timeout sanity check may
+            // have added — Bootstrap doesn't know about it so it would
+            // leave it behind and dim the next page forever.
+            document.querySelectorAll('.modal-backdrop.gm-pin-fallback-bd').forEach(function (b) {
+                b.remove();
+            });
             if (_reject) {
                 var reject = _reject;
                 _resolve = null; _reject = null;
@@ -226,16 +232,23 @@ var GM = window.GM || {};
      */
     ns.requestPin = function (opts) {
         opts = opts || {};
+        console.log('[GM.requestPin] called with opts=', opts);
         return new Promise(function (resolve, reject) {
             // Reuse the cached PIN if it satisfies the priv requirement.
             if (!opts.forcePrompt
                 && opts.requiredPrivilegeId
                 && cachedSatisfies(opts.requiredPrivilegeId)) {
+                console.log('[GM.requestPin] cache hit — resolving without modal');
                 resolve(ns.lastPin);
                 return;
             }
 
-            ensureBound();
+            try { ensureBound(); }
+            catch (e) {
+                console.error('[GM.requestPin] ensureBound failed:', e);
+                reject(e);
+                return;
+            }
 
             // Cancel any in-flight request first.
             if (_reject) { _reject(new Error("superseded")); }
@@ -249,7 +262,37 @@ var GM = window.GM || {};
             $(SEL.error).attr("hidden", true).text("");
             $(SEL.submit).prop("disabled", false).text("Continue");
 
+            console.log('[GM.requestPin] showing modal');
             _bsModal.show();
+            // Sanity check: if Bootstrap silently failed to render the
+            // modal (orphan backdrop blocking, modal already considered
+            // shown internally, etc.) the user is left staring at the
+            // EOD spinner with no PIN dialog. After 300ms confirm the
+            // modal element has the `show` class; if not, force it
+            // visible via direct DOM manipulation and create our own
+            // backdrop above any leftover ones.
+            setTimeout(function () {
+                var modalEl = document.querySelector(SEL.modal);
+                if (!modalEl) return;
+                if (!modalEl.classList.contains('show')) {
+                    console.warn('[GM.requestPin] modal still not shown after 300ms — forcing visibility');
+                    modalEl.classList.add('show');
+                    modalEl.style.display = 'block';
+                    modalEl.style.zIndex = '1080';
+                    modalEl.removeAttribute('aria-hidden');
+                    modalEl.setAttribute('aria-modal', 'true');
+                    modalEl.setAttribute('role', 'dialog');
+                    document.body.classList.add('modal-open');
+                    if (!document.querySelector('.modal-backdrop.gm-pin-fallback-bd')) {
+                        var bd = document.createElement('div');
+                        bd.className = 'modal-backdrop fade show gm-pin-fallback-bd';
+                        bd.style.zIndex = '1070';
+                        document.body.appendChild(bd);
+                    }
+                    var input = document.querySelector(SEL.input);
+                    if (input) input.focus();
+                }
+            }, 300);
             // Focus is wired in ensureBound via shown.bs.modal — no need for
             // a fragile setTimeout race here.
         });

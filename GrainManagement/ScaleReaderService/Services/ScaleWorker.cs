@@ -87,7 +87,7 @@ namespace ScaleReaderService.Services
                             {
                                 o.PayloadSerializerOptions.PropertyNamingPolicy = null;
                             })
-                            .WithAutomaticReconnect(new ForeverRetryPolicy())
+                            .WithAutomaticReconnect(new ForeverRetryPolicy(_log, hubUrl))
                             .Build();
 
                         var capturedUrl = hubUrl;
@@ -96,6 +96,21 @@ namespace ScaleReaderService.Services
                         {
                             if (ex != null) _log.LogWarning(ex, "SignalR connection to {HubUrl} closed with error.", capturedUrl);
                             else _log.LogInformation("SignalR connection to {HubUrl} closed.", capturedUrl);
+
+                            // Defense in depth: if SignalR ever gives up on
+                            // its own auto-reconnect (anything that bypasses
+                            // ForeverRetryPolicy — an exception thrown deep
+                            // inside the transport, etc.) the worker would
+                            // otherwise sit dead. Requesting a cycle restart
+                            // tears down the hubs and rebuilds them in the
+                            // outer loop. Suppressed during graceful shutdown
+                            // (cycleToken already cancelled by intentional
+                            // dispose).
+                            if (!cycleToken.IsCancellationRequested)
+                            {
+                                _log.LogInformation("Requesting cycle restart to rebuild SignalR connection to {HubUrl}.", capturedUrl);
+                                _restartSignal.RequestRestart();
+                            }
                             return Task.CompletedTask;
                         };
 
@@ -441,16 +456,55 @@ namespace ScaleReaderService.Services
     }
 
     /// <summary>
-    /// SignalR retry policy that retries forever with exponential backoff (capped at 30s).
+    /// SignalR retry policy that retries forever with exponential backoff
+    /// capped at 30s. The exponent itself is capped so the inner
+    /// <c>Math.Pow(2, n)</c> can never produce a value larger than
+    /// <see cref="TimeSpan"/> can represent — the previous version overflowed
+    /// after ~40 retries (about 20 min of disconnect with the 30s cap),
+    /// which threw <see cref="OverflowException"/> from inside
+    /// <see cref="NextRetryDelay"/> and made SignalR park the connection
+    /// in Disconnected. Now NextRetryDelay always returns a value ≤
+    /// <see cref="MaxDelay"/> and the retry loop genuinely never gives up.
+    ///
+    /// Each call also logs a warning so a long outage produces visible
+    /// heartbeat-style "still down, retrying in Xs" lines instead of one
+    /// warning and then silence.
     /// </summary>
     public sealed class ForeverRetryPolicy : IRetryPolicy
     {
         private static readonly TimeSpan MaxDelay = TimeSpan.FromSeconds(30);
+        private const int MaxExponent = 5; // 2^5 = 32s, already > MaxDelay
+
+        private readonly ILogger _log;
+        private readonly string _hubUrl;
+
+        public ForeverRetryPolicy(ILogger log, string hubUrl)
+        {
+            _log = log;
+            _hubUrl = hubUrl;
+        }
 
         public TimeSpan? NextRetryDelay(RetryContext retryContext)
         {
-            var delay = TimeSpan.FromSeconds(Math.Pow(2, retryContext.PreviousRetryCount));
-            return delay > MaxDelay ? MaxDelay : delay;
+            // PreviousRetryCount is a long; cast after capping so the
+            // exponent never overflows TimeSpan on long-running outages.
+            long n = Math.Min(retryContext.PreviousRetryCount, (long)MaxExponent);
+            double seconds = Math.Min(Math.Pow(2, n), MaxDelay.TotalSeconds);
+            var delay = TimeSpan.FromSeconds(seconds);
+
+            // Per-attempt visibility — the SignalR client only fires
+            // `Reconnecting` once when the connection drops, so without
+            // this log a multi-hour outage would otherwise be silent.
+            _log.LogWarning(
+                "SignalR still disconnected from {HubUrl} (retry #{Count}, " +
+                "down for {Elapsed}, last error: {Error}). Trying again in {Delay}s.",
+                _hubUrl,
+                retryContext.PreviousRetryCount + 1,
+                retryContext.ElapsedTime,
+                retryContext.RetryReason?.Message ?? "(none)",
+                (int)delay.TotalSeconds);
+
+            return delay;
         }
     }
 }

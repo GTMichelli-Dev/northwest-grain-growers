@@ -47,9 +47,17 @@ public class PrintService : BackgroundService
         var hubUrl = _options.ServerUrl.TrimEnd('/') + "/scaleHub";
         _logger.LogInformation("Connecting to {HubUrl}", hubUrl);
 
+        // Signalled when the hub permanently closes — drives the outer
+        // while loop to rebuild the connection. Without this the
+        // bounded retry overload gave up after ~47s and the worker sat
+        // dead on Task.Delay(Infinite). Now we retry forever AND the
+        // outer loop pops back to start a new connection if the
+        // policy ever exits.
+        var connectionLost = new TaskCompletionSource();
+
         _connection = new HubConnectionBuilder()
             .WithUrl(hubUrl)
-            .WithAutomaticReconnect(new[] { TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30) })
+            .WithAutomaticReconnect(new ForeverRetryPolicy(_logger, hubUrl))
             .Build();
 
         _connection.Reconnecting += error =>
@@ -68,6 +76,9 @@ public class PrintService : BackgroundService
         {
             if (error != null)
                 _logger.LogError(error, "Connection closed with error");
+            else
+                _logger.LogInformation("Connection closed");
+            connectionLost.TrySetResult();
             return Task.CompletedTask;
         };
 
@@ -92,8 +103,15 @@ public class PrintService : BackgroundService
         await _connection.InvokeAsync("JoinPrintGroup", stoppingToken);
         _logger.LogInformation("Joined print group. Waiting for print requests...");
 
-        // Keep alive until cancelled
-        await Task.Delay(Timeout.Infinite, stoppingToken);
+        // Block until either the host is shutting down or the hub
+        // signals Closed. Returning then pops the outer while loop into
+        // its 5-second retry sleep, after which we rebuild from scratch.
+        using var ctReg = stoppingToken.Register(() => connectionLost.TrySetResult());
+        await connectionLost.Task;
+        stoppingToken.ThrowIfCancellationRequested();
+
+        _logger.LogWarning("SignalR connection closed; outer loop will rebuild.");
+        try { await _connection.DisposeAsync(); } catch { }
     }
 
     private async Task PrintTicketAsync(PrintRequest request)
@@ -206,4 +224,48 @@ public class PrintRequest
     public string TicketId { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public int PrinterId { get; set; }
+}
+
+/// <summary>
+/// SignalR retry policy that retries forever with a 2/5/10/30s backoff
+/// (last entry holds for every subsequent retry). Each call logs a
+/// warning so a long outage produces visible heartbeat-style "still
+/// down, retrying in Xs" lines instead of one Reconnecting warning and
+/// then silence.
+/// </summary>
+public class ForeverRetryPolicy : IRetryPolicy
+{
+    private static readonly TimeSpan[] Delays =
+    {
+        TimeSpan.FromSeconds(2),
+        TimeSpan.FromSeconds(5),
+        TimeSpan.FromSeconds(10),
+        TimeSpan.FromSeconds(30),
+    };
+
+    private readonly ILogger _log;
+    private readonly string _hubUrl;
+
+    public ForeverRetryPolicy(ILogger log, string hubUrl)
+    {
+        _log = log;
+        _hubUrl = hubUrl;
+    }
+
+    public TimeSpan? NextRetryDelay(RetryContext retryContext)
+    {
+        var idx = (int)Math.Min(retryContext.PreviousRetryCount, Delays.Length - 1);
+        var delay = Delays[idx];
+
+        _log.LogWarning(
+            "SignalR still disconnected from {HubUrl} (retry #{Count}, " +
+            "down for {Elapsed}, last error: {Error}). Trying again in {Delay}s.",
+            _hubUrl,
+            retryContext.PreviousRetryCount + 1,
+            retryContext.ElapsedTime,
+            retryContext.RetryReason?.Message ?? "(none)",
+            (int)delay.TotalSeconds);
+
+        return delay;
+    }
 }

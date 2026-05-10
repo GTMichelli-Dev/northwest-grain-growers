@@ -41,9 +41,10 @@ public class PrintWorker : BackgroundService
 
                 _log.LogInformation("Connecting to {Url}{Hub}", serverUrl, hubPath);
 
+                var fullHubUrl = $"{serverUrl}{hubPath}";
                 _connection = new HubConnectionBuilder()
-                    .WithUrl($"{serverUrl}{hubPath}")
-                    .WithAutomaticReconnect(new ForeverRetryPolicy())
+                    .WithUrl(fullHubUrl)
+                    .WithAutomaticReconnect(new ForeverRetryPolicy(_log, fullHubUrl))
                     .Build();
 
                 _connection.Reconnecting += _ =>
@@ -57,6 +58,25 @@ public class PrintWorker : BackgroundService
                     _log.LogInformation("Reconnected. Rejoining print groups...");
                     await JoinGroups();
                     await AnnouncePrinters();
+                };
+
+                // Defense in depth: if SignalR's auto-reconnect ever
+                // gives up (transport-level exception that bypasses the
+                // policy, etc.) fire the restart signal so the outer
+                // while loop rebuilds the connection. Without this, the
+                // worker would sit forever on WaitForRestart with a dead
+                // hub. Suppressed during graceful shutdown.
+                _connection.Closed += ex =>
+                {
+                    if (ex != null) _log.LogWarning(ex, "Hub connection closed with error.");
+                    else _log.LogInformation("Hub connection closed.");
+
+                    if (!ct.IsCancellationRequested)
+                    {
+                        _log.LogInformation("Triggering restart to rebuild hub connection.");
+                        _restart.TriggerRestart();
+                    }
+                    return Task.CompletedTask;
                 };
 
                 RegisterHandlers();
@@ -279,14 +299,37 @@ public class PrintWorker : BackgroundService
 
 /// <summary>
 /// Retry forever with exponential backoff: 2s, 5s, 10s, 30s, 30s, ...
+/// Each call also logs a warning so a long outage produces visible
+/// heartbeat-style "still down, retrying in Xs" lines instead of the
+/// single Reconnecting warning that fires once when the hub drops.
 /// </summary>
 public class ForeverRetryPolicy : IRetryPolicy
 {
     private static readonly TimeSpan[] Delays = { TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30) };
 
+    private readonly ILogger _log;
+    private readonly string _hubUrl;
+
+    public ForeverRetryPolicy(ILogger log, string hubUrl)
+    {
+        _log = log;
+        _hubUrl = hubUrl;
+    }
+
     public TimeSpan? NextRetryDelay(RetryContext retryContext)
     {
         var idx = Math.Min(retryContext.PreviousRetryCount, Delays.Length - 1);
-        return Delays[idx];
+        var delay = Delays[idx];
+
+        _log.LogWarning(
+            "SignalR still disconnected from {HubUrl} (retry #{Count}, " +
+            "down for {Elapsed}, last error: {Error}). Trying again in {Delay}s.",
+            _hubUrl,
+            retryContext.PreviousRetryCount + 1,
+            retryContext.ElapsedTime,
+            retryContext.RetryReason?.Message ?? "(none)",
+            (int)delay.TotalSeconds);
+
+        return delay;
     }
 }
