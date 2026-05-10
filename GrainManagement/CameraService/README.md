@@ -230,7 +230,11 @@ ffmpeg -list_devices true -f dshow -i dummy
 
 Copy the exact name (e.g. `USB Video Device`) into the camera's `UsbDeviceName` field.
 
-### Raspberry Pi — host install (simplest)
+### Raspberry Pi — recommended (native via `install-pi.sh`)
+
+> 👉 **For the standard "one Pi, one USB camera" deployment, use [`install-pi.sh`](./install-pi.sh).** Skip Docker entirely. The script apt-installs ffmpeg + v4l-utils, publishes the service, registers a systemd unit, and starts it. Less moving parts, faster boot, easier `journalctl` debugging, and no Docker daemon overhead. Re-running it after a `git pull` upgrades the binaries while preserving `camera-service.db` and `camera-snapshot.json`.
+
+If you'd rather wire it up by hand, the apt + manual systemd path is:
 
 ```bash
 sudo apt update
@@ -238,11 +242,15 @@ sudo apt install -y ffmpeg v4l-utils
 ffmpeg -version
 ```
 
-`v4l-utils` is optional but gives you `v4l2-ctl --list-devices` to confirm USB camera nodes like `/dev/video0`. Use that as the `UsbDeviceName` (e.g. `/dev/video0`).
+`v4l-utils` is optional but gives you `v4l2-ctl --list-devices` to confirm USB camera nodes like `/dev/video0`. Use that as the `UsbDeviceName` (e.g. `/dev/video0`). Then drop a systemd unit per the [Install as a Linux systemd service manually](#install-as-a-linux-systemd-service-manually) section below.
 
-### Raspberry Pi — Docker (when you don't want to pollute the host)
+### Raspberry Pi — Docker (only for special cases)
 
-> **Don't do this on Windows.** Docker Desktop on Windows runs Linux containers inside a Hyper-V / WSL2 VM that can't see USB cameras without `usbipd-win` bind-and-attach for every device — and the binding resets on every reboot and USB hub renumeration. Even when the device is forwarded, the container sees a V4L2 node instead of the DirectShow stack the Windows ffmpeg brand definition expects. **Use [`install-windows.ps1`](./install-windows.ps1) on Windows** — it winget-installs ffmpeg cleanly into `%LOCALAPPDATA%` and registers a native Windows Service. The Docker recipe below is for Linux hosts (Raspberry Pi, x86 Linux servers).
+> **Don't do this on Windows.** Docker Desktop on Windows runs Linux containers inside a Hyper-V / WSL2 VM that can't see USB cameras without `usbipd-win` bind-and-attach for every device — and the binding resets on every reboot and USB hub renumeration. Even when the device is forwarded, the container sees a V4L2 node instead of the DirectShow stack the Windows ffmpeg brand definition expects. **Use [`install-windows.ps1`](./install-windows.ps1) on Windows** — it winget-installs ffmpeg cleanly into `%LOCALAPPDATA%` and registers a native Windows Service.
+
+> ⚠ **Don't use Docker on a dedicated, single-purpose Pi either.** For the typical deployment (one Pi at one site running just this service + one USB camera) native is simpler in every operational dimension — fewer steps, no Docker daemon overhead, faster boot, easier debugging via `journalctl -u camera-service -f`. The "don't pollute the host" argument only matters when the host has other things on it to be polluted; on a flashed-from-image Pi that runs only this service, there's nothing to protect.
+>
+> The Docker recipe is here for: (a) read-only / immutable Pi OS images where apt-install can't persist, (b) fleets managed by a container deployment pipeline like Portainer / Balena, (c) hosts already running multiple services where you want clean per-service isolation. None of those describe a dedicated camera Pi.
 
 Run the CameraService itself inside a container with ffmpeg already installed:
 
@@ -333,6 +341,12 @@ Content-Type: multipart/form-data
 Saved as `{ticket}_{Direction}.jpg` under `TicketImages:PhysicalPath` on the web.
 
 ## Installation
+
+> **Quick picker** — for the common single-camera deployments:
+> - **Raspberry Pi (one Pi, one USB camera)** → run [`install-pi.sh`](./install-pi.sh) as root. Native systemd, no Docker.
+> - **Windows kiosk / desktop** → run [`install-windows.ps1`](./install-windows.ps1) from an elevated PowerShell. Native Windows service, no Docker.
+>
+> Docker is documented under [Installing ffmpeg → Raspberry Pi — Docker](#raspberry-pi--docker-only-for-special-cases) for the narrow cases where it actually helps (immutable Pi OS images, container-fleet deployments). The default recommendation for both platforms is native.
 
 ### Run as console app
 
