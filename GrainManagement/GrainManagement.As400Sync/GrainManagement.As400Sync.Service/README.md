@@ -77,11 +77,20 @@ All settings live in `appsettings.json` (next to the binary after install — de
 ```jsonc
 "ConnectionStrings": {
   "SqlServer":  "Server=.;Database=GrainManagement;User Id=sa;Password=...;Encrypt=True;TrustServerCertificate=True;",
-  "As400Odbc":  "Driver={IBM i Access ODBC Driver};System=ASPE.AGVANTAGE.COM;Uid=...;Pwd=...;Naming=1;CommitMode=2;DefaultLibraries=copdata;"
+  "As400Odbc":  "Driver={IBM i Access ODBC Driver};System=ASPE.AGVANTAGE.COM;Uid=...;Pwd=...;Naming=1;CommitMode=2;DefaultLibraries=COMDATA;"
 }
 ```
 
-`As400Odbc` is the exact ODBC string passed to `OdbcConnection` — same shape you'd put in `odbcad32.exe`. `Naming=1` selects SQL naming, `CommitMode=2` is autocommit, `DefaultLibraries=copdata` is the library list searched first.
+`As400Odbc` is the exact ODBC string passed to `OdbcConnection` — same shape you'd put in `odbcad32.exe`. `Naming=1` selects SQL naming, `CommitMode=2` is autocommit.
+
+**`DefaultLibraries` is the per-deployment knob.** The shipped SQL files (`Accounts.sql`, `AllProductItems.sql`, `LandLordSplitPercentages.sql`) reference the Agvantage tables *unqualified* (`FROM U4CSTMR`, `FROM U5SPLTS`, …). Whichever library the ODBC user can read these from goes here:
+
+| Deployment        | `DefaultLibraries` |
+|-------------------|--------------------|
+| Production (ASPE) | `COMDATA`          |
+| Test / dev (NWGG_TEST / Pstpwr9 / etc.) | `COPDATA` |
+
+If the user can read multiple libraries, list the candidates in priority order separated by commas (e.g. `DefaultLibraries=COMDATA,COPDATA`). Moving the service between LPARs is then a connection-string edit — no SQL changes needed.
 
 ### Kestrel binding
 

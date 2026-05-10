@@ -45,7 +45,7 @@ crop_base AS
             WHEN CRCROP IN (82,84,86,87,88,85,89,90,80,70) THEN ' (SEED)'
             ELSE ''
         END) AS PRODUCTCODE
-    FROM COMDATA.U5CROPS
+    FROM U5CROPS
 ),
 crop_flagged AS
 (
@@ -83,7 +83,7 @@ base AS
         t.IMFLCD ,
         t.IMDEPT,
         t.IMDEL
-    FROM COMDATA.U4ITMMR t
+    FROM U4ITMMR t
     WHERE
         t.IMDEPT NOT IN
         (
@@ -559,7 +559,7 @@ UNION
     END AS PRODUCTGROUP
      
 
-FROM COMDATA.U5CROPS
+FROM U5CROPS
 
 
 

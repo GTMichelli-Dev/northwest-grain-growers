@@ -1,6 +1,9 @@
 -- LandLordSplitPercentages.sql
 --
--- Returns one row per account within each landlord split group from COMDATA.U5SPLTS.
+-- Returns one row per account within each landlord split group from the
+-- U5SPLTS file. The library is resolved by the ODBC connection's
+-- DefaultLibraries setting (e.g. COMDATA on production, COPDATA on test) —
+-- do not qualify it here.
 --
 -- PrimaryGrower flag:
 --   A split group's "primary grower" is the detail row with SPDEL = 'G'.
@@ -21,8 +24,8 @@ SELECT
         ELSE 0
     END             AS PrimaryGrower,
     d.SPSPPC        AS SplitPercentage
-FROM COMDATA.U5SPLTS d
-JOIN COMDATA.U5SPLTS h
+FROM U5SPLTS d
+JOIN U5SPLTS h
     ON h.spspgp = d.spspgp
    AND h.spcno  = 0
 WHERE

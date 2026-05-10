@@ -176,7 +176,7 @@ JOIN #BadGroups bg ON bg.SplitGroupId = v.SplitGroupId;
 -- Build one row per SplitGroupId for SplitGroups upsert
 -- PrimaryAccountId = IsPrimaryGrower ('G') row if present, otherwise NULL.
 -- A SplitGroup is allowed to have a NULL PrimaryAccountId when no detail row
--- in COMDATA.U5SPLTS is flagged with SPDEL = 'G'.
+-- in U5SPLTS is flagged with SPDEL = 'G'.
 --------------------------------------------------------------------------------
 IF OBJECT_ID('tempdb..#SrcGroups') IS NOT NULL DROP TABLE #SrcGroups;
 

@@ -4,7 +4,7 @@
         CCCNO AS AccountId,
         MAX(CASE WHEN CCSLCD BETWEEN '09' AND '13' AND CCSLYN = 'Y' THEN 1 ELSE 0 END) AS IsProducer,
         MAX(CASE WHEN CCSLCD = 7 AND CCSLYN = 'Y' THEN 1 ELSE 0 END) AS IsSeedProducer
-    FROM COMDATA.U4CStsl
+    FROM U4CStsl
     GROUP BY CCCNO
 )
 SELECT
@@ -52,6 +52,6 @@ SELECT
       COALESCE(TRIM(m.CSNOT1), '') ||
       COALESCE(TRIM(m.CSNOT2), '')
     ) AS Notes
-FROM COMDATA.U4CSTMR m
+FROM U4CSTMR m
 LEFT JOIN tsl
   ON tsl.AccountId = m.CSCNO
