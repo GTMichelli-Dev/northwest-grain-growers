@@ -11,6 +11,7 @@ namespace GrainManagement.API
     {
         private const int RemoteAdminPrivilegeId = 7;
         private const int OfficeAdminPrivilegeId = 14;
+        private const int AgvantagePrivilegeId   = 15;
 
         private readonly dbContext _ctx;
         private readonly ILogger<AuthController> _logger;
@@ -114,6 +115,53 @@ namespace GrainManagement.API
                 Uri.EscapeDataString(user.UserName ?? ""), cookieOptions);
 
             _logger.LogInformation("Office Admin PIN accepted for UserId={UserId}", user.UserId);
+            return Ok(new { UserId = user.UserId, UserName = user.UserName });
+        }
+
+        public class ValidateAgvantagePinDto
+        {
+            public int Pin { get; set; }
+        }
+
+        // POST /api/Auth/ValidateAgvantagePin
+        // Validates a PIN for the Agvantage push pages (priv 15). Strict
+        // membership — Remote Admin (priv 7) does NOT bypass. Drops a
+        // session cookie that the Agvantage controllers check before
+        // rendering their pages.
+        [HttpPost("ValidateAgvantagePin")]
+        public async Task<IActionResult> ValidateAgvantagePin(
+            [FromBody] ValidateAgvantagePinDto dto,
+            CancellationToken ct)
+        {
+            if (dto is null || dto.Pin <= 0)
+                return BadRequest(new { message = "PIN is required." });
+
+            var user = await _ctx.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Pin == dto.Pin && u.IsActive, ct);
+
+            if (user is null)
+                return Unauthorized(new { message = "Invalid or inactive PIN." });
+
+            var hasAgvantage = await _ctx.UserPrivileges
+                .AsNoTracking()
+                .AnyAsync(p => p.UserId == user.UserId && p.PrivilegeId == AgvantagePrivilegeId, ct);
+
+            if (!hasAgvantage)
+                return Unauthorized(new { message = "User does not have the Agvantage privilege." });
+
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly    = true,
+                IsEssential = true,
+                SameSite    = SameSiteMode.Lax,
+            };
+            Response.Cookies.Append(AgvantageWarehouseTransferController.AgvantageCookieName,
+                user.UserId.ToString(), cookieOptions);
+            Response.Cookies.Append(AgvantageWarehouseTransferController.AgvantageUserNameCookieName,
+                Uri.EscapeDataString(user.UserName ?? ""), cookieOptions);
+
+            _logger.LogInformation("Agvantage PIN accepted for UserId={UserId}", user.UserId);
             return Ok(new { UserId = user.UserId, UserName = user.UserName });
         }
     }

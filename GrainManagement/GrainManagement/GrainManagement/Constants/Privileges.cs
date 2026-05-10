@@ -52,6 +52,14 @@ public static class Privileges
     public const int OfficeAdmin = 14;
 
     /// <summary>
+    /// Gate for the Agvantage push pages on /Updates (Warehouse Transfer
+    /// and Seed Transfer). Held by the small set of office staff allowed
+    /// to push data to the AS400. Distinct from OfficeAdmin so day-to-day
+    /// maintenance editors don't accidentally trigger an Agvantage push.
+    /// </summary>
+    public const int Agvantage = 15;
+
+    /// <summary>
     /// Returns true when <paramref name="held"/> contains <paramref name="required"/>
     /// OR when it contains <see cref="RemoteAdmin"/>. Use this as the single
     /// source of truth for priv checks so the admin bypass is consistent
