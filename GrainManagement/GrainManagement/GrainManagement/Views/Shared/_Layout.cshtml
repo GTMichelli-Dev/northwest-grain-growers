@@ -121,29 +121,32 @@
 
             <div id="navbar" class="collapse navbar-collapse">
                 <div class="d-flex ms-auto align-items-center">
-                    @* PIN session indicators. The Remote Admin cookie is set by
-                       /api/Auth/ValidateRemoteAdminPin; the Office Admin cookie
-                       by /api/Auth/ValidateOfficeAdminPin. Each shows the
-                       operator's name + a Logout link to its own controller. *@
-                    @if (Context.Request.Cookies.ContainsKey("GrainMgmt_OfficeAdminPin"))
-                    {
-                        var oaUser = Context.Request.Cookies.TryGetValue("GrainMgmt_OfficeAdminUser", out var oaRaw)
-                            ? Uri.UnescapeDataString(oaRaw)
-                            : "";
-                        <span class="navbar-text text-light me-2" style="font-size:0.9rem;">
-                            Office Administrator@(string.IsNullOrWhiteSpace(oaUser) ? "" : ": " + oaUser)
-                        </span>
-                        <a href="/Admin/Logout" class="btn btn-outline-light btn-sm me-2">Logout</a>
+                    @* Unified login indicator. /api/Auth/Login sets the
+                       single GrainMgmt_UserName cookie alongside whichever
+                       legacy role cookies the user qualifies for, so one
+                       row + one Logout button is enough. Falls back to the
+                       legacy role cookies for sessions that started before
+                       the unified login shipped. *@
+                    @{
+                        string sessionUser = "";
+                        if (Context.Request.Cookies.TryGetValue("GrainMgmt_UserName", out var u) && !string.IsNullOrEmpty(u))
+                            sessionUser = Uri.UnescapeDataString(u);
+                        else if (Context.Request.Cookies.TryGetValue("GrainMgmt_OfficeAdminUser", out var oa) && !string.IsNullOrEmpty(oa))
+                            sessionUser = Uri.UnescapeDataString(oa);
+                        else if (Context.Request.Cookies.TryGetValue("GrainMgmt_RemoteAdminUser", out var ra) && !string.IsNullOrEmpty(ra))
+                            sessionUser = Uri.UnescapeDataString(ra);
+
+                        var anyPinCookie = !string.IsNullOrEmpty(sessionUser)
+                            || Context.Request.Cookies.ContainsKey("GrainMgmt_UserId")
+                            || Context.Request.Cookies.ContainsKey("GrainMgmt_OfficeAdminPin")
+                            || Context.Request.Cookies.ContainsKey("GrainMgmt_RemoteAdminPin");
                     }
-                    @if (Context.Request.Cookies.ContainsKey("GrainMgmt_RemoteAdminPin"))
+                    @if (anyPinCookie)
                     {
-                        var raUser = Context.Request.Cookies.TryGetValue("GrainMgmt_RemoteAdminUser", out var raRaw)
-                            ? Uri.UnescapeDataString(raRaw)
-                            : "";
                         <span class="navbar-text text-light me-2" style="font-size:0.9rem;">
-                            Remote Administrator@(string.IsNullOrWhiteSpace(raUser) ? "" : ": " + raUser)
+                            Logged in@(string.IsNullOrWhiteSpace(sessionUser) ? "" : " as: " + sessionUser)
                         </span>
-                        <a href="/RemoteAdmin/Logout" class="btn btn-outline-light btn-sm">Logout</a>
+                        <a href="/Login/Logout" class="btn btn-outline-light btn-sm">Logout</a>
                     }
                 </div>
             </div>

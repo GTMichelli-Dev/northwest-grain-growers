@@ -37,7 +37,7 @@ namespace GrainManagement.Controllers
         [RequiresModule(nameof(ModuleOptions.System))]
         public IActionResult Pin()
         {
-            return View();
+            return Redirect("/Login?returnUrl=%2FRemoteAdmin&requirePriv=7");
         }
 
         [HttpGet("Logout")]

@@ -40,9 +40,10 @@ public sealed class AgvantageWarehouseTransferController : Controller
     [HttpGet("Pin")]
     public IActionResult Pin(string? returnUrl = null)
     {
-        ViewBag.ReturnUrl = string.IsNullOrWhiteSpace(returnUrl)
-            ? "/AgvantageWarehouseTransfer"
-            : returnUrl;
-        return View();
+        return Redirect("/Login?returnUrl="
+            + System.Uri.EscapeDataString(string.IsNullOrWhiteSpace(returnUrl)
+                ? "/AgvantageWarehouseTransfer"
+                : returnUrl)
+            + "&requirePriv=15");
     }
 }

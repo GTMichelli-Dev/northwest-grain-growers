@@ -1,3 +1,4 @@
+using GrainManagement.Controllers;
 using GrainManagement.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -49,20 +50,31 @@ namespace GrainManagement
             context.Result = RedirectToAction(nameof(Pin), new { returnUrl = returnUrl.ToString() });
         }
 
-        // GET: Admin/Pin
+        // GET: Admin/Pin — legacy URL, redirected to the unified login.
+        // Existing OnActionExecuting redirects still land here, and any
+        // bookmarks on the old PIN page funnel into the same UX.
         [HttpGet]
         public IActionResult Pin(string? returnUrl = null)
         {
-            ViewBag.ReturnUrl = string.IsNullOrWhiteSpace(returnUrl) ? "/Admin" : returnUrl;
-            return View();
+            return Redirect("/Login?returnUrl="
+                + System.Uri.EscapeDataString(string.IsNullOrWhiteSpace(returnUrl) ? "/Admin" : returnUrl)
+                + "&requirePriv=14");
         }
 
-        // GET: Admin/Logout
+        // GET: Admin/Logout — single logout endpoint for the navbar.
+        // Clears every PIN session cookie the navbar might surface
+        // (Office Admin, Remote Admin, Agvantage) so one click logs the
+        // operator out of everything regardless of which roles they
+        // accumulated this browser session.
         [HttpGet]
         public IActionResult Logout()
         {
             Response.Cookies.Delete(OfficeAdminCookieName);
             Response.Cookies.Delete(OfficeAdminUserNameCookieName);
+            Response.Cookies.Delete(RemoteAdminController.CookieName);
+            Response.Cookies.Delete(RemoteAdminController.UserNameCookieName);
+            Response.Cookies.Delete(AgvantageWarehouseTransferController.AgvantageCookieName);
+            Response.Cookies.Delete(AgvantageWarehouseTransferController.AgvantageUserNameCookieName);
             return Redirect("/");
         }
 
