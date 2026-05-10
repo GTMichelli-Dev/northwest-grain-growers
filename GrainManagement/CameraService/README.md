@@ -242,6 +242,8 @@ ffmpeg -version
 
 ### Raspberry Pi — Docker (when you don't want to pollute the host)
 
+> **Don't do this on Windows.** Docker Desktop on Windows runs Linux containers inside a Hyper-V / WSL2 VM that can't see USB cameras without `usbipd-win` bind-and-attach for every device — and the binding resets on every reboot and USB hub renumeration. Even when the device is forwarded, the container sees a V4L2 node instead of the DirectShow stack the Windows ffmpeg brand definition expects. **Use [`install-windows.ps1`](./install-windows.ps1) on Windows** — it winget-installs ffmpeg cleanly into `%LOCALAPPDATA%` and registers a native Windows Service. The Docker recipe below is for Linux hosts (Raspberry Pi, x86 Linux servers).
+
 Run the CameraService itself inside a container with ffmpeg already installed:
 
 **`Dockerfile`** (next to `CameraService.csproj`):
