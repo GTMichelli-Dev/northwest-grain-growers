@@ -26,11 +26,16 @@
         <div class="d-flex align-items-center justify-content-between mb-2" style="gap:12px;flex-wrap:wrap;">
             <div class="gm-wd-panel__title" id="wdWsGridTitle" style="margin-bottom:0">Open Weight Sheets</div>
             <div id="wdWsStatusToolbar" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                @* Per-tab color coding: Open = green (go), Finished = amber
+                   (in-progress / awaiting close), Closed = red (stop / done),
+                   All = dark (neutral catch-all). The JS only toggles
+                   `active` and doesn't strip the outline class, so each
+                   button keeps its color in both states. *@
                 <div class="btn-group" role="group" aria-label="Weight sheet status filter">
-                    <button type="button" class="btn btn-outline-secondary btn-sm active" data-wd-status="open">Open</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="pending">Finished</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="closed">Closed</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-wd-status="all">All</button>
+                    <button type="button" class="btn btn-outline-success btn-sm active" data-wd-status="open">Open</button>
+                    <button type="button" class="btn btn-outline-warning btn-sm" data-wd-status="pending">Finished</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-wd-status="closed">Closed</button>
+                    <button type="button" class="btn btn-outline-dark btn-sm" data-wd-status="all">All</button>
                 </div>
                 <button type="button" class="btn btn-outline-primary btn-sm" id="wdWsPrintAllBtn"
                         title="Print every weight sheet currently shown in the grid as a single PDF">

@@ -19,9 +19,17 @@ public class TransferLoadTicketDataModel
     // ── Transfer-specific header ────────────────────────────────────────────
     /// <summary>"Received" or "Shipped" — the WS direction at the current location.</summary>
     public string Direction { get; set; } = "";
-    /// <summary>Item description (variety) being transferred.</summary>
+    /// <summary>Item description (variety) being transferred. Same as <see cref="ItemDescription"/>; kept for existing report bindings.</summary>
     public string Variety { get; set; } = "";
     public string ItemId { get; set; } = "";
+    /// <summary>Item description on the load. Same value as <see cref="Variety"/>; kept for binding clarity alongside the seed-flag toggle.</summary>
+    public string ItemDescription { get; set; } = "";
+    /// <summary>Product.CropId for the load's item, formatted as string. Empty when not set.</summary>
+    public string CropId { get; set; } = "";
+    /// <summary>Crop description — Item.Description for the Item whose ItemId matches the CropId.</summary>
+    public string Crop { get; set; } = "";
+    /// <summary>True when the item carries the SEED trait (TraitId=31) AND its product's Category is NOT a non-seed category (CHEM/FERT/PACK/SERVICE). Mirrors /api/Lookups/SeedItems.</summary>
+    public bool IsSeed { get; set; }
     /// <summary>Source location name (where the grain is coming from).</summary>
     public string SourceLocation { get; set; } = "";
     /// <summary>Source location id (string for clean report binding — empty when unknown).</summary>

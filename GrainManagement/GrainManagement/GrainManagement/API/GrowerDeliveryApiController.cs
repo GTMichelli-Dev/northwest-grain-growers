@@ -31,7 +31,6 @@ public sealed class GrowerDeliveryApiController : ControllerBase
     private const byte StatusClosed             = 3;
 
     private readonly dbContext _ctx;
-    private readonly ICurrentUser _currentUser;
     private readonly ILogger<GrowerDeliveryApiController> _logger;
     private readonly SystemInfoSnapshot _systemInfo;
     private readonly IWeightSheetNotifier _notifier;
@@ -39,14 +38,12 @@ public sealed class GrowerDeliveryApiController : ControllerBase
 
     public GrowerDeliveryApiController(
         dbContext ctx,
-        ICurrentUser currentUser,
         ILogger<GrowerDeliveryApiController> logger,
         SystemInfoSnapshot systemInfo,
         IWeightSheetNotifier notifier,
         GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard priorDayGuard)
     {
         _ctx = ctx;
-        _currentUser = currentUser;
         _logger = logger;
         _systemInfo = systemInfo;
         _notifier = notifier;
@@ -74,9 +71,8 @@ public sealed class GrowerDeliveryApiController : ControllerBase
     }
 
     // Resolves a user-name to attribute audit rows to when no PIN was required
-    // (e.g. SET_PENDING / REOPEN). Tries Remote-Admin cookie first (operator
-    // identity on Remote deployments), then Microsoft Identity UPN, then a
-    // "system" sentinel.
+    // (e.g. SET_PENDING / REOPEN). Reads the Remote-Admin cookie set by
+    // AuthController.ValidateRemoteAdminPin; falls back to "system" otherwise.
     private string ResolveAuditUserName()
     {
         try
@@ -89,7 +85,6 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             }
         }
         catch { /* fall through */ }
-        if (!string.IsNullOrWhiteSpace(_currentUser?.UPN)) return _currentUser.UPN!;
         return "system";
     }
 
@@ -605,6 +600,11 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             await _ctx.SaveChangesAsync(ct);
         }
 
+        // IS_END_DUMP carries a bool — out-of-band from BuildAttributes
+        // which only handles decimal/string values. Skipped silently
+        // when the DTO didn't include an answer.
+        await WriteIsEndDumpAsync(transactionId, dto.IsEndDump, ct);
+
         // ── Link to weight sheet directly via RefId ────────────────────────────
         //
         // If the target weight sheet is already at or above the load cap, spill
@@ -986,6 +986,10 @@ public sealed class GrowerDeliveryApiController : ControllerBase
 
             await _ctx.SaveChangesAsync(ct);
         }
+
+        // IS_END_DUMP follows the same delete-then-insert pattern but
+        // uses BoolValue, so it lives outside the BuildAttributes loop.
+        await WriteIsEndDumpAsync(transactionId, dto.IsEndDump, ct);
 
         // ── Audit trail for weight modifications ────────────────────────────────
         if (weightsModified && weightEditUserName != null)
@@ -2888,6 +2892,58 @@ public sealed class GrowerDeliveryApiController : ControllerBase
     }
 
     private record AttributeEntry(string Code, decimal? DecimalValue, string StringValue);
+
+    /// <summary>
+    /// GET /api/GrowerDelivery/{id}/IsEndDump — single-attribute lookup
+    /// for the load edit form to prefill the End Dump checkbox.
+    /// Returns { IsEndDump: bool? } where null means "no answer was
+    /// recorded for this load yet."
+    /// </summary>
+    [HttpGet("{transactionId:long}/IsEndDump")]
+    public async Task<IActionResult> GetIsEndDump(long transactionId, CancellationToken ct)
+    {
+        var value = await _ctx.TransactionAttributes.AsNoTracking()
+            .Where(a => a.TransactionId == transactionId
+                        && a.AttributeType.Code == TransactionAttributeCodes.IsEndDump)
+            .Select(a => a.BoolValue)
+            .FirstOrDefaultAsync(ct);
+        return Ok(new { IsEndDump = value });
+    }
+
+    /// <summary>
+    /// Writes (or clears) the IS_END_DUMP transaction attribute on the
+    /// load. The attribute carries a bool, so it can't go through the
+    /// decimal/string-only <see cref="BuildAttributes"/> path. Always
+    /// deletes any existing row first so the edit flow flips cleanly
+    /// when the operator changes the answer.
+    /// </summary>
+    private async Task WriteIsEndDumpAsync(long transactionId, bool? value, CancellationToken ct)
+    {
+        var typeId = await _ctx.TransactionAttributeTypes.AsNoTracking()
+            .Where(t => t.IsActive == true && t.Code == TransactionAttributeCodes.IsEndDump)
+            .Select(t => (int?)t.Id)
+            .FirstOrDefaultAsync(ct);
+        if (typeId == null) return; // type row not seeded yet — no-op.
+
+        var existing = await _ctx.TransactionAttributes
+            .Where(a => a.TransactionId == transactionId && a.AttributeTypeId == typeId.Value)
+            .ToListAsync(ct);
+        if (existing.Count > 0)
+            _ctx.TransactionAttributes.RemoveRange(existing);
+
+        if (value.HasValue)
+        {
+            _ctx.TransactionAttributes.Add(new TransactionAttribute
+            {
+                TransactionAttributesUid = Guid.NewGuid(),
+                TransactionId = transactionId,
+                AttributeTypeId = typeId.Value,
+                BoolValue = value.Value,
+                CreatedAt = DateTime.UtcNow,
+            });
+        }
+        await _ctx.SaveChangesAsync(ct);
+    }
 
     private static List<AttributeEntry> BuildAttributes(GrowerDeliveryDto dto)
     {

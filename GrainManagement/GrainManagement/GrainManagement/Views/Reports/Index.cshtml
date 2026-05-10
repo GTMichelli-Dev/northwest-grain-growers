@@ -1,8 +1,5 @@
-@using GrainManagement.Reporting
-@inject IModuleContext Modules
 @{
     ViewData["Title"] = "Reports";
-    var reportName = ViewBag.ReportName as string;
 }
 
 <a href="/" class="gm-module-bar gm-module-bar--reports gm-module-bar--link" title="Back to Home">
@@ -11,49 +8,86 @@
     <span class="gm-module-bar__label">REPORTS</span>
 </a>
 
-<div class="row mt-3">
-    <!-- Report list sidebar -->
-    <div class="col-md-3 col-lg-2">
-        <h5>Available Reports</h5>
-
-        @if (Modules.IsEnabled("WarehouseIntake") || Modules.IsEnabled("WarehouseAdmin"))
-        {
-            <h6 class="text-muted mt-3">Warehouse</h6>
-            <ul class="list-unstyled">
-                <li><a href="/Reports?report=Load Ticket" class="btn btn-sm btn-outline-primary w-100 text-start mb-1">Load Ticket</a></li>
-            </ul>
-        }
-
-        @if (Modules.IsEnabled("Seed") || Modules.IsEnabled("SeedAdmin"))
-        {
-            <h6 class="text-muted mt-3">Seed</h6>
-            <ul class="list-unstyled">
-                <li class="text-muted small">No seed reports yet</li>
-            </ul>
-        }
-    </div>
-
-    <!-- Document Viewer -->
-    <div class="col-md-9 col-lg-10">
-        @if (!string.IsNullOrEmpty(reportName))
-        {
-            @(Html.DevExpress().WebDocumentViewer("reportViewer")
-                .Height("800px")
-                .Bind(reportName))
-        }
-        else
-        {
-            <div class="text-center text-muted mt-5" style="font-size: 1.25rem;">
-                Select a report from the list to view it.
+<div class="row g-4 mt-2">
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link gm-tile--intake" href="/Reports/DailyWeightSheetSummary">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Daily Intake / Transfer Report</h2>
             </div>
-        }
+            <p class="gm-tile__text">Filter by district, location, type, and date range. Click <em>Print</em> on any candidate to view the daily report PDF.</p>
+        </a>
+    </div>
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link gm-tile--transfer" href="/Reports/DailyWeightSheetSeries">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Daily Weight Sheet Series</h2>
+            </div>
+            <p class="gm-tile__text">All weight sheets at a location on a given day — WS #, type, crop, load count, and net total.</p>
+        </a>
+    </div>
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link gm-tile--lots" href="/Reports/CommoditiesByDateRange">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Commodities By Date Range</h2>
+            </div>
+            <p class="gm-tile__text">Per-location, per-crop net intake, transfer in/out, and net change in the crop's primary unit of measure.</p>
+        </a>
+    </div>
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link gm-tile--seed" href="/Reports/BinProtein">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Bin Protein Weighted Average</h2>
+            </div>
+            <p class="gm-tile__text">Bushel-weighted average protein per bin (excluding loads with no protein reading), plus total bushels and load counts.</p>
+        </a>
+    </div>
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link gm-tile--load" href="/Reports/DailyLoadTimes">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Daily Load Times</h2>
+            </div>
+            <p class="gm-tile__text">Per-load time in / time out / duration on the scale, with truck id, bin, and net weight.</p>
+        </a>
+    </div>
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link gm-tile--admin" href="/Reports/PeakHours">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Peak Hours</h2>
+            </div>
+            <p class="gm-tile__text">Loads-per-hour graph for one or more locations plus the aggregate, over a chosen date range.</p>
+        </a>
+    </div>
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link gm-tile--remote" href="/Reports/ProducerCommodity">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Producer Commodity By District</h2>
+            </div>
+            <p class="gm-tile__text">Intake-only totals by producer / split group and crop, with variety breakouts for seed lots. Filter by district, locations, crops, and date range.</p>
+        </a>
+    </div>
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link gm-tile--transfer-warehouse" href="/Reports/ProducerDelivery">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Producer Delivery Report</h2>
+            </div>
+            <p class="gm-tile__text">Intake-only loads and net by producer or split group — toggle between the two groupings inline.</p>
+        </a>
+    </div>
+    <div class="col-12 col-lg-4">
+        <a class="gm-tile gm-tile--link gm-tile--warehouse" href="/Reports/IntakeLocation">
+            <div class="gm-tile__header">
+                <div class="gm-tile__icon gm-icon gm-icon--reports" aria-hidden="true"></div>
+                <h2 class="gm-tile__title">Intake Location Report</h2>
+            </div>
+            <p class="gm-tile__text">Intake totals per location and producer (or split group), with net in lbs and the crop's primary unit of measure.</p>
+        </a>
     </div>
 </div>
-
-@section Styles {
-    <link rel="stylesheet" href="~/css/viewer.part.bundle.css" />
-}
-
-@section Scripts {
-    <script src="~/js/viewer.part.bundle.js"></script>
-}

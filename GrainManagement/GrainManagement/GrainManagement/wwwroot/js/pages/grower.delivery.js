@@ -139,6 +139,18 @@
     let editOriginalWeights   = null;  // { StartQty, EndQty, DirectQty } at load time
     let bolModalInstance      = null;
 
+    // ── End Dump (REQUIRE_DUMP_TYPE LocationAttribute) ─────────────────
+    // Set on init from /api/locations/{id}/RequireDumpType. When true:
+    //  - Edit mode shows an inline checkbox prefilled from the existing
+    //    IS_END_DUMP transaction attribute.
+    //  - Create mode keeps the checkbox visible too, plus pops a
+    //    Bootstrap modal on submit asking the operator to confirm.
+    let _requireDumpType      = false;
+    let _endDumpModalInstance = null;
+    // Pending submit closure used to resume the save after the operator
+    // answers the End Dump prompt. Cleared as soon as it fires.
+    let _endDumpResolver      = null;
+
     // Closed-WS lockdown: when the active weight sheet is Finished
     // (StatusId 2) or Closed (StatusId 3) the entire load form is read-only
     // — Save / Move / Delete buttons hide, every input/select/textarea is
@@ -248,6 +260,7 @@
         wireWeightSheetPanel();
         wireBolChangeModal();
         wireSubmit();
+        wireEndDumpUI(locationId);
 
         // ── Edit mode: load existing transaction if txnId is in URL ─────────
         // Defer until async inits (qty method picker, selectboxes) have resolved
@@ -255,6 +268,74 @@
             setTimeout(function () { loadExistingDelivery(editTxnId); }, 500);
         }
     });
+
+    // ── End Dump UI (REQUIRE_DUMP_TYPE → IS_END_DUMP) ──────────────────
+    function wireEndDumpUI(locationId) {
+        if (!locationId) return;
+        $.getJSON('/api/locations/' + encodeURIComponent(locationId) + '/RequireDumpType')
+            .done(function (resp) {
+                _requireDumpType = !!(resp && resp.RequireDumpType);
+                if (!_requireDumpType) return;
+
+                // Inject the inline checkbox just above the Save button so
+                // the operator sees a single visible toggle. Edit mode
+                // prefills from the load's existing IS_END_DUMP after the
+                // form is populated; create mode starts unchecked.
+                var $row = $(
+                    '<div id="gdEndDumpRow" class="form-check form-switch mb-2 mt-2"' +
+                    ' style="margin-left:.5rem;">' +
+                    '<input class="form-check-input" type="checkbox" id="gdIsEndDump">' +
+                    '<label class="form-check-label" for="gdIsEndDump">' +
+                    '<strong>End Dump</strong></label>' +
+                    '</div>'
+                );
+                var $btn = $(SEL.submit);
+                if ($btn.length) $btn.before($row);
+
+                // Build the create-mode confirmation modal. Reused across
+                // every Save Load click while the page is loaded.
+                var modalHtml =
+                    '<div class="modal fade" id="gmGdEndDumpModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">' +
+                      '<div class="modal-dialog modal-dialog-centered">' +
+                        '<div class="modal-content">' +
+                          '<div class="modal-header bg-info text-white">' +
+                            '<h5 class="modal-title">End Dump?</h5>' +
+                          '</div>' +
+                          '<div class="modal-body">' +
+                            '<p class="mb-0">Is this load an <strong>end dump</strong>?</p>' +
+                          '</div>' +
+                          '<div class="modal-footer">' +
+                            '<button type="button" class="btn btn-outline-secondary" id="gmGdEndDumpNo">No</button>' +
+                            '<button type="button" class="btn btn-info text-white" id="gmGdEndDumpYes">Yes</button>' +
+                          '</div>' +
+                        '</div>' +
+                      '</div>' +
+                    '</div>';
+                $(document.body).append(modalHtml);
+                _endDumpModalInstance = new bootstrap.Modal(document.getElementById('gmGdEndDumpModal'));
+                $('#gmGdEndDumpYes').on('click', function () { resolveEndDump(true); });
+                $('#gmGdEndDumpNo' ).on('click', function () { resolveEndDump(false); });
+            });
+    }
+
+    function resolveEndDump(answer) {
+        $('#gdIsEndDump').prop('checked', !!answer);
+        if (_endDumpModalInstance) _endDumpModalInstance.hide();
+        var resolver = _endDumpResolver;
+        _endDumpResolver = null;
+        if (typeof resolver === 'function') resolver(answer);
+    }
+
+    /// Fetches the existing IS_END_DUMP value for a load and prefills the
+    /// inline checkbox. Safe to call when the End Dump UI hasn't been
+    /// injected yet (no-op).
+    function prefillEndDumpForEdit(txnId) {
+        if (!_requireDumpType || !txnId) return;
+        $.getJSON('/api/GrowerDelivery/' + encodeURIComponent(txnId) + '/IsEndDump')
+            .done(function (resp) {
+                $('#gdIsEndDump').prop('checked', !!(resp && resp.IsEndDump === true));
+            });
+    }
 
     // ── Weight sheet header (shown when wsId is in URL) ─────────────────────
 
@@ -1277,6 +1358,25 @@
                 return;
             }
 
+            // End Dump prompt (create-mode only). Edit mode reads the
+            // inline checkbox directly in buildPayload — no modal.
+            if (_requireDumpType && !editTxnId && _endDumpModalInstance) {
+                e.preventDefault?.();
+                _endDumpResolver = function (answer) {
+                    payload.IsEndDump = !!answer;
+                    proceedAfterEndDump(payload);
+                };
+                _endDumpModalInstance.show();
+                return;
+            }
+            if (_requireDumpType && editTxnId) {
+                payload.IsEndDump = $('#gdIsEndDump').is(':checked');
+            }
+
+            proceedAfterEndDump(payload);
+        });
+
+        function proceedAfterEndDump(payload) {
             // Check if existing weights were modified — require PIN
             if (editTxnId && editOriginalWeights) {
                 var startChanged = editOriginalWeights.StartQty != null && (payload.StartQty || null) != editOriginalWeights.StartQty;
@@ -1297,7 +1397,7 @@
             }
 
             doSubmit(payload);
-        });
+        }
     }
 
     async function doSubmit(payload) {
@@ -1835,6 +1935,11 @@
                 DirectQty: d.DirectQty,
             };
 
+            // End Dump checkbox prefill (only matters when the location
+            // has REQUIRE_DUMP_TYPE turned on — wireEndDumpUI keeps that
+            // flag in _requireDumpType).
+            prefillEndDumpForEdit(txnId);
+
             // Update submit button text + reveal the Move Load button (edit mode only).
             // Skip the reveals entirely on a closed WS — applyClosedLockdown
             // hid them and we don't want to undo that.
@@ -1928,6 +2033,13 @@
             BOL:           strOrNull('gdBOL'),
             TruckId:       (strOrNull('gdTruckId') || '').toUpperCase() || null,
             Driver:        strOrNull('gdDriver'),
+
+            // End Dump answer — null when the location doesn't require
+            // it; the server skips the IS_END_DUMP attribute write in
+            // that case. The submit handler overwrites this from a
+            // confirmation modal in create mode, or from the inline
+            // checkbox in edit mode, before doSubmit fires.
+            IsEndDump:     _requireDumpType ? $('#gdIsEndDump').is(':checked') : null,
         };
 
         var manualSourceTypeId = findSourceTypeIdByCode('MANUAL');

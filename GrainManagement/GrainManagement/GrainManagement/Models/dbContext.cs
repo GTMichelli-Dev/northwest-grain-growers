@@ -63,6 +63,10 @@ public partial class dbContext : DbContext
 
     public virtual DbSet<Location> Locations { get; set; }
 
+    public virtual DbSet<LocationAttribute> LocationAttributes { get; set; }
+
+    public virtual DbSet<LocationAttributeType> LocationAttributeTypes { get; set; }
+
     public virtual DbSet<LocationCounty> LocationCounties { get; set; }
 
     public virtual DbSet<LocationSequenceMapping> LocationSequenceMappings { get; set; }
@@ -2113,6 +2117,60 @@ public partial class dbContext : DbContext
             entity.Property(e => e.TypeCode)
                 .IsRequired()
                 .HasMaxLength(30);
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+        });
+
+        modelBuilder.Entity<LocationAttribute>(entity =>
+        {
+            entity.HasKey(e => e.LocationAttributesUid)
+                .HasName("PK_LocationAttributes");
+
+            entity.ToTable("LocationAttributes", "system");
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LocAttr_CreatedAt");
+            entity.Property(e => e.DecimalValue).HasColumnType("decimal(18, 6)");
+            entity.Property(e => e.StringValue).HasMaxLength(200);
+            entity.Property(e => e.LocationAttributesUid)
+                .HasDefaultValueSql("(newsequentialid())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LocationAttributes_LocationAttributesUid");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+
+            entity.HasOne(d => d.AttributeType).WithMany()
+                .HasForeignKey(d => d.AttributeTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LocAttr_AttributeType");
+
+            entity.HasOne(d => d.Location).WithMany()
+                .HasForeignKey(d => d.LocationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LocationAttributes_Locations");
+        });
+
+        modelBuilder.Entity<LocationAttributeType>(entity =>
+        {
+            entity.ToTable("LocationAttributeTypes", "system");
+
+            entity.HasIndex(e => e.Code, "UX_LocationAttributeTypes_Code").IsUnique();
+
+            entity.Property(e => e.Code)
+                .IsRequired()
+                .HasMaxLength(30);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LocAttrTypes_CreatedAt");
+            entity.Property(e => e.DataType)
+                .IsRequired()
+                .HasMaxLength(20);
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_LocAttrTypes_IsActive");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
         });
 

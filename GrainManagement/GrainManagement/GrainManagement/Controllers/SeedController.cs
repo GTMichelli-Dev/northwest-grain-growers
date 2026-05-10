@@ -14,14 +14,6 @@ namespace GrainManagement.Controllers
     [RequiresModule(nameof(ModuleOptions.Seed))]
     public class SeedController : Controller
     {
-
-        private readonly ICurrentUser _me;
-
-        public SeedController(ICurrentUser me)
-        {
-            _me = me;
-        }
-
         public IActionResult Index()
         {
             return View();
@@ -30,11 +22,7 @@ namespace GrainManagement.Controllers
         // TODO: wire these to the real workflows
         public IActionResult ReceiveGrower() => View();
         public IActionResult ReceiveTransfer() => View();
-        public IActionResult Graph()
-        {
-            var w = _me.IsManager;
-            return View();
-        }
+        public IActionResult Graph() => View();
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error() {

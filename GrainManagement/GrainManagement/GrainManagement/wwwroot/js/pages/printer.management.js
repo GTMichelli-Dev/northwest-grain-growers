@@ -5,7 +5,6 @@
     var savedInboundPrinterId = "";
     var savedOutboundPrinterId = "";
     var savedLotPrinterId = "";
-    var savedReportPrinterId = "";
 
     function escHtml(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
     function escAttr(s) { return s.replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
@@ -18,7 +17,6 @@
                 if (data.Inbound)  savedInboundPrinterId  = data.Inbound.ServiceId  + ":" + data.Inbound.PrinterId;
                 if (data.Outbound) savedOutboundPrinterId = data.Outbound.ServiceId + ":" + data.Outbound.PrinterId;
                 if (data.Lot)      savedLotPrinterId      = data.Lot.ServiceId      + ":" + data.Lot.PrinterId;
-                if (data.Report)   savedReportPrinterId   = data.Report.ServiceId   + ":" + data.Report.PrinterId;
                 updateAssignmentDropdowns();
             })
             .catch(function () { });
@@ -159,8 +157,8 @@
 
     // ===== Assignment Dropdowns =====
     function updateAssignmentDropdowns() {
-        var selIds = ["inboundPrinterSelect", "outboundPrinterSelect", "lotPrinterSelect", "reportPrinterSelect"];
-        var savedVals = [savedInboundPrinterId, savedOutboundPrinterId, savedLotPrinterId, savedReportPrinterId];
+        var selIds = ["inboundPrinterSelect", "outboundPrinterSelect", "lotPrinterSelect"];
+        var savedVals = [savedInboundPrinterId, savedOutboundPrinterId, savedLotPrinterId];
 
         var options = '<option value="">-- None --</option>';
         Object.keys(connectedServices).forEach(function (sid) {
@@ -184,11 +182,10 @@
     }
 
     function saveAssignments() {
-        var inVal     = document.getElementById("inboundPrinterSelect").value;
-        var outVal    = document.getElementById("outboundPrinterSelect").value;
-        var lotVal    = document.getElementById("lotPrinterSelect").value;
-        var reportVal = document.getElementById("reportPrinterSelect").value;
-        var status    = document.getElementById("assignmentStatus");
+        var inVal  = document.getElementById("inboundPrinterSelect").value;
+        var outVal = document.getElementById("outboundPrinterSelect").value;
+        var lotVal = document.getElementById("lotPrinterSelect").value;
+        var status = document.getElementById("assignmentStatus");
         status.innerHTML = '<i class="dx-icon dx-icon-refresh dx-icon-spin"></i>';
 
         fetch("/api/printers/assignments", {
@@ -197,15 +194,13 @@
             body: JSON.stringify({
                 inboundPrinterId:  inVal,
                 outboundPrinterId: outVal,
-                lotPrinterId:      lotVal,
-                reportPrinterId:   reportVal
+                lotPrinterId:      lotVal
             })
         }).then(function (r) {
             if (r.ok) {
                 savedInboundPrinterId  = inVal;
                 savedOutboundPrinterId = outVal;
                 savedLotPrinterId      = lotVal;
-                savedReportPrinterId   = reportVal;
                 status.innerHTML = '<span class="text-success">&#10003; Saved</span>';
                 setTimeout(function () { status.innerHTML = ""; }, 2000);
             } else {

@@ -14,6 +14,24 @@ Console.WriteLine(new string('-', 40));
 
 var builder = Host.CreateApplicationBuilder(args);
 
+// .NET 8+ defaults to StopHost — any unhandled exception in a hosted
+// service brings the whole service down. For an always-on field service
+// we want the opposite: log and keep running so the worker can self-heal.
+builder.Services.Configure<HostOptions>(o =>
+{
+    o.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+});
+
+// Belt-and-suspenders: catch any unobserved task exception and log it
+// instead of letting the runtime escalate to process-exit. We add Tasks
+// with `_ = Task.Run(...)` in a few places, and even the most defensive
+// inner try/catch can't cover a logger-itself-throwing edge case.
+TaskScheduler.UnobservedTaskException += (s, e) =>
+{
+    Console.Error.WriteLine($"[ScaleReaderService] Unobserved task exception suppressed: {e.Exception}");
+    e.SetObserved();
+};
+
 // Logging
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(o =>

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Data;
 using System.Data.Odbc;
@@ -11,13 +12,15 @@ public sealed class As400Reader
 {
     private readonly string _connStr;
     private readonly As400SyncOptions _opt;
+    private readonly ILogger<As400Reader>? _log;
 
-    public As400Reader(IConfiguration cfg, IOptions<As400SyncOptions> options)
+    public As400Reader(IConfiguration cfg, IOptions<As400SyncOptions> options, ILogger<As400Reader>? log = null)
     {
         _connStr = cfg.GetConnectionString("As400Odbc")
                   ?? throw new InvalidOperationException("Missing ConnectionStrings:As400Odbc");
 
         _opt = options.Value;
+        _log = log;
     }
 
     private OdbcConnection OpenConn()
@@ -26,6 +29,160 @@ public sealed class As400Reader
         conn.Open();
         return conn;
     }
+
+    /// <summary>
+    /// Wraps any of the read SQL files in <c>SELECT COUNT(*) FROM (...) sub</c>
+    /// so the runner can show a determinate progress bar. AS400 / DB2-for-i
+    /// supports derived tables in the FROM clause. Returns <c>null</c> on
+    /// any failure so the caller falls back to an indeterminate bar instead
+    /// of refusing to start the job.
+    ///
+    /// Handles SQL files that begin with <c>WITH cte AS (...)</c> by lifting
+    /// the CTE prefix out of the subquery — DB2 (and most engines) require
+    /// <c>WITH</c> to be the very first token of a statement, so wrapping
+    /// the whole thing in <c>SELECT COUNT(*) FROM (WITH ... )</c> would fail.
+    /// </summary>
+    private async Task<long?> CountFromSqlFileAsync(string sqlFile, CancellationToken ct)
+    {
+        string? sql = null;
+        try
+        {
+            await using var conn = new OdbcConnection(_connStr);
+            await conn.OpenAsync(ct);
+
+            var inner = await File.ReadAllTextAsync(sqlFile, ct);
+            sql = BuildCountSql(inner);
+
+            await using var cmd = new OdbcCommand(sql, conn);
+            var raw = await cmd.ExecuteScalarAsync(ct);
+
+            if (raw is null || raw is DBNull) return null;
+            if (raw is long l) return l;
+            if (raw is int i) return i;
+            if (raw is decimal d) return (long)d;
+            if (long.TryParse(raw.ToString(), out var parsed)) return parsed;
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _log?.LogWarning(ex, "Count query failed for {File}; falling back to indeterminate progress. SQL: {Sql}",
+                sqlFile, sql);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Wraps an inner SELECT in a COUNT(*), respecting any leading
+    /// <c>WITH</c> CTE clause. Returns the rewritten SQL.
+    /// </summary>
+    internal static string BuildCountSql(string inner)
+    {
+        if (string.IsNullOrWhiteSpace(inner)) return "SELECT COUNT(*) FROM (SELECT 1 FROM SYSIBM.SYSDUMMY1) sub";
+
+        // Strip trailing semicolons / whitespace — they'd be illegal inside
+        // a derived-table subquery.
+        var trimmed = inner.Trim().TrimEnd(';').TrimEnd();
+
+        var splitIndex = FindMainSelectStart(trimmed);
+        if (splitIndex <= 0)
+        {
+            // No leading CTE — just wrap the whole thing.
+            return $"SELECT COUNT(*) FROM ({trimmed}) sub";
+        }
+
+        var ctePrefix = trimmed.Substring(0, splitIndex).TrimEnd();
+        var mainSelect = trimmed.Substring(splitIndex);
+
+        // Lift the CTE outside, count the main SELECT inside the subquery.
+        return $"{ctePrefix}\nSELECT COUNT(*) FROM (\n{mainSelect}\n) sub";
+    }
+
+    /// <summary>
+    /// Walks an SQL string skipping comments, string literals, and parenthesized
+    /// regions, and returns the offset of the first depth-0 <c>SELECT</c>
+    /// keyword — i.e. the start of the main SELECT after any CTE definitions.
+    /// Returns -1 if none is found.
+    /// </summary>
+    private static int FindMainSelectStart(string sql)
+    {
+        int i = 0;
+        int depth = 0;
+        while (i < sql.Length)
+        {
+            char c = sql[i];
+
+            // -- line comment
+            if (c == '-' && i + 1 < sql.Length && sql[i + 1] == '-')
+            {
+                while (i < sql.Length && sql[i] != '\n') i++;
+                continue;
+            }
+            // /* block comment */
+            if (c == '/' && i + 1 < sql.Length && sql[i + 1] == '*')
+            {
+                i += 2;
+                while (i + 1 < sql.Length && !(sql[i] == '*' && sql[i + 1] == '/')) i++;
+                if (i + 1 < sql.Length) i += 2;
+                continue;
+            }
+            // 'string literal' (DB2 doubled-single-quote escape)
+            if (c == '\'')
+            {
+                i++;
+                while (i < sql.Length)
+                {
+                    if (sql[i] == '\'')
+                    {
+                        if (i + 1 < sql.Length && sql[i + 1] == '\'') { i += 2; continue; }
+                        i++;
+                        break;
+                    }
+                    i++;
+                }
+                continue;
+            }
+
+            if (c == '(') { depth++; i++; continue; }
+            if (c == ')') { depth--; i++; continue; }
+
+            if (depth == 0 && (c == 'S' || c == 's') && IsKeywordAt(sql, i, "SELECT"))
+                return i;
+
+            i++;
+        }
+        return -1;
+    }
+
+    private static bool IsKeywordAt(string s, int pos, string keyword)
+    {
+        if (pos + keyword.Length > s.Length) return false;
+        for (int k = 0; k < keyword.Length; k++)
+        {
+            if (char.ToUpperInvariant(s[pos + k]) != char.ToUpperInvariant(keyword[k]))
+                return false;
+        }
+        if (pos > 0)
+        {
+            char prev = s[pos - 1];
+            if (char.IsLetterOrDigit(prev) || prev == '_') return false;
+        }
+        int after = pos + keyword.Length;
+        if (after < s.Length)
+        {
+            char next = s[after];
+            if (char.IsLetterOrDigit(next) || next == '_') return false;
+        }
+        return true;
+    }
+
+    public Task<long?> CountAccountsAsync(CancellationToken ct)
+        => CountFromSqlFileAsync("Accounts.sql", ct);
+
+    public Task<long?> CountAllProductItemsAsync(CancellationToken ct)
+        => CountFromSqlFileAsync("AllProductItems.sql", ct);
+
+    public Task<long?> CountLandlordSplitPercentsAsync(CancellationToken ct)
+        => CountFromSqlFileAsync("LandLordSplitPercentages.sql", ct);
 
 
     static long GetInt64(IDataRecord r, string col)

@@ -141,6 +141,14 @@
     var _enterAmountModalInst = null;
     var _lastPinUserId   = null;
 
+    // ── End Dump (REQUIRE_DUMP_TYPE LocationAttribute) ─────────────────
+    // Mirrors the same flow in grower.delivery.js: an inline checkbox
+    // shown above the Save button when the location requires it, plus a
+    // confirmation modal popped on submit in create mode.
+    var _requireDumpType      = false;
+    var _endDumpModalInstance = null;
+    var _endDumpResolver      = null;
+
     var DIRECT_CODES = ['MANUAL', 'RAIL', 'BULKLOADER'];
     var PRIVILEGE_MANUAL_ENTRY = 6;
 
@@ -154,12 +162,76 @@
             .then(loadWeightSheet)
             .then(initPickers)
             .then(wireEvents)
+            .then(wireEndDumpUI)
             .then(function () {
                 if (_editTxnId > 0) {
                     return loadExistingLoad(_editTxnId);
                 }
             });
     });
+
+    // Fetches the location's REQUIRE_DUMP_TYPE flag and, when true,
+    // injects an inline checkbox above the Save button + a confirmation
+    // Bootstrap modal used during create-mode submit. Skipped silently
+    // when the location's id isn't known yet (the form isn't really
+    // usable in that state — there's a louder alert from initLocation).
+    function wireEndDumpUI() {
+        if (!_currentLocId) return Promise.resolve();
+        return $.getJSON('/api/locations/' + _currentLocId + '/RequireDumpType')
+            .then(function (resp) {
+                _requireDumpType = !!(resp && resp.RequireDumpType);
+                if (!_requireDumpType) return;
+
+                var $row = $(
+                    '<div id="tlEndDumpRow" class="form-check form-switch mb-2 mt-2"' +
+                    ' style="margin-left:.5rem;">' +
+                    '<input class="form-check-input" type="checkbox" id="tlIsEndDump">' +
+                    '<label class="form-check-label" for="tlIsEndDump">' +
+                    '<strong>End Dump</strong></label>' +
+                    '</div>'
+                );
+                var $btn = $(SEL.saveLoadBtn);
+                if ($btn.length) $btn.before($row);
+
+                var modalHtml =
+                    '<div class="modal fade" id="tlEndDumpModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">' +
+                      '<div class="modal-dialog modal-dialog-centered">' +
+                        '<div class="modal-content">' +
+                          '<div class="modal-header bg-info text-white">' +
+                            '<h5 class="modal-title">End Dump?</h5>' +
+                          '</div>' +
+                          '<div class="modal-body">' +
+                            '<p class="mb-0">Is this load an <strong>end dump</strong>?</p>' +
+                          '</div>' +
+                          '<div class="modal-footer">' +
+                            '<button type="button" class="btn btn-outline-secondary" id="tlEndDumpNo">No</button>' +
+                            '<button type="button" class="btn btn-info text-white" id="tlEndDumpYes">Yes</button>' +
+                          '</div>' +
+                        '</div>' +
+                      '</div>' +
+                    '</div>';
+                $(document.body).append(modalHtml);
+                _endDumpModalInstance = new bootstrap.Modal(document.getElementById('tlEndDumpModal'));
+                $('#tlEndDumpYes').on('click', function () { resolveEndDump(true); });
+                $('#tlEndDumpNo' ).on('click', function () { resolveEndDump(false); });
+            });
+    }
+
+    function resolveEndDump(answer) {
+        $('#tlIsEndDump').prop('checked', !!answer);
+        if (_endDumpModalInstance) _endDumpModalInstance.hide();
+        var resolver = _endDumpResolver;
+        _endDumpResolver = null;
+        if (typeof resolver === 'function') resolver(answer);
+    }
+
+    function prefillEndDumpForEdit(txnId) {
+        if (!_requireDumpType || !txnId) return;
+        $.getJSON('/api/Transfer/' + encodeURIComponent(txnId) + '/IsEndDump')
+            .done(function (resp) {
+                $('#tlIsEndDump').prop('checked', !!(resp && resp.IsEndDump === true));
+            });
+    }
 
     async function initLocation() {
         try {
@@ -467,6 +539,12 @@
         try {
             var d = await $.getJSON('/api/Transfer/' + txnId);
             if (!d) return;
+
+            // Prefill the End Dump checkbox if the location requires
+            // it. Fires in parallel with the rest of the form
+            // population — the inline checkbox lives outside the d.*
+            // payload so this is its own request.
+            prefillEndDumpForEdit(txnId);
 
             // Switch to the matching method (truck vs direct).
             if (d.IsTruck) {
@@ -958,6 +1036,16 @@
         if (!_wsRowUid) { showAlert('Weight sheet not loaded.', 'danger'); return; }
         if (_wsClosed)  { showAlert('This weight sheet is closed and cannot be edited.', 'danger'); return; }
 
+        // Create-mode End Dump prompt — defer the actual save until the
+        // operator answers the modal. Edit mode reads the inline
+        // checkbox directly when the payload is built below.
+        if (_requireDumpType && !_editTxnId && _endDumpModalInstance) {
+            await new Promise(function (resolve) {
+                _endDumpResolver = resolve;
+                _endDumpModalInstance.show();
+            });
+        }
+
         var isTruck = !isDirectMode();
         var startQty = isTruck ? (parseInt($(SEL.startQty).val(), 10) || null) : null;
         var endQty   = isTruck ? (parseInt($(SEL.endQty).val(), 10) || null) : null;
@@ -1019,6 +1107,9 @@
             TruckId:    $.trim($(SEL.truckId).val()),
             Driver:     $.trim($(SEL.driver).val()),
             Notes:      $.trim($(SEL.notes).val()),
+            // Null when the location doesn't require a dump-type answer
+            // — the server skips the IS_END_DUMP write in that case.
+            IsEndDump:  _requireDumpType ? $('#tlIsEndDump').is(':checked') : null,
             Protein:    parseFloat($(SEL.protein).val()) || null,
             Moisture:   parseFloat($(SEL.moisture).val()) || null,
             CreatedByUserId: _lastPinUserId,

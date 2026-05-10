@@ -10,14 +10,20 @@ namespace GrainManagement.Controllers
     /// caller must supply a PIN belonging to a user with PrivilegeId=7 (Remote Admin).
     /// </summary>
     [Route("RemoteAdmin")]
-    [RequiresModule(nameof(ModuleOptions.System))]
     public class RemoteAdminController : Controller
     {
         public const string CookieName         = "GrainMgmt_RemoteAdminPin";
         public const string UserNameCookieName = "GrainMgmt_RemoteAdminUser";
 
+        // The Index / Pin pages only make sense on Remote deployments, so
+        // they keep the module gate. Logout is intentionally ungated — the
+        // navbar Logout link is shown whenever the PIN cookie exists, and
+        // a Central deployment with a stale cookie still needs to be able
+        // to clear it without 404-ing.
+
         [HttpGet("")]
         [HttpGet("Index")]
+        [RequiresModule(nameof(ModuleOptions.System))]
         public IActionResult Index()
         {
             if (!Request.Cookies.ContainsKey(CookieName))
@@ -28,6 +34,7 @@ namespace GrainManagement.Controllers
         }
 
         [HttpGet("Pin")]
+        [RequiresModule(nameof(ModuleOptions.System))]
         public IActionResult Pin()
         {
             return View();

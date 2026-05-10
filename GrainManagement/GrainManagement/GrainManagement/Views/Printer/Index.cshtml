@@ -30,28 +30,24 @@ else
         <span id="assignmentStatus" class="small"></span>
     </div>
     <div class="card-body py-2">
+        @* Reports are printed via the browser's PDF preview, so no
+           server-side Report printer assignment is needed. *@
         <div class="row g-3 align-items-end">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label mb-0 small fw-bold">Inbound Printer</label>
                 <select id="inboundPrinterSelect" class="form-select form-select-sm">
                     <option value="">-- None --</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label mb-0 small fw-bold">Outbound Printer</label>
                 <select id="outboundPrinterSelect" class="form-select form-select-sm">
                     <option value="">-- None --</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label mb-0 small fw-bold">Lot Printer</label>
                 <select id="lotPrinterSelect" class="form-select form-select-sm">
-                    <option value="">-- None --</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label mb-0 small fw-bold">Report Printer</label>
-                <select id="reportPrinterSelect" class="form-select form-select-sm">
                     <option value="">-- None --</option>
                 </select>
             </div>

@@ -167,7 +167,13 @@
                             },
                             { dataField: "UseForSeed", label: { text: "Use For Seed" } },
                             { dataField: "UseForWarehouse", label: { text: "Use For Warehouse" } },
-                            { dataField: "Licensed", label: { text: "Licensed" } }
+                            { dataField: "Licensed", label: { text: "Licensed" } },
+                            {
+                                dataField: "RequireDumpType",
+                                label: { text: "Require Dump Type" },
+                                editorType: "dxCheckBox",
+                                helpText: "Prompts the operator for an end-dump answer on each new load at this location."
+                            }
                         ]
                     }
                 },
@@ -221,6 +227,15 @@
                             const value = cellInfo.value;
                             cellElement.text(value ? "Yes" : "No");
                             if (!value) cellElement.css("color", "red");
+                        }
+                    },
+                    {
+                        dataField: "RequireDumpType",
+                        caption: "Dump Type",
+                        cellTemplate: function (cellElement, cellInfo) {
+                            const value = cellInfo.value;
+                            cellElement.text(value ? "Required" : "—");
+                            if (value) cellElement.css({ color: "#1565c0", fontWeight: 600 });
                         }
                     },
                     {

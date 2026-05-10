@@ -16,4 +16,9 @@
     public bool UseForWarehouse { get; set; }
 
     public bool Licensed { get; set; }
+
+    /// <summary>True when the operator should be prompted "Is this an
+    /// end dump?" on each new load at this location. Backed by the
+    /// REQUIRE_DUMP_TYPE LocationAttribute.</summary>
+    public bool RequireDumpType { get; set; }
 }

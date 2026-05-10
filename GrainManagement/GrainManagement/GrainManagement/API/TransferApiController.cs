@@ -26,20 +26,17 @@ public sealed class TransferApiController : ControllerBase
     private const string DirectionShipped  = "Shipped";
 
     private readonly dbContext _ctx;
-    private readonly ICurrentUser _currentUser;
     private readonly ILogger<TransferApiController> _logger;
     private readonly IWeightSheetNotifier _notifier;
     private readonly GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard _priorDayGuard;
 
     public TransferApiController(
         dbContext ctx,
-        ICurrentUser currentUser,
         ILogger<TransferApiController> logger,
         IWeightSheetNotifier notifier,
         GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard priorDayGuard)
     {
         _ctx = ctx;
-        _currentUser = currentUser;
         _logger = logger;
         _notifier = notifier;
         _priorDayGuard = priorDayGuard;
@@ -550,6 +547,10 @@ public sealed class TransferApiController : ControllerBase
             }
         }
 
+        // IS_END_DUMP carries a bool — out-of-band from the
+        // BuildAttributes loop above (which is decimal/string-only).
+        await WriteIsEndDumpAsync(transactionId, dto.IsEndDump, ct);
+
         await _notifier.NotifyAsync(dto.LocationId, ws.WeightSheetId, "load-created", ct);
 
         return Ok(new { id = transactionId });
@@ -966,6 +967,10 @@ public sealed class TransferApiController : ControllerBase
             return StatusCode(500, new { message = "Database error while updating load attributes." });
         }
 
+        // IS_END_DUMP follows the same delete-then-insert pattern but
+        // with BoolValue, so it lives outside the BuildAttributes loop.
+        await WriteIsEndDumpAsync(txnId, dto.IsEndDump, ct);
+
         await _notifier.NotifyAsync(dto.LocationId, ws.WeightSheetId, "load-updated", ct);
 
         return Ok(new { id = txnId });
@@ -1213,6 +1218,55 @@ public sealed class TransferApiController : ControllerBase
     // ── Helpers ─────────────────────────────────────────────────────────────
 
     private record AttributeEntry(string Code, decimal? DecimalValue, string StringValue);
+
+    /// <summary>
+    /// GET /api/Transfer/{id}/IsEndDump — single-attribute lookup for
+    /// the transfer load edit form to prefill the End Dump checkbox.
+    /// </summary>
+    [HttpGet("{transactionId:long}/IsEndDump")]
+    public async Task<IActionResult> GetIsEndDump(long transactionId, CancellationToken ct)
+    {
+        var value = await _ctx.TransactionAttributes.AsNoTracking()
+            .Where(a => a.TransactionId == transactionId
+                        && a.AttributeType.Code == TransactionAttributeCodes.IsEndDump)
+            .Select(a => a.BoolValue)
+            .FirstOrDefaultAsync(ct);
+        return Ok(new { IsEndDump = value });
+    }
+
+    /// <summary>
+    /// Writes (or clears) IS_END_DUMP for the given transfer load.
+    /// Skipped silently when the attribute type isn't seeded yet.
+    /// Same delete-then-insert shape as the delivery flow so the edit
+    /// path flips cleanly when the operator changes the answer.
+    /// </summary>
+    private async Task WriteIsEndDumpAsync(long transactionId, bool? value, CancellationToken ct)
+    {
+        var typeId = await _ctx.TransactionAttributeTypes.AsNoTracking()
+            .Where(t => t.IsActive == true && t.Code == TransactionAttributeCodes.IsEndDump)
+            .Select(t => (int?)t.Id)
+            .FirstOrDefaultAsync(ct);
+        if (typeId == null) return;
+
+        var existing = await _ctx.TransactionAttributes
+            .Where(a => a.TransactionId == transactionId && a.AttributeTypeId == typeId.Value)
+            .ToListAsync(ct);
+        if (existing.Count > 0)
+            _ctx.TransactionAttributes.RemoveRange(existing);
+
+        if (value.HasValue)
+        {
+            _ctx.TransactionAttributes.Add(new TransactionAttribute
+            {
+                TransactionAttributesUid = Guid.NewGuid(),
+                TransactionId = transactionId,
+                AttributeTypeId = typeId.Value,
+                BoolValue = value.Value,
+                CreatedAt = DateTime.UtcNow,
+            });
+        }
+        await _ctx.SaveChangesAsync(ct);
+    }
 
     private static List<AttributeEntry> BuildAttributes(TransferLoadDto dto)
     {

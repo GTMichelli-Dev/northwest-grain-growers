@@ -184,5 +184,11 @@ namespace GrainManagement.Dtos.Warehouse
 
         /// <summary>Driver name (DRIVER, AttributeTypeId=13).</summary>
         public string Driver { get; set; }
+
+        /// <summary>End-dump answer (IS_END_DUMP transaction attribute,
+        /// bool). Sent only at locations whose REQUIRE_DUMP_TYPE
+        /// LocationAttribute is true; null otherwise (and the attribute
+        /// is left unwritten).</summary>
+        public bool? IsEndDump { get; set; }
     }
 }

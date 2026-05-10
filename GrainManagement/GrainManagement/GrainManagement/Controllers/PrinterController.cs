@@ -9,23 +9,15 @@ namespace GrainManagement.Controllers
     [RequiresModule(nameof(ModuleOptions.Printers))]
     public class PrinterController : Controller
     {
-        private readonly ICurrentUser _me;
         private readonly PrintDbContext _printDb;
 
-        public PrinterController(ICurrentUser me, PrintDbContext printDb)
+        public PrinterController(PrintDbContext printDb)
         {
-            _me = me;
             _printDb = printDb;
         }
 
         [HttpGet("/Printer")]
-        public IActionResult Index()
-        {
-            if (!_me.IsAdmin)
-                return RedirectToAction("Index", "Home");
-
-            return View();
-        }
+        public IActionResult Index() => View();
 
         [HttpGet("api/printers/assignments")]
         public IActionResult GetAssignments()
@@ -40,10 +32,11 @@ namespace GrainManagement.Controllers
         public IActionResult SaveAssignments([FromBody] PrinterAssignmentDto dto)
         {
             // Save each role. Null/empty = "None" = delete assignment (handled in SaveAssignment).
+            // Report is intentionally absent — reports are printed via the
+            // browser's PDF preview rather than a server-routed printer.
             SaveRole("Inbound",  dto.InboundPrinterId);
             SaveRole("Outbound", dto.OutboundPrinterId);
             SaveRole("Lot",      dto.LotPrinterId);
-            SaveRole("Report",   dto.ReportPrinterId);
 
             return Ok(new { success = true });
         }
@@ -92,6 +85,5 @@ namespace GrainManagement.Controllers
         public string? InboundPrinterId  { get; set; }
         public string? OutboundPrinterId { get; set; }
         public string? LotPrinterId      { get; set; }
-        public string? ReportPrinterId   { get; set; }
     }
 }

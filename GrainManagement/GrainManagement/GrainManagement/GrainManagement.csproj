@@ -4,10 +4,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <PropertyGroup>
-    <Version>1.0.71</Version>
-    <FileVersion>1.0.71</FileVersion>
-    <AssemblyVersion>1.0.71</AssemblyVersion>
-    <InformationalVersion>1.0.71</InformationalVersion>
+    <Version>1.0.125</Version>
+    <FileVersion>1.0.125</FileVersion>
+    <AssemblyVersion>1.0.125</AssemblyVersion>
+    <InformationalVersion>1.0.125</InformationalVersion>
     <AssemblyTitle>GrainManagement</AssemblyTitle>
 	
   </PropertyGroup>
@@ -21,6 +21,36 @@
     <None Include="efpt.config.json.user" />
     <None Include="wwwroot\js\pages\warehouse.location.js" />
   </ItemGroup>
+  <!-- Explicit nesting for the XtraReports so Solution Explorer pairs the
+       partial-class .Designer.cs and the .resx under the main .cs file —
+       SDK-style auto-detection sometimes misses newly-added reports until
+       the project is reloaded. -->
+  <ItemGroup>
+    <Compile Update="Reporting\DailyWeightSheetSeriesReport.Designer.cs">
+      <DependentUpon>DailyWeightSheetSeriesReport.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Update="Reporting\DailyWeightSheetSeriesReport.resx">
+      <DependentUpon>DailyWeightSheetSeriesReport.cs</DependentUpon>
+    </EmbeddedResource>
+    <Compile Update="Reporting\DailyIntakeReport.Designer.cs">
+      <DependentUpon>DailyIntakeReport.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Update="Reporting\DailyIntakeReport.resx">
+      <DependentUpon>DailyIntakeReport.cs</DependentUpon>
+    </EmbeddedResource>
+    <Compile Update="Reporting\DailyTransferReport.Designer.cs">
+      <DependentUpon>DailyTransferReport.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Update="Reporting\DailyTransferReport.resx">
+      <DependentUpon>DailyTransferReport.cs</DependentUpon>
+    </EmbeddedResource>
+    <Compile Update="Reporting\ClosedLotsReport.Designer.cs">
+      <DependentUpon>ClosedLotsReport.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Update="Reporting\ClosedLotsReport.resx">
+      <DependentUpon>ClosedLotsReport.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="DevExpress.AspNetCore.Reporting" Version="25.2.5" />
     <PackageReference Include="DevExpress.Drawing.Skia" Version="25.2.5" />
@@ -33,9 +63,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Caching.SqlServer" Version="9.0.12" />
-    <PackageReference Include="Microsoft.Identity.Web" Version="4.1.0" />
-    <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.1.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="9.0.6" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="9.0.6" />

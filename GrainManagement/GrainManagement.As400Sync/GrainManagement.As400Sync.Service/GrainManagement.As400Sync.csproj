@@ -6,12 +6,18 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-GrainManagement.As400Sync-961c4862-fc8d-4936-a015-2ed0d3e59e00</UserSecretsId>
+    <Version>1.0.10</Version>
+    <FileVersion>1.0.10</FileVersion>
+    <AssemblyVersion>1.0.10</AssemblyVersion>
+    <InformationalVersion>1.0.10</InformationalVersion>
+    <AssemblyTitle>GrainManagement.As400Sync</AssemblyTitle>
   </PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
 		<PackageReference Include="Microsoft.OpenApi" Version="1.6.22" />
 
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.10" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
 		<PackageReference Include="System.Data.Odbc" Version="8.0.0" />
 	</ItemGroup>

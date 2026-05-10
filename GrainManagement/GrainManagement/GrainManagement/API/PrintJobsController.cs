@@ -450,6 +450,55 @@ namespace GrainManagement.Api
         }
 
         /// <summary>
+        /// Resolves item-level fields used by the load-ticket and weight-sheet
+        /// reports: item id/description, crop id/description, and the seed
+        /// flag. IsSeed mirrors /api/Lookups/SeedItems — TraitId=31 AND the
+        /// product's Category is not one of the non-seed codes (CHEM/FERT/
+        /// PACK/SERVICE). Returns empty/false when itemId is null or unknown.
+        /// </summary>
+        private (string ItemIdStr, string ItemDescription, string CropIdStr, string Crop, bool IsSeed) ResolveItemSeedInfo(long? itemId)
+        {
+            string itemIdStr = "";
+            string description = "";
+            string cropIdStr = "";
+            string cropDescription = "";
+            bool isSeedItem = false;
+
+            if (!itemId.HasValue) return (itemIdStr, description, cropIdStr, cropDescription, isSeedItem);
+
+            itemIdStr = itemId.Value.ToString();
+            var nonSeedCategoryCodes = new[] { "CHEM", "FERT", "PACK", "SERVICE" };
+            var info = _db.Items.AsNoTracking()
+                .Where(i => i.ItemId == itemId.Value)
+                .Select(i => new
+                {
+                    i.Description,
+                    CropId = (long?)(i.Product != null ? i.Product.CropId : null),
+                    HasSeedTrait = i.ItemTraits.Any(x => x.TraitId == 31),
+                    CategoryCode = i.Product != null && i.Product.Category != null
+                        ? i.Product.Category.CategoryCode
+                        : null,
+                })
+                .FirstOrDefault();
+            if (info != null)
+            {
+                description = info.Description ?? "";
+                isSeedItem = info.HasSeedTrait
+                    && (info.CategoryCode == null
+                        || !nonSeedCategoryCodes.Contains(info.CategoryCode));
+                if (info.CropId.HasValue && info.CropId.Value > 0)
+                {
+                    cropIdStr = info.CropId.Value.ToString();
+                    cropDescription = _db.Items.AsNoTracking()
+                        .Where(i => i.ItemId == info.CropId.Value)
+                        .Select(i => i.Description)
+                        .FirstOrDefault() ?? "";
+                }
+            }
+            return (itemIdStr, description, cropIdStr, cropDescription, isSeedItem);
+        }
+
+        /// <summary>
         /// Builds the TransferLoadTicketDataModel for a transfer transaction.
         /// Joins to the WS for ItemId / Source / Destination, the Items table for
         /// Variety, and Locations for source/destination names. No lot / account /
@@ -517,20 +566,11 @@ namespace GrainManagement.Api
                     .FirstOrDefault() ?? "";
             }
 
-            // ── Variety (item description) ──────────────────────────────────
-            string variety = "";
-            string itemIdStr = "";
-            if (wsItemId.HasValue)
-            {
-                itemIdStr = wsItemId.Value.ToString();
-                variety = _db.Items.AsNoTracking()
-                    .Where(i => i.ItemId == wsItemId.Value)
-                    .Select(i => i.Description)
-                    .FirstOrDefault() ?? "";
-            }
-            // Fall back to the detail's product description if the WS item didn't resolve
-            if (string.IsNullOrEmpty(variety))
-                variety = full.Product?.Description ?? "";
+            // ── Variety / item / crop / seed-flag ───────────────────────────
+            var seedInfo = ResolveItemSeedInfo(wsItemId);
+            string variety = !string.IsNullOrEmpty(seedInfo.ItemDescription)
+                ? seedInfo.ItemDescription
+                : (full.Product?.Description ?? "");
 
             // ── Bin (container) ─────────────────────────────────────────────
             var binName = _db.InventoryTransactionDetailToContainers
@@ -576,7 +616,11 @@ namespace GrainManagement.Api
                 WeightSheetId       = wsDisplay,
                 Direction           = direction,
                 Variety             = variety,
-                ItemId              = itemIdStr,
+                ItemId              = seedInfo.ItemIdStr,
+                ItemDescription     = variety,
+                CropId              = seedInfo.CropIdStr,
+                Crop                = seedInfo.Crop,
+                IsSeed              = seedInfo.IsSeed,
                 SourceLocation      = sourceName,
                 SourceLocationId    = sourceLocationId?.ToString() ?? "",
                 DestinationLocation = destName,
@@ -717,6 +761,12 @@ namespace GrainManagement.Api
                 .Select(a => a.StringValue)
                 .FirstOrDefault() ?? "";
 
+            // ── Item / crop / seed-flag ─────────────────────────────────────
+            var seedInfo = ResolveItemSeedInfo(detail.ItemId);
+            string commodity = !string.IsNullOrEmpty(seedInfo.ItemDescription)
+                ? seedInfo.ItemDescription
+                : (detail.Product?.Description ?? "");
+
             return new LoadTicketDataModel
             {
                 LoadId           = FormatId(ticket),
@@ -736,8 +786,12 @@ namespace GrainManagement.Api
                 DirectQty        = (int)(detail.DirectQty ?? 0),
                 Location         = detail.Transaction?.Location?.Name ?? "",
                 LocationId       = detail.Transaction?.LocationId.ToString() ?? "",
-                Commodity        = detail.Product?.Description ?? "",
-                ItemId           = detail.ItemId?.ToString() ?? "",
+                Commodity        = commodity,
+                ItemDescription  = commodity,
+                ItemId           = seedInfo.ItemIdStr,
+                CropId           = seedInfo.CropIdStr,
+                Crop             = seedInfo.Crop,
+                IsSeed           = seedInfo.IsSeed,
                 Bin              = binName,
                 StartManualFlag  = startManualFlag,
                 EndManualFlag    = endManualFlag,
@@ -1056,14 +1110,12 @@ namespace GrainManagement.Api
             if (!string.Equals(ws.WeightSheetType, "Transfer", StringComparison.OrdinalIgnoreCase))
                 return null;
 
-            string variety = "";
-            if (ws.ItemId.HasValue)
-            {
-                variety = _db.Items.AsNoTracking()
-                    .Where(i => i.ItemId == ws.ItemId.Value)
-                    .Select(i => i.Description)
-                    .FirstOrDefault() ?? "";
-            }
+            var seedInfo = ResolveItemSeedInfo(ws.ItemId);
+            string variety = seedInfo.ItemDescription;
+            string itemIdStr = seedInfo.ItemIdStr;
+            string cropIdStr = seedInfo.CropIdStr;
+            string cropDescription = seedInfo.Crop;
+            bool isSeedItem = seedInfo.IsSeed;
 
             string sourceName = "";
             if (ws.SourceLocationId.HasValue)
@@ -1217,6 +1269,11 @@ namespace GrainManagement.Api
                 WeightSheetNumber    = weightSheetNumber,
                 Direction            = direction,
                 Variety              = variety,
+                ItemId               = itemIdStr,
+                ItemDescription      = variety,
+                CropId               = cropIdStr,
+                Crop                 = cropDescription,
+                IsSeed               = isSeedItem,
                 SourceLocation       = sourceName,
                 SourceLocationId     = ws.SourceLocationId?.ToString() ?? "",
                 DestinationLocation  = destName,

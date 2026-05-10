@@ -32,6 +32,38 @@ namespace ScaleReaderService.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // Outer safety net. If the inner loop itself ever escapes —
+            // even due to a logger throwing or some runtime corner case —
+            // we sleep and re-enter rather than letting the worker exit.
+            // Combined with HostOptions.BackgroundServiceExceptionBehavior =
+            // Ignore in Program.cs, this means a bad day on the network
+            // can't take the service down.
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await RunWorkerLoopAsync(stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    SafeLog(() => _log.LogError(ex, "ScaleWorker outer loop crashed. Restarting in 10s."));
+                    try { await Task.Delay(10_000, stoppingToken); }
+                    catch (OperationCanceledException) { return; }
+                }
+            }
+        }
+
+        private static void SafeLog(Action a)
+        {
+            try { a(); } catch { /* swallow logger failures so the recover-and-retry loop can keep going */ }
+        }
+
+        private async Task RunWorkerLoopAsync(CancellationToken stoppingToken)
+        {
             var hubUrls = _settings.HubUrls;
 
             _log.LogInformation("ScaleWorker starting. ServiceId={ServiceId}, Hubs={HubUrls}",

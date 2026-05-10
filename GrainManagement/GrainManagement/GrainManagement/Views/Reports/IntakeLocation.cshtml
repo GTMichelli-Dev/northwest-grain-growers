@@ -1,0 +1,64 @@
+@{
+    ViewData["Title"] = "Intake Location Report";
+}
+
+<a href="/Reports" class="gm-module-bar gm-module-bar--reports gm-module-bar--link" title="Back to Reports">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--reports" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">INTAKE LOCATION REPORT</span>
+</a>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+            <div>
+                <label class="form-label small mb-1 fw-bold" for="rb-district">District</label>
+                <select id="rb-district" class="form-select form-select-sm" style="min-width:11rem;">
+                    <option value="0">All</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label small mb-1 fw-bold">Locations</label>
+                <div id="rb-location-tags" style="min-width:18rem;"></div>
+            </div>
+            <div>
+                <label class="form-label small mb-1 fw-bold">Crops</label>
+                <div id="rb-crop-tags" style="min-width:14rem;"></div>
+            </div>
+            <div>
+                <label class="form-label small mb-1 fw-bold">Group By</label>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Group by">
+                    <input type="radio" class="btn-check" name="rb-groupby" id="rb-groupby-primary" value="primary" checked>
+                    <label class="btn btn-outline-primary" for="rb-groupby-primary">Primary Account</label>
+                    <input type="radio" class="btn-check" name="rb-groupby" id="rb-groupby-split" value="split">
+                    <label class="btn btn-outline-primary" for="rb-groupby-split">Split Group</label>
+                </div>
+            </div>
+            <div>
+                <label class="form-label small mb-1 fw-bold" for="rb-from">Start Date (Pacific)</label>
+                <input type="date" id="rb-from" class="form-control form-control-sm" style="width:9.5rem;" />
+            </div>
+            <div>
+                <label class="form-label small mb-1 fw-bold" for="rb-to">End Date (Pacific)</label>
+                <input type="date" id="rb-to" class="form-control form-control-sm" style="width:9.5rem;" />
+            </div>
+            <div>
+                <button id="rb-apply" type="button" class="btn btn-sm btn-primary">Apply</button>
+            </div>
+            <div>
+                <input type="search" id="rb-search" class="form-control form-control-sm" placeholder="Search…" style="width:11rem;" />
+            </div>
+            <div>
+                <button id="rb-export" type="button" class="btn btn-sm btn-outline-success">
+                    <i class="fa fa-file-excel"></i> Excel
+                </button>
+            </div>
+        </div>
+
+        <div id="rb-grid"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/reports.intake-location.js" asp-append-version="true"></script>
+}

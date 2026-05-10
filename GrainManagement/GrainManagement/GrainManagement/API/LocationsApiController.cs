@@ -117,9 +117,17 @@ public class LocationsApiController : ControllerBase
     //}
 
     [HttpGet]
-    public object Get(DataSourceLoadOptions loadOptions)
+    public async Task<object> Get(DataSourceLoadOptions loadOptions)
     {
         DevExtremeUtils.NormalizeLoadOptions(loadOptions);
+
+        // Backfill: every active location should carry a
+        // REQUIRE_DUMP_TYPE LocationAttribute (BoolValue=false by default).
+        // The Locations admin view is the canonical entry point for the
+        // attribute, so seeding here keeps the data consistent without a
+        // separate startup-time migration step.
+        await EnsureRequireDumpTypeAttributesAsync(default);
+
         var query =
             from l in _ctx.Locations.Include(l => l.District)
             select new LocationDto
@@ -132,11 +140,57 @@ public class LocationsApiController : ControllerBase
                 Licensed = l.Licensed,
                 IsActive = l.IsActive,
                 DistrictId = l.DistrictId,
-                District = l.District.Name
+                District = l.District.Name,
+                RequireDumpType = _ctx.LocationAttributes
+                    .Where(la => la.LocationId == l.LocationId
+                                 && la.AttributeType.Code == LocationAttributeCodes.RequireDumpType)
+                    .Select(la => la.BoolValue ?? false)
+                    .FirstOrDefault(),
             };
 
         return DataSourceLoader.Load(query, loadOptions);
     }
+
+    /// <summary>
+    /// Ensures every Location has a REQUIRE_DUMP_TYPE LocationAttribute
+    /// row (BoolValue=false when missing). Idempotent — only inserts the
+    /// rows that don't yet exist. Skipped silently if the
+    /// LocationAttributeTypes table or REQUIRE_DUMP_TYPE row hasn't been
+    /// provisioned yet (the SQL migration is pending).
+    /// </summary>
+    private async Task EnsureRequireDumpTypeAttributesAsync(CancellationToken ct)
+    {
+        var typeId = await _ctx.LocationAttributeTypes.AsNoTracking()
+            .Where(t => t.Code == LocationAttributeCodes.RequireDumpType)
+            .Select(t => (int?)t.Id)
+            .FirstOrDefaultAsync(ct);
+        if (typeId == null) return;
+
+        var existingLocIds = await _ctx.LocationAttributes.AsNoTracking()
+            .Where(la => la.AttributeTypeId == typeId.Value)
+            .Select(la => la.LocationId)
+            .ToListAsync(ct);
+        var existing = new HashSet<int>(existingLocIds);
+
+        var allLocIds = await _ctx.Locations.AsNoTracking()
+            .Select(l => l.LocationId)
+            .ToListAsync(ct);
+
+        var toInsert = allLocIds.Where(id => !existing.Contains(id)).ToList();
+        if (toInsert.Count == 0) return;
+
+        foreach (var id in toInsert)
+        {
+            _ctx.LocationAttributes.Add(new LocationAttribute
+            {
+                LocationId = id,
+                AttributeTypeId = typeId.Value,
+                BoolValue = false,
+            });
+        }
+        await _ctx.SaveChangesAsync(ct);
+    }
+
     [HttpPut]
     public async Task<IActionResult> Put([FromForm] int key, [FromForm] string values)
     {
@@ -146,6 +200,23 @@ public class LocationsApiController : ControllerBase
 
         // Snapshot current LocationId (key)
         var originalId = entity.LocationId;
+
+        // Pull RequireDumpType out of the JSON before populating the
+        // Location entity — it isn't a column on Locations, it lives on
+        // LocationAttributes.
+        bool? requireDumpType = null;
+        try
+        {
+            var jo = JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(values ?? "{}");
+            if (jo != null && jo.TryGetValue("RequireDumpType",
+                    StringComparison.OrdinalIgnoreCase, out var token))
+            {
+                requireDumpType = token.ToObject<bool?>();
+                jo.Remove("RequireDumpType");
+                values = jo.ToString(Newtonsoft.Json.Formatting.None);
+            }
+        }
+        catch { /* malformed payload — fall through to PopulateObject */ }
 
         JsonConvert.PopulateObject(values, entity);
 
@@ -165,7 +236,39 @@ public class LocationsApiController : ControllerBase
             return Conflict(new { message = $"Name '{entity.Name}' already exists." });
 
         await _ctx.SaveChangesAsync();
+
+        if (requireDumpType.HasValue)
+            await UpsertRequireDumpTypeAsync(key, requireDumpType.Value, default);
+
         return Ok();
+    }
+
+    private async Task UpsertRequireDumpTypeAsync(int locationId, bool value, CancellationToken ct)
+    {
+        var typeId = await _ctx.LocationAttributeTypes.AsNoTracking()
+            .Where(t => t.Code == LocationAttributeCodes.RequireDumpType)
+            .Select(t => (int?)t.Id)
+            .FirstOrDefaultAsync(ct);
+        if (typeId == null) return;
+
+        var existing = await _ctx.LocationAttributes
+            .FirstOrDefaultAsync(la => la.LocationId == locationId
+                                       && la.AttributeTypeId == typeId.Value, ct);
+        if (existing == null)
+        {
+            _ctx.LocationAttributes.Add(new LocationAttribute
+            {
+                LocationId = locationId,
+                AttributeTypeId = typeId.Value,
+                BoolValue = value,
+            });
+        }
+        else
+        {
+            existing.BoolValue = value;
+            existing.UpdatedAt = DateTime.UtcNow;
+        }
+        await _ctx.SaveChangesAsync(ct);
     }
 
     [HttpPost]
@@ -224,6 +327,23 @@ public class LocationsApiController : ControllerBase
         }
 
         return Ok(new { entity.LocationId });
+    }
+
+    /// <summary>
+    /// GET /api/locations/{locationId}/RequireDumpType — single-flag
+    /// lookup for the load save flow to decide whether to prompt for an
+    /// end-dump answer. Returns { RequireDumpType: bool }; defaults to
+    /// false when the attribute hasn't been set yet.
+    /// </summary>
+    [HttpGet("{locationId:int}/RequireDumpType")]
+    public async Task<IActionResult> GetRequireDumpType(int locationId, CancellationToken ct)
+    {
+        var value = await _ctx.LocationAttributes.AsNoTracking()
+            .Where(la => la.LocationId == locationId
+                         && la.AttributeType.Code == LocationAttributeCodes.RequireDumpType)
+            .Select(la => la.BoolValue ?? false)
+            .FirstOrDefaultAsync(ct);
+        return Ok(new { RequireDumpType = value });
     }
 
     // ── LocationCounties CRUD ────────────────────────────────────────────

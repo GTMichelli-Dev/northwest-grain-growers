@@ -29,18 +29,15 @@ namespace GrainManagement.Controllers
         }
 
 
-        private readonly ICurrentUser _me;
         private readonly IModuleContext _modules;
         private readonly IWarehouseDashboardService _dash;
         private readonly ILocationContext _locationContext;
 
         public HomeController(
-            ICurrentUser me,
             IModuleContext modules,
             IWarehouseDashboardService dash,
             ILocationContext locationContext)
         {
-            _me = me;
             _modules = modules;
             _dash = dash;
             _locationContext = locationContext;
@@ -64,16 +61,9 @@ namespace GrainManagement.Controllers
         /// <summary>
         /// Existing "Location Summary" dashboard.
         /// </summary>
-        public IActionResult Dashboard()
-        {
-            var w = _me.IsManager;
-            return View();
-        }
-        public IActionResult Graph()
-        {
-            var w = _me.IsManager;
-            return View();
-        }
+        public IActionResult Dashboard() => View();
+
+        public IActionResult Graph() => View();
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error() {

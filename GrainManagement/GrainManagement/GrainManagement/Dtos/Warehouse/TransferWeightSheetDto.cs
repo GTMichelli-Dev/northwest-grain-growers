@@ -18,8 +18,31 @@ public class TransferWeightSheetDto
 
     /// <summary>"Received" or "Shipped".</summary>
     public string Direction { get; set; } = "";
-    /// <summary>Item description (variety) being transferred.</summary>
+    /// <summary>Item description (variety) being transferred. Kept for
+    /// existing report bindings; same value as <see cref="ItemDescription"/>.</summary>
     public string Variety { get; set; } = "";
+
+    /// <summary>WS.ItemId formatted as string. Empty when the WS has no item.</summary>
+    public string ItemId { get; set; } = "";
+    /// <summary>Item.Description for WS.ItemId. Same value as <see cref="Variety"/>.</summary>
+    public string ItemDescription { get; set; } = "";
+
+    /// <summary>Product.CropId for the WS's item, formatted as string. Empty when not set.</summary>
+    public string CropId { get; set; } = "";
+    /// <summary>Crop description — Item.Description for the Item whose ItemId matches the CropId.
+    /// (CropId references the "parent crop" item in the product/item hierarchy.) Empty when not resolvable.</summary>
+    public string Crop { get; set; } = "";
+
+    /// <summary>
+    /// True when the WS's item carries the SEED trait (TraitId=31) AND its
+    /// Product's Category is NOT a non-seed category (CHEM / FERT / PACK /
+    /// SERVICE). Mirrors the filter used by /api/Lookups/SeedItems and the
+    /// Seed Lot / Seed Transfer item pickers, so the report can hide the
+    /// ItemId / ItemDescription block for non-seed transfers and show only
+    /// the Crop instead.
+    /// </summary>
+    public bool IsSeed { get; set; }
+
     /// <summary>Source location name.</summary>
     public string SourceLocation { get; set; } = "";
     public string SourceLocationId { get; set; } = "";

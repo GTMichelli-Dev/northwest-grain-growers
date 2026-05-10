@@ -2,23 +2,15 @@
 using DevExpress.AspNetCore.Reporting;
 using GrainManagement.Models;
 using GrainManagement.Services;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.SqlServer;
-using Microsoft.Identity.Web;
-using Microsoft.Identity.Web.UI;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Models; // <-- Add this using directive
+using Microsoft.OpenApi.Models;
 using GrainManagement.Auth;
 using GrainManagement.Hubs;
 using Microsoft.AspNetCore.HttpOverrides;
 using GrainManagement.Services.Warehouse;
 using Microsoft.Extensions.FileProviders;
-using System.Net.Http.Headers;
-using System.Security.Claims;
-using System.Text.Json;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,6 +35,16 @@ builder.Services.AddSingleton<GrainManagement.Services.Email.IEmailService,
 builder.Services.AddScoped<GrainManagement.Services.Warehouse.IEndOfDayReportService,
     GrainManagement.Services.Warehouse.EndOfDayReportService>();
 
+// Historical report data service — backs the on-demand Reports views
+// (Daily Intake/Transfer picker, WS Series picker, Commodities table).
+builder.Services.AddScoped<GrainManagement.Services.Warehouse.IReportBuilderService,
+    GrainManagement.Services.Warehouse.ReportBuilderService>();
+
+// Central deployment home-page dashboard — per-location intake / transfer
+// totals for a date range.
+builder.Services.AddScoped<GrainManagement.Services.Warehouse.ICentralDashboardService,
+    GrainManagement.Services.Warehouse.CentralDashboardService>();
+
 // Prior-day open-WS guard — used by the WS / load create endpoints to
 // hard-block new work while yesterday's weight sheets are still open.
 builder.Services.AddScoped<GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard,
@@ -62,13 +64,9 @@ builder.Services.ConfigureReportingServices(configurator =>
     });
 });
 
-// Authentication + Microsoft Entra ID (OIDC)
-// Also enable token acquisition so you can inject ITokenAcquisition in controllers.
-builder.Services
-    .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
-    .EnableTokenAcquisitionToCallDownstreamApi(new[] { "Group.Read.All" })
-    .AddDistributedTokenCaches();
+// Authentication is handled per-action via PINs (see AuthController +
+// RemoteAdminController + the Privileges constants). No identity-provider
+// wiring at the request pipeline level.
 
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ILocationContext, LocationContext>();
@@ -108,13 +106,6 @@ builder.Services.AddScoped<GrainManagement.Services.IWeightSheetNotifier, GrainM
 
 
 
-builder.Services.AddDistributedSqlServerCache(o =>
-{
-    o.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    o.SchemaName = "web";
-    o.TableName = "TokenCache";
-});
-
 builder.Services.AddScoped<IJsonLog, JsonLog>();
 
 
@@ -133,23 +124,7 @@ builder.Services.AddSignalR()
         o.PayloadSerializerOptions.DictionaryKeyPolicy = null;
     });
 
-builder.Services.AddAuthorization(options =>
-{
-    var grp = builder.Configuration.GetSection("GrainSecurity");
-    string adminId = grp["AdminGroupId"]!;
-    string managerId = grp["ManagerGroupId"]!;
-    string userId = grp["UserGroupId"]!;
-
-    // Use ClaimConstants.Groups ("groups") from Microsoft.Identity.Web
-    options.AddPolicy("GrainAdmin", p => p.RequireClaim("groups", adminId));
-    options.AddPolicy("GrainManager", p => p.RequireClaim("groups", managerId));
-    options.AddPolicy("GrainUser", p => p.RequireClaim("groups", userId));
-
-});
-
-// Small DI service to expose role booleans per request
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<IDeviceContext, DeviceContext>();
 
 builder.Services.AddScoped<ILocationService, sqlLocationService>();
@@ -162,102 +137,6 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "GrainManagement API", Version = "v1" });
 });
 
-
-
-// Force Authorization Code + PKCE and control logout redirect
-builder.Services.Configure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
-{
-    options.ResponseType = "code";
-    options.UsePkce = true;
-    options.SaveTokens = true;
-
-    // After remote sign-out completes, land on Home/Index (instead of the built-in SignedOut page)
-    options.SignedOutCallbackPath = "/signout-callback-oidc"; // optional (default is fine)
-    options.SignedOutRedirectUri = "/Home/Index";
-
-    options.Events ??= new OpenIdConnectEvents();
-    options.Events.OnSignedOutCallbackRedirect = context =>
-    {
-        context.Response.Redirect("/Home/Index");
-        context.HandleResponse();
-        return Task.CompletedTask;
-    };
-
-    // ── Fetch Azure AD group memberships on sign-in ──────────────────────
-    // Groups are added to the ClaimsPrincipal BEFORE the auth cookie is
-    // created, so they persist across all subsequent requests.  This avoids
-    // the race / cache-miss issue where IClaimsTransformation's Graph call
-    // fails silently and the user appears to have no roles.
-    var previousOnTokenValidated = options.Events.OnTokenValidated;
-    options.Events.OnTokenValidated = async context =>
-    {
-        // Run existing (MSAL) handler first — it stores the tokens in cache
-        if (previousOnTokenValidated != null)
-            await previousOnTokenValidated(context);
-
-        // If groups already came in the ID token, nothing to do
-        if (context.Principal?.HasClaim(c => c.Type == "groups") == true)
-            return;
-
-        try
-        {
-            var tokenAcq = context.HttpContext.RequestServices
-                .GetRequiredService<ITokenAcquisition>();
-            var httpFactory = context.HttpContext.RequestServices
-                .GetRequiredService<IHttpClientFactory>();
-            var logger = context.HttpContext.RequestServices
-                .GetService<ILogger<GroupClaimsTransformation>>();
-
-            var token = await tokenAcq.GetAccessTokenForUserAsync(
-                new[] { "Group.Read.All" },
-                user: context.Principal);
-
-            var client = httpFactory.CreateClient();
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
-            var ids = new List<string>();
-#nullable enable
-            string? next = "https://graph.microsoft.com/v1.0/me/transitiveMemberOf/microsoft.graph.group?$select=id";
-#nullable restore
-
-            while (!string.IsNullOrEmpty(next))
-            {
-                var json = await client.GetStringAsync(next);
-                using var doc = JsonDocument.Parse(json);
-
-                if (doc.RootElement.TryGetProperty("value", out var value))
-                    foreach (var item in value.EnumerateArray())
-                        if (item.TryGetProperty("id", out var idProp))
-                            ids.Add(idProp.GetString()!);
-
-                next = doc.RootElement.TryGetProperty("@odata.nextLink", out var nl)
-                    ? nl.GetString()
-                    : null;
-            }
-
-            if (context.Principal?.Identity is ClaimsIdentity id && ids.Count > 0)
-            {
-                foreach (var gid in ids.Distinct(StringComparer.OrdinalIgnoreCase))
-                    id.AddClaim(new Claim("groups", gid));
-            }
-
-            logger?.LogInformation(
-                "OnTokenValidated: added {Count} group claims for {User}",
-                ids.Count,
-                context.Principal?.FindFirst("preferred_username")?.Value);
-        }
-        catch (Exception ex)
-        {
-            var logger = context.HttpContext.RequestServices
-                .GetService<ILogger<GroupClaimsTransformation>>();
-            logger?.LogWarning(ex,
-                "OnTokenValidated: failed to fetch groups for {User} — " +
-                "GroupClaimsTransformation will retry on each request",
-                context.Principal?.FindFirst("preferred_username")?.Value);
-        }
-    };
-});
 
 
 builder.Services.AddDbContext<dbContext>((serviceProvider, options) =>
@@ -306,15 +185,13 @@ builder.Services.AddDbContext<dbContext>((serviceProvider, options) =>
 //builder.Services.AddDbContext<dbContext>(
 //      options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// MVC + Microsoft Identity UI (for login/logout endpoints)
-builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
+builder.Services.AddRazorPages();
 builder.Services.AddControllers();
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(o => o.JsonSerializerOptions.PropertyNamingPolicy = null);
 
-// HttpClient for downstream API/Graph calls
 builder.Services.AddHttpClient();
-builder.Services.AddTransient<IClaimsTransformation, GroupClaimsTransformation>();
+
 // Load appdevelopmentsettings.json only in Development
 if (builder.Environment.IsDevelopment())
 {
@@ -392,8 +269,8 @@ app.UseMiddleware<ThemeMiddleware>();
 
 
 
-// TEMP: authentication disabled for local testing — re-enable before deploy!
-//app.UseAuthentication();
+// Authorization pipeline kept for future per-action attribute use.
+// No identity provider is registered; PIN checks happen inside actions.
 app.UseAuthorization();
 
 app.MapControllerRoute(
@@ -406,6 +283,8 @@ app.MapHub<ScaleHub>("/hubs/scale");
 app.MapHub<PrintHub>("/hubs/print");
 
 app.MapHub<WarehouseHub>(WarehouseHub.HubRoute);
+
+app.MapHub<As400SyncHub>(As400SyncHub.HubRoute);
 
 app.MapRazorPages();
 

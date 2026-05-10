@@ -89,15 +89,15 @@
                 }
 
                 @* End Of Day — global launcher for the multi-location loop.
-                   Visible only when the current site is a warehouse location;
-                   click triggers GM.eod.runMultiLocation() which starts at the
-                   current site, then sweeps every other accessible location
-                   that still has open weight sheets. *@
-                @if (LocationCtx.HasLocation && LocationCtx.CanDoWarehouse)
+                   Visible whenever a location is selected on a Remote
+                   deployment, regardless of whether that site is warehouse
+                   or seed-only. Hidden on Central — HQ doesn't run EOD,
+                   the field locations do. *@
+                @if (LocationCtx.HasLocation && !Modules.IsCentral)
                 {
                     <button type="button" id="gm-nav-eod-btn"
                             class="btn btn-outline-light btn-sm me-3"
-                            title="Run End Of Day for this location and any other location with open weight sheets">
+                            title="Run End Of Day for any accessible location with open weight sheets">
                         End Of Day
                     </button>
                 }
@@ -121,32 +121,29 @@
 
             <div id="navbar" class="collapse navbar-collapse">
                 <div class="d-flex ms-auto align-items-center">
-                    @if (Modules.IsRemote)
+                    @* PIN session indicators. The Remote Admin cookie is set by
+                       /api/Auth/ValidateRemoteAdminPin; the Office Admin cookie
+                       by /api/Auth/ValidateOfficeAdminPin. Each shows the
+                       operator's name + a Logout link to its own controller. *@
+                    @if (Context.Request.Cookies.ContainsKey("GrainMgmt_OfficeAdminPin"))
                     {
-                        // On Remote we don't use the regular Microsoft Identity login;
-                        // access is gated per-action by PIN (see RemoteAdminController).
-                        // Show a Logout button only when the Remote Admin PIN cookie is set.
-                        if (Context.Request.Cookies.ContainsKey("GrainMgmt_RemoteAdminPin"))
-                        {
-                            var raUser = Context.Request.Cookies.TryGetValue("GrainMgmt_RemoteAdminUser", out var raRaw)
-                                ? Uri.UnescapeDataString(raRaw)
-                                : "";
-                            <span class="navbar-text text-light me-2" style="font-size:0.9rem;">
-                                Remote Administrator@(string.IsNullOrWhiteSpace(raUser) ? "" : ": " + raUser)
-                            </span>
-                            <a href="/RemoteAdmin/Logout" class="btn btn-outline-light btn-sm">Logout</a>
-                        }
-                    }
-                    else if (User.Identity?.IsAuthenticated == true)
-                    {
-                        <span class="navbar-text text-light me-2">
-                            @User.Identity.Name
+                        var oaUser = Context.Request.Cookies.TryGetValue("GrainMgmt_OfficeAdminUser", out var oaRaw)
+                            ? Uri.UnescapeDataString(oaRaw)
+                            : "";
+                        <span class="navbar-text text-light me-2" style="font-size:0.9rem;">
+                            Office Administrator@(string.IsNullOrWhiteSpace(oaUser) ? "" : ": " + oaUser)
                         </span>
-                        <a asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignOut" class="btn btn-outline-light btn-sm">Logout</a>
+                        <a href="/Admin/Logout" class="btn btn-outline-light btn-sm me-2">Logout</a>
                     }
-                    else
+                    @if (Context.Request.Cookies.ContainsKey("GrainMgmt_RemoteAdminPin"))
                     {
-                        <a asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignIn" class="btn btn-outline-light btn-sm">Login</a>
+                        var raUser = Context.Request.Cookies.TryGetValue("GrainMgmt_RemoteAdminUser", out var raRaw)
+                            ? Uri.UnescapeDataString(raRaw)
+                            : "";
+                        <span class="navbar-text text-light me-2" style="font-size:0.9rem;">
+                            Remote Administrator@(string.IsNullOrWhiteSpace(raUser) ? "" : ": " + raUser)
+                        </span>
+                        <a href="/RemoteAdmin/Logout" class="btn btn-outline-light btn-sm">Logout</a>
                     }
                 </div>
             </div>

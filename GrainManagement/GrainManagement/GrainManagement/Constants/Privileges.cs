@@ -45,6 +45,13 @@ public static class Privileges
     public const int DeleteLoad = 14;
 
     /// <summary>
+    /// Same numeric value as <see cref="DeleteLoad"/> — privilege 14 is
+    /// also the gate for the Central deployment's Maintenance / Admin
+    /// pages. Held by HQ "office admins" who can edit master data.
+    /// </summary>
+    public const int OfficeAdmin = 14;
+
+    /// <summary>
     /// Returns true when <paramref name="held"/> contains <paramref name="required"/>
     /// OR when it contains <see cref="RemoteAdmin"/>. Use this as the single
     /// source of truth for priv checks so the admin bypass is consistent

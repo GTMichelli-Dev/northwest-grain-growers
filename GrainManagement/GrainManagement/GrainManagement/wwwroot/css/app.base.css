@@ -152,6 +152,12 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
+/* Slim variant used on the Central dashboard, which only wraps the nav
+   button row — the title was removed so the band can be much shorter. */
+.gm-hero--compact {
+    padding: 10px 12px;
+}
+
 .gm-hero__title {
     margin: 0;
     font-size: 1.75rem;
@@ -320,6 +326,95 @@ body {
     -webkit-mask-image: url('/assets/icons/ship-truck.svg');
     mask-image: url('/assets/icons/ship-truck.svg');
 }
+
+/* Tile-style buttons used on the Central dashboard hero. Horizontal
+   layout so each button is short and wide; the row spans the full page
+   width and the six buttons share it equally. */
+.gm-nav-buttons {
+    flex: 1 1 100%;
+}
+
+.gm-nav-btn {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    column-gap: 12px;
+    align-items: center;
+    flex: 1 1 0;
+    min-width: 140px;
+    min-height: 92px;
+    padding: 10px 14px;
+    border: 2px solid #dee2e6;
+    border-left: 6px solid var(--tile-accent, var(--brand-primary, #2f5d3a));
+    border-radius: 10px;
+    background: #fff;
+    color: inherit;
+    text-decoration: none;
+    transition: border-color .15s, box-shadow .15s, transform .05s;
+    cursor: pointer;
+}
+
+.gm-nav-btn:hover {
+    border-color: var(--tile-accent, var(--brand-primary, #2f5d3a));
+    box-shadow: 0 0 12px var(--tile-accent-glow, rgba(47,93,58,.35));
+    color: inherit;
+    text-decoration: none;
+}
+
+.gm-nav-btn:active {
+    transform: translateY(1px);
+}
+
+/* Match .gm-tile__icon: 56px tinted square — kept the same after going
+   horizontal so the icons stay visually anchored. */
+.gm-nav-btn__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: rgba(201,162,63,.18);
+    display: block;
+    position: relative;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+}
+
+/* Tint the SVG mask with the section accent so each button's icon picks up
+   its module's color (Maintenance blue, Remote teal, etc.) instead of all
+   of them rendering in the global brand green. */
+.gm-nav-btn .gm-icon::before {
+    background-color: var(--tile-accent, var(--brand-primary, #2f5d3a));
+}
+
+.gm-nav-btn__title {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: left;
+    line-height: 1.15;
+    color: var(--tile-accent, var(--brand-primary, #2f5d3a));
+}
+
+.gm-nav-btn__desc {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    font-size: .8rem;
+    font-weight: 400;
+    text-align: left;
+    line-height: 1.2;
+    color: #4b5563;
+}
+
+/* Per-section accent. Each modifier sets --tile-accent + glow so the
+   border-left, icon mask color, and title color all coordinate. */
+.gm-nav-btn--admin     { --tile-accent: #1565c0; --tile-accent-glow: rgba(21,101,192,.35); }
+.gm-nav-btn--remote    { --tile-accent: #00838f; --tile-accent-glow: rgba(0,131,143,.35); }
+.gm-nav-btn--reports   { --tile-accent: #5e548e; --tile-accent-glow: rgba(94,84,142,.35); }
+.gm-nav-btn--warehouse { --tile-accent: #d4a017; --tile-accent-glow: rgba(212,160,23,.35); }
+.gm-nav-btn--transfer  { --tile-accent: #2563eb; --tile-accent-glow: rgba(37,99,235,.35); }
+.gm-nav-btn--seed      { --tile-accent: #2e7d32; --tile-accent-glow: rgba(46,125,50,.35); }
 
 /* Make the tiles easier to hit on touchscreens */
 .gm-tile {
