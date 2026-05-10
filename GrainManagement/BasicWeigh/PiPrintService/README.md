@@ -23,6 +23,21 @@ A .NET 8 background worker + Web API that connects to the GrainManagement web ap
 4. Listens for `PrintTicket` commands; on each one downloads the PDF from the web app and submits it to the local print system (CUPS or Print Spooler) for the named printer.
 5. Reconnects forever on disconnect — `ForeverRetryPolicy` capped at 30s, with heartbeat warnings on every retry so a long outage isn't silent.
 
+## Sparse checkout (single-service host)
+
+A print-only host doesn't need the rest of the monorepo. Use a git sparse + partial clone so only this folder lands on disk and `git pull` only touches it:
+
+```bash
+git clone --filter=blob:none --no-checkout https://github.com/GTMichelli-Dev/northwest-grain-growers.git
+cd northwest-grain-growers
+git sparse-checkout init --cone
+git sparse-checkout set GrainManagement/BasicWeigh/PiPrintService
+git checkout master
+cd GrainManagement/BasicWeigh/PiPrintService
+```
+
+`--filter=blob:none` defers blob downloads, so blobs outside the sparse set are never fetched. `git sparse-checkout disable` reverts to a full checkout if you change your mind. Re-runs of the install script work normally inside the sparse tree.
+
 ## Quick picker
 
 | Platform                                     | Run                                                | What it does                                                  |

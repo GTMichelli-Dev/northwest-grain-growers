@@ -26,6 +26,21 @@ The same binary runs on **Windows** and **Linux / Raspberry Pi**; there's no pla
 5. Reconnects forever on disconnect — `ForeverRetryPolicy` is exponent-capped so `Math.Pow(2, n)` can't overflow `TimeSpan` (the previous bug parked the connection in Disconnected after ~40 retries). Logs `SignalR still disconnected from {HubUrl}…` on every retry.
 6. SignalR-issued CRUD (`AddScale` / `UpdateScale` / `DeleteScale`) lets the GrainManagement web admin manage scales remotely; changes write to the local SQLite and re-announce.
 
+## Sparse checkout (single-service host)
+
+A scale-only host doesn't need the rest of the monorepo. Use a git sparse + partial clone so only this folder lands on disk and `git pull` only touches it:
+
+```bash
+git clone --filter=blob:none --no-checkout https://github.com/GTMichelli-Dev/northwest-grain-growers.git
+cd northwest-grain-growers
+git sparse-checkout init --cone
+git sparse-checkout set GrainManagement/ScaleReaderService
+git checkout master
+cd GrainManagement/ScaleReaderService
+```
+
+`--filter=blob:none` defers blob downloads, so blobs outside the sparse set are never fetched. `git sparse-checkout disable` reverts to a full checkout if you change your mind. Re-runs of the install script work normally inside the sparse tree.
+
 ## Quick picker
 
 | Platform                                     | Run                                                | What it does                                                  |

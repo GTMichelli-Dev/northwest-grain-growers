@@ -340,6 +340,21 @@ Content-Type: multipart/form-data
 
 Saved as `{ticket}_{Direction}.jpg` under `TicketImages:PhysicalPath` on the web.
 
+## Sparse checkout (single-service host)
+
+A camera-only host doesn't need the rest of the monorepo. Use a git sparse + partial clone so only this folder lands on disk and `git pull` only touches it:
+
+```bash
+git clone --filter=blob:none --no-checkout https://github.com/GTMichelli-Dev/northwest-grain-growers.git
+cd northwest-grain-growers
+git sparse-checkout init --cone
+git sparse-checkout set GrainManagement/CameraService
+git checkout master
+cd GrainManagement/CameraService
+```
+
+`--filter=blob:none` defers blob downloads, so blobs outside the sparse set are never fetched. `git sparse-checkout disable` reverts to a full checkout if you change your mind. Re-runs of `install-pi.sh` / `install-windows.ps1` work normally inside the sparse tree.
+
 ## Installation
 
 > **Quick picker** — for the common single-camera deployments:

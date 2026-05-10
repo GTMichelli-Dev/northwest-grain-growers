@@ -43,6 +43,21 @@ The service exposes the same jobs three ways:
 
 **Windows only.** The IBM i Access ODBC Driver (used by the AS/400 connection string in `appsettings.json`) ships only on Windows as part of [IBM i Access Client Solutions](https://www.ibm.com/support/pages/ibm-i-access-client-solutions). There's no Linux / Pi installer for this service because the driver itself isn't available there.
 
+## Sparse checkout (single-service host)
+
+The HQ sync server doesn't need the rest of the monorepo. Use a git sparse + partial clone so only this folder lands on disk and `git pull` only touches it:
+
+```powershell
+git clone --filter=blob:none --no-checkout https://github.com/GTMichelli-Dev/northwest-grain-growers.git
+cd northwest-grain-growers
+git sparse-checkout init --cone
+git sparse-checkout set GrainManagement/GrainManagement.As400Sync/GrainManagement.As400Sync.Service
+git checkout master
+cd GrainManagement\GrainManagement.As400Sync\GrainManagement.As400Sync.Service
+```
+
+`--filter=blob:none` defers blob downloads, so blobs outside the sparse set are never fetched. `git sparse-checkout disable` reverts to a full checkout if you change your mind. Re-runs of the install script work normally inside the sparse tree.
+
 ## Quick picker
 
 | Platform                | Run                                            | What it does                                              |
