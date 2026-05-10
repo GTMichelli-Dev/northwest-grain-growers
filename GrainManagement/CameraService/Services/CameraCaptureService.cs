@@ -16,17 +16,20 @@ public class CameraCaptureService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<CameraCaptureService> _logger;
     private readonly IServiceProvider _serviceProvider;
+    private readonly WatermarkService _watermark;
 
     public CameraCaptureService(
         IOptions<CameraOptions> options,
         IHttpClientFactory httpClientFactory,
         ILogger<CameraCaptureService> logger,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        WatermarkService watermark)
     {
         _options = options.Value;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _watermark = watermark;
     }
 
     /// <summary>
@@ -70,6 +73,13 @@ public class CameraCaptureService
                 _logger.LogWarning("Empty image captured for ticket {Ticket}", ticket);
                 return false;
             }
+
+            // Burn the audit banner into the JPEG before upload — load #,
+            // direction, and the instant the photo was taken. The service
+            // returns the original bytes if anything goes wrong (no font on
+            // the host, decode failure, etc.) so a watermark issue never
+            // blocks the capture pipeline.
+            imageBytes = _watermark.Apply(imageBytes, ticket, direction, DateTime.Now);
 
             var client = _httpClientFactory.CreateClient("BasicWeighApi");
             using var content = new MultipartFormDataContent();

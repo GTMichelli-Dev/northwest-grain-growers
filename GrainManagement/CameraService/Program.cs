@@ -56,6 +56,10 @@ builder.Services.AddSingleton<CameraService.Services.AnnounceSignal>();
 // Shared capture service (used by both worker and API)
 builder.Services.AddScoped<CameraService.Services.CameraCaptureService>();
 
+// Burn-in audit banner (load #, direction, timestamp). Singleton because
+// font resolution at startup is the only cost and the service is stateless.
+builder.Services.AddSingleton<CameraService.Services.WatermarkService>();
+
 // MJPEG fan-out pool — one producer per camera, N viewers per producer.
 builder.Services.AddSingleton<CameraService.Services.MjpegStreamPool>();
 

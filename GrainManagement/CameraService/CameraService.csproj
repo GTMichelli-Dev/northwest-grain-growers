@@ -22,6 +22,10 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.*" />
     <PackageReference Include="Microsoft.Extensions.Logging.EventLog" Version="8.0.*" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <!-- Image watermarking. v2.x of ImageSharp + 1.x of .Drawing is the
+         Apache-2.0 line; v3.x is commercial-licensed. Keep this pair pinned. -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.10" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
