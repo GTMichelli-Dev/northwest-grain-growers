@@ -233,6 +233,21 @@ public sealed class ReportBuilderApiController : ControllerBase
         return Ok(rows);
     }
 
+    public sealed class DateRangeRequestDto
+    {
+        public DateOnly From { get; set; }
+        public DateOnly To { get; set; }
+    }
+
+    [HttpPost("LoadDumpTypes")]
+    public async Task<IActionResult> LoadDumpTypes(
+        [FromBody] DateRangeRequestDto req, CancellationToken ct)
+    {
+        if (req is null) return BadRequest(new { message = "Request body required." });
+        var rows = await _builder.GetLoadDumpTypesAsync(req.From, req.To, ct);
+        return Ok(rows);
+    }
+
     // ── PDF endpoints — the iframe modals load these directly ──────────
     [HttpGet("Pdf/Intake")]
     public async Task<IActionResult> PdfIntake(

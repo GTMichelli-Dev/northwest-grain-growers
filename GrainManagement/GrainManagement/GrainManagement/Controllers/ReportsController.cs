@@ -22,4 +22,5 @@ public class ReportsController : Controller
     public IActionResult ProducerCommodity() => View();
     public IActionResult ProducerDelivery() => View();
     public IActionResult IntakeLocation() => View();
+    public IActionResult LoadDumpType() => View();
 }

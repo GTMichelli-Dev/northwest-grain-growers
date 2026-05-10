@@ -70,6 +70,11 @@ public interface IReportBuilderService
     Task<List<IntakeLocationRowDto>> GetIntakeLocationAsync(
         int[] locationIds, long[] cropIds,
         bool groupBySplit, DateOnly fromDate, DateOnly toDate, CancellationToken ct);
+
+    /// <summary>Load Dump Type report — one row per load that has an
+    /// IS_END_DUMP transaction attribute set, in the given date range.</summary>
+    Task<List<LoadDumpTypeRowDto>> GetLoadDumpTypesAsync(
+        DateOnly fromDate, DateOnly toDate, CancellationToken ct);
 }
 
 public sealed class CropOptionDto
@@ -1348,6 +1353,51 @@ public sealed class ReportBuilderService : IReportBuilderService
             .ThenBy(r => r.LocationName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(r => r.PrimaryAccountName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(r => r.SplitGroupDescription, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    // ── Load Dump Type ────────────────────────────────────────────────
+    // One row per load that has an IS_END_DUMP transaction attribute
+    // (joined back to its parent transaction → location). Filtered by
+    // the WS CreationDate so an operator can pull a date range out of
+    // history. Voided loads are dropped — they no longer count.
+    public async Task<List<LoadDumpTypeRowDto>> GetLoadDumpTypesAsync(
+        DateOnly fromDate, DateOnly toDate, CancellationToken ct)
+    {
+        if (toDate < fromDate) (fromDate, toDate) = (toDate, fromDate);
+
+        var rows = await (
+            from a in _ctx.TransactionAttributes.AsNoTracking()
+            where a.AttributeType.Code == TransactionAttributeCodes.IsEndDump
+                  && a.BoolValue != null
+            join itd in _ctx.InventoryTransactionDetails.AsNoTracking()
+                on a.TransactionId equals itd.TransactionId
+            where !itd.IsVoided && itd.RefType == "WeightSheet" && itd.RefId != null
+            join ws in _ctx.WeightSheets.AsNoTracking()
+                on itd.RefId.Value equals ws.RowUid
+            where ws.CreationDate >= fromDate && ws.CreationDate <= toDate
+            select new
+            {
+                LoadId = itd.TransactionId,
+                ws.LocationId,
+                LocationName = ws.Location != null ? (ws.Location.Name ?? "") : "",
+                TimeIn = itd.StartedAt ?? itd.TxnAt,
+                IsEndDump = a.BoolValue!.Value,
+            })
+            .ToListAsync(ct);
+
+        return rows
+            .Select(r => new LoadDumpTypeRowDto
+            {
+                LoadId = r.LoadId,
+                LocationId = r.LocationId,
+                LocationName = r.LocationName,
+                TimeIn = r.TimeIn,
+                IsEndDump = r.IsEndDump,
+                DumpType = r.IsEndDump ? "End Dump" : "Belly Dump",
+            })
+            .OrderBy(r => r.TimeIn ?? DateTime.MinValue)
+            .ThenBy(r => r.LocationName, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 }
