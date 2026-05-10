@@ -21,9 +21,18 @@ public class ServiceSettings
     [StringLength(200)]
     public string ServerUrl { get; set; } = "http://localhost:5110";
 
-    /// <summary>SignalR hub path on the web app (e.g. "/scaleHub")</summary>
+    /// <summary>SignalR hub path on the web app (e.g. "/hubs/camera")</summary>
     [StringLength(100)]
-    public string SignalRHub { get; set; } = "/scaleHub";
+    public string SignalRHub { get; set; } = "/hubs/camera";
+
+    /// <summary>
+    /// Externally-reachable base URL of THIS CameraService (e.g.
+    /// "http://192.168.1.50:5210"). Announced to the web so browsers
+    /// can pull MJPEG live feeds directly from this process. Leave empty
+    /// to disable live view for this service's cameras.
+    /// </summary>
+    [StringLength(200)]
+    public string? StreamBaseUrl { get; set; }
 
     /// <summary>URL to remote camera brand definitions JSON</summary>
     [StringLength(500)]

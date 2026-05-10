@@ -233,6 +233,31 @@
             });
     }
 
+    // Hides #tlBolScanBtn unless /api/cameras/bol/available returns a BOL camera
+    // for this location, then wires it to open the ScanBOL picker for the
+    // current edit load. Pure JS — actual modal logic lives in scan.bol.js.
+    function wireBolScanButton(locationId) {
+        var $btn = $('#tlBolScanBtn');
+        if (!$btn.length || !window.scanBol) return;
+
+        $btn.prop('hidden', true);
+        window.scanBol.checkAvailable(locationId).then(function (available) {
+            $btn.prop('hidden', !available);
+        });
+
+        $btn.off('click.gmBol').on('click.gmBol', function () {
+            if (!_editTxnId) {
+                if (window.DevExpress && DevExpress.ui && DevExpress.ui.notify) {
+                    DevExpress.ui.notify('Save the inbound weight first, then scan the BOL.', 'info', 3500);
+                } else {
+                    alert('Save the inbound weight first, then scan the BOL.');
+                }
+                return;
+            }
+            window.scanBol.open(_editTxnId, locationId);
+        });
+    }
+
     async function initLocation() {
         try {
             var current = await $.getJSON('/api/LocationContextApi/current');
@@ -539,6 +564,14 @@
         try {
             var d = await $.getJSON('/api/Transfer/' + txnId);
             if (!d) return;
+
+            // Hook the In/Out/BOL thumbnails to this load — fires immediately
+            // and re-fires on the SignalR ImageCaptured event so a fresh
+            // capture in the field appears here without a page refresh.
+            if (window.gmLoadImages) {
+                window.gmLoadImages.attach({ prefix: 'tl', loadNumber: txnId });
+            }
+            wireBolScanButton(d.LocationId);
 
             // Prefill the End Dump checkbox if the location requires
             // it. Fires in parallel with the rest of the form

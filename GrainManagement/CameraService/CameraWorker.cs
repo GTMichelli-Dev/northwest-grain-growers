@@ -94,6 +94,8 @@ public class CameraWorker : BackgroundService
         }
     }
 
+    private string? _streamBaseUrl;
+
     private async Task LoadSettingsFromDb()
     {
         try
@@ -104,6 +106,7 @@ public class CameraWorker : BackgroundService
             if (settings != null)
             {
                 _options.ServerUrl = settings.ServerUrl;
+                _streamBaseUrl = string.IsNullOrWhiteSpace(settings.StreamBaseUrl) ? null : settings.StreamBaseUrl;
 
                 // Try to update brands from remote (non-blocking, uses local as fallback)
                 if (!string.IsNullOrEmpty(settings.BrandsUrl))
@@ -118,7 +121,8 @@ public class CameraWorker : BackgroundService
                 }
 
                 _serviceId = settings.ServiceId ?? "default";
-                _logger.LogInformation("Loaded settings from database: ServiceId={ServiceId}, ServerUrl={Url}", _serviceId, settings.ServerUrl);
+                _logger.LogInformation("Loaded settings from database: ServiceId={ServiceId}, ServerUrl={Url}, StreamBaseUrl={Stream}",
+                    _serviceId, settings.ServerUrl, _streamBaseUrl ?? "(none)");
             }
         }
         catch (Exception ex)
@@ -191,6 +195,18 @@ public class CameraWorker : BackgroundService
         {
             _logger.LogInformation("Received ReloadConfig command. Restarting with new settings...");
             _restart.TriggerRestart();
+        });
+
+        // Web admin asking us to re-send our camera list (handles cases where the
+        // web restarted and lost its in-memory registry while our SignalR conn stayed up).
+        _connection.On("Reannounce", () =>
+        {
+            _ = Task.Run(async () =>
+            {
+                _logger.LogInformation("Received Reannounce request.");
+                try { await AnnounceCameras(); }
+                catch (Exception ex) { _logger.LogWarning(ex, "Reannounce failed."); }
+            });
         });
 
         // Listen for camera list request from web UI
@@ -443,13 +459,27 @@ public class CameraWorker : BackgroundService
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CameraDbContext>();
             var cameras = await db.Cameras.AsNoTracking().Where(c => c.Active).OrderBy(c => c.CameraId).ToListAsync();
-            await _connection.SendAsync("CameraServiceReady", new
+
+            // Shape matches CameraServiceAnnouncement + CameraInfo on the web side.
+            // StreamPath is the relative URL the web will append to StreamBaseUrl
+            // to embed an MJPEG live view.
+            var announcement = new
             {
-                serviceId = _serviceId,
-                cameraCount = cameras.Count,
-                cameras
-            });
-            _logger.LogInformation("Announced {Count} camera(s) to web app.", cameras.Count);
+                ServiceId = _serviceId,
+                CameraCount = cameras.Count,
+                Cameras = cameras.Select(c => new
+                {
+                    CameraId = c.CameraId,
+                    DisplayName = c.DisplayName ?? c.CameraId,
+                    CameraBrand = c.CameraBrand ?? "",
+                    Active = c.Active,
+                    StreamPath = $"/api/stream/{c.CameraId}"
+                }).ToList()
+            };
+
+            await _connection.SendAsync("AnnounceCameras", announcement, _streamBaseUrl);
+            _logger.LogInformation("Announced {Count} camera(s) to web app (streamBase={Stream}).",
+                cameras.Count, _streamBaseUrl ?? "(none)");
         }
         catch (Exception ex)
         {

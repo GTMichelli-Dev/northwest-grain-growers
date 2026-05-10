@@ -988,11 +988,12 @@ namespace GrainManagement.Api
                     bool complete = outWt.HasValue && !string.IsNullOrEmpty(container) && protein.HasValue && protein > 0;
                     bool completeMissingProtein = outWt.HasValue && !string.IsNullOrEmpty(container) && !(protein.HasValue && protein > 0);
 
+                    var loadKey = txnId.ToString();
                     loads.Add(new IntakeWeightSheetLoadRow
                     {
                         WeightSheetId = wsId.ToString(),
                         As400Id = ws.As400Id > 0 ? ws.As400Id.ToString() : "",
-                        LoadNumber = txnId.ToString(),
+                        LoadNumber = loadKey,
                         TruckId = truckId.Length > 4 ? truckId[..4] : truckId,
                         BOL = bol,
                         TimeIn = ToServerTime(startedAt),
@@ -1007,6 +1008,15 @@ namespace GrainManagement.Api
                         Status = complete ? "Complete" : (completeMissingProtein ? "Complete*" : "Incomplete"),
                         StartManualFlag = startIsManual ? "M" : " ",
                         EndManualFlag = endIsManual ? "M" : " ",
+                        // Intake is always RECEIVE — gross == InWeight == "in" image,
+                        // tare == OutWeight == "out" image. Only emit a link when a
+                        // weight is actually recorded; the redirect endpoint 404s
+                        // on missing images and we'd rather not show dead links.
+                        InImageUrl  = inWt.HasValue  ? $"/api/ticket-image/{loadKey}?direction=in"  : "",
+                        OutImageUrl = outWt.HasValue ? $"/api/ticket-image/{loadKey}?direction=out" : "",
+                        BolImageUrl = !string.IsNullOrWhiteSpace(bol)
+                                      ? $"/api/ticket-image/{loadKey}?direction=bol"
+                                      : "",
                     });
                 }
             }
@@ -1194,6 +1204,15 @@ namespace GrainManagement.Api
                 WHERE ws.WeightSheetId = @wsId
                 ORDER BY itd.TxnAt ASC";
 
+            // Pre-compute the WS direction once so the per-row loop can pick
+            // the right image-direction suffix. Received: gross/StartQty is
+            // the loaded-in photo (in), tare/EndQty is the empty-out photo
+            // (out). Shipped flips it — the first reading is the loaded truck
+            // *leaving* the source (out), the second is the empty return (in).
+            bool wsReceivedDirection = ws.DestinationLocationId == ws.LocationId;
+            string startImgDir = wsReceivedDirection ? "in"  : "out";
+            string endImgDir   = wsReceivedDirection ? "out" : "in";
+
             var loads = new List<TransferWeightSheetLoadRow>();
             using (var cmd = conn.CreateCommand())
             {
@@ -1219,11 +1238,12 @@ namespace GrainManagement.Api
                     var effectiveNet = net ?? direct;
                     bool complete = (outWt.HasValue || direct.HasValue) && !string.IsNullOrEmpty(bin);
 
+                    var loadKey = txnId.ToString();
                     loads.Add(new TransferWeightSheetLoadRow
                     {
                         WeightSheetId = wsId.ToString(),
                         As400Id       = ws.As400Id > 0 ? ws.As400Id.ToString() : "",
-                        LoadNumber    = txnId.ToString(),
+                        LoadNumber    = loadKey,
                         TruckId       = truckId.Length > 4 ? truckId[..4] : truckId,
                         BOL           = bol,
                         TimeIn        = ToServerTime(startedAt),
@@ -1236,6 +1256,11 @@ namespace GrainManagement.Api
                         Status        = complete ? "Complete" : "Incomplete",
                         StartManualFlag = startIsManual ? "M" : " ",
                         EndManualFlag   = endIsManual   ? "M" : " ",
+                        InImageUrl  = inWt.HasValue  ? $"/api/ticket-image/{loadKey}?direction={startImgDir}" : "",
+                        OutImageUrl = outWt.HasValue ? $"/api/ticket-image/{loadKey}?direction={endImgDir}"   : "",
+                        BolImageUrl = !string.IsNullOrWhiteSpace(bol)
+                                      ? $"/api/ticket-image/{loadKey}?direction=bol"
+                                      : "",
                     });
                 }
             }

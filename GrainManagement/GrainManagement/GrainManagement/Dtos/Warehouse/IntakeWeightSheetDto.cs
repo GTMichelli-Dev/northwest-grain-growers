@@ -84,4 +84,15 @@ public class IntakeWeightSheetLoadRow
     public string StartManualFlag { get; set; } = " ";
     /// <summary>"M" if the outbound weight was entered manually, otherwise " " (space). Legal requirement: must appear on tickets.</summary>
     public string EndManualFlag { get; set; } = " ";
+
+    // ── Image hyperlinks (server-aware) ─────────────────────────────────────
+    // Empty when no image is expected for that direction (no weight / no
+    // scanned BOL). Each URL is the central web's redirect endpoint, which
+    // resolves the originating server from the first 3 digits of LoadNumber.
+    /// <summary>PDF/UI hyperlink for the inbound (gross) picture. Empty when InWeight is null.</summary>
+    public string InImageUrl { get; set; } = "";
+    /// <summary>PDF/UI hyperlink for the outbound (tare) picture. Empty when OutWeight is null.</summary>
+    public string OutImageUrl { get; set; } = "";
+    /// <summary>PDF/UI hyperlink for the BOL picture. Empty when no BOL has been scanned.</summary>
+    public string BolImageUrl { get; set; } = "";
 }

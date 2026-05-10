@@ -1,6 +1,6 @@
-﻿@model GrainManagement.Controllers.CameraController.CameraDef
+@model GrainManagement.Services.Camera.RegisteredCamera
 @{
-    ViewData["Title"] = Model.Name;
+    ViewData["Title"] = Model.DisplayName;
     var pop = (ViewData["Pop"] as bool?) ?? false;
 }
 
@@ -9,14 +9,15 @@
     <div class="gm-pagehead gm-pagehead--sticky">
         <div class="gm-pagehead__left">
             <div class="gm-pagehead__title">
-                <h2>@Model.Name</h2>
+                <h2>@Model.DisplayName</h2>
+                <small class="text-muted">@Model.ServiceId / @Model.CameraId</small>
             </div>
         </div>
 
         <div class="gm-pagehead__right">
             <a class="btn btn-outline-secondary" href="/Camera">Back</a>
             <a class="btn btn-outline-secondary" target="_blank" rel="noopener"
-               href="/Camera/View/@Model.Id?pop=true">Pop out</a>
+               href="/Camera/View/@Model.ServiceId/@Model.CameraId?pop=true">Pop out</a>
             <button id="fullscreenBtn" class="btn btn-primary" type="button">Full Screen</button>
         </div>
     </div>
@@ -30,21 +31,31 @@ else
 }
 
 <div class="p-2 gm-camera-view-container">
-    <video id="cam1"
-           autoplay
-           muted
-           playsinline
-           class="gm-camera-video"></video>
-
-    <p id="status" class="gm-camera-status"></p>
+    @if (string.IsNullOrEmpty(Model.StreamUrl))
+    {
+        <div class="alert alert-warning">
+            No stream URL is published for this camera. Make sure the CameraService is reachable from the browser and that it has announced a <code>StreamPath</code>.
+        </div>
+    }
+    else
+    {
+        <img id="cam1" src="@Model.StreamUrl" alt="@Model.DisplayName"
+             class="gm-camera-video" style="max-width:100%; background:#000;" />
+        <p id="status" class="gm-camera-status text-muted small mt-1">MJPEG stream &middot; @Model.StreamUrl</p>
+    }
 </div>
 
 @section Scripts {
-    <script>
-        window.gmCamera = {
-            streamKey: "@Model.StreamKey"
-        };
-    </script>
-
-    <script src="~/js/pages/camera.view.js" asp-append-version="true"></script>
+<script>
+    (function () {
+        const $btn = document.getElementById('fullscreenBtn');
+        const $img = document.getElementById('cam1');
+        if ($btn && $img) {
+            $btn.addEventListener('click', function () {
+                if ($img.requestFullscreen) $img.requestFullscreen();
+                else if ($img.webkitRequestFullscreen) $img.webkitRequestFullscreen();
+            });
+        }
+    })();
+</script>
 }

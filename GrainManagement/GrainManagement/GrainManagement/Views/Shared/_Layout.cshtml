@@ -102,6 +102,16 @@
                     </button>
                 }
 
+                @* Cameras — Remote-only entry to the live multi-camera view.
+                   Hidden on Central; HQ doesn't watch field cameras. *@
+                @if (Modules.IsRemote)
+                {
+                    <a id="gm-nav-cameras-btn" class="btn btn-outline-light btn-sm me-3"
+                       href="/Camera" title="Live view of all configured cameras">
+                        Cameras
+                    </a>
+                }
+
                 <div>
                     <span id="system-info" style="font-size: 0.85rem; color: white;">@SystemInfo.ToDisplayString()</span>
                 </div>

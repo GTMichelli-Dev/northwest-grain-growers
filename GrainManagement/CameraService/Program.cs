@@ -56,6 +56,9 @@ builder.Services.AddSingleton<CameraService.Services.AnnounceSignal>();
 // Shared capture service (used by both worker and API)
 builder.Services.AddScoped<CameraService.Services.CameraCaptureService>();
 
+// MJPEG fan-out pool — one producer per camera, N viewers per producer.
+builder.Services.AddSingleton<CameraService.Services.MjpegStreamPool>();
+
 // Controllers + Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -114,16 +117,39 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    // Seed settings from appsettings if not in DB yet
+    // Seed/upgrade settings from appsettings if not in DB yet, and rewrite
+    // legacy values left over from the BasicWeigh-era seed (old hub path
+    // and old default ServerUrl) so an in-place upgrade picks up the new
+    // GrainManagement endpoint and CameraHub route without a manual edit.
     var settings = db.Settings.OrderBy(s => s.Id).FirstOrDefault();
     if (settings != null)
     {
+        var dirty = false;
         var configUrl = builder.Configuration["Camera:ServerUrl"];
         if (!string.IsNullOrWhiteSpace(configUrl) && settings.ServerUrl == "http://localhost:5110")
         {
             settings.ServerUrl = configUrl;
-            db.SaveChanges();
+            dirty = true;
         }
+        if (settings.SignalRHub == "/scaleHub")
+        {
+            settings.SignalRHub = "/hubs/camera";
+            dirty = true;
+        }
+        var configServiceId = builder.Configuration["Camera:ServiceId"];
+        if (!string.IsNullOrWhiteSpace(configServiceId) &&
+            (string.IsNullOrWhiteSpace(settings.ServiceId) || settings.ServiceId == "default"))
+        {
+            settings.ServiceId = configServiceId!;
+            dirty = true;
+        }
+        var configStream = builder.Configuration["Camera:StreamBaseUrl"];
+        if (!string.IsNullOrWhiteSpace(configStream) && string.IsNullOrWhiteSpace(settings.StreamBaseUrl))
+        {
+            settings.StreamBaseUrl = configStream;
+            dirty = true;
+        }
+        if (dirty) db.SaveChanges();
     }
 }
 

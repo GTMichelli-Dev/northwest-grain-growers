@@ -23,17 +23,20 @@ public sealed class KioskApiController : ControllerBase
     private readonly IWeightSheetNotifier _notifier;
     private readonly IHubContext<PrintHub> _printHub;
     private readonly ILogger<KioskApiController> _log;
+    private readonly GrainManagement.Services.Camera.ICameraCaptureTrigger _cameraTrigger;
 
     public KioskApiController(
         dbContext ctx,
         IWeightSheetNotifier notifier,
         IHubContext<PrintHub> printHub,
-        ILogger<KioskApiController> log)
+        ILogger<KioskApiController> log,
+        GrainManagement.Services.Camera.ICameraCaptureTrigger cameraTrigger)
     {
         _ctx = ctx;
         _notifier = notifier;
         _printHub = printHub;
         _log = log;
+        _cameraTrigger = cameraTrigger;
     }
 
     public sealed class TicketLookupResponse
@@ -160,6 +163,12 @@ public sealed class KioskApiController : ControllerBase
             // Fire-and-forget broadcast so the WS dashboard / WS edit page
             // refresh as soon as the truck weighs out.
             _ = _notifier.NotifyAsync(ws.LocationId, ws.WeightSheetId, "kiosk-weigh-out", ct);
+
+            // Camera capture — this is the moment the kiosk just finished the
+            // ticket (weighed out). Pure fire-and-forget; the trigger swallows
+            // its own errors so a missing camera never blocks the weigh-out.
+            await _cameraTrigger.FireAsync(
+                detail.TransactionId.ToString(), "out", ws.LocationId, scaleId: null, ct);
         }
 
         // Push the print to the kiosk's printer if one was provided. We

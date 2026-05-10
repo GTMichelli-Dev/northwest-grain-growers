@@ -84,13 +84,15 @@ builder.Services.AddScoped<IWarehouseIntakeDataService, DummyWarehouseIntakeData
 // Scale configs and polling are managed by the external ScaleReaderService process.
 // The web app receives scale updates via SignalR and serves the config UI.
 
-// ── Camera Service (hosted background worker) ──────────────────────────
-builder.Services.AddSingleton<GrainManagement.Services.Camera.RestartSignal>();
-builder.Services.AddSingleton<GrainManagement.Services.Camera.AnnounceSignal>();
-builder.Services.AddDbContext<GrainManagement.Services.Camera.Data.CameraDbContext>(opt =>
-    opt.UseSqlite($"Data Source={Path.Combine(AppContext.BaseDirectory, "cameraservice.db")}"));
-builder.Services.AddScoped<GrainManagement.Services.Camera.CameraCaptureService>();
-builder.Services.AddHostedService<GrainManagement.Services.Camera.CameraWorker>();
+// ── Camera registry ─────────────────────────────────────────────────────
+// External CameraService instances connect via SignalR (CameraHub) and
+// announce their hardware. The registry is the web-side view of "what
+// cameras exist right now"; role/scale/BOL assignments live in
+// system.CameraAssignments (managed via /api/cameras/assignments).
+builder.Services.AddSingleton<GrainManagement.Services.Camera.ICameraRegistry,
+                              GrainManagement.Services.Camera.CameraRegistry>();
+builder.Services.AddScoped<GrainManagement.Services.Camera.ICameraCaptureTrigger,
+                           GrainManagement.Services.Camera.CameraCaptureTrigger>();
 
 // ── Print Service (hosted background worker) ────────────────────────────
 builder.Services.AddSingleton<GrainManagement.Services.Print.CupsClient>();
@@ -285,6 +287,8 @@ app.MapHub<PrintHub>("/hubs/print");
 app.MapHub<WarehouseHub>(WarehouseHub.HubRoute);
 
 app.MapHub<As400SyncHub>(As400SyncHub.HubRoute);
+
+app.MapHub<CameraHub>(CameraHub.HubRoute);
 
 app.MapRazorPages();
 

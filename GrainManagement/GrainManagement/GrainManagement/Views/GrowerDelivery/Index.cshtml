@@ -551,6 +551,12 @@
     </div>
 </div>
 
+@* BOL camera picker — populated lazily; safe to include unconditionally
+   because the Scan BOL button stays hidden when no BOL cameras exist. *@
+@await Html.PartialAsync("_ScanBolModal")
+
 @section Scripts {
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script src="~/js/pages/load-images.js" asp-append-version="true"></script>
     <script src="~/js/pages/grower.delivery.js" asp-append-version="true"></script>
 }

@@ -259,6 +259,7 @@
         wireNewLotModal();
         wireWeightSheetPanel();
         wireBolChangeModal();
+        wireBolScanButton(locationId);
         wireSubmit();
         wireEndDumpUI(locationId);
 
@@ -1845,6 +1846,13 @@
     }
 
     function loadExistingDelivery(txnId) {
+        // Populate In/Out/BOL thumbnails for this load — fires immediately and
+        // re-fires on the SignalR ImageCaptured event so a fresh capture from
+        // the field appears here without a page refresh.
+        if (window.gmLoadImages) {
+            window.gmLoadImages.attach({ prefix: 'gd', loadNumber: txnId });
+        }
+
         $.ajax({
             url: '/api/GrowerDelivery/' + txnId,
             method: 'GET',
@@ -2619,6 +2627,37 @@
             $('#gdLotChangeError').text(msg).prop('hidden', false);
         });
     });
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // SCAN BOL — open the camera picker modal for the current load.
+    // Hidden until /api/cameras/bol/available reports at least one BOL camera
+    // for this location. The actual modal logic lives in scan.bol.js (window.scanBol).
+    // ══════════════════════════════════════════════════════════════════════════
+    function wireBolScanButton(locationId) {
+        var $btn = $('#gdBolScanBtn');
+        if (!$btn.length || !window.scanBol) return;
+
+        // Hide until we know a BOL camera is configured. Re-checks on every
+        // edit-mode load in case admins added one while the form was open.
+        $btn.prop('hidden', true);
+        window.scanBol.checkAvailable(locationId).then(function (available) {
+            $btn.prop('hidden', !available);
+        });
+
+        $btn.off('click.gmBol').on('click.gmBol', function () {
+            if (!editTxnId) {
+                // The image is named {loadNumber}_bol.jpg — we need a saved
+                // load id first. Tell the operator to save the inbound side.
+                if (window.DevExpress && DevExpress.ui && DevExpress.ui.notify) {
+                    DevExpress.ui.notify('Save the inbound weight first, then scan the BOL.', 'info', 3500);
+                } else {
+                    alert('Save the inbound weight first, then scan the BOL.');
+                }
+                return;
+            }
+            window.scanBol.open(editTxnId, locationId);
+        });
+    }
 
     // ══════════════════════════════════════════════════════════════════════════
     // CHANGE BOL TYPE MODAL

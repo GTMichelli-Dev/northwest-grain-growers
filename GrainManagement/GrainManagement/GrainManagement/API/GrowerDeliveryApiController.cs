@@ -35,19 +35,22 @@ public sealed class GrowerDeliveryApiController : ControllerBase
     private readonly SystemInfoSnapshot _systemInfo;
     private readonly IWeightSheetNotifier _notifier;
     private readonly GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard _priorDayGuard;
+    private readonly GrainManagement.Services.Camera.ICameraCaptureTrigger _cameraTrigger;
 
     public GrowerDeliveryApiController(
         dbContext ctx,
         ILogger<GrowerDeliveryApiController> logger,
         SystemInfoSnapshot systemInfo,
         IWeightSheetNotifier notifier,
-        GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard priorDayGuard)
+        GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard priorDayGuard,
+        GrainManagement.Services.Camera.ICameraCaptureTrigger cameraTrigger)
     {
         _ctx = ctx;
         _logger = logger;
         _systemInfo = systemInfo;
         _notifier = notifier;
         _priorDayGuard = priorDayGuard;
+        _cameraTrigger = cameraTrigger;
     }
 
     /// <summary>
@@ -693,6 +696,15 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         if (overflowWsId.HasValue)
             await _notifier.NotifyAsync(dto.LocationId, overflowWsId.Value, "ws-created", ct);
 
+        // Camera capture — fire whenever a weight was recorded as part of this
+        // create. Inbound on StartQty, outbound on EndQty. Pure fire-and-forget;
+        // see CameraCaptureTrigger.
+        var loadKey = transactionId.ToString();
+        if (isTruck && dto.StartQty.HasValue)
+            await _cameraTrigger.FireAsync(loadKey, "in",  dto.LocationId, scaleId: null, ct);
+        if (isTruck && dto.EndQty.HasValue)
+            await _cameraTrigger.FireAsync(loadKey, "out", dto.LocationId, scaleId: null, ct);
+
         return Ok(new
         {
             id         = transactionId,
@@ -1032,6 +1044,17 @@ public sealed class GrowerDeliveryApiController : ControllerBase
         bool hasQty       = isTruck ? dto.EndQty.HasValue : hasDirect;
         bool hasContainer = dto.ToContainers?.Count > 0;
         bool isComplete   = hasQty && hasContainer;
+
+        // Camera capture — fire whenever a weight was just captured OR
+        // re-captured (value changed). A correction is intentionally a fresh
+        // photo: the previous image on disk is overwritten by TicketImage
+        // upload, so the saved picture always matches the saved weight.
+        // Resaves that don't touch the weight do nothing.
+        var loadKey = transactionId.ToString();
+        if (isTruck && dto.StartQty.HasValue && dto.StartQty != oldWeights.StartQty)
+            await _cameraTrigger.FireAsync(loadKey, "in",  dto.LocationId, scaleId: null, ct);
+        if (isTruck && dto.EndQty.HasValue && dto.EndQty != oldWeights.EndQty)
+            await _cameraTrigger.FireAsync(loadKey, "out", dto.LocationId, scaleId: null, ct);
 
         return Ok(new
         {

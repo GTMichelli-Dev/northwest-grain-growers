@@ -24,8 +24,10 @@ public class CameraDbContext : DbContext
             e.HasData(new ServiceSettings
             {
                 Id = 1,
-                ServerUrl = "http://localhost:5110",
-                SignalRHub = "/scaleHub",
+                ServiceId = "default",
+                ServerUrl = "http://localhost:51791",
+                SignalRHub = "/hubs/camera",
+                StreamBaseUrl = "",
                 BrandsUrl = "",
                 BrandsToken = ""
             });

@@ -93,4 +93,14 @@ public class TransferWeightSheetLoadRow
     public string Status { get; set; } = "";
     public string StartManualFlag { get; set; } = " ";
     public string EndManualFlag { get; set; } = " ";
+
+    // ── Image hyperlinks (server-aware) ─────────────────────────────────────
+    // Direction mapping depends on the parent WS:
+    //   Received WS  : InImage = StartQty photo (in),  OutImage = EndQty photo (out)
+    //   Shipped WS   : InImage = StartQty photo (out), OutImage = EndQty photo (in)
+    // Empty when no image is expected for that direction (no weight / no
+    // scanned BOL).
+    public string InImageUrl { get; set; } = "";
+    public string OutImageUrl { get; set; } = "";
+    public string BolImageUrl { get; set; } = "";
 }

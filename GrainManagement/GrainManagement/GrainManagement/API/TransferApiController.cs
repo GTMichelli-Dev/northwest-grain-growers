@@ -29,17 +29,20 @@ public sealed class TransferApiController : ControllerBase
     private readonly ILogger<TransferApiController> _logger;
     private readonly IWeightSheetNotifier _notifier;
     private readonly GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard _priorDayGuard;
+    private readonly GrainManagement.Services.Camera.ICameraCaptureTrigger _cameraTrigger;
 
     public TransferApiController(
         dbContext ctx,
         ILogger<TransferApiController> logger,
         IWeightSheetNotifier notifier,
-        GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard priorDayGuard)
+        GrainManagement.Services.Warehouse.IPriorDayWeightSheetGuard priorDayGuard,
+        GrainManagement.Services.Camera.ICameraCaptureTrigger cameraTrigger)
     {
         _ctx = ctx;
         _logger = logger;
         _notifier = notifier;
         _priorDayGuard = priorDayGuard;
+        _cameraTrigger = cameraTrigger;
     }
 
     // Refuses new transfer work while prior-day open WSs exist at the
@@ -553,6 +556,22 @@ public sealed class TransferApiController : ControllerBase
 
         await _notifier.NotifyAsync(dto.LocationId, ws.WeightSheetId, "load-created", ct);
 
+        // Camera capture — direction depends on the WS side. For a Received
+        // transfer (this location is the destination), StartQty is the
+        // loaded truck arriving = "in"; EndQty is the empty truck leaving
+        // = "out" (matches GrowerDelivery semantics). For a Shipped transfer
+        // the truck is leaving full and returning empty, so StartQty = "out"
+        // and EndQty = "in". Pure fire-and-forget — the trigger swallows
+        // errors so a missing camera never blocks the save.
+        var loadKey = transactionId.ToString();
+        bool isReceived = direction == 1;
+        string startCaptureDir = isReceived ? "in"  : "out";
+        string endCaptureDir   = isReceived ? "out" : "in";
+        if (isTruck && dto.StartQty.HasValue)
+            await _cameraTrigger.FireAsync(loadKey, startCaptureDir, dto.LocationId, scaleId: null, ct);
+        if (isTruck && dto.EndQty.HasValue)
+            await _cameraTrigger.FireAsync(loadKey, endCaptureDir,   dto.LocationId, scaleId: null, ct);
+
         return Ok(new { id = transactionId });
     }
 
@@ -816,6 +835,12 @@ public sealed class TransferApiController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.TruckId))
             return BadRequest(new { message = "Truck ID is required." });
 
+        // Snapshot pre-edit weights for camera-capture transition detection.
+        // Captures only fire when a weight goes from null → set (the "weighed
+        // in/out just now" moment); corrections to an already-set weight do
+        // NOT re-capture — the original photo stays.
+        var oldWeights = new { detail.StartQty, detail.EndQty };
+
         // ── Apply the edit ─────────────────────────────────────────────────
         // Re-stamp transfer-shape fields so a load that was moved here from a
         // delivery WS via the legacy intake-side move (which left TxnType=
@@ -972,6 +997,20 @@ public sealed class TransferApiController : ControllerBase
         await WriteIsEndDumpAsync(txnId, dto.IsEndDump, ct);
 
         await _notifier.NotifyAsync(dto.LocationId, ws.WeightSheetId, "load-updated", ct);
+
+        // Camera capture — fire whenever a weight was just captured OR
+        // re-captured (value changed). The previous file is replaced on disk
+        // so the saved photo always matches the saved weight. Direction
+        // mapping matches Create: Received = StartQty→in / EndQty→out;
+        // Shipped flips it (truck leaves full, returns empty).
+        var loadKey = txnId.ToString();
+        bool isReceived = stampedDirection == 1;
+        string startCaptureDir = isReceived ? "in"  : "out";
+        string endCaptureDir   = isReceived ? "out" : "in";
+        if (isTruck && dto.StartQty.HasValue && dto.StartQty != oldWeights.StartQty)
+            await _cameraTrigger.FireAsync(loadKey, startCaptureDir, dto.LocationId, scaleId: null, ct);
+        if (isTruck && dto.EndQty.HasValue && dto.EndQty != oldWeights.EndQty)
+            await _cameraTrigger.FireAsync(loadKey, endCaptureDir,   dto.LocationId, scaleId: null, ct);
 
         return Ok(new { id = txnId });
     }

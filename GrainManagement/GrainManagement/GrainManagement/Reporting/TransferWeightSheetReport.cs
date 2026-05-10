@@ -25,6 +25,44 @@ namespace GrainManagement.Reporting
             this.CanShrink = true;
             this.CanGrow = true;
             this.BeforePrint += ApplyVoidWatermarkIfEmpty;
+
+            // Hyperlink BOL + InWeight + OutWeight cells to their server-aware
+            // image URLs. The DTO builder already accounts for Shipped vs.
+            // Received direction so InImageUrl/OutImageUrl always point at
+            // the right /api/ticket-image/{load}?direction=… target.
+            detBOL.ExpressionBindings.Add(new ExpressionBinding(
+                "BeforePrint", "NavigateUrl", "[BolImageUrl]"));
+            detInWt.ExpressionBindings.Add(new ExpressionBinding(
+                "BeforePrint", "NavigateUrl", "[InImageUrl]"));
+            detOutWt.ExpressionBindings.Add(new ExpressionBinding(
+                "BeforePrint", "NavigateUrl", "[OutImageUrl]"));
+
+            detailBand1.BeforePrint += StyleImageLinkCells;
+        }
+
+        private void StyleImageLinkCells(object sender, CancelEventArgs e)
+        {
+            var inUrl  = GetCurrentColumnValue("InImageUrl")  as string ?? "";
+            var outUrl = GetCurrentColumnValue("OutImageUrl") as string ?? "";
+            var bolUrl = GetCurrentColumnValue("BolImageUrl") as string ?? "";
+
+            ApplyLinkStyle(detInWt,  !string.IsNullOrEmpty(inUrl));
+            ApplyLinkStyle(detOutWt, !string.IsNullOrEmpty(outUrl));
+            ApplyLinkStyle(detBOL,   !string.IsNullOrEmpty(bolUrl));
+        }
+
+        private static void ApplyLinkStyle(XRTableCell cell, bool isLink)
+        {
+            if (isLink)
+            {
+                cell.ForeColor = Color.Blue;
+                cell.Font = new DXFont(cell.Font.Name, cell.Font.Size, DXFontStyle.Underline);
+            }
+            else
+            {
+                cell.ForeColor = Color.Black;
+                cell.Font = new DXFont(cell.Font.Name, cell.Font.Size, DXFontStyle.Regular);
+            }
         }
 
         private void ApplyVoidWatermarkIfEmpty(object sender, CancelEventArgs e)
