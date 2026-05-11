@@ -96,6 +96,24 @@ public sealed class TempTicketsController : ControllerBase
         return Ok(rows);
     }
 
+    // ── "Is the temp-ticket feature actually being used on this server?"
+    // The Remote dashboard hides its Temp Tickets card unless this returns
+    // true. Active = at least one row for this ServerId in the last 30 days
+    // (consumed or not). Once a kiosk presses for the first time the card
+    // appears and stays through the purge horizon.
+    [HttpGet("feature-active")]
+    public async Task<IActionResult> FeatureActive(CancellationToken ct)
+    {
+        var server = await _serverInfo.GetAsync(ct);
+        if (server is null) return Ok(new { active = false });
+
+        var horizon = DateTime.UtcNow - TimeSpan.FromDays(30);
+        var active = await _db.Set<TempWeightTicket>().AsNoTracking()
+            .AnyAsync(t => t.ServerId == server.ServerId && t.CreatedAt >= horizon, ct);
+
+        return Ok(new { active });
+    }
+
     // ── Management view — all unconsumed tickets on this server ───────
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken ct)

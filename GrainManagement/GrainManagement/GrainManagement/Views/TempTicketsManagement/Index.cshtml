@@ -1,0 +1,158 @@
+@{
+    ViewData["Title"] = "Temp Tickets";
+}
+
+<a href="/" class="gm-module-bar gm-module-bar--admin gm-module-bar--link" title="Back to Home">
+    <i class="dx-icon dx-icon-arrowleft gm-module-bar__arrow"></i>
+    <span class="gm-module-bar__icon gm-icon gm-icon--settings" aria-hidden="true"></span>
+    <span class="gm-module-bar__label">TEMP TICKETS</span>
+</a>
+
+<div class="gm-pagehead gm-pagehead--sticky"></div>
+
+<div class="gm-gd">
+    <div class="gm-gd-section">
+        <div class="gm-gd-section__title d-flex align-items-center justify-content-between">
+            <span>Temp Tickets — unconsumed</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="ttRefresh">
+                <i class="dx-icon dx-icon-refresh"></i> Refresh
+            </button>
+        </div>
+        <p class="text-muted mb-3">
+            Captures from kiosk button-presses that haven't been consumed by a load yet.
+            Orphans older than 36 h get cleaned up automatically by the purge worker —
+            this view is for manually clearing dud presses or canceled captures.
+        </p>
+
+        <div id="ttGrid"></div>
+    </div>
+</div>
+
+<!-- ── Image viewer ─────────────────────────────────────────── -->
+<div class="modal fade" id="ttImageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Temp Ticket Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="d-flex justify-content-between mb-2 small">
+                    <span id="ttImageMeta" class="text-muted"></span>
+                    <span id="ttImageWeight" class="fw-bold"></span>
+                </div>
+                <img id="ttImageImg" alt="Temp ticket capture" style="max-width:100%;max-height:65vh;object-fit:contain;" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            "use strict";
+
+            var grid       = null;
+            var imageModal = null;
+
+            function fmtWeight(n) {
+                if (n === null || n === undefined) return "";
+                return Math.round(Number(n)).toLocaleString() + " lbs";
+            }
+
+            async function loadRows() {
+                try {
+                    var rows = await $.getJSON("/api/temp-tickets");
+                    if (!grid) buildGrid(rows || []);
+                    else       grid.option("dataSource", rows || []);
+                } catch (err) {
+                    DevExpress.ui.notify("Failed to load temp tickets: " + (err.statusText || err.message || "?"), "error", 3500);
+                }
+            }
+
+            function buildGrid(rows) {
+                grid = $("#ttGrid").dxDataGrid({
+                    dataSource: rows,
+                    keyExpr: "TempTicketId",
+                    showBorders: true,
+                    rowAlternationEnabled: true,
+                    columnAutoWidth: true,
+                    paging: { enabled: true, pageSize: 50 },
+                    pager: { visible: true, showInfo: true, showPageSizeSelector: true, allowedPageSizes: [25, 50, 100, "all"] },
+                    sorting: { mode: "multiple" },
+                    noDataText: "No unconsumed temp tickets on this server.",
+                    columns: [
+                        { dataField: "TempTicketId", caption: "ID", width: 80, alignment: "right" },
+                        { dataField: "CreatedAt", caption: "Created", dataType: "datetime", format: "yyyy-MM-dd HH:mm:ss", width: 170 },
+                        { dataField: "ScaleId", caption: "Scale", width: 80, alignment: "right" },
+                        { dataField: "KioskId", caption: "Kiosk", width: 140 },
+                        {
+                            dataField: "Gross", caption: "Gross", alignment: "right", width: 130,
+                            customizeText: function (info) { return fmtWeight(info.value); },
+                        },
+                        {
+                            caption: "Image", width: 110, alignment: "center", allowSorting: false,
+                            cellTemplate: function (container, options) {
+                                var btn = $('<button type="button" class="btn btn-sm btn-outline-secondary"><i class="dx-icon dx-icon-image"></i> View</button>');
+                                btn.on("click", function () { showImage(options.data); });
+                                container.append(btn);
+                            },
+                        },
+                        {
+                            caption: "", width: 110, alignment: "center", allowSorting: false,
+                            cellTemplate: function (container, options) {
+                                var btn = $('<button type="button" class="btn btn-sm btn-outline-danger"><i class="dx-icon dx-icon-trash"></i> Delete</button>');
+                                btn.on("click", function () { confirmDelete(options.data); });
+                                container.append(btn);
+                            },
+                        },
+                    ],
+                }).dxDataGrid("instance");
+            }
+
+            function showImage(t) {
+                if (!imageModal) {
+                    imageModal = new bootstrap.Modal(document.getElementById("ttImageModal"));
+                }
+                document.getElementById("ttImageImg").src =
+                    "/api/temp-tickets/" + t.TempTicketId + "/image?cb=" + Date.now();
+                document.getElementById("ttImageMeta").textContent =
+                    "Scale " + t.ScaleId + " · " + (t.KioskId || "") + " · " + new Date(t.CreatedAt).toLocaleString();
+                document.getElementById("ttImageWeight").textContent = fmtWeight(t.Gross);
+                imageModal.show();
+            }
+
+            function confirmDelete(t) {
+                var msg = "Delete temp ticket #" + t.TempTicketId + " (" + fmtWeight(t.Gross) + ", " +
+                          new Date(t.CreatedAt).toLocaleString() + ")?";
+                if (window.DevExpress && DevExpress.ui && DevExpress.ui.dialog) {
+                    DevExpress.ui.dialog.confirm(msg, "Delete Temp Ticket").done(function (ok) {
+                        if (ok) doDelete(t.TempTicketId);
+                    });
+                } else if (window.confirm(msg)) {
+                    doDelete(t.TempTicketId);
+                }
+            }
+
+            async function doDelete(id) {
+                try {
+                    var resp = await fetch("/api/temp-tickets/" + id, { method: "DELETE" });
+                    if (resp.ok) {
+                        DevExpress.ui.notify("Temp ticket #" + id + " deleted.", "success", 2000);
+                        loadRows();
+                    } else {
+                        DevExpress.ui.notify("Delete failed (" + resp.status + ").", "error", 3500);
+                    }
+                } catch (err) {
+                    DevExpress.ui.notify("Delete failed: " + (err.message || "?"), "error", 3500);
+                }
+            }
+
+            document.getElementById("ttRefresh").addEventListener("click", loadRows);
+            $(loadRows);
+        })();
+    </script>
+}

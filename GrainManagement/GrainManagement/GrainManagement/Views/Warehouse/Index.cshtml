@@ -10,9 +10,33 @@
     <span class="gm-module-bar__label">WEIGHT SHEETS</span>
 </a>
 
+<!-- Temp Tickets entry — hidden until the feature-active probe says
+     the kiosk service has pressed this server at least once in the
+     last 30 days (see /api/temp-tickets/feature-active). -->
+<a href="/TempTickets" id="gmWdTempTicketsBtn" class="btn btn-success mb-2" style="margin-left:8px;" hidden>
+    <i class="dx-icon dx-icon-clock"></i> Temp Tickets
+</a>
+
 <div class="gm-pagehead gm-pagehead--sticky">
     <div class="gm-wdActions" id="wdActions"></div>
 </div>
+
+<script>
+    (function () {
+        // Reveal the Temp Tickets button only when this server has seen
+        // kiosk activity recently. Cheap one-shot probe; the API endpoint
+        // returns { active: true|false }.
+        fetch('/api/temp-tickets/feature-active')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (j) {
+                if (j && j.active) {
+                    var btn = document.getElementById('gmWdTempTicketsBtn');
+                    if (btn) btn.hidden = false;
+                }
+            })
+            .catch(function () { /* feature simply unavailable — stay hidden */ });
+    })();
+</script>
 
 <!-- Shown when no location is selected -->
 <div id="gmWdNoLocation" class="gm-wd-nolocation" @(LocationContext.HasLocation ? "hidden" : "")>
