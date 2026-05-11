@@ -6,10 +6,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-GrainManagement.As400Sync-961c4862-fc8d-4936-a015-2ed0d3e59e00</UserSecretsId>
-    <Version>1.0.11</Version>
-    <FileVersion>1.0.11</FileVersion>
-    <AssemblyVersion>1.0.11</AssemblyVersion>
-    <InformationalVersion>1.0.11</InformationalVersion>
+    <Version>1.0.12</Version>
+    <FileVersion>1.0.12</FileVersion>
+    <AssemblyVersion>1.0.12</AssemblyVersion>
+    <InformationalVersion>1.0.12</InformationalVersion>
     <AssemblyTitle>GrainManagement.As400Sync</AssemblyTitle>
   </PropertyGroup>
 

@@ -143,10 +143,10 @@ INTO #ValidRows
 FROM #SrcMapped
 WHERE SqlAccountId IS NOT NULL;
 --------------------------------------------------------------------------------
--- Reject bad groups (hard delete in SQL + remove from this batch)
--- Rules
-            --1) Total SplitPercent per SplitGroupId must equal 100.0000000(within tolerance)
-            --------------------------------------------------------------------------------
+-- Reject bad groups (soft delete + remove from this batch)
+-- Rules:
+--   1) Total SplitPercent per SplitGroupId must equal 100.0000000 (within tolerance)
+--------------------------------------------------------------------------------
 IF OBJECT_ID('tempdb..#BadGroups') IS NOT NULL DROP TABLE #BadGroups;
 
 SELECT
@@ -157,16 +157,18 @@ GROUP BY v.SplitGroupId
 HAVING
     ABS(SUM(v.SplitPercent) -CAST(100.0 AS decimal(18, 7))) > CAST(0.00001 AS decimal(18, 7));
 
-            --Hard delete invalid groups in SQL(FK - safe)
-DELETE sp
-FROM account.SplitGroupPercents sp
-JOIN #BadGroups bg ON bg.SplitGroupId = sp.SplitGroupId;
-
-DELETE sg
+-- Soft-delete invalid groups: Inventory.Lots has a FK to
+-- account.SplitGroups.SplitGroupId, so a hard DELETE on the parent
+-- breaks anywhere a historical lot still references the group.
+-- Leave child SplitGroupPercents rows in place — they're consistent
+-- with the (now inactive) parent and don't hit any incoming FK.
+UPDATE sg
+SET sg.IsActive = 0
 FROM account.SplitGroups sg
 JOIN #BadGroups bg ON bg.SplitGroupId = sg.SplitGroupId;
 
--- Remove bad groups from this batch so we don't re-insert them
+-- Remove bad groups from this batch so the MERGE below doesn't flip
+-- IsActive back on.
 DELETE v
 FROM #ValidRows v
 JOIN #BadGroups bg ON bg.SplitGroupId = v.SplitGroupId;
@@ -249,29 +251,29 @@ WHEN NOT MATCHED BY SOURCE
      AND tgt.SplitGroupId IN(SELECT SplitGroupId FROM #SrcGroups) THEN
     DELETE;
 
-            --------------------------------------------------------------------------------
-            --Optional FULL SNAPSHOT purge
-            -- Only enable when the supplied AS400 rows are a complete snapshot.
-            --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- FULL SNAPSHOT soft-purge
+-- Only enable when the supplied AS400 rows are a complete snapshot.
+-- Inventory.Lots references account.SplitGroups.SplitGroupId via
+-- FK_Lots_SplitGroups, so a hard DELETE on rows that disappeared from
+-- the snapshot would break wherever a historical lot still points at
+-- them. Instead we mark them IsActive = 0; the MERGE above flips the
+-- flag back on if a group reappears in a future snapshot.
+-- Child SplitGroupPercents rows stay in place so future re-activation
+-- doesn't need to rebuild membership from scratch.
+--------------------------------------------------------------------------------
 IF @IsFullSnapshot = 1
 BEGIN
-    -- delete children first(FK - safe)
-    DELETE sp
-    FROM account.SplitGroupPercents sp
-    WHERE NOT EXISTS(
-        SELECT 1
-        FROM #SrcGroups s
-        WHERE s.SplitGroupId = sp.SplitGroupId
-    );
-
-            DELETE sg
+    UPDATE sg
+    SET sg.IsActive = 0
     FROM account.SplitGroups sg
-    WHERE NOT EXISTS(
+    WHERE NOT EXISTS
+    (
         SELECT 1
         FROM #SrcGroups s
         WHERE s.SplitGroupId = sg.SplitGroupId
     );
-            END
+END
 ";
 
             await using (var cmd = new SqlCommand(syncSql, conn, (SqlTransaction)tx))
