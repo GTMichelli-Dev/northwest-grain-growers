@@ -181,14 +181,17 @@
                 elStage.textContent = stage || "Idle.";
                 elMessage.textContent = msg || "";
 
-                // Bar width tracks current/total exactly. When the total
-                // isn't known yet (Counting / count query failed), show an
-                // animated striped bar so the user sees motion without a
-                // misleading numeric position.
+                // Two display modes:
+                //   • Determinate (real %): stage has a total and we're still
+                //     streaming rows toward it (curN < totN).
+                //   • Indeterminate (striped, animated): any non-terminal stage
+                //     without row-level progress to track — Counting, the bulk
+                //     Upserting SQL after the read finishes, MarkInactive, etc.
                 var counterText = "";
                 var hasTotal = (tot != null && Number(tot) > 0);
                 var curN = (cur != null) ? Number(cur) : 0;
                 var totN = hasTotal ? Number(tot) : 0;
+                var determinate = hasTotal && curN < totN;
 
                 if (stage === "Done") {
                     counterText = hasTotal
@@ -200,18 +203,18 @@
                         ? fmtNum(curN) + " of " + fmtNum(totN) + " records upserted"
                         : (curN > 0 ? fmtNum(curN) + " records upserted" : "");
                     setBar(0, false);
-                } else if (hasTotal) {
-                    counterText = fmtNum(curN) + " of " + fmtNum(totN) + " records upserted";
-                    var pct = (curN / totN) * 100;
-                    setBar(pct, false);
-                } else if (curN > 0) {
-                    // Streaming with unknown total — animated indeterminate.
-                    counterText = fmtNum(curN) + " records upserted";
-                    setBar(100, true);
+                } else if (determinate) {
+                    counterText = fmtNum(curN) + " of " + fmtNum(totN) + " records";
+                    setBar((curN / totN) * 100, false);
+                } else if (stage && stage !== "Idle") {
+                    // Any in-flight stage without determinate progress —
+                    // bar empty + striped animation so the user sees motion
+                    // through long single-statement SQL phases.
+                    counterText = curN > 0 ? fmtNum(curN) + " records" : "";
+                    setBar(0, true);
                 } else {
-                    // Idle / connecting / counting — empty animated.
                     counterText = "";
-                    setBar(0, stage === "Counting");
+                    setBar(0, false);
                 }
 
                 elCounter.textContent = counterText;

@@ -52,11 +52,11 @@ public sealed class As400SyncRunner
         {
             case SyncJob.Accounts:
                 {
-                    Report(progress, jobName, "Counting", 0, null, "Counting accounts on AS400...", syncRunId);
+                    Report(progress, jobName, "Counting", 0, null, "Counting accounts on Agvantage...", syncRunId);
                     var total = await _as400.CountAccountsAsync(ct);
 
                     Report(progress, jobName, "Reading", 0, total,
-                        total.HasValue ? $"Streaming {total:N0} accounts from AS400." : "Reading accounts from AS400.",
+                        total.HasValue ? $"Reading {total:N0} accounts from Agvantage." : "Reading accounts from Agvantage.",
                         syncRunId);
 
                     long count = 0;
@@ -70,13 +70,15 @@ public sealed class As400SyncRunner
                         if (ShouldReport(count, ref lastReport))
                         {
                             Report(progress, jobName, "Upserting", count, total,
-                                $"Upserted {count:N0}{(total.HasValue ? " of " + total.Value.ToString("N0") : "")} accounts.",
+                                $"Writing {count:N0}{(total.HasValue ? " of " + total.Value.ToString("N0") : "")} accounts to GrainManagement.",
                                 syncRunId);
                         }
                     }
 
-                    Report(progress, jobName, "MarkInactive", count, count,
-                        "Marking missing accounts as inactive.", syncRunId);
+                    // Reset bar to indeterminate for the MarkInactive SQL — there's no
+                    // row-level progress to stream, but we still want to show motion.
+                    Report(progress, jobName, "MarkInactive", 0, null,
+                        "Marking missing accounts as inactive in GrainManagement...", syncRunId);
                     await _accountUpserter.MarkMissingAsInactiveAsync(syncRunId, ct);
 
                     _log.LogInformation("Accounts sync completed. Upserted={Count} SyncRunId={SyncRunId}", count, syncRunId);
@@ -87,11 +89,11 @@ public sealed class As400SyncRunner
 
             case SyncJob.Products:
                 {
-                    Report(progress, jobName, "Counting", 0, null, "Counting items on AS400...", syncRunId);
+                    Report(progress, jobName, "Counting", 0, null, "Counting items on Agvantage...", syncRunId);
                     var total = await _as400.CountAllProductItemsAsync(ct);
 
                     Report(progress, jobName, "Reading", 0, total,
-                        total.HasValue ? $"Streaming {total:N0} items from AS400." : "Reading product items from AS400.",
+                        total.HasValue ? $"Reading {total:N0} items from Agvantage." : "Reading product items from Agvantage.",
                         syncRunId);
 
                     long count = 0;
@@ -105,13 +107,14 @@ public sealed class As400SyncRunner
                         if (ShouldReport(count, ref lastReport))
                         {
                             Report(progress, jobName, "Upserting", count, total,
-                                $"Upserted {count:N0}{(total.HasValue ? " of " + total.Value.ToString("N0") : "")} items.",
+                                $"Writing {count:N0}{(total.HasValue ? " of " + total.Value.ToString("N0") : "")} items to GrainManagement.",
                                 syncRunId);
                         }
                     }
 
-                    Report(progress, jobName, "MarkInactive", count, count,
-                        "Marking missing items / products as inactive.", syncRunId);
+                    // Reset bar to indeterminate for the MarkInactive SQL.
+                    Report(progress, jobName, "MarkInactive", 0, null,
+                        "Marking missing items / products as inactive in GrainManagement...", syncRunId);
                     await _productUpserter.MarkMissingAsInactiveAsync(syncRunId, nowUtc, ct);
 
                     _log.LogInformation("Products sync completed. Upserted={Count} SyncRunId={SyncRunId}", count, syncRunId);
@@ -122,13 +125,13 @@ public sealed class As400SyncRunner
 
             case SyncJob.SplitGroups:
                 {
-                    Report(progress, jobName, "Counting", 0, null, "Counting split rows on AS400...", syncRunId);
+                    Report(progress, jobName, "Counting", 0, null, "Counting split rows on Agvantage...", syncRunId);
                     var total = await _as400.CountLandlordSplitPercentsAsync(ct);
 
                     Report(progress, jobName, "Reading", 0, total,
                         total.HasValue
-                            ? $"Streaming {total:N0} landlord split rows from AS400."
-                            : "Reading landlord split percentages from AS400.",
+                            ? $"Reading {total:N0} landlord split rows from Agvantage."
+                            : "Reading landlord split percentages from Agvantage.",
                         syncRunId);
 
                     var rows = new List<As400LandlordSplitPercentRow>(
@@ -145,13 +148,17 @@ public sealed class As400SyncRunner
                         if (ShouldReport(readCount, ref lastReport))
                         {
                             Report(progress, jobName, "Reading", readCount, total,
-                                $"Read {readCount:N0}{(total.HasValue ? " of " + total.Value.ToString("N0") : "")} split rows.",
+                                $"Reading {readCount:N0}{(total.HasValue ? " of " + total.Value.ToString("N0") : "")} split rows from Agvantage.",
                                 syncRunId);
                         }
                     }
 
-                    Report(progress, jobName, "Upserting", rows.Count, rows.Count,
-                        $"Upserting {rows.Count:N0} split rows.", syncRunId);
+                    // Reset the bar to indeterminate: the upsert is a single bulk SQL
+                    // statement with no row-level progress to stream, so leaving the
+                    // bar at 100% would make it look done while it's actually still
+                    // running for another 1-2 minutes.
+                    Report(progress, jobName, "Upserting", 0, null,
+                        $"Writing {rows.Count:N0} split rows to GrainManagement...", syncRunId);
                     await _splitGroupsUpserter.UpsertAsync(rows, ct);
 
                     _log.LogInformation("SplitGroups sync complete. Rows={Count}", rows.Count);
