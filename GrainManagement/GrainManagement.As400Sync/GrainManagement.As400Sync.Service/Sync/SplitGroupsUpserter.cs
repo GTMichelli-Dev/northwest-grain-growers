@@ -157,15 +157,22 @@ GROUP BY v.SplitGroupId
 HAVING
     ABS(SUM(v.SplitPercent) -CAST(100.0 AS decimal(18, 7))) > CAST(0.00001 AS decimal(18, 7));
 
--- Soft-delete invalid groups: Inventory.Lots has a FK to
--- account.SplitGroups.SplitGroupId, so a hard DELETE on the parent
--- breaks anywhere a historical lot still references the group.
--- Leave child SplitGroupPercents rows in place — they're consistent
--- with the (now inactive) parent and don't hit any incoming FK.
+-- Soft-delete invalid groups and their percent rows. Inventory.Lots
+-- has a FK to account.SplitGroups.SplitGroupId, so a hard DELETE on
+-- the parent breaks anywhere a historical lot still references the
+-- group. Both parent and child now flip IsActive = 0; the MERGE
+-- below will reactivate them if the group's data comes back clean.
 UPDATE sg
 SET sg.IsActive = 0
 FROM account.SplitGroups sg
-JOIN #BadGroups bg ON bg.SplitGroupId = sg.SplitGroupId;
+JOIN #BadGroups bg ON bg.SplitGroupId = sg.SplitGroupId
+WHERE sg.IsActive = 1;
+
+UPDATE sp
+SET sp.IsActive = 0
+FROM account.SplitGroupPercents sp
+JOIN #BadGroups bg ON bg.SplitGroupId = sp.SplitGroupId
+WHERE sp.IsActive = 1;
 
 -- Remove bad groups from this batch so the MERGE below doesn't flip
 -- IsActive back on.
@@ -242,14 +249,20 @@ MERGE account.SplitGroupPercents WITH(HOLDLOCK) AS tgt
 USING #SrcPerc AS src
    ON tgt.SplitGroupId = src.SplitGroupId
   AND tgt.AccountId = src.AccountId
-WHEN MATCHED AND tgt.SplitPercent<> src.SplitPercent THEN
-    UPDATE SET tgt.SplitPercent = src.SplitPercent
+WHEN MATCHED AND (tgt.SplitPercent <> src.SplitPercent OR tgt.IsActive = 0) THEN
+    UPDATE SET
+        tgt.SplitPercent = src.SplitPercent,
+        tgt.IsActive     = 1
 WHEN NOT MATCHED BY TARGET THEN
-    INSERT(SplitGroupId, AccountId, SplitPercent)
-    VALUES(src.SplitGroupId, src.AccountId, src.SplitPercent)
+    INSERT(SplitGroupId, AccountId, SplitPercent, IsActive)
+    VALUES(src.SplitGroupId, src.AccountId, src.SplitPercent, 1)
 WHEN NOT MATCHED BY SOURCE
-     AND tgt.SplitGroupId IN(SELECT SplitGroupId FROM #SrcGroups) THEN
-    DELETE;
+     AND tgt.SplitGroupId IN(SELECT SplitGroupId FROM #SrcGroups)
+     AND tgt.IsActive = 1 THEN
+    -- Soft-delete the dropped member rather than hard-DELETE so any
+    -- historical reference keeps its FK target. The row reactivates
+    -- automatically if the account rejoins the group on a future sync.
+    UPDATE SET tgt.IsActive = 0;
 
 --------------------------------------------------------------------------------
 -- FULL SNAPSHOT soft-purge
@@ -257,22 +270,36 @@ WHEN NOT MATCHED BY SOURCE
 -- Inventory.Lots references account.SplitGroups.SplitGroupId via
 -- FK_Lots_SplitGroups, so a hard DELETE on rows that disappeared from
 -- the snapshot would break wherever a historical lot still points at
--- them. Instead we mark them IsActive = 0; the MERGE above flips the
--- flag back on if a group reappears in a future snapshot.
--- Child SplitGroupPercents rows stay in place so future re-activation
--- doesn't need to rebuild membership from scratch.
+-- them. Instead we mark both the parent group and its percent rows
+-- IsActive = 0; the MERGE above flips the flag back on if a group
+-- reappears in a future snapshot.
 --------------------------------------------------------------------------------
 IF @IsFullSnapshot = 1
 BEGIN
     UPDATE sg
     SET sg.IsActive = 0
     FROM account.SplitGroups sg
-    WHERE NOT EXISTS
-    (
-        SELECT 1
-        FROM #SrcGroups s
-        WHERE s.SplitGroupId = sg.SplitGroupId
-    );
+    WHERE sg.IsActive = 1
+      AND NOT EXISTS
+      (
+          SELECT 1
+          FROM #SrcGroups s
+          WHERE s.SplitGroupId = sg.SplitGroupId
+      );
+
+    -- Soft-delete child percent rows whose parent vanished from the
+    -- snapshot. Percents inside groups that ARE in the snapshot are
+    -- already handled by the MERGE above's scoped NOT-MATCHED-BY-SOURCE.
+    UPDATE sp
+    SET sp.IsActive = 0
+    FROM account.SplitGroupPercents sp
+    WHERE sp.IsActive = 1
+      AND NOT EXISTS
+      (
+          SELECT 1
+          FROM #SrcGroups s
+          WHERE s.SplitGroupId = sp.SplitGroupId
+      );
 END
 ";
 

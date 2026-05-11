@@ -62,7 +62,7 @@ public sealed class SplitGroupsApiController : ControllerBase
 
         var rows = await _ctx.SplitGroupPercents
             .AsNoTracking()
-            .Where(p => p.SplitGroupId == splitGroupId)
+            .Where(p => p.SplitGroupId == splitGroupId && p.IsActive)
             .Join(_ctx.Accounts,
                   p => p.AccountId,
                   a => a.AccountId,

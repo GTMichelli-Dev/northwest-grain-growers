@@ -1656,7 +1656,7 @@ namespace GrainManagement.Api
             if (splitGroupId is null) return new List<string>();
 
             var query = _db.SplitGroupPercents.AsNoTracking()
-                .Where(sgp => sgp.SplitGroupId == splitGroupId.Value)
+                .Where(sgp => sgp.SplitGroupId == splitGroupId.Value && sgp.IsActive)
                 .Join(_db.Accounts.AsNoTracking(),
                       sgp => sgp.AccountId,
                       a => a.AccountId,

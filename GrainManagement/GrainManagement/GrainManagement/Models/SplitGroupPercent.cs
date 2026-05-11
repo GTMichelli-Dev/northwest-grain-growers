@@ -15,6 +15,8 @@ public partial class SplitGroupPercent
 
     public decimal SplitPercent { get; set; }
 
+    public bool IsActive { get; set; }
+
     public virtual Account Account { get; set; }
 
     public virtual SplitGroup SplitGroup { get; set; }

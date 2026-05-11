@@ -108,6 +108,7 @@ public class AccountsApiController : ControllerBase
                 sg.UseForSales,
                 sg.UseForReceive,
                 Percents = sg.SplitGroupPercents
+                    .Where(p => p.IsActive)
                     .OrderByDescending(p => p.SplitPercent)
                     .Select(p => new
                     {

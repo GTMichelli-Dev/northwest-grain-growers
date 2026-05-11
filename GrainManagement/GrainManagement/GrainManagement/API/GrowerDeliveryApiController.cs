@@ -1845,10 +1845,12 @@ public sealed class GrowerDeliveryApiController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden,
                 new { message = "User does not have permission to create lots." });
 
-        // Load split group + percents in a single query
+        // Load split group + active percents in a single query. Inactive
+        // (soft-deleted) percent rows are members AS400 has dropped from
+        // the group — they shouldn't get allocated on new deliveries.
         var sg = await _ctx.SplitGroups
             .AsNoTracking()
-            .Include(s => s.SplitGroupPercents)
+            .Include(s => s.SplitGroupPercents.Where(p => p.IsActive))
             .FirstOrDefaultAsync(s => s.SplitGroupId == dto.SplitGroupId, ct);
 
         if (sg is null)

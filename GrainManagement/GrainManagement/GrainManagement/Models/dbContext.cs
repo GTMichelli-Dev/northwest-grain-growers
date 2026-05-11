@@ -2025,6 +2025,9 @@ public partial class dbContext : DbContext
             entity.ToTable("SplitGroupPercents", "account");
 
             entity.Property(e => e.SplitPercent).HasColumnType("decimal(10, 7)");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF_SplitGroupPercents_IsActive");
 
             entity.HasOne(d => d.Account).WithMany(p => p.SplitGroupPercents)
                 .HasForeignKey(d => d.AccountId)
