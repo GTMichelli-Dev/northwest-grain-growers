@@ -305,6 +305,8 @@ app.MapHub<As400SyncHub>(As400SyncHub.HubRoute);
 
 app.MapHub<CameraHub>(CameraHub.HubRoute);
 
+app.MapHub<TempTicketKioskHub>(TempTicketKioskHub.HubRoute);
+
 app.MapRazorPages();
 
 // ── Warm-up: force EF Core model compilation + first DB connection at startup ──

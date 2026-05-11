@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using GrainManagement.Dtos.TempTickets;
+using GrainManagement.Hubs;
 using GrainManagement.Models;
 using GrainManagement.Services.Camera;
 using GrainManagement.Services.Print;
+using Microsoft.AspNetCore.SignalR;
 
 namespace GrainManagement.Services.TempTickets;
 
@@ -23,15 +25,18 @@ public sealed class TempTicketOrchestrator : ITempTicketOrchestrator
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IScaleRegistry _scales;
+    private readonly IHubContext<TempTicketKioskHub, ITempTicketKioskClient> _kioskHub;
     private readonly ILogger<TempTicketOrchestrator> _log;
 
     public TempTicketOrchestrator(
         IServiceScopeFactory scopeFactory,
         IScaleRegistry scales,
+        IHubContext<TempTicketKioskHub, ITempTicketKioskClient> kioskHub,
         ILogger<TempTicketOrchestrator> log)
     {
         _scopeFactory = scopeFactory;
         _scales = scales;
+        _kioskHub = kioskHub;
         _log = log;
     }
 
@@ -107,6 +112,30 @@ public sealed class TempTicketOrchestrator : ITempTicketOrchestrator
             _log.LogInformation(
                 "Temp ticket {Id} stored from {Kiosk} on scale {ScaleId}: gross={Gross} net={Net}.",
                 row.TempTicketId, req.KioskId, req.ScaleId, row.Gross, row.Net);
+
+            // Push the press confirmation to the kiosk's browser group so
+            // the display can flash green with the captured weight. The
+            // browser is responsible for resetting itself after 5 s.
+            try
+            {
+                await _kioskHub.Clients
+                    .Group(TempTicketKioskHub.KioskGroupName(req.KioskId))
+                    .TempTicketCaptured(new
+                    {
+                        TempTicketId = row.TempTicketId,
+                        KioskId      = row.KioskId,
+                        ScaleId      = row.ScaleId,
+                        Gross        = row.Gross,
+                        Tare         = row.Tare,
+                        Net          = row.Net,
+                        Units        = row.Units,
+                        CreatedAt    = row.CreatedAt,
+                    });
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Temp ticket {Id}: kiosk push failed.", row.TempTicketId);
+            }
 
             // 4) Fire the print. Same target string as the rest of the print
             // dispatch system — "serviceId:printerId" or just "printerId".

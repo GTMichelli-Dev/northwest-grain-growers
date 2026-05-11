@@ -1,0 +1,208 @@
+@{
+    Layout = null;
+    var kioskId = (string)(ViewData["KioskId"] ?? "");
+    var scaleId = (int)(ViewData["ScaleId"] ?? 0);
+}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Temp Ticket Kiosk @kioskId</title>
+    <style>
+        :root {
+            --bg-ready:   #1e293b;  /* slate-800 — idle */
+            --bg-motion:  #b45309;  /* amber-700 — truck on scale */
+            --bg-success: #15803d;  /* green-700 — flash after press */
+            --bg-error:   #b91c1c;  /* red-700 — disconnected */
+            --fg:         #f8fafc;
+            --fg-muted:   #cbd5e1;
+        }
+        html, body {
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--fg);
+            overflow: hidden;
+            background: var(--bg-ready);
+            transition: background-color 0.35s ease-out;
+        }
+        body.state-motion  { background: var(--bg-motion); }
+        body.state-success { background: var(--bg-success); }
+        body.state-error   { background: var(--bg-error); }
+        main {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: 100vh; text-align: center; padding: 4vh;
+        }
+        .label {
+            font-size: 7vh; font-weight: 800; letter-spacing: -0.02em;
+            margin-bottom: 2vh;
+        }
+        .weight {
+            font-size: 18vh; font-weight: 900; letter-spacing: -0.04em;
+            line-height: 1; font-variant-numeric: tabular-nums;
+            margin-bottom: 2vh;
+            visibility: hidden;
+        }
+        .weight.visible { visibility: visible; }
+        .sub {
+            font-size: 3.5vh; color: var(--fg-muted); font-weight: 500;
+        }
+        footer {
+            position: fixed; bottom: 2vh; left: 0; right: 0;
+            display: flex; justify-content: space-between;
+            padding: 0 3vh; color: var(--fg-muted); font-size: 2vh;
+            opacity: 0.7;
+        }
+    </style>
+    <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
+</head>
+<body>
+    <main>
+        <div id="label" class="label">Connecting…</div>
+        <div id="weight" class="weight">—</div>
+        <div id="sub" class="sub"></div>
+    </main>
+    <footer>
+        <span>Kiosk <strong>@kioskId</strong> · Scale <strong>@scaleId</strong></span>
+        <span id="conn">·</span>
+    </footer>
+
+    <script>
+        (function () {
+            "use strict";
+
+            var KIOSK_ID = @Json.Serialize(kioskId);
+            var SCALE_ID = @scaleId;
+            // After a successful press the display flashes green with the
+            // captured weight for FLASH_MS, then drops back to the idle /
+            // motion state determined by the live Motion bit.
+            var FLASH_MS = 5000;
+
+            var elBody   = document.body;
+            var elLabel  = document.getElementById("label");
+            var elWeight = document.getElementById("weight");
+            var elSub    = document.getElementById("sub");
+            var elConn   = document.getElementById("conn");
+
+            var motion        = false;
+            var lastWeight    = null;
+            var lastUnits     = "lbs";
+            var inFlash       = false;
+            var flashTimerId  = null;
+
+            function fmtWeight(n, units) {
+                if (n === null || n === undefined) return "—";
+                var s = Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+                return s + " " + (units || "lbs");
+            }
+
+            function showReady() {
+                if (inFlash) return;
+                elBody.classList.remove("state-motion","state-success","state-error");
+                elLabel.textContent = "Ready";
+                elWeight.classList.remove("visible");
+                elWeight.textContent = lastWeight !== null ? fmtWeight(lastWeight, lastUnits) : "—";
+                elSub.textContent = "Press the button at the kiosk to capture a temp ticket.";
+                elWeight.classList.add("visible");
+            }
+
+            function showMotion() {
+                if (inFlash) return;
+                elBody.classList.remove("state-success","state-error");
+                elBody.classList.add("state-motion");
+                elLabel.textContent = "Waiting for motion";
+                elWeight.classList.add("visible");
+                elWeight.textContent = fmtWeight(lastWeight, lastUnits);
+                elSub.textContent = "Truck is settling on the scale.";
+            }
+
+            function showSuccess(payload) {
+                inFlash = true;
+                if (flashTimerId !== null) clearTimeout(flashTimerId);
+
+                elBody.classList.remove("state-motion","state-error");
+                elBody.classList.add("state-success");
+                elLabel.textContent = "Printing temporary ticket";
+                var gross = (payload && (payload.Gross != null ? payload.Gross : payload.gross));
+                var units = (payload && (payload.Units || payload.units)) || "lbs";
+                elWeight.classList.add("visible");
+                elWeight.textContent = fmtWeight(gross, units);
+                var kid = (payload && (payload.KioskId || payload.kioskId)) || KIOSK_ID;
+                elSub.textContent = "Kiosk " + kid + " · " + new Date().toLocaleTimeString();
+
+                flashTimerId = setTimeout(function () {
+                    inFlash = false;
+                    flashTimerId = null;
+                    if (motion) showMotion(); else showReady();
+                }, FLASH_MS);
+            }
+
+            function showError(msg) {
+                elBody.classList.remove("state-motion","state-success");
+                elBody.classList.add("state-error");
+                elLabel.textContent = "Service offline";
+                elWeight.classList.remove("visible");
+                elSub.textContent = msg || "Reconnecting…";
+            }
+
+            if (typeof signalR === "undefined") {
+                showError("SignalR client not loaded.");
+                return;
+            }
+
+            // ── Kiosk-specific hub: press confirmations ──────────────────
+            var kioskConn = new signalR.HubConnectionBuilder()
+                .withUrl("/hubs/temp-ticket-kiosk")
+                .withAutomaticReconnect()
+                .build();
+
+            kioskConn.on("TempTicketCaptured", function (payload) {
+                showSuccess(payload);
+            });
+
+            kioskConn.onreconnecting(function () { elConn.textContent = "kiosk: reconnecting"; });
+            kioskConn.onreconnected(function () {
+                elConn.textContent = "·";
+                kioskConn.invoke("JoinKiosk", KIOSK_ID).catch(function(){});
+            });
+            kioskConn.onclose(function () { elConn.textContent = "kiosk: offline"; });
+
+            // ── Scale hub: live Motion bit + weight ──────────────────────
+            var scaleConn = SCALE_ID > 0
+                ? new signalR.HubConnectionBuilder()
+                    .withUrl("/hubs/scale")
+                    .withAutomaticReconnect()
+                    .build()
+                : null;
+
+            if (scaleConn) {
+                scaleConn.on("ScaleUpdated", function (dto) {
+                    if (!dto || dto.Id !== SCALE_ID) return;
+                    motion     = !!dto.Motion;
+                    lastWeight = dto.Weight;
+                    if (inFlash) return;
+                    if (motion) showMotion(); else showReady();
+                });
+                scaleConn.onreconnecting(function () { elConn.textContent = "scale: reconnecting"; });
+                scaleConn.onreconnected(function () {
+                    elConn.textContent = "·";
+                    scaleConn.invoke("JoinScale", SCALE_ID).catch(function(){});
+                });
+            }
+
+            // ── Connect ─────────────────────────────────────────────────
+            Promise.all([
+                kioskConn.start().then(function () { return kioskConn.invoke("JoinKiosk", KIOSK_ID); }),
+                scaleConn ? scaleConn.start().then(function () { return scaleConn.invoke("JoinScale", SCALE_ID); })
+                          : Promise.resolve(),
+            ]).then(function () {
+                showReady();
+            }).catch(function (err) {
+                console.error("Kiosk hub connect failed", err);
+                showError("Failed to connect to GrainManagement.");
+            });
+        })();
+    </script>
+</body>
+</html>
