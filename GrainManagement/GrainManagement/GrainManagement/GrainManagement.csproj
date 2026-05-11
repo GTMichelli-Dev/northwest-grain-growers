@@ -4,10 +4,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <PropertyGroup>
-    <Version>1.0.131</Version>
-    <FileVersion>1.0.131</FileVersion>
-    <AssemblyVersion>1.0.131</AssemblyVersion>
-    <InformationalVersion>1.0.131</InformationalVersion>
+    <Version>1.0.132</Version>
+    <FileVersion>1.0.132</FileVersion>
+    <AssemblyVersion>1.0.132</AssemblyVersion>
+    <InformationalVersion>1.0.132</InformationalVersion>
     <AssemblyTitle>GrainManagement</AssemblyTitle>
 	
   </PropertyGroup>

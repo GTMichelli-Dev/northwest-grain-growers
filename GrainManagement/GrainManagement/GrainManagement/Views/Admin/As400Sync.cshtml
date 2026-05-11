@@ -96,6 +96,7 @@
 
             var serviceConnected = false;
             var jobRunning       = false;
+            var flashTimerId     = null;
 
             function setConnBadge(state) {
                 elConn.classList.remove("bg-secondary", "bg-success", "bg-danger", "bg-warning");
@@ -140,6 +141,30 @@
                 } else {
                     elBar.classList.remove("progress-bar-striped", "progress-bar-animated");
                 }
+            }
+
+            // After a successful run we fill the bar green for 3 seconds, then
+            // drop it back to 0 so the operator gets a clear "done" signal
+            // without leaving the bar full forever. Cancelled if another run
+            // starts inside the window.
+            function clearFlash() {
+                if (flashTimerId !== null) {
+                    clearTimeout(flashTimerId);
+                    flashTimerId = null;
+                }
+                elBar.classList.remove("bg-success");
+            }
+
+            function flashSuccessAndReset() {
+                clearFlash();
+                setBar(100, false);
+                elBar.classList.add("bg-success");
+                flashTimerId = setTimeout(function () {
+                    flashTimerId = null;
+                    elBar.classList.remove("bg-success");
+                    setBar(0, false);
+                    elCounter.textContent = "";
+                }, 3000);
             }
 
             function applyStatus(s) {
@@ -254,13 +279,14 @@
                 var msg = (r && (r.Message || r.message)) || "Completed.";
                 elStage.textContent = job + " complete.";
                 elMessage.textContent = msg;
-                setBar(100, false);
+                flashSuccessAndReset();
                 appendLog("DONE: " + job + " — " + msg);
             });
 
             connection.on("Error", function (e) {
                 jobRunning = false;
                 refreshButtons();
+                clearFlash();
                 var msg = (e && (e.Message || e.message)) || "Sync failed.";
                 elStage.textContent = "Error";
                 elMessage.textContent = msg;
@@ -295,6 +321,7 @@
 
             function startJob(method) {
                 if (!serviceConnected || jobRunning) return;
+                clearFlash();
                 jobRunning = true;
                 refreshButtons();
                 elStage.textContent = "Requesting...";
