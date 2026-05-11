@@ -102,10 +102,10 @@ namespace GrainManagement.Controllers
         [HttpPost("/api/cameras/assignments")]
         public async Task<IActionResult> CreateAssignment([FromBody] CameraAssignmentRequest req)
         {
-            var validRoles = new[] { "Inbound", "Outbound", "BOL", "View" };
+            var validRoles = new[] { "Inbound", "Outbound", "BOL", "View", "TempTicket" };
             if (req is null || string.IsNullOrWhiteSpace(req.ServiceId) ||
                 string.IsNullOrWhiteSpace(req.CameraId) || !validRoles.Contains(req.Role))
-                return BadRequest(new { message = "ServiceId, CameraId, and Role (Inbound/Outbound/BOL/View) are required." });
+                return BadRequest(new { message = "ServiceId, CameraId, and Role (Inbound/Outbound/BOL/View/TempTicket) are required." });
 
             // If marked primary, demote other primaries for the same (location, scale, role) bucket.
             if (req.IsPrimary)

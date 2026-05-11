@@ -106,6 +106,13 @@ builder.Services.AddScoped<GrainManagement.Services.Print.IPrintDispatchService,
 // Pushes "weight sheet updated" SignalR notifications to subscribed pages.
 builder.Services.AddScoped<GrainManagement.Services.IWeightSheetNotifier, GrainManagement.Services.WeightSheetNotifier>();
 
+// ── Temp Weight Tickets (kiosk button-press → captured weight) ──────────
+// Phase 1: motion-wait orchestrator, REST API, nightly purge of orphans.
+// Phase 2 will wire the multi-camera composite onto the TempTicket role.
+builder.Services.AddSingleton<GrainManagement.Services.TempTickets.ITempTicketOrchestrator,
+                              GrainManagement.Services.TempTickets.TempTicketOrchestrator>();
+builder.Services.AddHostedService<GrainManagement.Services.TempTickets.TempTicketPurgeWorker>();
+
 
 
 builder.Services.AddScoped<IJsonLog, JsonLog>();

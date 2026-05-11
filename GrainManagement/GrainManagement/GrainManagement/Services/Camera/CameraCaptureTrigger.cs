@@ -51,6 +51,7 @@ public sealed class CameraCaptureTrigger : ICameraCaptureTrigger
                 "in"  => "Inbound",
                 "out" => "Outbound",
                 "bol" => "BOL",
+                "tmp" => "TempTicket",
                 _     => null
             };
             if (role is null) return;
