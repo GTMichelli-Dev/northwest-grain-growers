@@ -43,6 +43,7 @@
     var sheetGrid = null;
     var serviceConnected = false;
     var jobRunning = false;
+    var flashTimerId = null;
 
     // ── Helpers ─────────────────────────────────────────────────────────
     function setCookie(name, value, days) {
@@ -249,6 +250,30 @@
         }
     }
 
+    // After a successful upload/clear we hold the bar full + green for 3s
+    // then drop to 0 so the operator gets a clear "done" cue without the
+    // bar staying full. If a new job starts inside the window clearFlash()
+    // cancels the timer and strips the green before the new run begins.
+    function clearFlash() {
+        if (flashTimerId !== null) {
+            clearTimeout(flashTimerId);
+            flashTimerId = null;
+        }
+        elBar.classList.remove('bg-success');
+    }
+
+    function flashSuccessAndReset() {
+        clearFlash();
+        setBar(100, false);
+        elBar.classList.add('bg-success');
+        flashTimerId = setTimeout(function () {
+            flashTimerId = null;
+            elBar.classList.remove('bg-success');
+            setBar(0, false);
+            elCounter.textContent = '';
+        }, 3000);
+    }
+
     function setConnBadge(state) {
         elConn.classList.remove('bg-secondary', 'bg-success', 'bg-danger', 'bg-warning');
         if (state === 'connected')         { elConn.textContent = 'Service connected'; elConn.classList.add('bg-success'); }
@@ -350,12 +375,13 @@
             var msg = (r && (r.Message || r.message)) || 'Upload complete.';
             elStage.textContent = 'Upload complete.';
             elMessage.textContent = msg;
-            setBar(100, false);
+            flashSuccessAndReset();
             appendLog('DONE: ' + msg);
             setLocationsCollapsed(false);
         });
         connection.on('Error', function (e) {
             jobRunning = false; refreshUploadButton();
+            clearFlash();
             var msg = (e && (e.Message || e.message)) || 'Upload failed.';
             elStage.textContent = 'Error';
             elMessage.textContent = msg;
@@ -431,6 +457,7 @@
         $.when(ask).then(function (ok) {
             if (!ok) return;
 
+            clearFlash();
             jobRunning = true; refreshUploadButton();
             elErrorsList.innerHTML = ''; elErrors.hidden = true;
             elStage.textContent = 'Clearing last uploads on Agvantage...';
@@ -517,6 +544,7 @@
         if (ids.length === 0) return;
 
         elErrorsList.innerHTML = ''; elErrors.hidden = true;
+        clearFlash();
         jobRunning = true; refreshUploadButton();
         elStage.textContent = 'Requesting...';
         elMessage.textContent = 'Sending ' + ids.length + ' weight sheets to the AS400 sync service.';
