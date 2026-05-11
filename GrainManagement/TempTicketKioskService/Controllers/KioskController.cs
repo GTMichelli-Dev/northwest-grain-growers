@@ -44,10 +44,11 @@ public sealed class KioskController : ControllerBase
             environment = _env.EnvironmentName,
             gpio = new
             {
-                supported   = OperatingSystem.IsLinux(),
-                pin         = opt.GpioPin,
-                pullMode    = opt.PullMode,
-                debounceMs  = opt.DebounceMs,
+                supported    = OperatingSystem.IsLinux(),
+                pin          = opt.GpioPin,
+                pullMode     = opt.PullMode,
+                debounceMs   = opt.DebounceMs,
+                currentValue = _monitor.ReadPin()?.ToString() ?? "n/a",
                 lastPressUtc = _monitor.LastEdgeUtc,
             },
             kiosk = new

@@ -83,6 +83,32 @@ When pressed, the pin is shorted to GND, so the pin transitions from HIGH → LO
 
 If your hardware does the opposite (button shorts the pin to 3.3 V, idle LOW), set `PullMode: pulldown` and the service triggers on the rising edge instead.
 
+## Watching the GPIO from the console
+
+Every edge transition is logged at **Information** level — no debug log
+flag needed. Tail the journal to confirm your wiring before bolting the
+button onto the kiosk:
+
+```bash
+sudo journalctl -u temp-ticket-kiosk -f
+```
+
+You'll see lines like:
+
+```
+GPIO monitor watching pin 17 (InputPullUp, trigger Falling, debounce 75 ms). Idle value = High.
+GPIO pin 17: Falling PRESS (Δ=1842 ms — firing press to http://10.0.0.5:5000)
+GPIO pin 17: Rising (other edge — ignored)        ← button released
+GPIO pin 17: Falling BOUNCE (Δ=12 ms < debounce 75 ms — ignored)  ← contact bounce
+```
+
+For a one-shot read of the current pin state, hit `/api/status` — the
+response includes `gpio.currentValue` (`High` / `Low` / `n/a`):
+
+```bash
+curl http://<pi>:5240/api/status | python3 -m json.tool
+```
+
 ## Local HTTP API
 
 The service hosts a small Swagger surface at the configured port (default **5240**).
