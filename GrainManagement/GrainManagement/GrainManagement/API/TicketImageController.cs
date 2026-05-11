@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GrainManagement.Hubs;
 using GrainManagement.Models;
+using GrainManagement.Services.Images;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -32,17 +33,20 @@ public sealed class TicketImageController : ControllerBase
     private readonly IHubContext<CameraHub, ICameraClient> _hub;
     private readonly ILogger<TicketImageController> _logger;
     private readonly dbContext _db;
+    private readonly TicketImageCoalescer _coalescer;
 
     public TicketImageController(
         IConfiguration config,
         IHubContext<CameraHub, ICameraClient> hub,
         ILogger<TicketImageController> logger,
-        dbContext db)
+        dbContext db,
+        TicketImageCoalescer coalescer)
     {
         _config = config;
         _hub = hub;
         _logger = logger;
         _db = db;
+        _coalescer = coalescer;
     }
 
     private string TicketImageDir
@@ -54,6 +58,7 @@ public sealed class TicketImageController : ControllerBase
     public async Task<IActionResult> Upload(
         string loadNumber,
         [FromQuery] string direction,
+        [FromQuery] string? cameraId,
         IFormFile file)
     {
         if (string.IsNullOrWhiteSpace(loadNumber))
@@ -64,10 +69,21 @@ public sealed class TicketImageController : ControllerBase
 
         var suffix = NormalizeDirection(direction);
         if (suffix is null)
-            return BadRequest(new { message = "direction must be 'in', 'out', or 'bol'." });
+            return BadRequest(new { message = "direction must be 'in', 'out', 'bol', or 'tmp'." });
 
         Directory.CreateDirectory(TicketImageDir);
-        var filename = $"{Sanitize(loadNumber)}_{suffix}.jpg";
+
+        // Per-camera filename when the uploader identifies itself; the
+        // canonical {load}_{dir}.jpg is then produced by the compositor
+        // after a short debounce so a multi-camera site gets ONE stitched
+        // image. Older CameraServices that don't send a cameraId fall
+        // back to writing the canonical name directly (single-camera
+        // behaviour, untouched).
+        var safeLoad = Sanitize(loadNumber);
+        var safeCamera = string.IsNullOrWhiteSpace(cameraId) ? null : Sanitize(cameraId);
+        var filename = safeCamera is null
+            ? $"{safeLoad}_{suffix}.jpg"
+            : $"{safeLoad}_{suffix}__{safeCamera}.jpg";
         var path = Path.Combine(TicketImageDir, filename);
 
         await using (var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -76,6 +92,14 @@ public sealed class TicketImageController : ControllerBase
         }
 
         _logger.LogInformation("Saved ticket image {File} ({Bytes} bytes).", filename, file.Length);
+
+        if (safeCamera is not null)
+        {
+            // Multi-camera path — kick the coalescer. After a 2 s
+            // quiet window with no further uploads for this load+dir,
+            // the compositor stitches everything into {load}_{dir}.jpg.
+            _coalescer.Schedule(safeLoad, suffix);
+        }
 
         // Web UI hint — grids/ticket pages can refresh their "image available" state
         await _hub.Clients.All.ImageCaptured(loadNumber, suffix);
@@ -157,6 +181,7 @@ public sealed class TicketImageController : ControllerBase
             "in"  => "In",
             "out" => "Out",
             "bol" => "bol",
+            "tmp" => "tmp",
             _ => null
         };
     }

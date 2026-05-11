@@ -87,8 +87,16 @@ public class CameraCaptureService
             fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
             content.Add(fileContent, "file", $"{ticket}_{direction}.jpg");
 
-            var response = await client.PostAsync(
-                $"api/ticket/{ticket}/image?direction={direction}", content);
+            // Identify ourselves so the web saves a per-camera file
+            // ({ticket}_{direction}__{cameraId}.jpg). Sites with multiple
+            // cameras at one scale need this — otherwise every camera
+            // overwrites the same canonical file and only the last one
+            // survives. Single-camera deployments still work without it.
+            var uploadPath = string.IsNullOrWhiteSpace(cameraId)
+                ? $"api/ticket/{ticket}/image?direction={direction}"
+                : $"api/ticket/{ticket}/image?direction={direction}&cameraId={Uri.EscapeDataString(cameraId)}";
+
+            var response = await client.PostAsync(uploadPath, content);
 
             if (response.IsSuccessStatusCode)
             {

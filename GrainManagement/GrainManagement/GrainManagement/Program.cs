@@ -107,11 +107,19 @@ builder.Services.AddScoped<GrainManagement.Services.Print.IPrintDispatchService,
 builder.Services.AddScoped<GrainManagement.Services.IWeightSheetNotifier, GrainManagement.Services.WeightSheetNotifier>();
 
 // ── Temp Weight Tickets (kiosk button-press → captured weight) ──────────
-// Phase 1: motion-wait orchestrator, REST API, nightly purge of orphans.
-// Phase 2 will wire the multi-camera composite onto the TempTicket role.
+// Motion-wait orchestrator, REST API, nightly purge of orphans.
 builder.Services.AddSingleton<GrainManagement.Services.TempTickets.ITempTicketOrchestrator,
                               GrainManagement.Services.TempTickets.TempTicketOrchestrator>();
 builder.Services.AddHostedService<GrainManagement.Services.TempTickets.TempTicketPurgeWorker>();
+
+// ── Ticket-image compositor (multi-camera stitching + watermark) ────────
+// Sites with multiple cameras per (scale, role) upload per-camera frames
+// to /api/ticket/{load}/image?cameraId=X. The coalescer waits for the
+// uploads to settle, then the compositor stitches a single canonical
+// {load}_{dir}.jpg.
+builder.Services.AddSingleton<GrainManagement.Services.Images.TicketImageCoalescer>();
+builder.Services.AddScoped<GrainManagement.Services.Images.ITicketImageCompositor,
+                           GrainManagement.Services.Images.TicketImageCompositor>();
 
 
 

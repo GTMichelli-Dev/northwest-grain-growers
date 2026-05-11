@@ -4,10 +4,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <PropertyGroup>
-    <Version>1.0.135</Version>
-    <FileVersion>1.0.135</FileVersion>
-    <AssemblyVersion>1.0.135</AssemblyVersion>
-    <InformationalVersion>1.0.135</InformationalVersion>
+    <Version>1.0.136</Version>
+    <FileVersion>1.0.136</FileVersion>
+    <AssemblyVersion>1.0.136</AssemblyVersion>
+    <InformationalVersion>1.0.136</InformationalVersion>
     <AssemblyTitle>GrainManagement</AssemblyTitle>
 	
   </PropertyGroup>
@@ -68,6 +68,11 @@
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="9.0.6" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="9.0.6" />
     <PackageReference Include="System.Data.Odbc" Version="9.0.12" />
+    <!-- Composite ticket-image stitching. v2.x of ImageSharp + 1.x of
+         .Drawing is the Apache-2.0 line; v3.x is commercial-licensed.
+         Matches the pair already pinned in CameraService.csproj. -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.10" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0" />
   </ItemGroup>
   <ProjectExtensions>
     <VisualStudio>

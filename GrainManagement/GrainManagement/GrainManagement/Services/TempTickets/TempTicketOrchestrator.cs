@@ -125,8 +125,11 @@ public sealed class TempTicketOrchestrator : ITempTicketOrchestrator
                 }
             }
 
-            // 5) Fire camera capture (Phase 2 wires the multi-camera composite).
-            // The CameraCaptureTrigger maps direction → role; "tmp" → "TempTicket".
+            // 5) Fire camera capture. CameraCaptureTrigger fans out to
+            // every CameraAssignment with Role='TempTicket' matching the
+            // scale; each camera POSTs a per-camera file and the
+            // TicketImageCoalescer stitches them into the canonical
+            // {tempTicketId}_tmp.jpg ~2 s later.
             try
             {
                 await cameraFire.FireAsync(
@@ -140,8 +143,11 @@ public sealed class TempTicketOrchestrator : ITempTicketOrchestrator
                 _log.LogWarning(ex, "Temp ticket {Id}: camera capture trigger failed.", row.TempTicketId);
             }
 
-            // Mark complete so the management view can distinguish in-flight
-            // rows (rare) from finalized ones.
+            // Predict the canonical composite filename so the picker /
+            // management view can resolve the image without polling for
+            // a path. The actual file may arrive a couple seconds after
+            // this save while the composite debounces.
+            row.ImagePath   = $"{row.TempTicketId}_tmp.jpg";
             row.CompletedAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
         }
