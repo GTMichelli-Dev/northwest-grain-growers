@@ -420,6 +420,51 @@
         </div>
     </div>
 
+    <!-- ── Temp Ticket Picker Modal (opens from Retrieve Temp Weight) ── -->
+    <div class="modal fade" id="gdTempTicketModal" tabindex="-1" aria-labelledby="gdTempTicketModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="gdTempTicketModalLabel">Retrieve Temp Weight</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="gdTempTicketList" class="row g-3">
+                        <span class="text-muted small">Loading temp tickets…</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Temp Ticket Image Viewer (opens when a thumbnail is clicked) ── -->
+    <div class="modal fade" id="gdTempTicketImageModal" tabindex="-1" aria-labelledby="gdTempTicketImageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="gdTempTicketImageModalLabel">Temp Ticket</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="d-flex justify-content-between mb-2 small">
+                        <span id="gdTempTicketImageMeta" class="text-muted"></span>
+                        <span id="gdTempTicketImageWeight" class="fw-bold"></span>
+                    </div>
+                    <img id="gdTempTicketImageImg" alt="Temp ticket capture" style="max-width:100%;max-height:60vh;object-fit:contain;" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="gdTempTicketImageUseBtn">
+                        <i class="dx-icon dx-icon-check"></i> Use This Weight
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ── Capture Weight Modal (Scale mode) ─────────────────── -->
     <div class="modal fade" id="gdCaptureWeightModal" tabindex="-1" aria-labelledby="gdCaptureWeightModalLabel">
         <div class="modal-dialog modal-dialog-centered">
@@ -433,6 +478,14 @@
                         <span class="text-muted small">Loading scales...</span>
                     </div>
                     <hr />
+                    <!-- Retrieve Temp Weight — shown above Manual Entry only on
+                         inbound capture (captureTarget === 'start') and only
+                         when at least one unconsumed temp ticket exists for
+                         this server today. Wired up in grower.delivery.js. -->
+                    <button type="button" class="btn btn-success w-100 mb-2" id="gdRetrieveTempBtn" hidden>
+                        <i class="dx-icon dx-icon-clock"></i> Retrieve Temp Weight
+                        <span class="badge bg-light text-dark ms-1" id="gdRetrieveTempCount">0</span>
+                    </button>
                     <button type="button" class="btn btn-outline-secondary w-100" id="gdCaptureManualBtn">
                         <i class="dx-icon dx-icon-edit"></i> Manual Entry
                     </button>

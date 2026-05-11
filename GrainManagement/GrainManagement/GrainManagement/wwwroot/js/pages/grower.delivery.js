@@ -99,6 +99,17 @@
         captureManualConfirm:'#gdCaptureManualConfirm',
         captureWeightError: '#gdCaptureWeightError',
 
+        // Retrieve Temp Weight — button on the Capture Weight modal + picker
+        retrieveTempBtn:    '#gdRetrieveTempBtn',
+        retrieveTempCount:  '#gdRetrieveTempCount',
+        tempTicketModal:    '#gdTempTicketModal',
+        tempTicketList:     '#gdTempTicketList',
+        tempImageModal:     '#gdTempTicketImageModal',
+        tempImageImg:       '#gdTempTicketImageImg',
+        tempImageMeta:      '#gdTempTicketImageMeta',
+        tempImageWeight:    '#gdTempTicketImageWeight',
+        tempImageUseBtn:    '#gdTempTicketImageUseBtn',
+
         // Hidden FK inputs
         accountId:      '#gdAccountId',
         productId:      '#gdProductId',
@@ -168,6 +179,10 @@
     let cachedScales          = [];     // scales at current location
     let enterAmountModalInst  = null;
     let captureWeightModalInst= null;
+    let tempTicketModalInst   = null;
+    let tempImageModalInst    = null;
+    let _selectedTempTicketId = null;   // set when the operator picks one; consumed after save
+    let _tempImageActiveId    = null;   // ticket currently expanded in the image modal
     let captureTarget         = null;   // 'start' or 'end' — which qty the modal is capturing
     let locationName          = null;   // location description for source tracking
     let lastPinUserId         = null;   // user ID from last successful PIN validation
@@ -1217,14 +1232,26 @@
                 if (($bol.val() || '').trim() === '') focusTarget($bol);
                 else                                  focusTarget($('#gdNotes'));
             });
+
+            // Wire the Retrieve Temp Weight button once.
+            $(SEL.retrieveTempBtn).on('click', openTempTicketPicker);
         }
         $(SEL.captureManualPanel).prop('hidden', true);
         $(SEL.captureWeightError).prop('hidden', true);
         $(SEL.captureManualInput).val('');
+        $(SEL.retrieveTempBtn).prop('hidden', true);
 
         // Initial load and render
         await loadCachedScales();
         renderScaleList();
+
+        // Temp tickets only make sense for the inbound (gross) capture —
+        // outbound (tare) is a fresh weigh you can't pre-stage. Check
+        // both the captureTarget and whether the server actually has
+        // any tickets to retrieve right now.
+        if (captureTarget === 'start') {
+            await refreshTempTicketAvailability();
+        }
 
         // Start live polling while modal is open
         stopScalePoll();
@@ -1234,6 +1261,128 @@
         }, 1000);
 
         captureWeightModalInst.show();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // RETRIEVE TEMP WEIGHT
+    // ══════════════════════════════════════════════════════════════════════════
+
+    async function refreshTempTicketAvailability() {
+        try {
+            var rows = await $.getJSON('/api/temp-tickets/today');
+            if (Array.isArray(rows) && rows.length > 0) {
+                $(SEL.retrieveTempCount).text(rows.length);
+                $(SEL.retrieveTempBtn).prop('hidden', false);
+            } else {
+                $(SEL.retrieveTempBtn).prop('hidden', true);
+            }
+        } catch (_) {
+            $(SEL.retrieveTempBtn).prop('hidden', true);
+        }
+    }
+
+    async function openTempTicketPicker() {
+        if (!tempTicketModalInst) {
+            tempTicketModalInst = new bootstrap.Modal(document.querySelector(SEL.tempTicketModal));
+        }
+        $(SEL.tempTicketList).html('<span class="text-muted small">Loading temp tickets…</span>');
+
+        // Close the capture-weight modal first so the picker sits on top
+        // cleanly without modal-stacking artifacts.
+        captureWeightModalInst.hide();
+        tempTicketModalInst.show();
+
+        try {
+            var rows = await $.getJSON('/api/temp-tickets/today');
+            renderTempTicketList(rows || []);
+        } catch (err) {
+            $(SEL.tempTicketList).html(
+                '<div class="alert alert-danger">Failed to load temp tickets: ' + escapeHtml(err.statusText || err.message || '?') + '</div>');
+        }
+    }
+
+    function renderTempTicketList(rows) {
+        var $list = $(SEL.tempTicketList).empty();
+        if (rows.length === 0) {
+            $list.html('<span class="text-muted small">No temp tickets available right now.</span>');
+            return;
+        }
+        rows.forEach(function (t) {
+            var when = new Date(t.CreatedAt);
+            var whenStr = isNaN(when.getTime()) ? '' : when.toLocaleTimeString();
+            var weight = fmtWeight(Math.round(Number(t.Gross || 0)));
+
+            var $col = $('<div class="col-12 col-md-6 col-lg-4"></div>');
+            var $card = $(
+                '<div class="card h-100">' +
+                    '<div class="ratio ratio-4x3 bg-light gd-temp-thumb" style="cursor:pointer;">' +
+                        '<img alt="thumbnail" loading="lazy" style="object-fit:cover;background:#e9ecef;" />' +
+                    '</div>' +
+                    '<div class="card-body p-2">' +
+                        '<div class="small text-muted mb-1"></div>' +
+                        '<div class="fs-5 fw-bold mb-2 text-end"></div>' +
+                        '<button type="button" class="btn btn-success btn-sm w-100">' +
+                          '<i class="dx-icon dx-icon-check"></i> Use This Ticket' +
+                        '</button>' +
+                    '</div>' +
+                '</div>'
+            );
+
+            $card.find('img').attr('src', '/api/temp-tickets/' + t.TempTicketId + '/image');
+            $card.find('.small.text-muted')
+                 .text('Scale ' + t.ScaleId + ' · ' + (t.KioskId || '') + ' · ' + whenStr);
+            $card.find('.fs-5').text(weight);
+
+            $card.find('.gd-temp-thumb').on('click', function () {
+                expandTempTicketImage(t);
+            });
+            $card.find('button').on('click', function () {
+                useTempTicket(t);
+            });
+
+            $col.append($card);
+            $list.append($col);
+        });
+    }
+
+    function expandTempTicketImage(t) {
+        if (!tempImageModalInst) {
+            tempImageModalInst = new bootstrap.Modal(document.querySelector(SEL.tempImageModal));
+            $(SEL.tempImageUseBtn).on('click', function () {
+                var id = _tempImageActiveId;
+                if (id == null) return;
+                tempImageModalInst.hide();
+                // Find the row again from the data attached to the button
+                var cached = $(SEL.tempImageUseBtn).data('ticket');
+                if (cached) useTempTicket(cached);
+            });
+        }
+        _tempImageActiveId = t.TempTicketId;
+        $(SEL.tempImageImg).attr('src', '/api/temp-tickets/' + t.TempTicketId + '/image?cb=' + Date.now());
+        $(SEL.tempImageMeta).text(
+            'Scale ' + t.ScaleId + ' · ' + (t.KioskId || '') + ' · ' +
+            new Date(t.CreatedAt).toLocaleString());
+        $(SEL.tempImageWeight).text(fmtWeight(Math.round(Number(t.Gross || 0))));
+        $(SEL.tempImageUseBtn).data('ticket', t);
+        tempImageModalInst.show();
+    }
+
+    function useTempTicket(t) {
+        var weight = Math.round(Number(t.Gross || 0));
+        if (weight <= 0) {
+            showAlert('Temp ticket has no gross weight.', 'danger');
+            return;
+        }
+        _selectedTempTicketId = t.TempTicketId;
+        var ok = applyScaleWeight(weight, false, 'Temp Ticket #' + t.TempTicketId);
+        if (ok) {
+            if (tempImageModalInst) tempImageModalInst.hide();
+            if (tempTicketModalInst) tempTicketModalInst.hide();
+            // captureWeightModal was already hidden by openTempTicketPicker.
+            advanceFocusAfterWeight();
+        } else {
+            _selectedTempTicketId = null;
+        }
     }
 
     // ── PIN validation helper ───────────────────────────────────────────────
@@ -1419,6 +1568,23 @@
 
                 if (resp.ok) {
                     const result = await resp.json();
+
+                    // If the operator picked a temp ticket for the inbound
+                    // weight, consume it now — the API call deletes the
+                    // row + its image file. Fire-and-forget; a missed
+                    // consume is recoverable by the nightly purge worker.
+                    if (_selectedTempTicketId && result && result.id) {
+                        try {
+                            await fetch('/api/temp-tickets/' + encodeURIComponent(_selectedTempTicketId) + '/consume', {
+                                method:  'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body:    JSON.stringify({ LotId: result.id })
+                            });
+                        } catch (consumeErr) {
+                            console.warn('Temp ticket consume failed:', consumeErr);
+                        }
+                        _selectedTempTicketId = null;
+                    }
 
                     // Only print on new creates, or edits where weights changed
                     var shouldPrint = !editTxnId; // always print new

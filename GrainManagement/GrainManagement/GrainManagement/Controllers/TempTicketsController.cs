@@ -55,21 +55,27 @@ public sealed class TempTicketsController : ControllerBase
     }
 
     // ── Load-create picker — "what temp tickets are available right now?" ──
+    // scaleId is optional. When supplied, only that scale's tickets come back
+    // (the natural filter for an intake that's bound to a specific scale);
+    // when omitted, every unconsumed ticket this server captured today is
+    // returned so the operator can pick across scales.
     [HttpGet("today")]
-    public async Task<IActionResult> GetToday(int scaleId, CancellationToken ct)
+    public async Task<IActionResult> GetToday(int? scaleId, CancellationToken ct)
     {
-        if (scaleId <= 0) return BadRequest(new { message = "scaleId is required." });
-
         var server = await _serverInfo.GetAsync(ct);
         if (server is null) return Ok(Array.Empty<TempTicketDto>());
 
         var floorUtc = PacificMidnightUtc(DateTime.UtcNow);
 
-        var rows = await _db.Set<TempWeightTicket>().AsNoTracking()
+        var q = _db.Set<TempWeightTicket>().AsNoTracking()
             .Where(t => t.ServerId == server.ServerId
-                     && t.ScaleId  == scaleId
                      && t.ConsumedByLotId == null
-                     && t.CreatedAt >= floorUtc)
+                     && t.CreatedAt >= floorUtc);
+
+        if (scaleId.HasValue && scaleId.Value > 0)
+            q = q.Where(t => t.ScaleId == scaleId.Value);
+
+        var rows = await q
             .OrderByDescending(t => t.CreatedAt)
             .Select(t => new TempTicketDto
             {
