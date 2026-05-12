@@ -1,7 +1,0 @@
-namespace GrainManagement.Dtos.Warehouse;
-
-public class UpdateLoadBinDto
-{
-    public long TransactionId { get; set; }
-    public long ContainerId { get; set; }
-}

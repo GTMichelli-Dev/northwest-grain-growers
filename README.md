@@ -62,8 +62,8 @@ sqlcmd -S . -E -d GrainManagement -C -i SQL\UpdateStatistics.sql
 
 | Path | Purpose |
 | --- | --- |
-| `GrainManagement/GrainManagement/GrainManagement/SQL/UpdateStatistics.sql` | The maintenance script the task runs. |
-| `GrainManagement/GrainManagement/GrainManagement/SQL/UpdateStatistics.log` | Overwritten on each run. Git-ignored. |
+| `GrainManagement/SQL/UpdateStatistics.sql` (in [northwest-grain-management](https://github.com/GTMichelli-Dev/northwest-grain-management)) | The maintenance script the task runs. |
+| `GrainManagement/SQL/UpdateStatistics.log` (in [northwest-grain-management](https://github.com/GTMichelli-Dev/northwest-grain-management)) | Overwritten on each run. Git-ignored. |
 
 #### Emergency: unstick a currently-slow query
 
