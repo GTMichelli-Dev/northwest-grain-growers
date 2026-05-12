@@ -11,6 +11,9 @@ public sealed class PrintServiceOptions
     /// <summary>Service identifier used when registering with the web app's PrintHub.</summary>
     public string ServiceId { get; set; } = "default";
 
+    /// <summary>Server ID this kiosk represents — matches the Servers table in GrainManagement.</summary>
+    public int ServerId { get; set; } = 1;
+
     /// <summary>Server base URLs. Each URL gets its own SignalR connection.</summary>
     public List<string> ServerUrls { get; set; } = new();
 
