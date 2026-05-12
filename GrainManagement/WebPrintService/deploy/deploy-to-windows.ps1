@@ -32,7 +32,7 @@ param(
     [string]$InstallDir      = "C:\Services\WebPrintService",
     [string]$ServiceName     = "WebPrintService",
     [string]$ServiceDisplayName = "Web Print Service",
-    [string]$GitHubRepo      = "GTMichelli-Dev/web-print-service",
+    [string]$GitHubRepo      = "GTMichelli-Dev/nwgg-web-print-service",
     [string]$Branch          = "master",
 
     # BIXOLON BK3 driver install (optional). Provide a folder containing the

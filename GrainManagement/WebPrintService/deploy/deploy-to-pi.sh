@@ -32,7 +32,7 @@ INSTALL_DIR="/opt/web-print-service"
 SERVICE_NAME="web-print-service"
 DOTNET_CHANNEL="8.0"
 ARCH=""  # auto-detect if empty
-GITHUB_REPO="GTMichelli-Dev/web-print-service"
+GITHUB_REPO="GTMichelli-Dev/nwgg-web-print-service"
 BRANCH="master"
 BK3_PPD=""  # optional PPD on the Pi
 

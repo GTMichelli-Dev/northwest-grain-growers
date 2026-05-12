@@ -1,20 +1,26 @@
 #!/bin/bash
 # =============================================================================
-# Web Print Service - Self-Install Script for Raspberry Pi / Linux
+# NWGG Web Print Service - Self-Install Script for Raspberry Pi / Linux
 # =============================================================================
 # Run directly on the Pi:
 #
-#   git clone https://github.com/GTMichelli-Dev/web-print-service.git /tmp/wps
-#   bash /tmp/wps/deploy/install.sh <web-server-url>
+#   git clone https://github.com/GTMichelli-Dev/nwgg-web-print-service.git /tmp/wps
+#   sudo bash /tmp/wps/deploy/install.sh <web-server-url>
 #   rm -rf /tmp/wps
 #
 # Examples:
-#   bash install.sh http://basicscale.scaledata.net
-#   bash install.sh http://basicscale.scaledata.net --server-id 2 --printer-name Kiosk
-#   bash install.sh http://basicscale.scaledata.net --bk3-ppd /opt/bixolon/BK3.ppd
+#   sudo bash install.sh http://waldv002:5000
+#   sudo bash install.sh http://waldv002:5000 --server-id 2 --printer-name Kiosk
+#   sudo bash install.sh http://waldv002:5000 \
+#       --bk3-ppd /usr/share/cups/model/Bixolon/BK33_v1.0.3.ppd
+#
+# Prerequisite: the BIXOLON BK3 CUPS driver pack must be installed on the
+# Pi BEFORE running this script (see README). The PPD path passed to
+# --bk3-ppd must exist; otherwise the printer falls back to a raw queue
+# which will NOT render PDFs.
 #
 # To update an existing install, run the same command again — it stops the
-# service, updates files, preserves the database, and restarts.
+# service, rebuilds, and restarts. appsettings.json is regenerated.
 # =============================================================================
 
 set -e
@@ -27,7 +33,7 @@ SERVICE_PORT="5230"
 INSTALL_DIR="/opt/web-print-service"
 SERVICE_NAME="web-print-service"
 DOTNET_CHANNEL="8.0"
-GITHUB_REPO="GTMichelli-Dev/web-print-service"
+GITHUB_REPO="GTMichelli-Dev/nwgg-web-print-service"
 BRANCH="master"
 WEB_URL=""
 BK3_PPD=""  # optional PPD file path; falls back to lpinfo -m match, then raw
@@ -176,13 +182,6 @@ sudo systemctl stop ${SERVICE_NAME} 2>/dev/null || true
 sudo mkdir -p "${INSTALL_DIR}"
 sudo chown "$USER:$USER" "${INSTALL_DIR}"
 
-DB_BACKUP=""
-if [ -f "${INSTALL_DIR}/webprintservice.db" ]; then
-    DB_BACKUP="/tmp/webprintservice-db-backup.db"
-    cp "${INSTALL_DIR}/webprintservice.db" "$DB_BACKUP"
-    echo "  Backed up existing database."
-fi
-
 CLONE_DIR=$(mktemp -d)
 echo "  Cloning from GitHub: ${GITHUB_REPO} (${BRANCH})..."
 sudo apt-get install -y -qq git 2>/dev/null || true
@@ -209,11 +208,13 @@ dotnet publish "${CLONE_DIR}/WebPrintService.csproj" \
 
 rm -rf "${CLONE_DIR}"
 
-if [ -n "$DB_BACKUP" ] && [ -f "$DB_BACKUP" ]; then
-    cp "$DB_BACKUP" "${INSTALL_DIR}/webprintservice.db"
-    rm "$DB_BACKUP"
-    echo "  Restored existing database."
-fi
+# The new WebPrintService is appsettings.json-driven — no SQLite db. If a
+# legacy webprintservice.db lingered from an older install, remove it so
+# the new binary doesn't see a stale settings file (it doesn't read it,
+# but keeping it around is confusing).
+rm -f "${INSTALL_DIR}/webprintservice.db" \
+      "${INSTALL_DIR}/webprintservice.db-shm" \
+      "${INSTALL_DIR}/webprintservice.db-wal" 2>/dev/null || true
 
 chmod +x "${INSTALL_DIR}/WebPrintService" 2>/dev/null || true
 

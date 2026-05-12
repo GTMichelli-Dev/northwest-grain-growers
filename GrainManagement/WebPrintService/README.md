@@ -1,317 +1,177 @@
-# Web Print Service
+# NWGG Web Print Service
 
-A cross-platform .NET 8.0 print service that connects to a web application via SignalR and provides remote printing. Automatically detects the operating system and uses **Windows Print** (PowerShell/WMI) on Windows or **CUPS** (`lpstat`, `lp`) on Linux/macOS.
+A cross-platform .NET 8 print service that connects to a Northwest Grain Growers (NWGG) web app via SignalR and prints tickets, lot labels, and weight sheets to a locally-attached printer.
+
+Distributed standalone from [`GTMichelli-Dev/nwgg-web-print-service`](https://github.com/GTMichelli-Dev/nwgg-web-print-service). Source of truth lives in the NWGG monorepo at `GrainManagement/WebPrintService/`; the standalone repo is kept in sync via `scripts/sync-nwgg-web-print-service.sh`.
+
+> **BasicWeigh fleet**: do not install this service onto a BasicWeigh kiosk. BasicWeigh uses the legacy [`GTMichelli-Dev/web-print-service`](https://github.com/GTMichelli-Dev/web-print-service) repo, which speaks the older `/scaleHub` protocol. This repo targets the GrainManagement web app's `/hubs/print` hub.
 
 ## Architecture
 
-### Windows
 ```
-Web App (BasicWeigh, etc.)
+GrainManagement web app (waldv002:5000, etc.)
     |
-    +-- SignalR Hub (/scaleHub)
+    +-- SignalR Hub  (/hubs/print)
             |
-            +-- Web Print Service (this)
+            +-- NWGG Web Print Service (this)  — listens on :5230 for Swagger/REST
                     |
-                    +-- SumatraPDF (silent PDF printing)
+                    +-- Windows:  SumatraPDF / PDFtoPrinter      (Windows Print)
+                        Linux:    CUPS  (lp, lpstat, lpoptions)
                             |
-                            +-- Physical Printer (USB, Network, Shared)
+                            +-- BIXOLON BK3-3  (USB)
 ```
 
-#### Windows PDF Printing Requirements
+The service connects outbound to one or more web-server URLs, joins a `print` SignalR group, announces its printer queue, then waits for `PrintTicket` / `TestPrint` / `GetPrinterList` / `ReloadConfig` events from the server. PDFs are downloaded from the web app via HTTP and handed to the OS print stack.
 
-The service needs a silent PDF printing tool to send tickets to printers. It auto-detects in this order:
+## Hub path
 
-1. **SumatraPDF** (recommended) — auto-installed via `winget` if not found
-2. **PDFtoPrinter.exe** — if placed in the service directory
-3. **Fallback** — uses `Start-Process -Verb PrintTo` (may open a dialog, not recommended for unattended use)
+`SignalRHub` defaults to `/hubs/print` (GrainManagement convention). It can be overridden in `appsettings.json` for special cases, but the install scripts always write the default and there's no per-fleet override here — this repo is GrainManagement-only.
 
-To manually install SumatraPDF:
-```
-winget install SumatraPDF.SumatraPDF
-```
+## Quick start — Raspberry Pi
 
-Or download from https://www.sumatrapdfreader.org/free-pdf-reader
+**Prerequisite (one-time per Pi): install the BIXOLON BK3 CUPS driver pack.**
 
-### Linux / macOS / Raspberry Pi
-```
-Web App (BasicWeigh, etc.)
-    |
-    +-- SignalR Hub (/scaleHub)
-            |
-            +-- Web Print Service (this)
-                    |
-                    +-- CUPS (lpstat, lp, lpoptions)
-                            |
-                            +-- Physical Printer (USB, Network, IPP)
-```
-
-## Features
-
-- **Cross-Platform** — automatically uses Windows Print or CUPS based on the OS
-- **Windows Integration** — uses PowerShell `Get-Printer`, `Start-Process`, `Out-Printer` to manage and print to local and network printers
-- **CUPS Integration** — uses `lpstat`, `lp`, `lpoptions` to manage and print to local printers on Linux/macOS
-- **SignalR Connection** — connects to any web app's SignalR hub (outbound only, works behind firewalls)
-- **Printer Discovery** — announces available CUPS or Windows printers to the web app on connect/reconnect
-- **PDF Printing** — downloads ticket PDFs from the web app and prints locally
-- **Test Print** — send a test page to any connected printer from the web UI
-- **Swagger API** — local REST API for configuration, testing, and diagnostics
-- **SQLite Settings** — persistent configuration stored locally (no appsettings.json edits needed)
-- **Forever Retry** — exponential backoff, never gives up reconnecting
-
-## Quick Start
+The driver pack is provided by BIXOLON as `Software_BxlPOSCupsDrv_Linux_v1.5.9.tgz` (or newer). It contains the `rastertoBixolon` CUPS filter and PPD files for every BIXOLON POS model. Without it, the install script falls back to a raw queue, and PDFs will not render.
 
 ```bash
-# Windows
-cd WebPrintService
-dotnet run
+# from your dev box:
+scp Software_BxlPOSCupsDrv_Linux_v1.5.9.tgz admin@<pi-ip>:/tmp/
 
-# Linux / Raspberry Pi
-sudo apt-get install cups
-dotnet run
+# on the Pi as admin:
+cd /tmp
+tar xzf Software_BxlPOSCupsDrv_Linux_v1.5.9.tgz
+cd Software_BxlPOSCupsDrv_Linux_v1.5.9
+sudo ./setup_v1.5.9.sh
+
+# verify the BK3-3 PPD is registered with CUPS:
+ls /usr/share/cups/model/Bixolon/BK33*
+lpinfo -m 2>/dev/null | grep BK33
 ```
 
-## Endpoints (Swagger at http://<your-ip>:<your-port>/swagger)
-
-### Health & Status
-
-#### `GET /api/status/health`
-Returns service health, print system type, and printer count.
-
-**Response:**
-```json
-{
-  "status": "ok",
-  "printSystem": "Windows",
-  "printSystemAvailable": true,
-  "printerCount": 3,
-  "printers": [
-    { "printerId": "HP LaserJet", "displayName": "HP LaserJet", "status": "idle", "enabled": true, "isDefault": true }
-  ]
-}
-```
-
-#### `GET /api/readme`
-Returns API documentation as JSON including all endpoints, parameters, response formats, and SignalR methods.
-
----
-
-### Printers
-
-#### `GET /api/printers`
-List all printers with their status.
-
-**Response:**
-```json
-[
-  {
-    "printerId": "HP_LaserJet_Pro",
-    "displayName": "HP LaserJet Pro",
-    "status": "idle",
-    "isDefault": true,
-    "enabled": true
-  }
-]
-```
-
-#### `GET /api/printers/{printerId}/status`
-Get detailed status of a specific printer.
-
-**Example:** `GET /api/printers/HP_LaserJet_Pro/status`
-
-**Response:**
-```json
-{
-  "printerId": "HP_LaserJet_Pro",
-  "status": "printer HP_LaserJet_Pro is idle. enabled since Mon 24 Mar 2026 08:00:00 AM CDT"
-}
-```
-
-#### `POST /api/printers/{printerId}/test`
-Send a test page to a printer. No request body needed.
-
-**Example:** `POST /api/printers/HP_LaserJet_Pro/test`
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Sent to HP_LaserJet_Pro"
-}
-```
-
----
-
-### Settings
-
-#### `GET /api/settings`
-Get current service settings.
-
-**Response:**
-```json
-{
-  "id": 1,
-  "serviceId": "default",
-  "serverUrl": "http://localhost:5110",
-  "signalRHub": "/scaleHub"
-}
-```
-
-#### `PUT /api/settings`
-Update service settings. Triggers a reconnect to the web app.
-
-**Request:**
-```json
-{
-  "serviceId": "office-printer",
-  "serverUrl": "http://192.168.1.100:5110"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Settings saved. Service restarting..."
-}
-```
-
----
-
-## SignalR Methods
-
-| Direction | Method | Description |
-|-----------|--------|-------------|
-| Service -> Hub | `JoinPrintGroup(serviceId)` | Join the PrintClients group |
-| Service -> Hub | `PrintServiceReady(announcement)` | Announce printers on connect |
-| Service -> Hub | `PrinterListResponse(data)` | Respond to printer list request |
-| Service -> Hub | `PrintResult(result)` | Report print job result |
-| Service -> Hub | `TestPrintResult(result)` | Report test print result |
-| Hub -> Service | `PrintTicket(data)` | Print a ticket PDF |
-| Hub -> Service | `GetPrinterList` | Request printer list |
-| Hub -> Service | `TestPrint(printerId)` | Send test page to printer |
-| Hub -> Service | `ReloadConfig` | Restart the service |
-
-## Platform Details
-
-### Windows
-Uses PowerShell commands:
-- `Get-Printer` — enumerate all local and network printers
-- `Start-Process -Verb PrintTo` — print PDFs (or SumatraPDF if installed)
-- `Out-Printer` — print text files
-- `rundll32 shimgvw.dll` — print images
-- Optional: [SumatraPDF](https://www.sumatrapdfreader.org/) for better PDF printing
-
-### Linux / macOS (CUPS)
-Uses CUPS command-line tools:
-- `lpstat -p -d` — enumerate printers and default
-- `lp -d <printer>` — print files
-- `lpoptions -p <printer>` — get printer options/description
-- CUPS web interface at https://localhost:631
-
-## Deployment
-
-### Install on Raspberry Pi / Linux
-
-SSH into the Pi and run:
+**Install the service:**
 
 ```bash
-git clone https://github.com/GTMichelli-Dev/web-print-service.git /tmp/wps
-bash /tmp/wps/deploy/install.sh https://basicscale.scaledata.net
+git clone https://github.com/GTMichelli-Dev/nwgg-web-print-service.git /tmp/wps
+sudo bash /tmp/wps/deploy/install.sh http://waldv002:5000 \
+    --server-id 1 \
+    --printer-name Kiosk \
+    --bk3-ppd /usr/share/cups/model/Bixolon/BK33_v1.0.3.ppd
 rm -rf /tmp/wps
 ```
 
-With options:
+**Flags:**
 
-```bash
-git clone https://github.com/GTMichelli-Dev/web-print-service.git /tmp/wps
-bash /tmp/wps/deploy/install.sh https://basicscale.scaledata.net \
-    --service-id office --port 5230
-rm -rf /tmp/wps
-```
-
-For private repos, git will prompt for credentials. You can also use a deploy key or GitHub token.
-
-Options:
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--service-id <id>` | `default` | Unique ID for this service instance |
-| `--port <port>` | `5230` | API/Swagger port |
-| `--branch <branch>` | `master` | Git branch to install |
+| Flag | Default | Description |
+|---|---|---|
+| `<web-server-url>` | *required (positional)* | Base URL of the GrainManagement web app — written to `Print.ServerUrls[0]` |
+| `--server-id <n>` | `1` | NWGG `ServerId` for this kiosk |
+| `--printer-name <name>` | `Kiosk` | CUPS queue name for the BK3 printer |
+| `--service-id <id>` | `default` | SignalR group ID |
+| `--port <port>` | `5230` | Local API/Swagger port |
+| `--bk3-ppd <path>` | *(none — raw queue)* | Path to the BIXOLON BK3 PPD on the Pi. Strongly recommended. Use `BK33_v1.0.3.ppd` for BK3-3, `BK32_v1.0.2.ppd` for BK3-2. |
+| `--branch <branch>` | `master` | Git branch of `nwgg-web-print-service` to install |
 | `--install-dir <path>` | `/opt/web-print-service` | Install location |
 
-**What the script does automatically:**
-1. Detects Pi architecture (arm64, armv7l, x64)
-2. Installs CUPS (printer system)
-3. Installs .NET 8 SDK and runtime permanently (skips download on future updates)
-4. Downloads latest source from GitHub
-5. Builds for the Pi's architecture
-6. Installs to `/opt/web-print-service`
-7. Preserves existing database on updates
-8. Registers and starts as a systemd service
-
-**Prerequisites:** Just internet access and `git` (pre-installed on Raspberry Pi OS). No .NET, no CUPS — the script installs everything. The .NET SDK is installed permanently so future updates skip the download.
-
-**To update:** Run the same command again. The script stops the service, updates files, preserves your database, and restarts.
+**Re-run the same command to upgrade** — the script stops the service, rebuilds, regenerates `appsettings.json`, and restarts.
 
 **After install:**
-- Swagger: `http://<pi-ip>:5230/swagger`
-- CUPS Admin: `http://<pi-ip>:631`
+
+- Service: `sudo systemctl status web-print-service`
 - Logs: `sudo journalctl -u web-print-service -f`
-- Restart: `sudo systemctl restart web-print-service`
+- Swagger / REST: `http://<pi-ip>:5230/swagger`
+- CUPS admin: `http://<pi-ip>:631`
+- Healthy banner looks like:
+  ```
+  Web Print Service v1.2.0
+  Connecting to http://waldv002:5000/hubs/print...
+  Connected to http://waldv002:5000/hubs/print. Joining print group (ServiceId=default)...
+  Announced 1 printer(s).
+  ```
 
-### Install on Windows
-
-**Option A — Automated (as a Windows Service):**
+## Quick start — Windows
 
 Run PowerShell as Administrator:
 
 ```powershell
-.\deploy\deploy-to-windows.ps1 -WebServerUrl "https://basicscale.scaledata.net"
-
-# With options
-.\deploy\deploy-to-windows.ps1 -WebServerUrl "https://basicscale.scaledata.net" `
-    -ServiceId "office" -Port 5230
+.\deploy\deploy-to-windows.ps1 -WebServerUrl "http://waldv002:5000" -ServerId 1
 ```
 
 | Parameter | Default | Description |
-|-----------|---------|-------------|
-| `-WebServerUrl` | *(required)* | BasicWeigh web server URL |
-| `-ServiceId` | `default` | Unique ID for this instance |
+|---|---|---|
+| `-WebServerUrl` | *(required)* | URL of the GrainManagement web app |
+| `-ServerId` | `1` | NWGG ServerId |
+| `-PrinterName` | `Kiosk` | Logical printer name to register the BK3 under |
+| `-ServiceId` | `default` | SignalR group ID |
 | `-Port` | `5230` | API/Swagger port |
 | `-InstallDir` | `C:\Services\WebPrintService` | Install location |
 | `-ServiceName` | `WebPrintService` | Windows service name |
+| `-BixolonInfDir` | `deploy\drivers\bixolon-bk3` | Folder containing the BIXOLON `.inf` (drops the script into pnputil + Add-Printer mode) |
 
-**What the script does:** Installs .NET if needed, builds, installs to `C:\Services\WebPrintService`, preserves existing database, registers as a Windows Service with auto-restart on failure.
+The script installs .NET 8 runtime if missing, publishes self-contained, copies to `C:\Services\WebPrintService\`, optionally installs the BIXOLON Windows driver from the supplied INF folder, and registers a Windows Service with auto-restart on failure. SumatraPDF is also auto-installed (via `winget`) for silent PDF printing.
 
-**After install:**
-- Swagger: `http://localhost:5230/swagger`
-- Manage: `services.msc` > "Web Print Service"
-- Restart: `Restart-Service WebPrintService`
+## Configuration (`appsettings.json`)
 
-**Option B — Manual (for development):**
-
-```powershell
-cd WebPrintService
-dotnet run
-```
-
-Windows printers are auto-detected — no additional setup needed.
-
-## Configuration
-
-Initial config via `appsettings.json`:
 ```json
 {
   "Print": {
-    "ServerUrl": "https://your-server",
-    "Port": "5230"
+    "ServerUrls":  ["http://waldv002:5000"],
+    "SignalRHub":  "/hubs/print",
+    "ServiceId":   "default",
+    "ServerId":    1,
+    "Port":        "5230"
   }
 }
 ```
 
-After first run, use the API to update settings (persists to SQLite):
-```bash
-curl -X PUT http://localhost:5230/api/settings \
-  -H "Content-Type: application/json" \
-  -d '{"serverUrl": "https://your-server", "serviceId": "office-printer"}'
+`ServerUrls` is an array — list multiple web servers if the Pi should accept print jobs from more than one (each gets its own SignalR connection).
+
+## SignalR protocol
+
+| Direction | Method | Description |
+|-----------|--------|-------------|
+| Service → Hub | `JoinPrintGroup(serviceId)` | Join the PrintClients group |
+| Service → Hub | `PrintServiceReady(announcement)` | Announce printers on connect |
+| Service → Hub | `PrinterListResponse(data)` | Reply to a `GetPrinterList` request |
+| Service → Hub | `PrintResult(result)` | Report job result |
+| Service → Hub | `TestPrintResult(result)` | Report test-print result |
+| Hub → Service | `PrintTicket(data)` | Print a ticket PDF — `type` ∈ {`LotLabel`, `IntakeWeightSheet`, default (load ticket)} |
+| Hub → Service | `GetPrinterList` | Request the printer list |
+| Hub → Service | `TestPrint(printerId)` | Send a test page to a specific printer |
+| Hub → Service | `ReloadConfig` | Recycle SignalR connections (re-read settings) |
+
+PDF endpoints the service downloads from:
+
 ```
+GET  {ServerUrl}/api/printjobs/load-ticket/{id}/pdf
+GET  {ServerUrl}/api/printjobs/lot-label/{id}/pdf
+GET  {ServerUrl}/api/printjobs/intake-weight-sheet/{id}/pdf
+GET  {ServerUrl}/api/printjobs/test-page/pdf
+```
+
+## REST endpoints (Swagger at `http://<host>:5230/swagger`)
+
+- `GET  /api/status/health` — overall health, printer count, print system type
+- `GET  /api/printers` — enumerate all printers known to the OS print stack
+- `GET  /api/printers/{id}/status` — single-printer status
+- `POST /api/printers/{id}/test` — send a test page directly via REST (no SignalR)
+
+## Troubleshooting
+
+**Service shows `404 Not Found` on connect.** The web app at `ServerUrls[0]` isn't mapping `/hubs/print`. Confirm you're pointed at the GrainManagement web app (not BasicWeigh — see note at the top). Check the hub registration in the web app's `Program.cs` (`app.MapHub<PrintHub>("/hubs/print")`).
+
+**Printer queue exists but jobs produce blank pages or garbage.** The CUPS queue was created as `raw` (no PPD). Run `lpstat -t` and check `lpoptions -p Kiosk` — if no driver is listed, re-install pointing `--bk3-ppd` at the BIXOLON PPD path.
+
+**`Cannot find BIXOLON BK3 USB`.** The auto-detect looks at `lpinfo -v` for a `usb://` line matching `BIXOLON`. If the printer isn't powered on / connected when the install runs, the queue is created against a guessed URI. Re-plug the printer and re-run the install.
+
+## Development
+
+```bash
+# Linux/macOS
+sudo apt-get install cups   # if not already installed
+dotnet run
+
+# Windows
+dotnet run
+```
+
+The dev banner prints `Listening on: http://localhost:5230`. Swagger comes up at `/swagger`.
