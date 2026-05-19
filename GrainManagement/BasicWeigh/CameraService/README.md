@@ -18,6 +18,42 @@ Camera brand definitions are loaded from a remote JSON file ([device-definitions
 ### USB Cameras (requires ffmpeg)
 - Windows (DirectShow) and Linux (V4L2)
 
+#### Test a USB camera with ffmpeg
+
+Use these commands directly from a terminal to confirm ffmpeg can see and grab a frame from the camera before configuring the service.
+
+**Windows (DirectShow):**
+```powershell
+# 1. List available video devices — copy the exact device name in quotes
+ffmpeg -list_devices true -f dshow -i dummy
+
+# 2. Capture a single test frame (replace the device name with yours)
+ffmpeg -f dshow -i video="USB2.0 HD UVC WebCam" -frames:v 1 -y test.jpg
+
+# 3. Show supported resolutions / pixel formats for the device
+ffmpeg -f dshow -list_options true -i video="USB2.0 HD UVC WebCam"
+
+# 4. Live preview window (press q to quit) — handy to confirm focus / framing
+ffplay -f dshow -i video="USB2.0 HD UVC WebCam"
+```
+
+**Linux (V4L2):**
+```bash
+# 1. List devices (install with: sudo apt install v4l-utils)
+v4l2-ctl --list-devices
+
+# 2. Capture a single test frame
+ffmpeg -f v4l2 -i /dev/video0 -frames:v 1 -y test.jpg
+
+# 3. Show supported formats / resolutions
+v4l2-ctl --device=/dev/video0 --list-formats-ext
+
+# 4. Live preview
+ffplay -f v4l2 -i /dev/video0
+```
+
+If step 2 produces a valid `test.jpg`, put the same device name (`USB2.0 HD UVC WebCam` or `/dev/video0`) into the `CameraIp` / device-name field in `appsettings.json`. If ffmpeg fails here, the service will fail too — fix permissions, drivers, or device name before running the service.
+
 ## Configuration
 
 Edit `appsettings.json`:
