@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="MainRoutine" TargetType="Rung" TargetCount="8" ContainsContext="true" ExportDate="Thu Aug 20 16:05:00 2026" ExportOptions="References NoRawData L5KData DecoratedData Context Dependencies ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Context" Name="NWGG_Treater_WW">
+<Programs Use="Context">
+<Program Use="Context" Name="Pumps">
+<Routines Use="Context">
+<Routine Use="Context" Name="MainRoutine" Type="RLL">
+<RLLContent Use="Context">
+<Rung Number="0" Type="N">
+<Comment><![CDATA[Water slave: seed the total from pump 9's rate on first scan, so behaviour is unchanged until the HMI is retargeted to Water_Total_Rate.]]></Comment>
+<Text><![CDATA[XIO(Water_Split_Seeded)OTL(Water_Split_Seeded)MOV(Treater_Pump[9].Rate,Water_Total_Rate);]]></Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Comment><![CDATA[Keep the share sane. 0.5 = matched pumps, even split.]]></Comment>
+<Text><![CDATA[[LES(Water_Rate_Share,0.05) ,GRT(Water_Rate_Share,0.95) ]MOV(0.5,Water_Rate_Share);]]></Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Comment><![CDATA[Mirror pump 9's COMMAND bits onto pump 8. Start_Pump is deliberately NOT mirrored -- Auto_Start_Pump (FOR IDX 1..19) already derives it from Active_Treatment, and pump 8 is in that range. Feedback (Faulted, Current_*, NotReady, Status_Msg, Speed, Cal, Product) is NOT mirrored: pump 8 must report its own drive.]]></Comment>
+<Text><![CDATA[XIC(Water_Slave_Enable)[XIC(Treater_Pump[9].Active_Treatment) OTE(Treater_Pump[8].Active_Treatment) ,XIC(Treater_Pump[9].Manual_Start_Pump) OTE(Treater_Pump[8].Manual_Start_Pump) ,XIC(Treater_Pump[9].Start_Pump_Reverse) OTE(Treater_Pump[8].Start_Pump_Reverse) ,XIC(Treater_Pump[9].Clear_Faults) OTE(Treater_Pump[8].Clear_Faults) ,XIC(Treater_Pump[9].Purge_Forward) OTE(Treater_Pump[8].Purge_Forward) ,XIC(Treater_Pump[9].Purge_Reverse) OTE(Treater_Pump[8].Purge_Reverse) ,XIC(Treater_Pump[9].Require_Water_Flush) OTE(Treater_Pump[8].Require_Water_Flush) ];]]></Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Comment><![CDATA[Mirror the analog limits so both pumps behave identically.]]></Comment>
+<Text><![CDATA[XIC(Water_Slave_Enable)MOV(Treater_Pump[9].Purge_Percent,Treater_Pump[8].Purge_Percent)MOV(Treater_Pump[9].SpeedLimitPercent,Treater_Pump[8].SpeedLimitPercent);]]></Text>
+</Rung>
+<Rung Number="4" Type="N">
+<Comment><![CDATA[Split the TOTAL water rate across the two pumps.]]></Comment>
+<Text><![CDATA[XIC(Water_Slave_Enable)CPT(Treater_Pump[9].Rate,Water_Total_Rate*Water_Rate_Share)CPT(Treater_Pump[8].Rate,Water_Total_Rate*(1-Water_Rate_Share));]]></Text>
+</Rung>
+<Rung Number="5" Type="N">
+<Comment><![CDATA[Slave disabled -> pump 9 carries the whole total, pump 8 parked.]]></Comment>
+<Text><![CDATA[XIO(Water_Slave_Enable)MOV(Water_Total_Rate,Treater_Pump[9].Rate)MOV(0,Treater_Pump[8].Rate)OTU(Treater_Pump[8].Active_Treatment)OTU(Treater_Pump[8].Manual_Start_Pump);]]></Text>
+</Rung>
+<Rung Number="6" Type="N">
+<Comment><![CDATA[Clamp to pump 8's top cal point. Without this, Pump_Volume_Control rung 6 SILENTLY ZEROES a Rate above Cal_Point[4].Rate -- no fault, no alarm, no flow.]]></Comment>
+<Text><![CDATA[GRT(Treater_Pump[8].Rate,Treater_Pump[8].Cal.Cal_Points.Cal_Point[4].Rate)MOV(Treater_Pump[8].Cal.Cal_Points.Cal_Point[4].Rate,Treater_Pump[8].Rate);]]></Text>
+</Rung>
+<Rung Number="7" Type="N">
+<Comment><![CDATA[Same clamp for pump 9.]]></Comment>
+<Text><![CDATA[GRT(Treater_Pump[9].Rate,Treater_Pump[9].Cal.Cal_Points.Cal_Point[4].Rate)MOV(Treater_Pump[9].Cal.Cal_Points.Cal_Point[4].Rate,Treater_Pump[9].Rate);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+</Controller>
+</RSLogix5000Content>

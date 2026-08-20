@@ -6,7 +6,7 @@
 | **Location** | Walla Walla Seed Plant — Treater |
 | **Baseline export** | `NWGG_Treater_WW.L5X`, exported Thu Aug 20 14:59:22 2026 |
 | **Date drafted** | 2026-08-20 |
-| **Status** | **DRAFTED — NOT YET APPLIED.** No PLC change has been made. |
+| **Status** | **APPLIED OFFLINE — NOT DOWNLOADED.** Logic is in the `.ACD` and verified (0 errors) as of 2026-08-20 16:13. Not downloaded to the controller. `Water_Slave_Enable = 0`, pump 8 not yet plumbed or calibrated on water. Phases 7–8 of the commissioning procedure remain outstanding. |
 
 ## Goal
 
@@ -219,6 +219,27 @@ The Walla Walla HMI project is not in this repository (only Dayton and
 Prescott), so this change could not be verified or drafted here.
 
 ---
+
+## Application log
+
+| Date | Step | Result |
+|---|---|---|
+| 2026-08-20 | Tags created (4 controller-scoped) | done |
+| 2026-08-20 | Rungs A–H imported into `Pumps/MainRoutine` before the `Pump_Control[8]` call | done — now rungs 23–30, AOI calls at 31/32 |
+| 2026-08-20 | Rungs 6, 47→55, 48→56, 49→57 edited | done |
+| 2026-08-20 | Pump 8 config: `Cal_Factor` 1.1308095→1.0, `Product_List_IDX` 42→0, `Lbs_Gal` 9.2→8.35 | done |
+| 2026-08-20 | Verify Controller | 0 errors |
+| 2026-08-20 | Saved + re-exported L5X | done |
+| 2026-08-20 | Fingerprint diff vs baseline export | 50 of 51 routines unchanged; only `Pumps/MainRoutine` (53→61 rungs) |
+| | **Download to controller** | **outstanding** |
+| | **Plumb + calibrate pump 8 on water** | **outstanding** |
+| | **HMI retarget to `Water_Total_Rate`** | **outstanding** |
+| | **Set `Water_Slave_Enable = 1`** | **outstanding** |
+
+Note: plain-text rung paste into the v35 ladder editor failed (every rung became
+an `Unknown Instruction`). The rungs were applied via **Import Rungs** using
+`2026-08-20_Pump8_Water_Slave_Rungs.L5X`, committed alongside this record. Use
+that file if these rungs ever need re-applying.
 
 ## Commissioning procedure
 
