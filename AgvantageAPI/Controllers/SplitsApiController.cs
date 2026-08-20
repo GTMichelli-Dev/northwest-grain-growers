@@ -89,7 +89,7 @@ namespace AgvantageAPI.Controllers
 
                                 SplitGroupNumber = rdr.GetInt64(0),
                                 Description = rdr.GetString(1),
-                                PrimaryAccountId = rdr.GetInt64(2)
+                                PrimaryAccountId = rdr.IsDBNull(2) ? (long?)null : rdr.GetInt64(2)
                             };
 
 
@@ -151,8 +151,9 @@ namespace AgvantageAPI.Controllers
 
                 foreach (var incoming in splitGroupList)
                 {
-                    // Ensure the PrimaryAccountId exists in Accounts before adding/updating
-                    if (!accountIdSet.Contains(incoming.PrimaryAccountId))
+                    // Ensure the PrimaryAccountId exists in Accounts before adding/updating.
+                    // A null PrimaryAccountId is permitted (no 'G' row defined for the split group).
+                    if (incoming.PrimaryAccountId.HasValue && !accountIdSet.Contains(incoming.PrimaryAccountId.Value))
                     {
                         skipped++;
                         await _log.LogWarning(

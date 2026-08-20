@@ -1,0 +1,790 @@
+@model BasicWeigh.Web.Models.AppSetup
+@{
+    ViewData["Title"] = "Setup";
+}
+
+<h3 class="mb-2">Setup</h3>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show py-1 mb-2" role="alert">
+        @TempData["Message"]
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Unsaved changes alert (hidden by default) -->
+<div class="alert alert-warning alert-dismissible fade py-1 mb-2" role="alert" id="unsavedAlert" style="display:none;">
+    <strong>Unsaved changes!</strong> You have unsaved changes. Click <strong>Save Settings</strong> to keep them.
+    <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+</div>
+
+<form asp-action="Index" method="post" enctype="multipart/form-data" id="setupForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <ul class="nav nav-tabs" id="setupTabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabCompany" type="button">Company &amp; Ticket</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabSystem" type="button">System</button>
+        </li>
+        <li class="nav-item" id="tabKioskPromptsNav" style="display: @(Model.KioskCount > 0 ? "block" : "none");">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabKioskPrompts" type="button">Kiosk Prompts</button>
+        </li>
+        <li class="nav-item" id="tabSecurityNav" style="display: @(Model.UseLogin ? "block" : "none");">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabSecurity" type="button">Users &amp; Security</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabDesigners" type="button">Ticket Designers</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabApi" type="button">API</button>
+        </li>
+        @if (ViewBag.ShowResetDatabase == true)
+        {
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabDatabase" type="button">Database</button>
+            </li>
+        }
+    </ul>
+
+    <div class="tab-content mt-3">
+        <!-- TAB: Company & Ticket -->
+        <div class="tab-pane fade show active" id="tabCompany">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                            <strong>Company Info (Ticket Headers)</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="mb-2">
+                                <label asp-for="Header1" class="form-label mb-0 small"></label>
+                                <input asp-for="Header1" class="form-control form-control-sm" />
+                            </div>
+                            <div class="mb-2">
+                                <label asp-for="Header2" class="form-label mb-0 small"></label>
+                                <input asp-for="Header2" class="form-control form-control-sm" />
+                            </div>
+                            <div class="mb-2">
+                                <label asp-for="Header3" class="form-label mb-0 small"></label>
+                                <input asp-for="Header3" class="form-control form-control-sm" />
+                            </div>
+                            <div class="mb-2">
+                                <label asp-for="Header4" class="form-label mb-0 small"></label>
+                                <input asp-for="Header4" class="form-control form-control-sm" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                            <strong>Ticket Settings</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label asp-for="TicketNumber" class="form-label mb-0 small"></label>
+                                    <input asp-for="TicketNumber" class="form-control form-control-sm" type="number" />
+                                </div>
+                                <div class="col-6">
+                                    <label asp-for="TicketsPerPage" class="form-label mb-0 small"></label>
+                                    <input asp-for="TicketsPerPage" class="form-control form-control-sm" type="number" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: System -->
+        <div class="tab-pane fade" id="tabSystem">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <!-- System Settings -->
+                    <div class="card mb-3">
+                        <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                            <strong>System</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label asp-for="DemoMode" class="form-label mb-0 small"></label>
+                                    <select asp-for="DemoMode" class="form-select form-select-sm">
+                                        <option value="false">Normal</option>
+                                        <option value="true">Demo</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label asp-for="RecallLastValues" class="form-label mb-0 small"></label>
+                                    <select asp-for="RecallLastValues" class="form-select form-select-sm">
+                                        <option value="false">No</option>
+                                        <option value="true">Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label asp-for="UseLogin" class="form-label mb-0 small"></label>
+                                    <select asp-for="UseLogin" class="form-select form-select-sm" id="UseLogin">
+                                        <option value="false">No Login Required</option>
+                                        <option value="true">Require Login</option>
+                                    </select>
+                                </div>
+                                <div class="col-6" id="kioskCodeSection" style="display: @(Model.UseLogin ? "block" : "none");">
+                                    <label asp-for="KioskCode" class="form-label mb-0 small"></label>
+                                    <input asp-for="KioskCode" class="form-control form-control-sm" maxlength="20" />
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label asp-for="Theme" class="form-label mb-0 small"></label>
+                                <select asp-for="Theme" class="form-select form-select-sm">
+                                    <option value="default">Default (Blue)</option>
+                                    <option value="dark">Dark Mode</option>
+                                    <option value="earth">Earth (Brown, Black &amp; Green)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kiosk Options -->
+                    <div class="card mb-3">
+                        <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                            <strong>Kiosk</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label asp-for="KioskCount" class="form-label mb-0 small"></label>
+                                    <select asp-for="KioskCount" class="form-select form-select-sm" id="KioskCount">
+                                        <option value="0">No Kiosk</option>
+                                        <option value="1">One Kiosk</option>
+                                        <option value="2">In/Out Kiosk</option>
+                                    </select>
+                                </div>
+                                <div class="col-6" id="kioskDarkModeSection" style="display: @(Model.KioskCount > 0 ? "block" : "none");">
+                                    <label asp-for="KioskDarkMode" class="form-label mb-0 small"></label>
+                                    <select asp-for="KioskDarkMode" class="form-select form-select-sm">
+                                        <option value="true">Dark</option>
+                                        <option value="false">Light</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Printing -->
+                    <div class="card mb-3">
+                        <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                            <strong>Printing</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label asp-for="RemotePrintMode" class="form-label mb-0 small"></label>
+                                    <select asp-for="RemotePrintMode" class="form-select form-select-sm" id="RemotePrintMode">
+                                        <option value="None">No Remote Printing</option>
+                                        <option value="Scale">Scale Prints Ticket</option>
+                                        <option value="RemotePrinter">Remote Printer (Pi)</option>
+                                    </select>
+                                </div>
+                                <div class="col-3 d-flex align-items-end" id="printerManageSection" style="display: @(Model.RemotePrintMode == "RemotePrinter" ? "flex" : "none") !important;">
+                                    <a href="/Printer" class="btn btn-outline-secondary btn-sm w-100">
+                                        Printers
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                            <strong>Icon</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <img id="iconPreview" src="/api/setup/icon" alt="Current Icon" style="height: 36px; width: 36px;" />
+                                @if (Model.Icon != null)
+                                {
+                                    <label class="form-check-label small">
+                                        <input type="checkbox" name="removeIcon" id="removeIconCb" value="true" class="form-check-input" />
+                                        Remove
+                                    </label>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Default</span>
+                                }
+                            </div>
+                            <input type="file" name="iconFile" id="iconFileInput" class="form-control form-control-sm" accept="image/*" />
+                        </div>
+                    </div>
+                    <!-- Options (Cameras, QuickBooks, Scale) -->
+                    <div class="card mb-3">
+                        <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                            <strong>Options</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row g-2 mb-2">
+                                <div class="col-4">
+                                    <label asp-for="SavePicture" class="form-label mb-0 small"></label>
+                                    <select asp-for="SavePicture" class="form-select form-select-sm" id="SavePicture">
+                                        <option value="false">No</option>
+                                        <option value="true">Yes</option>
+                                    </select>
+                                </div>
+                                <div class="col-2 d-flex align-items-end" id="cameraManageSection" style="display: @(Model.SavePicture ? "flex" : "none") !important;">
+                                    <a href="/Camera" class="btn btn-outline-secondary btn-sm w-100">
+                                        Cameras
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-4">
+                                    <label asp-for="UseQuickBooks" class="form-label mb-0 small"></label>
+                                    <select asp-for="UseQuickBooks" class="form-select form-select-sm" id="UseQuickBooks">
+                                        <option value="false">No</option>
+                                        <option value="true">Yes</option>
+                                    </select>
+                                </div>
+                                <div class="col-2 d-flex align-items-end" id="qbCheckSection" style="display: @(Model.UseQuickBooks ? "flex" : "none") !important;">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="btnCheckQBService" onclick="checkQBService()">
+                                        Check
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-4">
+                                    <label asp-for="ScaleId" class="form-label mb-0 small"></label>
+                                    <select asp-for="ScaleId" class="form-select form-select-sm" id="ScaleId">
+                                        <option value="">-- None --</option>
+                                    </select>
+                                </div>
+                                <div class="col-2 d-flex align-items-end">
+                                    <a href="/Scale" class="btn btn-outline-secondary btn-sm w-100">
+                                        Scales
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Kiosk Prompts -->
+        <div class="tab-pane fade" id="tabKioskPrompts">
+            <div class="card">
+                <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                    <strong>Kiosk Prompts</strong>
+                </div>
+                <div class="card-body py-2">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input asp-for="PromptKioskCarrier" class="form-check-input" id="PromptKioskCarrier" />
+                                <label asp-for="PromptKioskCarrier" class="form-check-label small"></label>
+                            </div>
+                        </div>
+                        <div class="col-md-4" id="truckIdPromptSection" style="display: @(Model.PromptKioskCarrier ? "block" : "none");">
+                            <div class="form-check">
+                                <input asp-for="PromptKioskTruckId" class="form-check-input" />
+                                <label asp-for="PromptKioskTruckId" class="form-check-label small"></label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input asp-for="PromptKioskCommodity" class="form-check-input" />
+                                <label asp-for="PromptKioskCommodity" class="form-check-label small"></label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input asp-for="PromptKioskCustomer" class="form-check-input" />
+                                <label asp-for="PromptKioskCustomer" class="form-check-label small"></label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input asp-for="PromptKioskLocation" class="form-check-input" />
+                                <label asp-for="PromptKioskLocation" class="form-check-label small"></label>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label mb-1 small fw-bold">Prompt Destination</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="kioskDestPrompt" id="destPromptNone" value="none"
+                                           @((!Model.PromptKioskDestinationOnInbound && !Model.PromptKioskDestinationOnOutbound) ? "checked" : "") />
+                                    <label class="form-check-label small" for="destPromptNone">Neither</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="kioskDestPrompt" id="destPromptInbound" value="inbound"
+                                           @(Model.PromptKioskDestinationOnInbound ? "checked" : "") />
+                                    <label class="form-check-label small" for="destPromptInbound">On Inbound</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="kioskDestPrompt" id="destPromptOutbound" value="outbound"
+                                           @(Model.PromptKioskDestinationOnOutbound ? "checked" : "") />
+                                    <label class="form-check-label small" for="destPromptOutbound">On Outbound</label>
+                                </div>
+                            </div>
+                            <input type="hidden" asp-for="PromptKioskDestinationOnInbound" id="PromptKioskDestinationOnInbound" />
+                            <input type="hidden" asp-for="PromptKioskDestinationOnOutbound" id="PromptKioskDestinationOnOutbound" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Users & Security -->
+        <div class="tab-pane fade" id="tabSecurity">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                            <strong>Users &amp; Security</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <a asp-controller="Account" asp-action="Users" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="me-1">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                                </svg>
+                                Manage Users
+                            </a>
+                            <div class="small" style="color: var(--bw-text-muted);">
+                                <p class="mb-1"><strong>Kiosk PIN:</strong> <code id="kioskPinDisplay">@Model.KioskCode</code></p>
+                                <p class="mb-1">When login is enabled, kiosks need the PIN to access the scale screen. Pass it as a URL parameter:</p>
+                                <code class="d-block mb-1" style="font-size: 0.75rem; word-break: break-all;">https://your-server/Kiosk?pin=<span id="kioskPinUrl">@Model.KioskCode</span></code>
+                                <p class="mb-0">The PIN is stored as a cookie after the first visit so subsequent requests don't need it.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Ticket Designers -->
+        <div class="tab-pane fade" id="tabDesigners">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                            <strong>Ticket Designers</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <p class="small mb-2" style="color: var(--bw-text-muted);">Edit ticket layouts. Changes are saved and used when printing.</p>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <a asp-controller="Ticket" asp-action="Designer" asp-route-reportName="TicketReport"
+                                   class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 flex-grow-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
+                                    </svg>
+                                    <span class="fw-bold">Completed Ticket</span>
+                                </a>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <a asp-controller="Ticket" asp-action="Designer" asp-route-reportName="KioskTicketReport"
+                                   class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 flex-grow-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 14.625v5.25h6v-5.25h-6z" />
+                                    </svg>
+                                    <span class="fw-bold">Kiosk Inbound Ticket</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                            <strong>Reset Ticket Layouts</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <p class="small mb-2" style="color: var(--bw-text-muted);">Reset ticket layouts to default format. Customizations will be lost.</p>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                        onclick="showConfirmModal('Reset Completed Ticket', 'Reset Completed Ticket to default format?\n\nAny customizations will be lost.', 'resetTicketForm', 'btn-danger')">
+                                    Reset Completed Ticket
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                        onclick="showConfirmModal('Reset Kiosk Ticket', 'Reset Kiosk Inbound Ticket to default format?\n\nAny customizations will be lost.', 'resetKioskTicketForm', 'btn-danger')">
+                                    Reset Kiosk Ticket
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: API -->
+        <div class="tab-pane fade" id="tabApi">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                            <strong>API Documentation</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="mb-2">
+                                <label asp-for="ApiDefinitionPin" class="form-label mb-0 small"></label>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <input asp-for="ApiDefinitionPin" class="form-control form-control-sm" maxlength="20" id="ApiDefinitionPin" style="max-width: 200px;" />
+                                    <a id="swaggerLink" href="/swagger?pin=@Model.ApiDefinitionPin" target="_blank" class="btn btn-outline-info btn-sm text-nowrap">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                            <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1 1 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4 4 0 0 1-.128-1.287z"/>
+                                            <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243z"/>
+                                        </svg>
+                                        Open Swagger
+                                    </a>
+                                </div>
+                                <small class="text-muted">This PIN is required to access the Swagger API documentation page.</small>
+                            </div>
+                            <div class="small mt-2" style="color: var(--bw-text-muted);">
+                                <p class="mb-1"><strong>Swagger URL:</strong></p>
+                                <code class="d-block mb-1" style="font-size: 0.75rem; word-break: break-all;">https://your-server/swagger?pin=<span id="apiPinUrl">@Model.ApiDefinitionPin</span></code>
+                                <p class="mb-0">The PIN is stored as a cookie after the first visit so subsequent requests don't need it.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Database -->
+        @if (ViewBag.ShowResetDatabase == true)
+        {
+            <div class="tab-pane fade" id="tabDatabase">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header py-1" style="background: var(--bw-surface-alt); color: var(--bw-text);">
+                                <strong>Database</strong>
+                            </div>
+                            <div class="card-body py-2">
+                                <p class="small mb-2" style="color: var(--bw-text-muted);">Clear all data or reset with sample test data. Settings are preserved.</p>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="showConfirmModal('Load Test Data', 'This will DELETE all existing data and load test data.', 'loadTestDataForm', 'btn-warning')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="me-1">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                                        </svg>
+                                        Load Test Data
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="showConfirmModal('Clear Database', 'This will DELETE all transactions, customers, carriers, commodities, locations, destinations, and trucks.\n\nThis cannot be undone.', 'clearDatabaseForm', 'btn-danger')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="me-1">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                        </svg>
+                                        Clear Database
+                                    </button>
+                                </div>
+                                <p class="small text-muted mt-2 mb-0">
+                                    <em>Hide this section by setting <code>"ShowResetDatabase": false</code> in appsettings.json</em>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary" id="saveBtn">Save Settings</button>
+    </div>
+</form>
+
+<!-- Hidden forms for reset/database operations (outside main form) -->
+<form asp-action="ResetTicket" method="post" id="resetTicketForm" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="reportName" value="TicketReport" />
+</form>
+<form asp-action="ResetTicket" method="post" id="resetKioskTicketForm" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="reportName" value="KioskTicketReport" />
+</form>
+<form asp-action="LoadTestData" method="post" id="loadTestDataForm" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+<form asp-action="ClearDatabase" method="post" id="clearDatabaseForm" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+<!-- Confirm Operation Modal -->
+<div class="modal fade" id="unsavedModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2 bg-warning">
+                <h6 class="modal-title">Unsaved Changes</h6>
+            </div>
+            <div class="modal-body py-3">
+                You have unsaved changes. Are you sure you want to leave this page?
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="unsavedStay()">Stay</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="unsavedLeave()">Leave</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="confirmModalTitle">Confirm Operation</h6>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3" id="confirmModalBody"></div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm" id="confirmModalBtn" onclick="confirmModalSubmit()">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/signalr/signalr.min.js"></script>
+<script>
+    // --- Unsaved changes tracking ---
+    var formDirty = false;
+    var setupForm = document.getElementById('setupForm');
+    var unsavedAlert = document.getElementById('unsavedAlert');
+
+    function markDirty() {
+        if (!formDirty) {
+            formDirty = true;
+            unsavedAlert.style.display = 'block';
+            unsavedAlert.classList.add('show');
+        }
+    }
+
+    // Track all form changes
+    setupForm.querySelectorAll('input, select, textarea').forEach(function (el) {
+        el.addEventListener('change', markDirty);
+        el.addEventListener('input', markDirty);
+    });
+
+    // Warn on page leave — native dialog for browser close/refresh
+    window.addEventListener('beforeunload', function (e) {
+        if (formDirty) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    // Intercept nav link clicks with Bootstrap modal
+    var _pendingUrl = null;
+    document.querySelectorAll('a[href]').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            if (!formDirty) return;
+            var href = link.getAttribute('href');
+            if (!href || href === '#' || href.startsWith('javascript:')) return;
+            e.preventDefault();
+            _pendingUrl = href;
+            var modal = document.getElementById('unsavedModal');
+            if (!modal) return;
+            new bootstrap.Modal(modal).show();
+        });
+    });
+
+    window.unsavedLeave = function () {
+        formDirty = false;
+        if (_pendingUrl) window.location.href = _pendingUrl;
+    };
+    window.unsavedStay = function () {
+        _pendingUrl = null;
+        bootstrap.Modal.getInstance(document.getElementById('unsavedModal'))?.hide();
+    };
+
+    // Clear dirty flag on form submit
+    setupForm.addEventListener('submit', function () {
+        formDirty = false;
+    });
+
+    // Also clear dirty flag when submitting other forms (reset/database)
+    document.querySelectorAll('#resetTicketForm, #resetKioskTicketForm, #loadTestDataForm, #clearDatabaseForm').forEach(function (f) {
+        f.addEventListener('submit', function () { formDirty = false; });
+    });
+
+    // --- Icon preview ---
+    document.getElementById('iconFileInput').addEventListener('change', function (e) {
+        var file = e.target.files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function (ev) {
+                document.getElementById('iconPreview').src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+            var cb = document.getElementById('removeIconCb');
+            if (cb) cb.checked = false;
+        }
+    });
+
+    var removeCb = document.getElementById('removeIconCb');
+    if (removeCb) {
+        removeCb.addEventListener('change', function () {
+            var preview = document.getElementById('iconPreview');
+            if (this.checked) {
+                preview.dataset.originalSrc = preview.src;
+                preview.src = '/images/default-icon.svg';
+            } else {
+                preview.src = preview.dataset.originalSrc || '/api/setup/icon';
+            }
+        });
+    }
+
+    // --- QB Service Check ---
+    document.getElementById('UseQuickBooks').addEventListener('change', function () {
+        var el = document.getElementById('qbCheckSection');
+        el.style.display = this.value === 'true' ? 'flex' : 'none';
+    });
+
+    document.getElementById('SavePicture').addEventListener('change', function () {
+        var el = document.getElementById('cameraManageSection');
+        el.style.display = this.value === 'true' ? 'flex' : 'none';
+    });
+
+    document.getElementById('RemotePrintMode').addEventListener('change', function () {
+        var el = document.getElementById('printerManageSection');
+        el.style.display = this.value === 'RemotePrinter' ? 'flex' : 'none';
+    });
+
+    function checkQBService() {
+        var btn = document.getElementById('btnCheckQBService');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+        var conn = new signalR.HubConnectionBuilder().withUrl('/scaleHub').build();
+        conn.start().then(function () {
+            return conn.invoke('CheckQBServiceConnected');
+        }).then(function (connected) {
+            conn.stop();
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa fa-plug"></i> Check';
+            var container = document.getElementById('qb-status-alert');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'qb-status-alert';
+                btn.parentElement.parentElement.after(container);
+            }
+            if (connected) {
+                container.innerHTML = '<div class="alert alert-success alert-dismissible fade show py-1 px-2 small mt-1" role="alert">' +
+                    '<i class="fa fa-check-circle"></i> QuickBooks Sync Service is connected.' +
+                    '<button type="button" class="btn-close btn-close-sm p-1" data-bs-dismiss="alert"></button></div>';
+            } else {
+                container.innerHTML = '<div class="alert alert-danger alert-dismissible fade show py-1 px-2 small mt-1" role="alert">' +
+                    '<i class="fa fa-times-circle"></i> QuickBooks Sync Service is not connected. Please start the QBSyncService.' +
+                    '<button type="button" class="btn-close btn-close-sm p-1" data-bs-dismiss="alert"></button></div>';
+            }
+        }).catch(function (err) {
+            conn.stop();
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa fa-plug"></i> Check';
+        });
+    }
+
+    // --- Populate Scale dropdown via SignalR ---
+    (function () {
+        var savedScaleId = '@(Model.ScaleId ?? "")';
+        var scaleSelect = document.getElementById('ScaleId');
+        var scaleConn = new signalR.HubConnectionBuilder().withUrl('/scaleHub').build();
+
+        scaleConn.on('ScaleServiceReady', function (data) {
+            populateScales(data);
+        });
+
+        scaleConn.on('ScaleListReceived', function (data) {
+            populateScales(data);
+        });
+
+        function populateScales(data) {
+            var currentVal = scaleSelect.value || savedScaleId;
+            var options = '<option value="">-- None --</option>';
+            var scales = data.scales || [];
+            scales.forEach(function (s) {
+                var val = (data.serviceId || 'default') + ':' + s.scaleId;
+                var label = s.displayName || s.scaleId;
+                options += '<option value="' + val + '">' + label + '</option>';
+            });
+            scaleSelect.innerHTML = options;
+            scaleSelect.value = currentVal;
+        }
+
+        scaleConn.start().then(function () {
+            return scaleConn.invoke('RequestScaleList');
+        }).catch(function (err) {
+            console.log('Scale SignalR error:', err);
+        });
+    })();
+
+    // --- Dynamic visibility toggles ---
+    document.getElementById('UseLogin').addEventListener('change', function () {
+        var useLogin = this.value === 'true';
+        document.getElementById('kioskCodeSection').style.display = useLogin ? 'block' : 'none';
+        document.getElementById('tabSecurityNav').style.display = useLogin ? 'block' : 'none';
+    });
+
+    var kioskCodeInput = document.querySelector('input[name="KioskCode"]');
+    if (kioskCodeInput) {
+        kioskCodeInput.addEventListener('input', function () {
+            var pin = this.value || '12345';
+            var pinDisplay = document.getElementById('kioskPinDisplay');
+            var pinUrl = document.getElementById('kioskPinUrl');
+            if (pinDisplay) pinDisplay.textContent = pin;
+            if (pinUrl) pinUrl.textContent = pin;
+        });
+    }
+
+    // API Definition PIN live update
+    var apiPinInput = document.getElementById('ApiDefinitionPin');
+    if (apiPinInput) {
+        apiPinInput.addEventListener('input', function () {
+            var pin = this.value || '12345';
+            document.getElementById('apiPinUrl').textContent = pin;
+            document.getElementById('swaggerLink').href = '/swagger?pin=' + encodeURIComponent(pin);
+        });
+    }
+
+    document.getElementById('KioskCount').addEventListener('change', function () {
+        var hasKiosk = parseInt(this.value) > 0;
+        document.getElementById('tabKioskPromptsNav').style.display = hasKiosk ? 'block' : 'none';
+        document.getElementById('kioskDarkModeSection').style.display = hasKiosk ? 'block' : 'none';
+    });
+
+    document.getElementById('PromptKioskCarrier').addEventListener('change', function () {
+        document.getElementById('truckIdPromptSection').style.display = this.checked ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('input[name="kioskDestPrompt"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            document.getElementById('PromptKioskDestinationOnInbound').value = (this.value === 'inbound').toString().toLowerCase();
+            document.getElementById('PromptKioskDestinationOnOutbound').value = (this.value === 'outbound').toString().toLowerCase();
+        });
+    });
+
+    // --- Confirm modal ---
+    var _confirmFormId = null;
+    function showConfirmModal(title, message, formId, btnClass) {
+        _confirmFormId = formId;
+        document.getElementById('confirmModalTitle').textContent = 'Confirm Operation';
+        document.getElementById('confirmModalBody').innerHTML = message.replace(/\n/g, '<br>');
+        var btn = document.getElementById('confirmModalBtn');
+        btn.className = 'btn btn-sm ' + btnClass;
+        btn.textContent = title;
+        new bootstrap.Modal(document.getElementById('confirmModal')).show();
+    }
+    function confirmModalSubmit() {
+        if (_confirmFormId) {
+            document.getElementById(_confirmFormId).submit();
+        }
+    }
+</script>
+}

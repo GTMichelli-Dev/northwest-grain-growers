@@ -6,6 +6,6 @@
 
         public long SplitGroupNumber { get; set; }
         public string Description { get; set; }=string.Empty;
-        public long PrimaryAccountId { get; set; }
+        public long? PrimaryAccountId { get; set; }
     }
 }

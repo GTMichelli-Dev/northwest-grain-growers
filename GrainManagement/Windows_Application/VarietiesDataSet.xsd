@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="VarietiesDataSet" targetNamespace="http://tempuri.org/VarietiesDataSet.xsd" xmlns:mstns="http://tempuri.org/VarietiesDataSet.xsd" xmlns="http://tempuri.org/VarietiesDataSet.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections>
+          <Connection AppSettingsObjectName="Settings" AppSettingsPropertyName="NW_DataConnectionString" ConnectionStringObject="" IsAppSettingsProperty="true" Modifier="Assembly" Name="NW_DataConnectionString (Settings)" ParameterPrefix="@" PropertyReference="ApplicationSettings.NWGrain.Properties.Settings.GlobalReference.Default.NW_DataConnectionString" Provider="System.Data.SqlClient" />
+        </Connections>
+        <Tables>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="CropVarietyListTableAdapter" GeneratorDataComponentClassName="CropVarietyListTableAdapter" Name="CropVarietyList" UserDataComponentName="CropVarietyListTableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        tblCrops.Description, tblCrops.Id AS Crop_Id, tblCrops.SeedSwap, tblCrops.Crop_Prefix, derivedtbl_1.Item_Id, derivedtbl_1.Description AS Variety
+FROM            (SELECT        Description, CASE WHEN CHARINDEX('seed', Description) &gt; 0 THEN 'SEED -  ' + REPLACE(Description, 'seed', '') ELSE Description END AS SeedSwap, SUBSTRING(Description, 1, 3) AS Crop_Prefix, 
+                                                    Id
+                          FROM            Crops
+                          WHERE        (Active = 1)) AS tblCrops LEFT OUTER JOIN
+                             (SELECT        SUBSTRING(Crop, 1, 3) AS Crop_Prefix, Crop, Item_Id, Description
+                               FROM            Crop_Varieties) AS derivedtbl_1 ON tblCrops.Crop_Prefix = derivedtbl_1.Crop_Prefix</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="Description" DataSetColumn="Description" />
+              <Mapping SourceColumn="Crop_Id" DataSetColumn="Crop_Id" />
+              <Mapping SourceColumn="SeedSwap" DataSetColumn="SeedSwap" />
+              <Mapping SourceColumn="Crop_Prefix" DataSetColumn="Crop_Prefix" />
+              <Mapping SourceColumn="Item_Id" DataSetColumn="Item_Id" />
+              <Mapping SourceColumn="Variety" DataSetColumn="Variety" />
+            </Mappings>
+            <Sources>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByCrop_Id" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByCrop_Id" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy" UserSourceName="FillByCrop_Id">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        ''  AS Description, -1 AS Crop_Id,'' AS SeedSwap, '' AS Crop_Prefix, - 1 AS Item_Id, '' AS Variety
+UNION
+SELECT        tblCrops.Description, tblCrops.Id AS Crop_Id, tblCrops.SeedSwap, tblCrops.Crop_Prefix, derivedtbl_1.Item_Id, derivedtbl_1.Description AS Variety
+FROM            (SELECT        Description, CASE WHEN CHARINDEX('seed', Description) &gt; 0 THEN 'SEED -  ' + REPLACE(Description, 'seed', '') ELSE Description END AS SeedSwap, SUBSTRING(Description, 1, 3) AS Crop_Prefix, 
+                                                    Id
+                          FROM            Crops
+                          WHERE        (Active = 1)) AS tblCrops LEFT OUTER JOIN
+                             (SELECT        SUBSTRING(Crop, 1, 3) AS Crop_Prefix, Crop, Item_Id, Description
+                               FROM            Crop_Varieties) AS derivedtbl_1 ON tblCrops.Crop_Prefix = derivedtbl_1.Crop_Prefix
+WHERE        (tblCrops.Id = @Crop_Id)
+ORDER BY Variety</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="Crop_Id" ColumnName="" DataSourceName="" DataTypeServer="int" DbType="Int32" Direction="Input" ParameterName="@Crop_Id" Precision="0" Scale="0" Size="4" SourceColumn="" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillByDistinctCrops" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillByDistinctCrops" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy1" UserSourceName="FillByDistinctCrops">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT DISTINCT '' AS Description, - 1 AS Crop_Id, '' AS SeedSwap, NULL AS Crop_Prefix, NULL AS Item_Id, NULL AS Variety
+UNION
+SELECT DISTINCT tblCrops.Description, tblCrops.Id AS Crop_Id, tblCrops.SeedSwap, tblCrops.Crop_Prefix, NULL AS Item_Id, NULL AS Variety
+FROM            (SELECT        Description, CASE WHEN CHARINDEX('seed', Description) &gt; 0 THEN 'SEED -  ' + REPLACE(Description, 'seed', '') ELSE Description END AS SeedSwap, SUBSTRING(Description, 1, 3) AS Crop_Prefix, 
+                                                    Id
+                          FROM            Crops
+                          WHERE        (Active = 1)) AS tblCrops LEFT OUTER JOIN
+                             (SELECT        SUBSTRING(Crop, 1, 3) AS Crop_Prefix, Crop, Item_Id, Description
+                               FROM            Crop_Varieties) AS derivedtbl_1 ON tblCrops.Crop_Prefix = derivedtbl_1.Crop_Prefix
+ORDER BY SeedSwap</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+              <DbSource ConnectionRef="NW_DataConnectionString (Settings)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="FillBySeedSwap" GenerateMethods="Fill" GenerateShortCommands="true" GeneratorSourceName="FillBySeedSwap" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetDataBy2" UserSourceName="FillBySeedSwap">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT        tblCrops.Description, tblCrops.Id AS Crop_Id, tblCrops.SeedSwap, tblCrops.Crop_Prefix, derivedtbl_1.Item_Id, derivedtbl_1.Description AS Variety
+FROM            (SELECT        Description, CASE WHEN CHARINDEX('seed', Description) &gt; 0 THEN 'SEED -  ' + REPLACE(Description, 'seed', '') ELSE Description END AS SeedSwap, SUBSTRING(Description, 1, 3) AS Crop_Prefix, 
+                                                    Id
+                          FROM            Crops
+                          WHERE        (Active = 1)) AS tblCrops LEFT OUTER JOIN
+                             (SELECT        SUBSTRING(Crop, 1, 3) AS Crop_Prefix, Crop, Item_Id, Description
+                               FROM            Crop_Varieties) AS derivedtbl_1 ON tblCrops.Crop_Prefix = derivedtbl_1.Crop_Prefix
+WHERE        (tblCrops.SeedSwap = @SeedSwap)</CommandText>
+                    <Parameters>
+                      <Parameter AllowDbNull="false" AutogeneratedName="SeedSwap" ColumnName="SeedSwap" DataSourceName="SELECT Description, CASE WHEN CHARINDEX('seed', Description) &gt; 0 THEN 'SEED -  ' + REPLACE(Description, 'seed', '') ELSE Description END AS SeedSwap, SUBSTRING(Description, 1, 3) AS Crop_Prefix, Id FROM Crops WHERE (Active = 1)" DataTypeServer="unknown" DbType="Object" Direction="Input" ParameterName="@SeedSwap" Precision="0" Scale="0" Size="1024" SourceColumn="SeedSwap" SourceColumnNullMapping="false" SourceVersion="Current" />
+                    </Parameters>
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </Sources>
+          </TableAdapter>
+        </Tables>
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="VarietiesDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:EnableTableAdapterManager="true" msprop:Generator_DataSetName="VarietiesDataSet" msprop:Generator_UserDSName="VarietiesDataSet">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="CropVarietyList" msprop:Generator_TableClassName="CropVarietyListDataTable" msprop:Generator_TableVarName="tableCropVarietyList" msprop:Generator_RowChangedName="CropVarietyListRowChanged" msprop:Generator_TablePropName="CropVarietyList" msprop:Generator_RowDeletingName="CropVarietyListRowDeleting" msprop:Generator_RowChangingName="CropVarietyListRowChanging" msprop:Generator_RowEvHandlerName="CropVarietyListRowChangeEventHandler" msprop:Generator_RowDeletedName="CropVarietyListRowDeleted" msprop:Generator_RowClassName="CropVarietyListRow" msprop:Generator_UserTableName="CropVarietyList" msprop:Generator_RowEvArgName="CropVarietyListRowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Description" msprop:Generator_ColumnVarNameInTable="columnDescription" msprop:Generator_ColumnPropNameInRow="Description" msprop:Generator_ColumnPropNameInTable="DescriptionColumn" msprop:Generator_UserColumnName="Description">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Crop_Id" msprop:Generator_ColumnVarNameInTable="columnCrop_Id" msprop:Generator_ColumnPropNameInRow="Crop_Id" msprop:Generator_ColumnPropNameInTable="Crop_IdColumn" msprop:Generator_UserColumnName="Crop_Id" type="xs:int" minOccurs="0" />
+              <xs:element name="SeedSwap" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnSeedSwap" msprop:Generator_ColumnPropNameInRow="SeedSwap" msprop:Generator_ColumnPropNameInTable="SeedSwapColumn" msprop:Generator_UserColumnName="SeedSwap" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="4000" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Crop_Prefix" msdata:ReadOnly="true" msprop:Generator_ColumnVarNameInTable="columnCrop_Prefix" msprop:Generator_ColumnPropNameInRow="Crop_Prefix" msprop:Generator_ColumnPropNameInTable="Crop_PrefixColumn" msprop:Generator_UserColumnName="Crop_Prefix" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="3" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Item_Id" msprop:Generator_ColumnVarNameInTable="columnItem_Id" msprop:Generator_ColumnPropNameInRow="Item_Id" msprop:Generator_ColumnPropNameInTable="Item_IdColumn" msprop:Generator_UserColumnName="Item_Id" type="xs:int" minOccurs="0" />
+              <xs:element name="Variety" msprop:Generator_ColumnVarNameInTable="columnVariety" msprop:Generator_ColumnPropNameInRow="Variety" msprop:Generator_ColumnPropNameInTable="VarietyColumn" msprop:Generator_UserColumnName="Variety" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="255" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

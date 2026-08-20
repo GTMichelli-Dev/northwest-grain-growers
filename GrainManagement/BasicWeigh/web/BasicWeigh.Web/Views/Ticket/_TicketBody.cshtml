@@ -1,0 +1,100 @@
+@model BasicWeigh.Web.Models.Transaction
+@{
+    var mode = ViewData["TicketMode"]?.ToString() ?? "completed";
+    bool isInbound = mode == "inbound";
+}
+
+<div class="ticket-header">
+    <img src="/api/setup/icon?v=@DateTime.UtcNow.Ticks" alt="" class="ticket-icon" />
+    @if (!string.IsNullOrEmpty(ViewBag.Header1)) { <div>@ViewBag.Header1</div> }
+    @if (!string.IsNullOrEmpty(ViewBag.Header2)) { <div>@ViewBag.Header2</div> }
+    @if (!string.IsNullOrEmpty(ViewBag.Header3)) { <div>@ViewBag.Header3</div> }
+    @if (!string.IsNullOrEmpty(ViewBag.Header4)) { <div>@ViewBag.Header4</div> }
+</div>
+
+<div class="ticket-row">
+    <span class="label">Ticket #:</span>
+    <span>@Model.Ticket</span>
+</div>
+
+<div class="ticket-row">
+    <span class="label">Date In:</span>
+    <span>@Model.DateIn.ToString("MM/dd/yyyy hh:mm tt")</span>
+</div>
+
+@if (!isInbound && Model.DateOut.HasValue)
+{
+    <div class="ticket-row">
+        <span class="label">Date Out:</span>
+        <span>@Model.DateOut.Value.ToString("MM/dd/yyyy hh:mm tt")</span>
+    </div>
+}
+
+<div class="ticket-row">
+    <span class="label">Customer:</span>
+    <span>@Model.Customer</span>
+</div>
+
+<div class="ticket-row">
+    <span class="label">Carrier:</span>
+    <span>@Model.Carrier</span>
+</div>
+
+<div class="ticket-row">
+    <span class="label">Truck ID:</span>
+    <span>@Model.TruckId</span>
+</div>
+
+<div class="ticket-row">
+    <span class="label">Commodity:</span>
+    <span>@Model.Commodity</span>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Location))
+{
+    <div class="ticket-row">
+        <span class="label">Location:</span>
+        <span>@Model.Location</span>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.Destination))
+{
+    <div class="ticket-row">
+        <span class="label">Destination:</span>
+        <span>@Model.Destination</span>
+    </div>
+}
+
+<div class="ticket-weights">
+    @if (isInbound)
+    {
+        <div class="ticket-row" style="font-size:18px; font-weight:bold;">
+            <span class="label">Weight:</span>
+            <span>@Model.InWeight.ToString("#,##0") lb</span>
+        </div>
+    }
+    else
+    {
+        <div class="ticket-row">
+            <span class="label">Gross Weight:</span>
+            <span>@Model.GrossWeight.ToString("#,##0") lb</span>
+        </div>
+        <div class="ticket-row">
+            <span class="label">Tare Weight:</span>
+            <span>@Model.TareWeight.ToString("#,##0") lb</span>
+        </div>
+        <div class="ticket-row net-weight">
+            <span class="label">Net Weight:</span>
+            <span>@Model.NetWeight.ToString("#,##0") lb</span>
+        </div>
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Notes))
+{
+    <div class="ticket-row">
+        <span class="label">Notes:</span>
+        <span>@Model.Notes</span>
+    </div>
+}

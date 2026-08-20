@@ -1,0 +1,52 @@
+@model BasicWeigh.Web.Models.AppUser
+@{
+    ViewData["Title"] = "Add User";
+}
+
+<h3 class="mb-2">Add User</h3>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger py-2">@ViewBag.Error</div>
+}
+
+<div class="card" style="max-width: 500px;">
+    <div class="card-body">
+        <form asp-action="CreateUser" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input asp-for="Username" class="form-control" required autofocus />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Display Name</label>
+                <input asp-for="DisplayName" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" required minlength="4" />
+                <small class="text-muted">Minimum 4 characters</small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Role</label>
+                <select asp-for="Role" class="form-select">
+                    <option value="User">User</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Admin">Admin</option>
+                </select>
+            </div>
+            <div class="mb-3 form-check">
+                <input asp-for="MustChangePassword" class="form-check-input" />
+                <label asp-for="MustChangePassword" class="form-check-label">Must change password on next login</label>
+            </div>
+            <div class="mb-3 form-check">
+                <input asp-for="Active" class="form-check-input" checked />
+                <label asp-for="Active" class="form-check-label">Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create User</button>
+            <a asp-action="Users" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>

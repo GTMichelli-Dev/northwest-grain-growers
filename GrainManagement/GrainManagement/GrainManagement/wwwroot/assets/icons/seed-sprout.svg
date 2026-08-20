@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Seed / sprout icon (for CSS mask usage) -->
-  <path d="M32 56c-2.2 0-4-1.8-4-4V36c0-2.2 1.8-4 4-4s4 1.8 4 4v16c0 2.2-1.8 4-4 4z"/>
-  <path d="M32 36c-8.8 0-16-7.2-16-16 9.6 0 16 5 16 12.5V36z"/>
-  <path d="M32 36c8.8 0 16-7.2 16-16-9.6 0-16 5-16 12.5V36z"/>
-  <path d="M24 54h16v4H24z"/>
-</svg>

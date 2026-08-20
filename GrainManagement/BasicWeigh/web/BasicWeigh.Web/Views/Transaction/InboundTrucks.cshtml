@@ -1,0 +1,319 @@
+@{
+    ViewData["Title"] = "Trucks in Yard";
+    var remotePrintMode = ViewBag.RemotePrintMode as string ?? "None";
+    var kioskCount = (int)(ViewBag.KioskCount ?? 0);
+    var demoMode = (bool)(ViewBag.DemoMode ?? false);
+    var savePicture = (bool)(ViewBag.SavePicture ?? false);
+}
+
+<style>
+    .grid-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 70px;
+        padding: 4px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border-radius: 8px;
+        border: 2px solid var(--bw-btn-action-border);
+        background: var(--bw-btn-action-bg);
+        color: var(--bw-btn-action-text);
+        text-decoration: none;
+        transition: background 0.15s ease, transform 0.1s ease, color 0.15s ease;
+        cursor: pointer;
+        line-height: 1.4;
+    }
+    .grid-action-btn:hover {
+        background: var(--bw-primary);
+        color: var(--bw-text-on-primary);
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+    .grid-action-btn:active {
+        transform: translateY(0);
+    }
+    .grid-action-btn.btn-weighout {
+        border-color: #2f855a;
+        background: #dcfce7;
+        color: #2f855a;
+    }
+    .grid-action-btn.btn-weighout:hover {
+        background: #2f855a;
+        color: #fff;
+    }
+    .grid-action-btn.btn-print {
+        border-color: #2563eb;
+        color: #2563eb;
+    }
+    .grid-action-btn.btn-print:hover {
+        background: #2563eb;
+        color: #fff;
+    }
+    .ticket-thumb {
+        width: 40px; height: 40px; object-fit: cover; border-radius: 4px;
+        cursor: pointer; transition: transform 0.2s ease;
+    }
+    .ticket-thumb:hover { transform: scale(2); z-index: 100; position: relative; }
+</style>
+
+<h3>Trucks in Yard</h3>
+
+<div id="inboundGrid"></div>
+
+<!-- Image Lightbox Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="imageModalTitle"></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body d-flex gap-3 p-3" style="background:#f8f9fa;">
+                <div style="flex:1;min-width:0;text-align:center;background:#000;border-radius:4px;overflow:hidden;">
+                    <img id="imageModalImg" src="" class="img-fluid" style="max-height:70vh;" />
+                </div>
+                <div id="imageModalInfo" style="min-width:250px;max-width:280px;font-family:'Courier New',monospace;font-size:13px;border:2px solid #000;padding:16px;background:#fff;border-radius:4px;align-self:flex-start;"></div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-sm btn-primary" onclick="downloadTicketImage(window._currentTicket, window._currentDirection)"><i class="fa fa-download"></i> Download</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Options Modal -->
+<div class="modal fade" id="printModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title fw-bold">Print Ticket <span id="printTicketId"></span></h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="printModalBody"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/ticket-image-download.js"></script>
+<script>
+    var availablePrinters = {}; // serviceId -> [{ printerId, status, enabled }]
+
+    function showPrintOptions(ticketId) {
+        var $modal = $('#printModal');
+        var $body = $('#printModalBody');
+        $body.empty();
+        $('#printTicketId').text('#' + ticketId);
+
+        // Browser option (always available)
+        $body.append(
+            $('<button>').addClass('btn btn-outline-primary w-100 mb-2 py-2')
+                .html('<i class="fa fa-globe"></i> Print to Browser')
+                .on('click', function () {
+                    window.open('/Ticket/KioskView/' + ticketId, '_blank');
+                    bootstrap.Modal.getInstance($modal[0]).hide();
+                })
+        );
+
+        // Add buttons for each available printer
+        var hasPrinters = false;
+        Object.keys(availablePrinters).forEach(function (sid) {
+            var printers = availablePrinters[sid] || [];
+            printers.forEach(function (p) {
+                if (!p.enabled) return;
+                hasPrinters = true;
+                var label = p.printerId;
+                if (Object.keys(availablePrinters).length > 1) label += ' (' + sid + ')';
+                $body.append(
+                    $('<button>').addClass('btn btn-outline-success w-100 mb-2 py-2')
+                        .html('<i class="fa fa-print"></i> ' + $('<span>').text(label).html())
+                        .on('click', function () {
+                            $.ajax({
+                                url: '/api/kiosk/reprint/' + encodeURIComponent(ticketId) + '?printerId=' + encodeURIComponent(sid + ':' + p.printerId),
+                                method: 'POST'
+                            });
+                            bootstrap.Modal.getInstance($modal[0]).hide();
+                        })
+                );
+            });
+        });
+
+        if (!hasPrinters) {
+            $body.append('<p class="text-muted small text-center mb-0">No print services connected.</p>');
+        }
+
+        new bootstrap.Modal($modal[0]).show();
+    }
+
+    var savePicture = @(savePicture ? "true" : "false");
+
+    function showTicketImage(ticket, direction, data) {
+        window._currentTicket = ticket;
+        window._currentDirection = direction;
+        var url = '/api/ticket/' + ticket + '/image?direction=' + direction;
+        $('#imageModalTitle').text('Ticket #' + ticket + ' (' + (direction === 'in' ? 'Inbound' : 'Outbound') + ')');
+        $('#imageModalImg').attr('src', url);
+
+        var label = direction === 'in' ? 'Inbound Ticket' : 'Completed Ticket';
+        var info = '<div style="text-align:center;font-weight:bold;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #333;padding-bottom:4px;margin-bottom:8px;font-size:11px;">' + label + '</div>';
+
+        function row(lbl, val) {
+            return '<div style="display:flex;justify-content:space-between;padding:2px 0;"><span style="font-weight:bold;">' + lbl + '</span><span>' + (val || '-') + '</span></div>';
+        }
+
+        info += row('Ticket #:', ticket);
+        if (data) {
+            if (data.dateIn) info += row('Date In:', new Date(data.dateIn).toLocaleString());
+            if (direction === 'out' && data.dateOut) info += row('Date Out:', new Date(data.dateOut).toLocaleString());
+            info += row('Customer:', data.customer);
+            info += row('Carrier:', data.carrier);
+            info += row('Truck:', data.truckId);
+            info += row('Commodity:', data.commodity);
+            if (data.location) info += row('Location:', data.location);
+            if (data.destination) info += row('Destination:', data.destination);
+
+            info += '<div style="border-top:1px dashed #000;border-bottom:1px dashed #000;margin:6px 0;padding:6px 0;">';
+            if (direction === 'in') {
+                info += '<div style="font-size:16px;font-weight:bold;display:flex;justify-content:space-between;"><span>Weight:</span><span>' + (data.inWeight || 0).toLocaleString() + ' lb</span></div>';
+            } else {
+                info += row('Gross:', (data.outWeight || 0).toLocaleString() + ' lb');
+                info += row('Tare:', (data.inWeight || 0).toLocaleString() + ' lb');
+                info += '<div style="font-size:16px;font-weight:bold;display:flex;justify-content:space-between;"><span>Net:</span><span>' + (data.netWeight || 0).toLocaleString() + ' lb</span></div>';
+            }
+            info += '</div>';
+
+            if (data.notes) info += row('Notes:', data.notes);
+        }
+        $('#imageModalInfo').html(info);
+        new bootstrap.Modal('#imageModal').show();
+    }
+
+    $(function () {
+        var cols = [
+                { dataField: 'ticket', caption: 'Ticket', width: 80 },
+                { dataField: 'customer', caption: 'Customer' },
+                { dataField: 'carrier', caption: 'Carrier' },
+                { dataField: 'truckId', caption: 'Truck ID' },
+                { dataField: 'commodity', caption: 'Commodity' },
+                { dataField: 'location', caption: 'Location' },
+                { dataField: 'destination', caption: 'Destination' },
+                {
+                    dataField: 'inWeight', caption: 'In (lbs)', dataType: 'number', format: '#,##0', width: 110,
+                    cellTemplate: function (container, options) {
+                        var text = DevExpress.localization.formatNumber(options.value, '#,##0');
+                        if (options.data.manualInbound) {
+                            $('<span>').text(text).appendTo(container);
+                            $('<span>').css({ marginLeft: '4px', fontSize: '0.7rem', color: '#d97706', fontWeight: 'bold' }).text('M').appendTo(container);
+                        } else {
+                            $('<span>').text(text).appendTo(container);
+                        }
+                    }
+                },
+                { dataField: 'dateIn', caption: 'Date In', dataType: 'datetime', format: 'MM/dd/yyyy hh:mm a' },
+                { dataField: 'notes', caption: 'Notes' }
+            ];
+            if (savePicture) {
+                cols.push({
+                    caption: 'Photo', width: 55, allowFiltering: false, allowSorting: false,
+                    cellTemplate: function (container, options) {
+                        if (options.data.hasInImage) {
+                            $('<img>').addClass('ticket-thumb')
+                                .attr('src', '/api/ticket/' + options.data.ticket + '/image?direction=in')
+                                .on('click', function (e) { e.stopPropagation(); showTicketImage(options.data.ticket, 'in', options.data); })
+                                .appendTo(container);
+                        }
+                    }
+                });
+            }
+            cols.push({
+                    caption: '',
+                    width: 280,
+                    allowFiltering: false,
+                    allowSorting: false,
+                    cellTemplate: function (container, options) {
+                        $('<a>')
+                            .addClass('grid-action-btn me-1')
+                            .attr('href', '/Transaction/WeighIn/' + options.data.ticket)
+                            .text('Edit')
+                            .appendTo(container);
+
+                        $('<a>')
+                            .addClass('grid-action-btn btn-weighout me-1')
+                            .attr('href', '/Transaction/WeighOut/' + options.data.ticket)
+                            .text('Weigh Out')
+                            .appendTo(container);
+
+                        $('<button>')
+                            .addClass('grid-action-btn btn-print')
+                            .text('Print')
+                            .on('click', function (e) {
+                                e.stopPropagation();
+                                showPrintOptions(options.data.ticket);
+                            })
+                            .appendTo(container);
+                    }
+            });
+
+        var grid = $('#inboundGrid').dxDataGrid({
+            hoverStateEnabled: true,
+            dataSource: new DevExpress.data.CustomStore({
+                key: 'ticket',
+                load: function () {
+                    return $.getJSON('/api/transactions/inbound');
+                }
+            }),
+            columns: cols,
+            onRowClick: function (e) {
+                if (e.rowType === 'data') {
+                    window.location.href = '/Transaction/WeighIn/' + e.data.ticket;
+                }
+            },
+            showBorders: true,
+            filterRow: { visible: true },
+            headerFilter: { visible: true },
+            sorting: { mode: 'multiple' },
+            columnAutoWidth: true,
+            allowColumnReordering: true,
+            allowColumnResizing: true,
+            columnChooser: { enabled: true, mode: 'select' },
+            stateStoring: {
+                enabled: true,
+                type: 'localStorage',
+                storageKey: 'inboundTrucksGrid_v2'
+            },
+            paging: { pageSize: 20 },
+            pager: { showPageSizeSelector: true, allowedPageSizes: [10, 20, 50] }
+        }).dxDataGrid('instance');
+
+        // SignalR: auto-refresh when tickets are created or completed
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl('/scaleHub')
+            .withAutomaticReconnect()
+            .build();
+        connection.on('TicketCreated', function () { grid.refresh(); });
+        connection.on('TicketCompleted', function () { grid.refresh(); });
+        connection.on('ImageCaptured', function () { grid.refresh(); });
+        connection.on('PrintConfirmed', function (data) {
+            DevExpress.ui.notify('Ticket #' + data.ticketId + ' printed by ' + data.printer, 'success', 3000);
+        });
+        // Track available printers
+        connection.on('PrintServiceReady', function (data) {
+            availablePrinters[data.serviceId] = data.printers || [];
+        });
+        connection.on('PrinterListReceived', function (data) {
+            availablePrinters[data.serviceId] = data.printers || [];
+        });
+        connection.on('PrintServiceStatusChanged', function () {
+            connection.invoke('RequestPrinterList').catch(function () {});
+        });
+
+        connection.start().then(function () {
+            connection.invoke('RequestPrinterList').catch(function () {});
+        }).catch(function (err) { console.error('SignalR error:', err); });
+
+    });
+</script>
+<script src="~/js/signalr/signalr.min.js"></script>
+}

@@ -1,0 +1,628 @@
+@{
+    ViewData["Title"] = "Reports";
+    var savePicture = (bool)(ViewBag.SavePicture ?? false);
+}
+
+<style>
+    .ticket-thumb {
+        width: 40px; height: 40px; object-fit: cover; border-radius: 4px;
+        cursor: pointer; transition: transform 0.2s ease;
+    }
+    .ticket-thumb:hover { transform: scale(2); z-index: 100; position: relative; }
+    .notes-cell {
+        white-space: normal !important;
+        word-wrap: break-word;
+        max-height: 60px;
+        overflow: hidden;
+    }
+    .report-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .report-controls .ctrl-label {
+        font-weight: 600;
+        white-space: nowrap;
+        font-size: 0.85em;
+    }
+</style>
+
+<h3>Reports</h3>
+<script>var companyName = '@Html.Raw(ViewBag.CompanyName)';</script>
+
+<!-- Image Lightbox Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="imageModalTitle"></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body d-flex gap-3 p-3" style="background:#f8f9fa;">
+                <div style="flex:1;min-width:0;text-align:center;background:#000;border-radius:4px;overflow:hidden;">
+                    <img id="imageModalImg" src="" class="img-fluid" style="max-height:70vh;" />
+                </div>
+                <div id="imageModalInfo" style="min-width:250px;max-width:280px;font-family:'Courier New',monospace;font-size:13px;border:2px solid #000;padding:16px;background:#fff;border-radius:4px;align-self:flex-start;"></div>
+            </div>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-sm btn-primary" onclick="downloadTicketImage(window._currentTicket, window._currentDirection)"><i class="fa fa-download"></i> Download</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTicketImage(ticket, direction, data) {
+    window._currentTicket = ticket;
+    window._currentDirection = direction;
+    var url = '/api/ticket/' + ticket + '/image?direction=' + direction;
+    $('#imageModalTitle').text('Ticket #' + ticket + ' (' + (direction === 'in' ? 'Inbound' : 'Outbound') + ')');
+    $('#imageModalImg').attr('src', url);
+
+    var label = direction === 'in' ? 'Inbound Ticket' : 'Completed Ticket';
+    var info = '<div style="text-align:center;font-weight:bold;letter-spacing:2px;text-transform:uppercase;border-bottom:2px solid #333;padding-bottom:4px;margin-bottom:8px;font-size:11px;">' + label + '</div>';
+    function row(lbl, val) {
+        return '<div style="display:flex;justify-content:space-between;padding:2px 0;"><span style="font-weight:bold;">' + lbl + '</span><span>' + (val || '-') + '</span></div>';
+    }
+    info += row('Ticket #:', ticket);
+    if (data) {
+        if (data.dateIn) info += row('Date In:', new Date(data.dateIn).toLocaleString());
+        if (direction === 'out' && data.dateOut) info += row('Date Out:', new Date(data.dateOut).toLocaleString());
+        info += row('Customer:', data.customer);
+        info += row('Carrier:', data.carrier);
+        info += row('Truck:', data.truckId);
+        info += row('Commodity:', data.commodity);
+        if (data.location) info += row('Location:', data.location);
+        if (data.destination) info += row('Destination:', data.destination);
+        info += '<div style="border-top:1px dashed #000;border-bottom:1px dashed #000;margin:6px 0;padding:6px 0;">';
+        if (direction === 'in') {
+            info += '<div style="font-size:16px;font-weight:bold;display:flex;justify-content:space-between;"><span>Weight:</span><span>' + (data.inWeight || 0).toLocaleString() + ' lb</span></div>';
+        } else {
+            info += row('Gross:', (data.outWeight || 0).toLocaleString() + ' lb');
+            info += row('Tare:', (data.inWeight || 0).toLocaleString() + ' lb');
+            info += '<div style="font-size:16px;font-weight:bold;display:flex;justify-content:space-between;"><span>Net:</span><span>' + (data.netWeight || 0).toLocaleString() + ' lb</span></div>';
+        }
+        info += '</div>';
+        if (data.notes) info += row('Notes:', data.notes);
+    }
+    $('#imageModalInfo').html(info);
+    new bootstrap.Modal('#imageModal').show();
+}
+</script>
+
+<div class="report-controls">
+    <span class="ctrl-label">From:</span>
+    <div id="startDate"></div>
+    <span class="ctrl-label">To:</span>
+    <div id="endDate"></div>
+    <span class="ctrl-label ms-2">Group By:</span>
+    <div id="groupByTag"></div>
+    <div id="resetBtn" class="ms-2"></div>
+</div>
+
+<div id="voidWarning" class="alert alert-warning py-1 mb-2" style="display:none;" role="alert">
+    <strong id="voidCount"></strong> voided ticket(s) are not included in this report.
+    <a href="#" id="showVoidsLink" class="alert-link ms-2">View voided tickets</a>
+</div>
+
+<!-- Voided Tickets Modal -->
+<div class="modal fade" id="voidsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title">Voided Tickets</h6>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="voidsGrid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="reportGrid"></div>
+
+@section Scripts {
+<script src="~/js/ticket-image-download.js"></script>
+<script>
+    $(function () {
+        var storageKey = 'report_dates';
+        var cookieGroupBy = 'report_groupby';
+
+        var defaultStart = new Date(new Date().setDate(new Date().getDate() - 30));
+        var defaultEnd = new Date();
+
+        var saved = sessionStorage.getItem(storageKey);
+        if (saved) {
+            try {
+                var parsed = JSON.parse(saved);
+                defaultStart = new Date(parsed.start);
+                defaultEnd = new Date(parsed.end);
+            } catch (e) { }
+        }
+
+        var startVal = defaultStart;
+        var endVal = defaultEnd;
+
+        // Cookie helpers
+        function setCookie(name, value, days) {
+            var d = new Date();
+            d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = name + '=' + encodeURIComponent(JSON.stringify(value)) + ';expires=' + d.toUTCString() + ';path=/';
+        }
+        function getCookie(name) {
+            var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+            if (match) { try { return JSON.parse(decodeURIComponent(match[2])); } catch (e) {} }
+            return null;
+        }
+
+        function saveDates() {
+            sessionStorage.setItem(storageKey, JSON.stringify({
+                start: startVal.toISOString(),
+                end: endVal.toISOString()
+            }));
+        }
+
+        // Groupable column options
+        var groupOptions = [
+            { value: 'customer', text: 'Customer' },
+            { value: 'carrier', text: 'Carrier' },
+            { value: 'truckId', text: 'Truck ID' },
+            { value: 'commodity', text: 'Commodity' },
+            { value: 'location', text: 'Location' },
+            { value: 'destination', text: 'Destination' }
+        ];
+
+        var groupByFields = getCookie(cookieGroupBy) || [];
+
+        function applyGrouping() {
+            groupOptions.forEach(function (opt) {
+                grid.columnOption(opt.value, 'groupIndex', undefined);
+            });
+            for (var i = 0; i < groupByFields.length; i++) {
+                grid.columnOption(groupByFields[i], 'groupIndex', i);
+            }
+        }
+
+        // --- Controls above grid ---
+        var startDateBox = $('#startDate').dxDateBox({
+            value: startVal, type: 'date', displayFormat: 'MM/dd/yyyy', width: 140,
+            onValueChanged: function (e) { startVal = e.value; saveDates(); grid.refresh(); }
+        }).dxDateBox('instance');
+
+        var endDateBox = $('#endDate').dxDateBox({
+            value: endVal, type: 'date', displayFormat: 'MM/dd/yyyy', width: 140,
+            onValueChanged: function (e) { endVal = e.value; saveDates(); grid.refresh(); }
+        }).dxDateBox('instance');
+
+        var groupByTag = $('#groupByTag').dxTagBox({
+            items: groupOptions, value: groupByFields,
+            valueExpr: 'value', displayExpr: 'text',
+            placeholder: 'Select...', width: 280,
+            showSelectionControls: true, searchEnabled: true,
+            onValueChanged: function (e) {
+                groupByFields = e.value || [];
+                setCookie(cookieGroupBy, groupByFields, 365);
+                applyGrouping();
+            }
+        }).dxTagBox('instance');
+
+        $('#resetBtn').dxButton({
+            icon: 'revert', text: 'Reset',
+            hint: 'Reset all filters, grouping, columns and dates',
+            onClick: function () {
+                startVal = new Date(new Date().setDate(new Date().getDate() - 30));
+                endVal = new Date();
+                startDateBox.option('value', startVal);
+                endDateBox.option('value', endVal);
+                saveDates();
+                groupByFields = [];
+                groupByTag.option('value', groupByFields);
+                setCookie(cookieGroupBy, groupByFields, 365);
+                grid.clearFilter();
+                applyGrouping();
+                // Show all columns and clear saved state
+                var cols = grid.option('columns');
+                for (var i = 0; i < cols.length; i++) {
+                    grid.columnOption(i, 'visible', true);
+                }
+                setCookie('report_grid_state', {}, 365);
+                grid.refresh();
+            }
+        });
+
+        // --- Data Grid ---
+        var stateKey = 'report_grid_state';
+        var grid = $('#reportGrid').dxDataGrid({
+            hoverStateEnabled: true,
+            remoteOperations: false,
+            dataSource: new DevExpress.data.CustomStore({
+                key: 'ticket',
+                load: function () {
+                    var s = DevExpress.localization.formatDate(startVal, 'yyyy-MM-dd');
+                    var e = DevExpress.localization.formatDate(endVal, 'yyyy-MM-dd');
+                    return $.getJSON('/api/reports/transactions', { startDate: s, endDate: e }).then(function (resp) {
+                        // Show/hide void warning
+                        if (resp.voidCount > 0) {
+                            $('#voidCount').text(resp.voidCount);
+                            $('#voidWarning').show();
+                        } else {
+                            $('#voidWarning').hide();
+                        }
+                        return resp.data;
+                    });
+                }
+            }),
+            // Persist column visibility, order, widths, sorting, filters in cookie
+            stateStoring: {
+                enabled: true,
+                type: 'custom',
+                savingTimeout: 500,
+                customLoad: function () {
+                    return $.Deferred(function (d) {
+                        d.resolve(getCookie(stateKey) || {});
+                    }).promise();
+                },
+                customSave: function (state) {
+                    setCookie(stateKey, state, 365);
+                }
+            },
+            onContentReady: function (e) {
+                if (e.component.__firstLoad !== true) {
+                    e.component.__firstLoad = true;
+                    applyGrouping();
+                }
+            },
+            onToolbarPreparing: function (e) {
+                function getFileName(ext) {
+                    var s = DevExpress.localization.formatDate(startVal, 'yyyy-MM-dd');
+                    var en = DevExpress.localization.formatDate(endVal, 'yyyy-MM-dd');
+                    return 'WeighReport_' + s + '_to_' + en + '.' + ext;
+                }
+
+                function formatNum(n) { return n == null ? '' : Number(n).toLocaleString('en-US'); }
+                function formatTons(n) { return n == null ? '' : Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+                function formatDate(val) {
+                    if (!val) return '';
+                    var d = new Date(val);
+                    return (d.getMonth() + 1).toString().padStart(2, '0') + '/' +
+                           d.getDate().toString().padStart(2, '0') + '/' +
+                           d.getFullYear() + ' ' +
+                           ((d.getHours() % 12) || 12) + ':' +
+                           d.getMinutes().toString().padStart(2, '0') + ' ' +
+                           (d.getHours() >= 12 ? 'PM' : 'AM');
+                }
+
+                function exportPdf(orientation) {
+                    var doc = new jspdf.jsPDF({ orientation: orientation, format: 'letter', unit: 'mm' });
+                    var pageWidth = doc.internal.pageSize.getWidth();
+
+                    // Header: Company name + date range
+                    var sDate = DevExpress.localization.formatDate(startVal, 'MM/dd/yyyy');
+                    var eDate = DevExpress.localization.formatDate(endVal, 'MM/dd/yyyy');
+                    doc.setFontSize(12);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(companyName, pageWidth / 2, 8, { align: 'center' });
+                    doc.setFontSize(8);
+                    doc.setFont(undefined, 'normal');
+                    doc.text('Weigh Report: ' + sDate + ' to ' + eDate, pageWidth / 2, 13, { align: 'center' });
+
+                    // Get visible columns and data
+                    var visibleCols = grid.getVisibleColumns().filter(function (c) {
+                        return c.dataField && c.groupIndex === undefined;
+                    });
+                    var headers = visibleCols.map(function (c) { return c.caption || c.dataField; });
+
+                    // Find column indices for weight/tons fields
+                    var netWeightIdx = -1, netTonsIdx = -1;
+                    visibleCols.forEach(function (c, i) {
+                        if (c.dataField === 'netWeight') netWeightIdx = i;
+                        if (c.dataField === 'netTons') netTonsIdx = i;
+                    });
+
+                    // Helper: build a formatted data row with right-aligned numbers
+                    function makeDataRow(row) {
+                        return visibleCols.map(function (col) {
+                            var val = row[col.dataField];
+                            if (val == null) return '';
+                            if (col.dataType === 'datetime' || col.dataType === 'date') return formatDate(val);
+                            if (col.dataField === 'netTons') return { content: formatTons(val), styles: { halign: 'right' } };
+                            if (col.dataType === 'number') return { content: formatNum(val), styles: { halign: 'right' } };
+                            return String(val);
+                        });
+                    }
+
+                    var dataSource = grid.getDataSource();
+                    var items = dataSource.items();
+
+                    // Grand totals
+                    var grandLoads = 0, grandNetWeight = 0, grandNetTons = 0;
+
+                    // Build body with group headers, group totals, and data rows
+                    var body = [];
+
+                    function makeTotalRow(label, loads, netWeight, netTons, bgColor, textColor) {
+                        textColor = textColor || [0, 0, 0];
+                        var row = [];
+                        for (var i = 0; i < headers.length; i++) {
+                            var content = '';
+                            if (i === 0) content = label + ': ' + loads + ' loads';
+                            if (i === netWeightIdx) content = formatNum(netWeight) + ' lbs';
+                            if (i === netTonsIdx) content = formatTons(netTons) + ' tons';
+                            row.push({ content: content, styles: { fontStyle: 'bold', fillColor: bgColor, textColor: textColor, halign: (i === netWeightIdx || i === netTonsIdx) ? 'right' : 'left' } });
+                        }
+                        return row;
+                    }
+
+                    function processItems(items) {
+                        items.forEach(function (item) {
+                            if (item.items || item.collapsedItems) {
+                                var subItems = item.items || item.collapsedItems;
+                                // Group header
+                                body.push([{ content: item.key, colSpan: headers.length, styles: { fontStyle: 'bold', fillColor: [230, 236, 245], fontSize: 5.5 } }]);
+
+                                // Check for nested groups
+                                if (subItems && subItems.length > 0 && (subItems[0].items || subItems[0].collapsedItems)) {
+                                    processItems(subItems);
+                                } else {
+                                    // Data rows
+                                    var groupLoads = 0, groupNetWeight = 0, groupNetTons = 0;
+                                    (subItems || []).forEach(function (row) {
+                                        groupLoads++;
+                                        grandLoads++;
+                                        var nw = row.netWeight || 0;
+                                        var nt = row.netTons || 0;
+                                        groupNetWeight += nw;
+                                        groupNetTons += nt;
+                                        grandNetWeight += nw;
+                                        grandNetTons += nt;
+
+                                        body.push(makeDataRow(row));
+                                    });
+                                    // Group subtotal
+                                    body.push(makeTotalRow(item.key, groupLoads, groupNetWeight, groupNetTons, [220, 230, 220]));
+                                }
+                            } else {
+                                // Ungrouped data row
+                                grandLoads++;
+                                grandNetWeight += item.netWeight || 0;
+                                grandNetTons += item.netTons || 0;
+                                body.push(makeDataRow(item));
+                            }
+                        });
+                    }
+
+                    processItems(items);
+
+                    // Grand total row
+                    body.push(makeTotalRow('Grand Total', grandLoads, grandNetWeight, grandNetTons, [46, 163, 242], [255, 255, 255]));
+
+                    doc.autoTable({
+                        head: [headers],
+                        body: body,
+                        styles: { fontSize: 5, cellPadding: 0.8 },
+                        headStyles: { fillColor: [46, 163, 242], fontSize: 5.5, cellPadding: 1 },
+                        margin: { top: 16, right: 3, bottom: 6, left: 3 },
+                        tableWidth: pageWidth - 6,
+                        theme: 'grid'
+                    });
+
+                    doc.save(getFileName('pdf'));
+                }
+
+                e.toolbarOptions.items.push(
+                    {
+                        location: 'after',
+                        widget: 'dxButton',
+                        options: {
+                            icon: 'exportpdf', text: 'PDF Landscape',
+                            onClick: function () { exportPdf('landscape'); }
+                        }
+                    },
+                    {
+                        location: 'after',
+                        widget: 'dxButton',
+                        options: {
+                            icon: 'exportpdf', text: 'PDF Portrait',
+                            onClick: function () { exportPdf('portrait'); }
+                        }
+                    },
+                    {
+                        location: 'after',
+                        widget: 'dxButton',
+                        options: {
+                            icon: 'xlsxfile', text: 'Excel',
+                            onClick: function () {
+                                var workbook = new ExcelJS.Workbook();
+                                var worksheet = workbook.addWorksheet('WeighReport');
+                                DevExpress.excelExporter.exportDataGrid({
+                                    component: grid, worksheet: worksheet, autoFilterEnabled: true
+                                }).then(function () {
+                                    workbook.xlsx.writeBuffer().then(function (buffer) {
+                                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), getFileName('xlsx'));
+                                    });
+                                });
+                            }
+                        }
+                    },
+                    {
+                        location: 'after',
+                        widget: 'dxButton',
+                        options: {
+                            icon: 'doc', text: 'CSV',
+                            onClick: function () {
+                                var cols = grid.getVisibleColumns().filter(function (c) { return c.dataField; });
+                                var csvHeaders = cols.map(function (c) { return '"' + (c.caption || c.dataField) + '"'; }).join(',');
+                                var rows = [];
+                                var allData = grid.getDataSource().items();
+                                function extractRows(items) {
+                                    items.forEach(function (item) {
+                                        if (item.items || item.collapsedItems) {
+                                            extractRows(item.items || item.collapsedItems);
+                                        } else {
+                                            var row = cols.map(function (col) {
+                                                var val = item[col.dataField];
+                                                if (val == null) return '""';
+                                                if (col.dataType === 'datetime' || col.dataType === 'date') return '"' + formatDate(val) + '"';
+                                                if (col.dataType === 'number') return val;
+                                                return '"' + String(val).replace(/"/g, '""') + '"';
+                                            });
+                                            rows.push(row.join(','));
+                                        }
+                                    });
+                                }
+                                extractRows(allData);
+                                var csv = csvHeaders + '\n' + rows.join('\n');
+                                var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                                saveAs(blob, getFileName('csv'));
+                            }
+                        }
+                    },
+                    {
+                        location: 'after',
+                        widget: 'dxButton',
+                        options: {
+                            icon: 'variable', text: 'JSON',
+                            onClick: function () {
+                                var cols = grid.getVisibleColumns().filter(function (c) { return c.dataField; });
+                                var jsonData = [];
+                                var allData = grid.getDataSource().items();
+                                function extractRows(items) {
+                                    items.forEach(function (item) {
+                                        if (item.items || item.collapsedItems) {
+                                            extractRows(item.items || item.collapsedItems);
+                                        } else {
+                                            var obj = {};
+                                            cols.forEach(function (col) {
+                                                obj[col.dataField] = item[col.dataField] != null ? item[col.dataField] : null;
+                                            });
+                                            jsonData.push(obj);
+                                        }
+                                    });
+                                }
+                                extractRows(allData);
+                                var json = JSON.stringify(jsonData, null, 2);
+                                var blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+                                saveAs(blob, getFileName('json'));
+                            }
+                        }
+                    }
+                );
+            },
+            columnChooser: { enabled: true, mode: 'select' },
+            columns: (function () {
+                var savePic = @(savePicture ? "true" : "false");
+                var cols = [
+                    { dataField: 'ticket', caption: '#', width: 60, sortOrder: 'desc', sortIndex: 0 },
+                    { dataField: 'dateOut', caption: 'Date Out', dataType: 'datetime', format: 'MM/dd/yyyy hh:mm a', width: 155 },
+                    { dataField: 'dateIn', caption: 'Date In', dataType: 'datetime', format: 'MM/dd/yyyy hh:mm a', width: 155 },
+                    { dataField: 'customer', caption: 'Customer' },
+                    { dataField: 'carrier', caption: 'Carrier' },
+                    { dataField: 'truckId', caption: 'Truck ID' },
+                    { dataField: 'commodity', caption: 'Commodity' },
+                    { dataField: 'location', caption: 'Location' },
+                    { dataField: 'destination', caption: 'Destination' },
+                    { dataField: 'inWeight', caption: 'In (lbs)', dataType: 'number', format: '#,##0', width: 90 },
+                    { dataField: 'outWeight', caption: 'Out (lbs)', dataType: 'number', format: '#,##0', width: 90 },
+                    { dataField: 'netWeight', caption: 'Net (lbs)', dataType: 'number', format: '#,##0', width: 90 },
+                    { dataField: 'netTons', caption: 'Net (tons)', dataType: 'number', format: '#,##0.00', width: 90 },
+                    { dataField: 'notes', caption: 'Notes', cssClass: 'notes-cell' }
+                ];
+                if (savePic) {
+                    cols.push({
+                        caption: 'In Photo', width: 55, allowFiltering: false, allowSorting: false, allowExporting: false,
+                        cellTemplate: function (container, options) {
+                            if (options.data.hasInImage) {
+                                $('<img>').addClass('ticket-thumb')
+                                    .attr('src', '/api/ticket/' + options.data.ticket + '/image?direction=in')
+                                    .on('click', function () { showTicketImage(options.data.ticket, 'in', options.data); })
+                                    .appendTo(container);
+                            }
+                        }
+                    });
+                    cols.push({
+                        caption: 'Out Photo', width: 55, allowFiltering: false, allowSorting: false, allowExporting: false,
+                        cellTemplate: function (container, options) {
+                            if (options.data.hasOutImage) {
+                                $('<img>').addClass('ticket-thumb')
+                                    .attr('src', '/api/ticket/' + options.data.ticket + '/image?direction=out')
+                                    .on('click', function () { showTicketImage(options.data.ticket, 'out', options.data); })
+                                    .appendTo(container);
+                            }
+                        }
+                    });
+                }
+                return cols;
+            })(),
+            summary: {
+                totalItems: [
+                    { column: 'ticket', summaryType: 'count', displayFormat: 'Loads: {0}' },
+                    { column: 'netWeight', summaryType: 'sum', valueFormat: '#,##0', displayFormat: 'Total: {0} lbs' },
+                    { column: 'netTons', summaryType: 'sum', valueFormat: '#,##0.00', displayFormat: 'Total: {0} tons' }
+                ],
+                groupItems: [
+                    { column: 'ticket', summaryType: 'count', displayFormat: '{0} loads' },
+                    { column: 'netWeight', summaryType: 'sum', valueFormat: '#,##0', displayFormat: '{0} lbs' },
+                    { column: 'netTons', summaryType: 'sum', valueFormat: '#,##0.00', displayFormat: '{0} tons' }
+                ]
+            },
+            showBorders: true,
+            filterRow: { visible: true },
+            headerFilter: { visible: true },
+            filterPanel: { visible: true },
+            searchPanel: { visible: true, width: 200 },
+            sorting: { mode: 'multiple' },
+            allowColumnReordering: true,
+            allowColumnResizing: true,
+            columnResizingMode: 'widget',
+            columnAutoWidth: true,
+            columnMinWidth: 50,
+            columnChooser: { enabled: true, mode: 'select' },
+            stateStoring: {
+                enabled: true,
+                type: 'localStorage',
+                storageKey: 'reportGrid_v2'
+            },
+            wordWrapEnabled: false,
+            paging: { pageSize: 50 },
+            pager: { showPageSizeSelector: true, allowedPageSizes: [20, 50, 100, 500] },
+            export: { enabled: false }
+        }).dxDataGrid('instance');
+
+        // Voided tickets popup
+        $('#showVoidsLink').on('click', function (e) {
+            e.preventDefault();
+            var s = DevExpress.localization.formatDate(startVal, 'yyyy-MM-dd');
+            var en = DevExpress.localization.formatDate(endVal, 'yyyy-MM-dd');
+
+            $('#voidsGrid').dxDataGrid({
+                dataSource: { store: { type: 'array', key: 'ticket', data: [] }, sort: { field: 'dateOut', desc: true } },
+                columns: [
+                    { dataField: 'ticket', caption: '#', width: 60 },
+                    { dataField: 'customer', caption: 'Customer' },
+                    { dataField: 'carrier', caption: 'Carrier' },
+                    { dataField: 'truckId', caption: 'Truck ID' },
+                    { dataField: 'commodity', caption: 'Commodity' },
+                    { dataField: 'inWeight', caption: 'In (lbs)', dataType: 'number', format: '#,##0', width: 90 },
+                    { dataField: 'outWeight', caption: 'Out (lbs)', dataType: 'number', format: '#,##0', width: 90 },
+                    { dataField: 'netWeight', caption: 'Net (lbs)', dataType: 'number', format: '#,##0', width: 90 },
+                    { dataField: 'dateOut', caption: 'Date Out', dataType: 'datetime', format: 'MM/dd/yyyy hh:mm a', width: 155 },
+                    { dataField: 'notes', caption: 'Notes' }
+                ],
+                showBorders: true,
+                columnAutoWidth: true,
+                paging: { pageSize: 20 }
+            });
+
+            $.getJSON('/api/reports/voided', { startDate: s, endDate: en }, function (data) {
+                $('#voidsGrid').dxDataGrid('instance').option('dataSource', data);
+            });
+
+            new bootstrap.Modal('#voidsModal').show();
+        });
+    });
+</script>
+}

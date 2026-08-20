@@ -1,0 +1,231 @@
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<style>
+    .weight-display {
+        background-color: #000;
+        color: #0f0;
+        font-family: 'Courier New', monospace;
+        font-size: clamp(2.5rem, 5vw, 5rem);
+        font-weight: bold;
+        text-align: right;
+        padding: 20px 40px;
+        border-radius: 16px;
+        margin-bottom: 30px;
+        letter-spacing: 4px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        white-space: nowrap;
+        position: relative;
+    }
+    .zero-btn {
+        position: absolute;
+        bottom: 8px;
+        right: 12px;
+        background: rgba(255,255,255,0.1);
+        color: #0a0;
+        border: 1px solid rgba(0,255,0,0.3);
+        border-radius: 6px;
+        padding: 2px 10px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .zero-btn:hover {
+        background: rgba(0,255,0,0.2);
+        color: #0f0;
+        border-color: rgba(0,255,0,0.6);
+    }
+    .weight-unit {
+        font-size: 2rem;
+        color: #0a0;
+        margin-left: 10px;
+    }
+    .scale-status {
+        font-size: 1.2rem;
+        font-weight: bold;
+        text-align: center;
+        letter-spacing: 2px;
+        min-height: 1.4em;
+    }
+    @@media (max-width: 576px) {
+        .weight-display {
+            font-size: clamp(1.5rem, 8vw, 2.5rem);
+            padding: 12px 16px;
+            max-width: 100%;
+            letter-spacing: 2px;
+        }
+        .weight-unit {
+            font-size: 1.2rem;
+            margin-left: 6px;
+        }
+        .scale-status {
+            font-size: 0.9rem;
+        }
+    }
+    .dashboard-btn {
+        font-size: 1.15rem;
+        font-weight: 600;
+        padding: 24px 20px;
+        width: 100%;
+        height: 110px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        border-radius: 16px;
+        border: 2px solid var(--bw-primary);
+        box-shadow: 0 4px 12px rgba(var(--bw-primary-rgb),0.1);
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+        text-decoration: none;
+        background: var(--bw-primary-light);
+        color: var(--bw-text);
+    }
+    .dashboard-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(var(--bw-primary-rgb),0.25);
+        background: var(--bw-primary);
+        color: var(--bw-text-on-primary);
+    }
+    .dashboard-btn:active {
+        transform: translateY(0);
+    }
+    .dashboard-btn svg {
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        opacity: 0.8;
+    }
+    .dashboard-btn:hover svg {
+        opacity: 1;
+    }
+</style>
+
+<div class="row justify-content-center mb-4">
+    <div class="col-md-8">
+        <div class="weight-display" id="weightDisplay">
+            <span id="weightValue">0</span>
+            <span class="weight-unit" id="weightUnit">lb</span>
+            <div class="scale-status" id="scaleStatus">&nbsp;</div>
+            <button class="zero-btn" onclick="zeroScale()" title="Zero the scale">ZERO</button>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 justify-content-center">
+    <div class="col-md-4 col-lg-3">
+        <a asp-controller="Transaction" asp-action="WeighIn" class="dashboard-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M3 21h18" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18" />
+            </svg>
+            Weigh In
+        </a>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <a asp-controller="Transaction" asp-action="InboundTrucks" class="dashboard-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 00-.879-2.121l-2.37-2.37A3 3 0 0016.5 9H14.25m0 0V5.625c0-.621-.504-1.125-1.125-1.125H5.25c-.621 0-1.125.504-1.125 1.125v12.249" />
+            </svg>
+            Trucks in Yard
+        </a>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <a asp-controller="Transaction" asp-action="CompletedTrucks" class="dashboard-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Completed Trucks
+        </a>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <a asp-controller="Transaction" asp-action="BasicTicket" class="dashboard-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
+            </svg>
+            Basic Ticket
+        </a>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <a asp-controller="Report" asp-action="Index" class="dashboard-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+            </svg>
+            Reports
+        </a>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <a asp-controller="MasterData" asp-action="Index" class="dashboard-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M10.875 12h-7.5m0 0c-.621 0-1.125.504-1.125 1.125M3.375 12h7.5m0 0c.621 0 1.125.504 1.125 1.125m0 0v1.5c0 .621-.504 1.125-1.125 1.125m-9.75-3.75v1.5c0 .621.504 1.125 1.125 1.125" />
+            </svg>
+            Edit Tables
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(function () {
+        var display = $('#weightDisplay');
+        var weightVal = $('#weightValue');
+        var weightUnit = $('#weightUnit');
+        var statusEl = $('#scaleStatus');
+
+        function pollWeight() {
+            $.getJSON('/api/scale/weight', function (data) {
+                var zeroBtn = $('.zero-btn');
+                if (data.error) {
+                    weightVal.text('------');
+                    weightUnit.text('');
+                    display.css({ color: '#ff0000', textAlign: 'center' });
+                    statusEl.css('color', '#ff0000').text(data.comError ? 'SCALE COM ERROR' : 'SCALE ERROR');
+                    zeroBtn.hide();
+                } else if (data.motion) {
+                    weightVal.text(data.weight.toLocaleString());
+                    weightUnit.text('lb');
+                    display.css({ color: '#ffff00', textAlign: 'right' });
+                    statusEl.css('color', '#ffff00').text('MOTION');
+                    zeroBtn.show();
+                } else {
+                    weightVal.text(data.weight.toLocaleString());
+                    weightUnit.text('lb');
+                    display.css({ color: '#00ff41', textAlign: 'right' });
+                    statusEl.html('&nbsp;');
+                    zeroBtn.show();
+                }
+            });
+        }
+        setInterval(pollWeight, 500);
+        pollWeight();
+    });
+
+    function zeroScale() {
+        var btn = document.querySelector('.zero-btn');
+        var origText = btn.textContent;
+        btn.textContent = '...';
+        btn.disabled = true;
+        $.post('/api/scale/zero').done(function (data) {
+            btn.textContent = data.success ? 'OK' : 'FAIL';
+            btn.style.color = data.success ? '#0f0' : '#f00';
+            setTimeout(function () {
+                btn.textContent = origText;
+                btn.style.color = '';
+                btn.disabled = false;
+            }, 1500);
+        }).fail(function () {
+            btn.textContent = 'FAIL';
+            btn.style.color = '#f00';
+            setTimeout(function () {
+                btn.textContent = origText;
+                btn.style.color = '';
+                btn.disabled = false;
+            }, 1500);
+        });
+    }
+</script>
+}

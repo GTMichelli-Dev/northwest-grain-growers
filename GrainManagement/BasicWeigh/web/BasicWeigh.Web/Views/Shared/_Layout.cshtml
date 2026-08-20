@@ -1,0 +1,371 @@
+@inject BasicWeigh.Web.Data.ScaleDbContext Db
+@{
+    var appSetup = Db.AppSetup.FirstOrDefault();
+    var appName = appSetup?.Header1 ?? "Basic Weigh";
+    var asm = System.Reflection.Assembly.GetExecutingAssembly();
+    var appVersion = asm.GetName().Version?.ToString(3) ?? "1.0.0";
+    var theme = appSetup?.Theme ?? "default";
+    var iconCacheBust = DateTime.UtcNow.Ticks;
+    var useLogin = appSetup?.UseLogin == true;
+    var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    var isAdmin = !useLogin || userRole == "Admin";
+    var isManagerOrAbove = !useLogin || userRole == "Manager" || userRole == "Admin";
+}
+<!DOCTYPE html>
+<html lang="en" data-theme="@theme">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - @appName</title>
+    <!-- DevExtreme -->
+  
+
+
+     <link href="~/css/devextreme/bootstrap.css" rel="stylesheet" />
+
+    @* Predefined themes: https://js.devexpress.com/DevExtreme/Guide/Themes_and_Styles/Predefined_Themes/ *@
+    <link href="~/css/devextreme/dx.light.css" rel="stylesheet" />
+
+    <link href="~/css/pages/scales.css" rel="stylesheet" />
+    <link href="~/css/icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm mb-3" style="background: var(--bw-nav-bg); border-bottom: 3px solid var(--bw-nav-border); box-shadow: 0 2px 8px var(--bw-nav-shadow);">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index" style="color: var(--bw-primary); font-size: 1.3rem;">
+                    <img src="/api/setup/icon?v=@iconCacheBust" alt="" style="height: 28px; width: 28px;" />
+                    <strong>@appName</strong>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Home" asp-action="Index">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Transaction" asp-action="WeighIn">Weigh In</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Transaction" asp-action="InboundTrucks">Trucks in Yard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Transaction" asp-action="CompletedTrucks">Completed</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Report" asp-action="Index">Reports</a>
+                        </li>
+                        @if (isManagerOrAbove)
+                        {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="MasterData" asp-action="Index">Edit Tables</a>
+                        </li>
+                        }
+                        @if (isAdmin)
+                        {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Setup" asp-action="Index">Setup</a>
+                        </li>
+                        }
+                        @if (appSetup?.DemoMode == true)
+                        {
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showKioskPrinterPicker(); return false;">Kiosk</a>
+                        </li>
+                        }
+                    </ul>
+                    <div class="d-flex align-items-center gap-2">
+                        @if (appSetup?.DemoMode == true)
+                        {
+                        <button class="btn btn-sm btn-outline-warning fw-bold" id="simToggleBtn" type="button" data-bs-toggle="collapse" data-bs-target="#simPanel">
+                            Simulate
+                        </button>
+                        }
+                        @if (useLogin && User.Identity!.IsAuthenticated)
+                        {
+                        <span class="small" style="color: var(--bw-text-muted);">
+                            <strong>@User.Identity.Name</strong>
+                            <span class="badge @(userRole == "Admin" ? "bg-danger" : userRole == "Manager" ? "bg-warning text-dark" : "bg-info text-dark") ms-1">@userRole</span>
+                        </span>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Logout</button>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+    @if (appSetup?.DemoMode == true)
+    {
+    <div class="collapse" id="simPanel">
+        <div class="container-fluid py-2 sim-panel-bg">
+            <div class="row align-items-center g-3">
+                <div class="col-auto">
+                    <span class="fw-bold text-warning">SCALE SIMULATOR</span>
+                </div>
+                <div class="col-auto">
+                    <div class="weight-display" id="simWeightDisplay" style="font-size: 2rem; padding: 8px 20px; margin: 0; width: 280px;">
+                        0 <span class="unit">lb</span>
+                    </div>
+                </div>
+                <div class="col">
+                    <label class="form-label mb-0 fw-bold">Weight: <span id="simWeightLabel">0</span> lb</label>
+                    <input type="range" class="form-range" id="simWeightSlider" min="0" max="200000" step="20" value="0" />
+                </div>
+                <div class="col-auto d-flex gap-3 align-items-center">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="simMotion" />
+                        <label class="form-check-label fw-bold" for="simMotion">Motion</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="simError" />
+                        <label class="form-check-label fw-bold text-danger" for="simError">Error</label>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <span id="simStatus" class="badge bg-success">OK</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+    <div class="container-fluid">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer mt-3" style="background: var(--bw-footer-bg); border-top: 2px solid var(--bw-footer-border) !important;">
+        <div class="container d-flex align-items-center justify-content-center gap-3 py-2">
+            <a href="https://www.michelli.com" target="_blank" rel="noopener noreferrer">
+                <img src="~/images/michelli-logo.png" alt="Michelli Weighing &amp; Measurement" style="height: 30px;" />
+            </a>
+            <span style="color: var(--bw-footer-text);">@appName v@(appVersion) | Copyright &copy; @DateTime.Now.Year Michelli Weighing &amp; Measurement | We show the world what measurement can do.</span>
+        </div>
+    </footer>
+    @* Uncomment to use the Gantt control *@
+    @*<script src="~/js/devextreme/dx-gantt.js"></script>*@
+
+    @* Uncomment to use the Diagram control *@
+    @*<script src="~/js/devextreme/dx-diagram.js"></script>*@
+
+    <script src="~/js/devextreme/jquery.js"></script>
+    <script src="~/js/devextreme/bootstrap.js"></script>
+
+    @* Uncomment to use Globalize for localization *@
+    @* Docs: https://docs.devexpress.com/AspNetCore/400577#globalize *@
+    @*<script src="~/js/devextreme/cldr.js"></script>*@
+    @*<script src="~/js/devextreme/cldr/event.js"></script>*@
+    @*<script src="~/js/devextreme/cldr/supplemental.js"></script>*@
+    @*<script src="~/js/devextreme/cldr/unresolved.js"></script>*@
+    @*<script src="~/js/devextreme/globalize.js"></script>*@
+    @*<script src="~/js/devextreme/globalize/message.js"></script>*@
+    @*<script src="~/js/devextreme/globalize/number.js"></script>*@
+    @*<script src="~/js/devextreme/globalize/currency.js"></script>*@
+    @*<script src="~/js/devextreme/globalize/date.js"></script>*@
+
+    @* Uncomment to enable client-side export *@
+    @*<script src="~/js/devextreme/jszip.js"></script>*@
+
+    <script src="~/js/devextreme/dx.all.js"></script>
+
+    @* Uncomment to provide geo-data for the VectorMap control *@
+    @* Docs: https://js.devexpress.com/DevExtreme/Guide/Widgets/VectorMap/Providing_Data/#Data_for_Areas *@
+    @*<script src="~/js/devextreme/vectormap-data/world.js"></script>*@
+    <script src="~/js/devextreme/exceljs.min.js"></script>
+    <script src="~/js/devextreme/FileSaver.min.js"></script>
+    <script src="~/js/devextreme/jspdf.umd.min.js"></script>
+    <script src="~/js/devextreme/jspdf.plugin.autotable.min.js"></script>
+    <script src="~/js/devextreme/aspnet/dx.aspnet.mvc.js"></script>
+    <script src="~/js/devextreme/aspnet/dx.aspnet.data.js"></script>
+    <script src="~/js/devextreme-license.js"></script>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (appSetup?.DemoMode == true)
+    {
+    <script>
+    $(function () {
+        var slider = $('#simWeightSlider');
+        var label = $('#simWeightLabel');
+        var display = $('#simWeightDisplay');
+        var motionCb = $('#simMotion');
+        var errorCb = $('#simError');
+        var status = $('#simStatus');
+        var userDragging = false;
+
+        function renderSimDisplay(weight, motion, error) {
+            label.text(weight.toLocaleString());
+            display.html(weight.toLocaleString() + ' <span class="unit">lb</span>');
+            if (error) {
+                display.css({ background: '#8b0000', color: '#ff4444' });
+                status.removeClass('bg-success bg-warning').addClass('bg-danger').text('ERROR');
+            } else if (motion) {
+                display.css({ background: '#1a1a2e', color: '#ffff00' });
+                status.removeClass('bg-success bg-danger').addClass('bg-warning').text('MOTION');
+            } else {
+                display.css({ background: '#1a1a2e', color: '#00ff41' });
+                status.removeClass('bg-warning bg-danger').addClass('bg-success').text('OK');
+            }
+        }
+
+        function pushSim() {
+            var weight = parseInt(slider.val());
+            var motion = motionCb.is(':checked');
+            var error = errorCb.is(':checked');
+            renderSimDisplay(weight, motion, error);
+            $.ajax({
+                url: '/api/scale/simulate',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ weight: weight, motion: motion, error: error })
+            });
+        }
+
+        // Track when user is actively dragging
+        slider.on('mousedown touchstart', function () { userDragging = true; });
+        $(document).on('mouseup touchend', function () { userDragging = false; });
+
+        slider.on('input', pushSim);
+        motionCb.on('change', pushSim);
+        errorCb.on('change', pushSim);
+
+        // Poll server to sync with other sessions
+        function pollSimSync() {
+            if (userDragging) return;
+            $.getJSON('/api/scale/weight', function (data) {
+                if (userDragging) return;
+                var serverWeight = data.weight || 0;
+                var serverMotion = !!data.motion;
+                var serverError = !!data.error;
+                slider.val(serverWeight);
+                motionCb.prop('checked', serverMotion);
+                errorCb.prop('checked', serverError);
+                renderSimDisplay(serverWeight, serverMotion, serverError);
+            });
+        }
+        // Load current weight on page load
+        pollSimSync();
+        setInterval(pollSimSync, 1000);
+    });
+    </script>
+    }
+    @await RenderSectionAsync("Scripts", required: false)
+
+    @if (TempData["AutoPrintTicket"] != null)
+    {
+        var autoPrintTicket = TempData["AutoPrintTicket"]?.ToString();
+        var autoPrintType = TempData["AutoPrintType"]?.ToString() ?? "weighout";
+        var printUrl = autoPrintType == "weighin"
+            ? $"/Ticket/KioskView/{autoPrintTicket}"
+            : $"/Ticket/View/{autoPrintTicket}";
+        <script>
+        setTimeout(function () { window.open('@Html.Raw(printUrl)', '_blank'); }, 500);
+        </script>
+    }
+
+    @if (appSetup?.DemoMode == true)
+    {
+    <!-- Kiosk Printer Picker Modal -->
+    <div class="modal fade" id="kioskPrinterPickerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title">Select Kiosk Printer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2">Choose a printer for this kiosk session, or select Browser to print via the browser.</p>
+                    <select id="kioskPrinterPickerSelect" class="form-select">
+                        <option value="Browser:Browser">Send to Browser (default)</option>
+                    </select>
+                    <div id="kioskPrinterPickerLoading" class="text-center text-muted small mt-2" style="display:none;">
+                        <i class="fa fa-spinner fa-spin"></i> Loading printers...
+                    </div>
+                </div>
+                <div class="modal-footer py-1">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="launchKiosk()">Launch Kiosk</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    var _kioskPrinterConnection = null;
+    var _kioskPrintersLoaded = false;
+
+    function showKioskPrinterPicker() {
+        var modal = new bootstrap.Modal(document.getElementById('kioskPrinterPickerModal'));
+        modal.show();
+
+        if (!_kioskPrintersLoaded) {
+            document.getElementById('kioskPrinterPickerLoading').style.display = 'block';
+
+            // Connect to SignalR to get available printers
+            if (!_kioskPrinterConnection) {
+                _kioskPrinterConnection = new signalR.HubConnectionBuilder().withUrl('/scaleHub').build();
+
+                _kioskPrinterConnection.on('PrintServiceReady', function (data) {
+                    addPrintersToDropdown(data);
+                });
+
+                _kioskPrinterConnection.on('PrinterListReceived', function (data) {
+                    addPrintersToDropdown(data);
+                });
+
+                _kioskPrinterConnection.start().then(function () {
+                    _kioskPrinterConnection.invoke('RequestPrinterList').catch(function () {});
+                    // Hide loading after a timeout even if no services respond
+                    setTimeout(function () {
+                        document.getElementById('kioskPrinterPickerLoading').style.display = 'none';
+                        _kioskPrintersLoaded = true;
+                    }, 3000);
+                });
+            }
+        }
+    }
+
+    function addPrintersToDropdown(data) {
+        var sel = document.getElementById('kioskPrinterPickerSelect');
+        var sid = data.serviceId || 'default';
+        var printers = data.printers || [];
+        printers.forEach(function (p) {
+            if (!p.enabled) return;
+            var val = sid + ':' + (p.printerId || p.PrinterId);
+            var label = (p.displayName || p.DisplayName || p.printerId || p.PrinterId);
+            // Check if already added
+            for (var i = 0; i < sel.options.length; i++) {
+                if (sel.options[i].value === val) return;
+            }
+            var opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = label + ' (' + sid + ')';
+            sel.appendChild(opt);
+        });
+        document.getElementById('kioskPrinterPickerLoading').style.display = 'none';
+        _kioskPrintersLoaded = true;
+    }
+
+    function launchKiosk() {
+        var sel = document.getElementById('kioskPrinterPickerSelect');
+        var val = sel.value;
+        var parts = val.split(':', 2);
+        var serviceId = encodeURIComponent(parts[0] || 'Browser');
+        var printerId = encodeURIComponent(parts[1] || 'Browser');
+        var pin = '@(appSetup?.UseLogin == true ? appSetup?.KioskCode ?? "" : "")';
+        var url = '/Kiosk?service-id=' + serviceId + '&printer-id=' + printerId;
+        if (pin) url += '&pin=' + encodeURIComponent(pin);
+        window.open(url, '_blank');
+        bootstrap.Modal.getInstance(document.getElementById('kioskPrinterPickerModal')).hide();
+    }
+    </script>
+    }
+</body>
+</html>

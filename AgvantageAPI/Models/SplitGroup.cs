@@ -17,7 +17,7 @@ public partial class SplitGroup
 
     public string Notes { get; set; }
 
-    public long PrimaryAccountId { get; set; }
+    public long? PrimaryAccountId { get; set; }
 
     public bool UseForSales { get; set; }
 

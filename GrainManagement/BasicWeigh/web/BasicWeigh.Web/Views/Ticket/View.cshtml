@@ -1,0 +1,49 @@
+@model DevExpress.XtraReports.UI.XtraReport
+@{
+    Layout = null;
+    var theme = ViewBag.Theme ?? "default";
+    var header1 = ViewBag.Header1 ?? "Basic Weigh";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@header1 - Ticket Preview</title>
+
+    <!-- CSS -->
+    <link href="~/css/devextreme/bootstrap.css" rel="stylesheet" />
+    <link href="~/css/devextreme/dx.light.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/reporting/dx-analytics.common.css" />
+    <link rel="stylesheet" href="~/css/reporting/dx-analytics.light.css" />
+    <link rel="stylesheet" href="~/css/reporting/dx-webdocumentviewer.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+
+    <!-- Scripts: loaded in head so they're ready before the inline init code -->
+    <script src="~/js/devextreme/jquery.js"></script>
+    <script src="~/js/reporting/knockout-latest.js"></script>
+    <script src="~/js/devextreme/dx.all.js"></script>
+    <script src="~/js/devextreme-license.js"></script>
+    <script src="~/js/reporting/dx-analytics-core.js"></script>
+    <script src="~/js/reporting/dx-webdocumentviewer.min.js"></script>
+</head>
+<body data-theme="@theme">
+    <nav class="navbar navbar-expand-sm mb-3" style="background: var(--bw-nav-bg, #fff); border-bottom: 3px solid var(--bw-nav-border, #2ea3f2); box-shadow: 0 2px 8px var(--bw-nav-shadow, rgba(0,0,0,0.08));">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/" style="color: var(--bw-primary, #2ea3f2); font-size: 1.3rem;">
+                <img src="/api/setup/icon?v=@DateTime.UtcNow.Ticks" alt="" style="height: 28px; width: 28px; margin-right: 6px; vertical-align: text-bottom;" />
+                <strong>@header1</strong>
+            </a>
+            <span class="navbar-text ms-2" style="font-weight: 600; color: var(--bw-text, #333);">Ticket Preview</span>
+            <a href="/Transaction/CompletedTrucks" class="btn btn-sm ms-auto" style="background: var(--bw-btn-action-bg, #f0f8ff); border: 1px solid var(--bw-btn-action-border, #2ea3f2); color: var(--bw-btn-action-text, #333);">Back to Completed Trucks</a>
+        </div>
+    </nav>
+
+    <div class="container-fluid" style="height: calc(100vh - 70px);">
+        @(Html.DevExpress().WebDocumentViewer("ticketViewer")
+            .Height("100%")
+            .Bind(Model))
+    </div>
+</body>
+</html>
