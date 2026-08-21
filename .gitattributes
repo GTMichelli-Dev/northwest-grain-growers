@@ -61,3 +61,21 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+###############################################################################
+# Rockwell Studio 5000 / Logix Designer
+#
+# .ACD is a binary project database, but it carries no NUL byte in its first
+# 8000 bytes, so git's text/binary heuristic misclassifies it as text. The
+# checkout/commit filters get it right (verified: byte-identical round trip),
+# but the DIFF machinery does not -- a 5 MB .ACD commit renders as ~9000
+# meaningless "line" changes and packs badly. Mark it explicitly.
+###############################################################################
+*.ACD           binary
+*.acd           binary
+*.ACD_*         binary
+*.Sem           binary
+*.Wrk           binary
+*.Recovery      binary
+
+# .L5X is XML and is the diffable record of the controller -- leave it as text.

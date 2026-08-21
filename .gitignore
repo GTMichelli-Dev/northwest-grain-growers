@@ -365,3 +365,20 @@ FodyWeavers.xsd
 publish_iis/
 inetpubGrainManagement/
 .claude/
+
+###############################################################################
+# Rockwell Studio 5000 / Logix Designer machine-generated artifacts
+#
+# Autosave rotations (.BAKnnn.acd) and lock/recovery files are rewritten by
+# Studio 5000 on every save, so tracking them means git status is never clean.
+#
+# NOTE: ~133 of these were already committed before this rule was added. They
+# stay tracked -- gitignore only affects untracked files. Untracking them is a
+# separate decision.
+###############################################################################
+*.BAK[0-9]*.acd
+*.BAK[0-9]*.ACD
+*.Sem
+*.Wrk
+*.ACD.Recovery
+*.acd.recovery
